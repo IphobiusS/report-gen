@@ -1,0 +1,39 @@
+{# Modo MACHINE (estilo OSCP+), etiquetas por idioma #}
+<header class="f-head">
+  <span class="f-id">{{ f.id }}</span>
+  <h2 class="f-title">{{ f.host.name if f.host and f.host.name else f.title }}</h2>
+  {% if f.host and f.host.ip %}<span class="host-chip">{{ f.host.ip }}</span>{% endif %}
+</header>
+
+<table class="hostbox">
+  <tbody>
+  {% if f.host and f.host.ip %}<tr><th>{{ L.labels.ip }}</th><td><code>{{ f.host.ip }}</code></td></tr>{% endif %}
+  {% if f.open_ports %}<tr><th>{{ L.labels.open_ports }}</th><td>{{ f.open_ports }}</td></tr>{% endif %}
+  {% if f.host and f.host.os %}<tr><th>{{ L.labels.os }}</th><td>{{ f.host.os }}</td></tr>{% endif %}
+  {% if f.summary_md %}<tr><th>{{ L.labels.attack_path }}</th><td>{{ f.summary_md|md }}</td></tr>{% endif %}
+  </tbody>
+</table>
+
+{% for phase in f.phases %}
+<h3>{{ phase.name }}</h3>
+  {% for s in phase.steps %}
+  <div class="step">
+    <p>{% if s.lead %}<b class="lead">{{ s.lead }}</b> {% endif %}{{ s.text_md|md_inline }}</p>
+    {% if s.command %}<pre class="cmd">{{ s.command|trim }}</pre>{% endif %}
+    {% if s.figure and s.figure.src %}
+    <figure>
+      <img src="{{ engagement_dir }}{{ s.figure.src }}" alt="{{ L.figure }} {{ s.figure.number }}">
+      <figcaption><b>{{ L.figure }} {{ s.figure.number }}.</b> {{ s.figure.caption }}</figcaption>
+    </figure>
+    {% endif %}
+  </div>
+  {% endfor %}
+{% endfor %}
+
+{% if f.proof %}
+<h3>{{ L.labels.proof }}</h3>
+<table class="proof">
+  <thead><tr><th>{{ L.labels.file }}</th><th>{{ L.labels.hash }}</th></tr></thead>
+  <tbody>{% for p in f.proof %}<tr><td><code>{{ p.name }}</code></td><td><code>{{ p.value }}</code></td></tr>{% endfor %}</tbody>
+</table>
+{% endif %}

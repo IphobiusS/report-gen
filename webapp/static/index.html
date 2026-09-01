@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>report-gen</title>
+<link rel="icon" type="image/png" href="/static/favicon.png">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><img src="/static/logo.png" class="brand-logo" alt="report-gen"> report<span>-gen</span></div>
+  <div class="proj">
+    <select id="projectSelect" data-i18n-title="project_title"></select>
+    <button id="newProjectBtn" class="btn primary sm" data-i18n="new_project">Nuevo proyecto</button>
+    <button id="renameProjectBtn" class="btn sm" data-i18n="rename" data-i18n-title="rename_title">Renombrar</button>
+    <span class="proj-sep"></span>
+    <button id="deleteProjectBtn" class="btn sm ghost-danger" data-i18n="delete" data-i18n-title="delete_title">Eliminar</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="search-wrap">
+    <input id="globalSearch" class="search-input" data-i18n-ph="search_ph" placeholder="Buscar en el proyecto…" autocomplete="off">
+    <div id="searchResults" class="search-results"></div>
+  </div>
+  <button id="previewToggle" class="btn sm" data-i18n-title="preview_toggle_title">Ocultar preview</button>
+  <button id="langToggle" class="btn sm" data-i18n-title="ui_lang_title">ES</button>
+  <span id="saveState" class="savestate" data-i18n="ready">listo</span>
+  <button id="previewBtn" class="btn primary" data-i18n="update_preview">Actualizar preview</button>
+  <select id="exportFormat" data-i18n-title="export_format_title" style="width:auto">
+    <option value="pdf">PDF</option><option value="docx">Word (DOCX)</option><option value="md">Markdown</option>
+  </select>
+  <button id="downloadBtn" class="btn" data-i18n="export">Exportar</button>
+</header>
+
+<main class="layout">
+  <aside class="sidebar">
+    <div class="side-sec">
+      <button class="navitem" id="navReport" data-i18n="report">Informe</button>
+    </div>
+    <div class="side-sec">
+      <div class="side-head" data-i18n="sections_head">Secciones del informe</div>
+      <ul id="sectionList" class="findinglist"></ul>
+      <button class="btn sm" id="manageSections" data-i18n="manage_sections">Gestionar secciones</button>
+    </div>
+    <div class="side-sec">
+      <div class="side-head" data-i18n="findings_head">Hallazgos</div>
+      <ul id="findingList" class="findinglist"></ul>
+      <div class="addfinding">
+        <div class="addfinding-label" data-i18n="add_finding">Añadir hallazgo</div>
+        <button class="btn add" data-add="blank">＋ <span data-i18n="blank">En blanco</span></button>
+        <button class="btn add" data-add="web">＋ OWASP Web</button>
+        <button class="btn add" data-add="llm">＋ OWASP LLM</button>
+      </div>
+    </div>
+  </aside>
+
+  <section class="editor" id="editor"><div class="empty" data-i18n="empty">Crea o abre un proyecto para empezar.</div></section>
+
+  <section class="preview">
+    <div class="preview-head">
+      <span data-i18n="preview_head">Vista previa</span>
+      <span class="pv-modes">
+        <button id="pvLive" class="btn sm primary" data-i18n="live">Vivo</button>
+        <button id="pvPdf" class="btn sm">PDF</button>
+      </span>
+      <span id="pvStatus" class="pv-status"></span>
+    </div>
+    <iframe id="pdfPreview" src="about:blank"></iframe>
+  </section>
+</main>
+
+<!-- Modal: nuevo proyecto -->
+<div class="modal" id="newModal">
+  <div class="modal-box">
+    <h3 data-i18n="new_project">Nuevo proyecto</h3>
+    <label><span data-i18n="model_design">Modelo / diseño</span>
+      <select id="mDesign"></select>
+    </label>
+    <label><span data-i18n="report_title">Título del informe</span> <input id="mTitle" data-i18n-ph="report_title_ph" placeholder="Evaluación de Seguridad ..."></label>
+    <label><span data-i18n="client">Cliente</span> <input id="mClient" data-i18n-ph="client_ph" placeholder="Cliente Ltd."></label>
+    <label><span data-i18n="slug_label">Nombre de carpeta (slug)</span> <input id="mSlug" data-i18n-ph="slug_ph" placeholder="cliente-2026"></label>
+    <div class="modal-actions">
+      <button class="btn" id="mCancel" data-i18n="cancel">Cancelar</button>
+      <button class="btn primary" id="mCreate" data-i18n="create">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: catalogo OWASP -->
+<div class="modal" id="owaspModal">
+  <div class="modal-box wide">
+    <h3 id="owaspTitle">OWASP</h3>
+    <ul id="owaspList" class="owasp-list"></ul>
+    <div class="modal-actions"><button class="btn" id="owaspCancel" data-i18n="close">Cerrar</button></div>
+  </div>
+</div>
+
+<script src="/static/cvss40.js"></script>
+<script src="/static/app.js"></script>
+
+<div class="modal" id="sectionsModal">
+  <div class="modal-box wide">
+    <h3 data-i18n="sections_modal_h">Secciones del informe</h3>
+    <p class="modal-hint" data-i18n="sections_hint">Activa las secciones que necesites. Las obligatorias no se pueden desmarcar.</p>
+    <div id="sectionCatalog" class="section-catalog"></div>
+    <div class="modal-actions"><button class="btn primary" id="sectionsClose" data-i18n="done">Listo</button></div>
+  </div>
+</div>
+</body>
+</html>

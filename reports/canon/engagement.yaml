@@ -1,0 +1,102 @@
+meta:
+  lang: es
+  report_title: Evaluación de Seguridad de IA de PhantomKernel
+  report_subtitle: Informe de hallazgos
+  client: PhantomKernel Ltd.
+  assessor: Sebastian Latorre Munoz (iphobiuss)
+  assessor_title: AI Red Team Operator
+  date: '2026-04-10'
+  version: '1.0'
+  theme: corporativo
+  branding:
+    wordmark: iphobiuss
+    byline: Sebastian Latorre Munoz / iphobiuss
+    accent: '#1f5fa8'
+    confidential_text: CONFIDENCIAL
+  contacts:
+    client:
+    - name: J. Marks
+      title: Departamento de TI
+      email: it@phantomkernel.htb
+    assessor:
+    - name: Sebastian Latorre Munoz
+      title: AI Red Team Operator
+      email: iphobiuss@proton.me
+  scope:
+  - target: mcp.phantomkernel.htb
+    description: Servidor MCP que expone herramientas internas
+report:
+  sections:
+  - key: confidentiality
+  - key: contacts
+  - key: executive_summary
+    summary: 'La evaluación identificó un compromiso total del servidor MCP mediante
+      inyección de comandos. El riesgo para el negocio es **crítico**: un atacante
+      con acceso de bajo privilegio obtiene ejecución remota y acceso al backend.
+      Se recomienda acción inmediata.'
+  - key: scope
+    objectives: Determinar si un atacante autenticado puede comprometer la infraestructura
+      de IA y pivotar a sistemas internos.
+    assumptions: Pruebas en ventana acordada, sin denegación de servicio. Caja gris
+      con credenciales de bajo privilegio.
+  - key: strategic_recommendations
+    recommendations: '1. Eliminar toda construcción de comandos por shell.
+
+      2. Implementar validación estricta de entradas en el servidor MCP.
+
+      3. Añadir linting de seguridad (Bandit/Semgrep) en CI.'
+  - key: findings_summary
+  - key: findings
+  - key: attack_narrative
+    narrative: '**Enumeración inicial de red**
+
+      Desde el host Linux (ATTACK01), se confirmaron tres interfaces de acceso al
+      entorno interno.
+
+      ```bash
+
+      nxc smb 172.16.116.0/24
+
+      ```
+
+      ![Barrido SMB de 172.16.116.0/24 identificando DC01, DC02, DEV01 y EXCH01.](img/fig1.png){width="auto"}
+
+      **Relay NTLM a LDAPS**
+
+      Con SMB signing deshabilitado en DEV01, se relayó la autenticación coaccionada
+      a DC02 sobre LDAPS.
+
+      ```bash
+
+      ntlmrelayx.py -t ldaps://172.16.116.11 --add-computer ''PWN$'' ''Pwn3d!''
+
+      ```'
+  - key: remediation_plan
+    short_term: Deshabilitar la herramienta vulnerable de exportación.
+    medium_term: Reescribir el envío de correo con smtplib y vector de argumentos.
+    long_term: Estándar de código seguro que prohíba os.system y shell=True.
+  - key: appendix
+    tools_used: nmap, smbmap, impacket, WinPEAS.
+findings:
+- id: F1
+  mode: vuln
+  title: Inyección de comandos en el servidor MCP
+  severity: critical
+  cvss: '9.9'
+  cvss_vector: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H
+  cwe: CWE-78
+  affected: mcp.phantomkernel.htb
+  description_md: El parámetro `domain_filter` se concatena en un comando de shell
+    sin validar.
+  impact_md: Ejecución remota como `mcpuser` y compromiso del backend.
+  remediation_md: Usar `smtplib` y `subprocess.run([...])` con `shell=False`.
+  walkthrough:
+  - lead: Confirmar RCE.
+    text_md: El servidor devolvió `mcpuser`.
+    command: domain_filter=test$(whoami)
+    figure:
+      src: img/fig2.png
+      caption: Respuesta filtrando mcpuser.
+  proof:
+  - name: proof.txt
+    value: 4385908a1c7e6f2b0d94a53e8c1f7b60

@@ -1,0 +1,67 @@
+{# Confidencialidad, TOC, contactos, overview/scope (etiquetas por idioma) #}
+{% set clientname = (meta.client or L.labels.client).rstrip('.') %}
+
+<section class="frontsec" id="sec-conf">
+  {{ pm('conf') }}
+  <h2 class="sec-title"><span class="sec-num">1</span> {{ L.labels.confidentiality }}</h2>
+  {% if meta.confidentiality_md %}
+    {{ meta.confidentiality_md|md }}
+  {% else %}
+    {% for para in L.prose.confidentiality %}<p>{{ para.replace('{client}', clientname) }}</p>{% endfor %}
+  {% endif %}
+</section>
+
+<section class="frontsec toc" id="sec-toc">
+  <h2 class="sec-title"><span class="sec-num">2</span> {{ L.labels.toc }}</h2>
+  <ul class="toc-list">
+    <li><a href="#sec-conf"><span class="t">{{ L.labels.confidentiality }}</span><span class="leader"></span><span class="pg">{{ page_map.get('conf','') }}</span></a></li>
+    <li><a href="#sec-contacts"><span class="t">{{ L.labels.contacts }}</span><span class="leader"></span><span class="pg">{{ page_map.get('contacts','') }}</span></a></li>
+    <li><a href="#sec-overview"><span class="t">{{ L.labels.overview }}</span><span class="leader"></span><span class="pg">{{ page_map.get('overview','') }}</span></a></li>
+    <li><a href="#sec-summary"><span class="t">{{ L.labels.summary }}</span><span class="leader"></span><span class="pg">{{ page_map.get('summary','') }}</span></a></li>
+    <li class="toc-group"><span class="t">{{ L.labels.findings }}</span></li>
+    {% for f in findings %}
+    <li class="toc-sub"><a href="#{{ f.id }}"><span class="t">{{ f.id }} &nbsp; {{ f.host.name if f.mode=='machine' and f.host and f.host.name else f.title }}</span><span class="leader"></span><span class="pg">{{ page_map.get(f.id,'') }}</span></a></li>
+    {% endfor %}
+    {% if appendix %}
+    <li><a href="#sec-appendix"><span class="t">{{ L.labels.appendix }}</span><span class="leader"></span><span class="pg">{{ page_map.get('appendix','') }}</span></a></li>
+    {% endif %}
+  </ul>
+</section>
+
+<section class="frontsec" id="sec-contacts">
+  {{ pm('contacts') }}
+  <h2 class="sec-title"><span class="sec-num">3</span> {{ L.labels.contacts }}</h2>
+  {% set c = meta.contacts or {} %}
+  {% if c.client %}
+  <h3>{{ L.labels.client }}</h3>
+  <table class="contacts">
+    <thead><tr><th>{{ L.labels.name }}</th><th>{{ L.labels.title }}</th><th>{{ L.labels.email }}</th></tr></thead>
+    <tbody>{% for p in c.client %}<tr><td>{{ p.name }}</td><td>{{ p.title }}</td><td><code>{{ p.email }}</code></td></tr>{% endfor %}</tbody>
+  </table>
+  {% endif %}
+  {% if c.assessor %}
+  <h3>{{ L.labels.team }}</h3>
+  <table class="contacts">
+    <thead><tr><th>{{ L.labels.name }}</th><th>{{ L.labels.title }}</th><th>{{ L.labels.email }}</th></tr></thead>
+    <tbody>{% for p in c.assessor %}<tr><td>{{ p.name }}</td><td>{{ p.title }}</td><td><code>{{ p.email }}</code></td></tr>{% endfor %}</tbody>
+  </table>
+  {% endif %}
+</section>
+
+<section class="frontsec" id="sec-overview">
+  {{ pm('overview') }}
+  <h2 class="sec-title"><span class="sec-num">4</span> {{ L.labels.overview }}</h2>
+  <h3>{{ L.labels.approach }}</h3>
+  {% if meta.overview and meta.overview.approach_md %}
+    {{ meta.overview.approach_md|md }}
+  {% else %}
+    {% for para in L.prose.approach %}<p>{{ para.replace('{assessor}', meta.assessor or L.labels.team).replace('{client}', clientname) }}</p>{% endfor %}
+  {% endif %}
+  {% if meta.scope %}
+  <h3>{{ L.labels.scope }}</h3>
+  <table class="scope">
+    <thead><tr><th>{{ L.labels.target }}</th><th>{{ L.labels.description }}</th></tr></thead>
+    <tbody>{% for s in meta.scope %}<tr><td><code>{{ s.target }}</code></td><td>{{ s.description }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% endif %}
+</section>

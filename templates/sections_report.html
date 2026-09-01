@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="{{ meta.lang or 'es' }}">
+{% set br = meta.branding or {} %}
+{% set wordmark = br.wordmark or 'iphobiuss' %}
+{% set byline = br.byline or meta.assessor or 'iphobiuss' %}
+{% set conf = br.confidential_text or 'CONFIDENTIAL' %}
+{% set rhright = conf ~ '  |  v' ~ (meta.version or '') ~ '  |  ' ~ (meta.date or '') %}
+{% set clientname = (meta.client or L.labels.client).rstrip('.') %}
+<head>
+<meta charset="utf-8">
+<title>{{ meta.report_title }}</title>
+<link rel="stylesheet" href="{{ theme_css }}">
+<style>
+  :root { --accent: {{ br.accent or '#39ff14' }}; }
+  @page {
+    @top-left     { content: "{{ wordmark }}"; }
+    @top-center   { content: "{{ meta.report_title }}"; }
+    @top-right    { content: "{{ rhright }}"; }
+    @bottom-left  { content: "{{ byline }}"; }
+    @bottom-right { content: "{{ L.running.page }} " counter(page) " {{ L.running.of }} " counter(pages); }
+  }
+</style>
+</head>
+<body>
+{% macro pm(key) %}{% if pagemarks %}<span class="pm">PGMK{{ key }}PGMK</span>{% endif %}{% endmacro %}
+
+{% macro fields(sec) %}
+  {% set multi = (sec.fields | selectattr('value') | list | length) > 1 %}
+  {% for f in sec.fields %}
+    {% if f.value %}
+      {% if multi %}<h3>{{ f.label }}</h3>{% endif %}
+      {% if f.type == 'markdown' %}{{ f.value|md }}
+      {% elif f.type == 'text' %}<p>{{ f.value }}</p>
+      {% elif f.type == 'table' %}
+        <table class="scope"><thead><tr>{% for c in f.columns %}<th>{{ c.label }}</th>{% endfor %}</tr></thead>
+        <tbody>{% for row in f.value %}<tr>{% for c in f.columns %}<td>{{ row.get(c.key,'') }}</td>{% endfor %}</tr>{% endfor %}</tbody></table>
+      {% elif f.type == 'list' %}
+        <ul class="refs">{% for it in f.value %}<li>{{ it }}</li>{% endfor %}</ul>
+      {% endif %}
+    {% elif f.default_lang %}
+      {% for para in L.prose[f.default_lang] %}<p>{{ para.replace('{client}', clientname).replace('{assessor}', meta.assessor or '') }}</p>{% endfor %}
+    {% endif %}
+  {% endfor %}
+{% endmacro %}
+
+{% include 'cover.html' %}
+
+{# TOC #}
+<section class="frontsec toc" id="sec-toc">
+  <h2 class="sec-title">{{ L.labels.toc }}</h2>
+  <ul class="toc-list">
+  {% for s in rsections %}
+    <li><a href="#{{ s.key }}"><span class="t">{{ loop.index }}. {{ s.title }}</span><span class="leader"></span><span class="pg">{{ page_map.get(s.key,'') }}</span></a></li>
+  {% endfor %}
+  </ul>
+</section>
+
+{% for s in rsections %}
+<section class="frontsec brk sect-{{ s.key }}" id="{{ s.key }}">
+  {{ pm(s.key) }}
+  <h2 class="sec-title"><span class="sec-num">{{ loop.index }}</span> {{ s.title }}</h2>
+
+  {% if s.special == 'contacts' %}
+    {% set c = meta.contacts or {} %}
+    {% if c.client %}<h3>{{ L.labels.client }}</h3>
+      <table class="contacts"><thead><tr><th>{{ L.labels.name }}</th><th>{{ L.labels.title }}</th><th>{{ L.labels.email }}</th></tr></thead>
+      <tbody>{% for p in c.client %}<tr><td>{{ p.name }}</td><td>{{ p.title }}</td><td><code>{{ p.email }}</code></td></tr>{% endfor %}</tbody></table>{% endif %}
+    {% if c.assessor %}<h3>{{ L.labels.team }}</h3>
+      <table class="contacts"><thead><tr><th>{{ L.labels.name }}</th><th>{{ L.labels.title }}</th><th>{{ L.labels.email }}</th></tr></thead>
+      <tbody>{% for p in c.assessor %}<tr><td>{{ p.name }}</td><td>{{ p.title }}</td><td><code>{{ p.email }}</code></td></tr>{% endfor %}</tbody></table>{% endif %}
+
+  {% elif s.special == 'scope' %}
+    {{ fields(s) }}
+    {% if meta.scope %}<h3>{{ L.labels.scope }}</h3>
+      <table class="scope"><thead><tr><th>{{ L.labels.target }}</th><th>{{ L.labels.description }}</th></tr></thead>
+      <tbody>{% for sc in meta.scope %}<tr><td><code>{{ sc.target }}</code></td><td>{{ sc.description }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+
+  {% elif s.special == 'summary' %}
+    {% set vulncount = sev_counts.values()|sum %}
+    {% set maxc = [sev_counts.values()|max, 1]|max %}
+    <p class="sum-lead">{{ L.summary.identified }} <b>{{ vulncount }}</b>
+      {{ L.summary.finding if vulncount == 1 else L.summary.findings }} {{ L.summary.rating }}
+      {%- set parts = [] %}{%- for sv in sev_order if sev_counts[sv] > 0 %}{% set _ = parts.append(sev_counts[sv] ~ ' ' ~ L.severity[sv]|lower) %}{% endfor %}
+      {{ parts|join(', ') if parts else L.summary.none }}{% if machine_count == 1 %} {{ L.summary.and_machines_one }}{% elif machine_count > 1 %} {{ L.summary.and_machines_many|replace('{n}', machine_count) }}{% endif %}.</p>
+    <div class="chart-wrap"><svg class="sevchart" viewBox="0 0 320 152" xmlns="http://www.w3.org/2000/svg">
+      <line class="axis" x1="14" y1="120" x2="306" y2="120"/>
+      {% for sv in sev_order %}{% set x = 22 + loop.index0 * 58 %}{% set hh = (100 * sev_counts[sv] / maxc)|round(0,'floor')|int %}{% set y = 120 - hh %}
+        {% if sev_counts[sv] > 0 %}<rect class="bar bar-{{ sv }}" x="{{ x }}" y="{{ y }}" width="40" height="{{ hh }}"/><text class="bar-val" x="{{ x+20 }}" y="{{ y-5 }}">{{ sev_counts[sv] }}</text>
+        {% else %}<line class="bar-zero" x1="{{ x }}" y1="120" x2="{{ x+40 }}" y2="120"/>{% endif %}
+        <text class="bar-lab" x="{{ x+20 }}" y="135">{{ L.severity[sv] }}</text>{% endfor %}
+    </svg></div>
+    {% if sum_findings %}<table class="sumtable"><thead><tr><th class="c-n">{{ L.labels.col_num }}</th><th class="c-sev">{{ L.labels.col_sev }}</th><th>{{ L.labels.col_finding }}</th><th class="c-pg">{{ L.labels.col_page }}</th></tr></thead>
+      <tbody>{% for f in sum_findings %}<tr><td class="c-n">{{ loop.index }}</td><td class="c-sev">{% if f.mode == 'machine' %}<span class="sev-chip sev-machine">{{ L.labels.machine }}</span>{% else %}<span class="sev-chip sev-{{ f.severity }}">{{ L.severity[f.severity] }}{% if f.cvss %} <b>{{ f.cvss }}</b>{% endif %}</span>{% endif %}</td><td>{{ f.title }}</td><td class="c-pg">{{ page_map.get(f.id,'') }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+
+  {% elif s.special == 'findings' %}
+    {% for f in findings %}
+      <div class="finding mode-{{ f.mode }}{% if f.severity %} sev-{{ f.severity }}{% endif %}" id="{{ f.id }}">
+        {{ pm(f.id) }}
+        {% if f.mode == 'machine' %}{% include 'finding_machine.html' %}{% else %}{% include 'finding_vuln.html' %}{% endif %}
+      </div>
+    {% endfor %}
+
+  {% elif s.special == 'appendix' %}
+    {{ fields(s) }}
+    {% if appendix %}<h3>{{ L.labels.appendix }}</h3><p>{{ L.appendix_intro }}</p>
+      <table class="appendix"><thead><tr><th>{{ L.labels.host }}</th><th>{{ L.labels.item }}</th><th>{{ L.labels.value }}</th><th>{{ L.labels.notes }}</th></tr></thead>
+      <tbody>{% for r in appendix %}<tr><td>{{ r.host }}</td><td><code>{{ r.item }}</code></td><td><code class="hashval">{{ r.value }}</code></td><td>{{ r.notes }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+
+  {% else %}
+    {{ fields(s) }}
+  {% endif %}
+</section>
+{% endfor %}
+
+</body>
+</html>

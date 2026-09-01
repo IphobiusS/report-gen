@@ -1,0 +1,22 @@
+/* themes/serio.css | identidad iphobiuss (dark cover, mono, verde/cian).
+   Tema por defecto, apto para portafolio propio y clientes tecnicos. */
+@import "_common.css";
+
+:root {
+  --ink: #0b0a1a; --ink-soft: #2a2940; --muted: #5f5e75; --rule: #d9d8e3;
+  --panel: #f3f2f8; --paper: #ffffff;
+  --accent: #39ff14; --accent-ink: #1d8a12; --cyan: #05d9e8; --cyan-ink: #0b7f88;
+  --sev-critical: #b3001b; --sev-high: #d9530b; --sev-medium: #b58900; --sev-low: #1d8a12; --sev-info: #0b7f88;
+
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", "DejaVu Sans Mono", monospace;
+  --font-body: "IBM Plex Sans", "Carlito", "DejaVu Sans", sans-serif;
+  --font-display: "JetBrains Mono", "IBM Plex Mono", "DejaVu Sans Mono", monospace;
+  --font-heading: "JetBrains Mono", "IBM Plex Mono", "DejaVu Sans Mono", monospace;
+
+  --code-bg: #0b0a1a;
+  --code-inline-bg: #eef7ee; --code-inline-fg: #145f0c; --code-inline-border: #cfe6cf;
+
+  --cover-bg: #0b0a1a; --cover-fg: #ececf4; --cover-muted: #8f8fb0; --cover-title: #ffffff;
+  --cover-subtitle: var(--cyan); --cover-rule: var(--accent); --cover-wordmark: var(--accent);
+  --cover-tag-fg: var(--cyan); --cover-tag-border: var(--cyan); --cover-meta-border: #23223a;
+}

@@ -1,0 +1,19 @@
+{# Portada: layout unico, colores por tema, etiquetas por idioma #}
+<section class="cover">
+  <div class="cover-top">
+    <span class="cv-wordmark">{{ wordmark }}</span>
+    <span class="cv-tag">{{ conf }}</span>
+  </div>
+  <div class="cover-main">
+    <div class="cv-rule"></div>
+    <h1 class="cv-title">{{ meta.report_title }}</h1>
+    {% if meta.report_subtitle %}<p class="cv-subtitle">{{ meta.report_subtitle }}</p>{% endif %}
+    <div class="cv-rule"></div>
+  </div>
+  <table class="cover-meta">
+    {% if meta.client %}<tr><th>{{ L.labels.client }}</th><td>{{ meta.client }}</td></tr>{% endif %}
+    <tr><th>{{ L.labels.cover_assessor }}</th><td>{{ meta.assessor }}{% if meta.assessor_title %} &middot; {{ meta.assessor_title }}{% endif %}</td></tr>
+    {% if meta.date %}<tr><th>{{ L.labels.cover_date }}</th><td>{{ meta.date }}</td></tr>{% endif %}
+    {% if meta.version %}<tr><th>{{ L.labels.cover_version }}</th><td>{{ meta.version }}</td></tr>{% endif %}
+  </table>
+</section>

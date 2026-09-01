@@ -1,0 +1,45 @@
+{# Modo VULN (estilo COAE), etiquetas por idioma #}
+<header class="f-head">
+  <span class="f-id">{{ f.id }}</span>
+  <h2 class="f-title">{{ f.title }}</h2>
+  {% if f.severity %}<span class="sev-chip sev-{{ f.severity }}">{{ L.severity[f.severity] }}{% if f.cvss %} <b>{{ f.cvss }}</b>{% endif %}</span>{% endif %}
+</header>
+
+<table class="meta">
+  <tbody>
+  {% if f.cwe %}<tr><th>{{ L.labels.cwe }}</th><td>{{ f.cwe }}</td></tr>{% endif %}
+  {% set _cv = f.cvss_vector or "" %}{% if f.cvss %}<tr><th>{{ L.labels.cvss }}{{ " 4.0" if _cv.startswith("CVSS:4.0") else (" 3.1" if _cv.startswith("CVSS:3.1") else "") }}</th><td><span class="score">{{ f.cvss }}</span>{% if f.cvss_vector %} <code class="vector">{{ f.cvss_vector }}</code>{% endif %}</td></tr>{% endif %}
+  {% if f.description_md %}<tr><th>{{ L.labels.desc_root }}</th><td>{{ f.description_md|md }}</td></tr>{% endif %}
+  {% if f.impact_md %}<tr><th>{{ L.labels.impact }}</th><td>{{ f.impact_md|md }}</td></tr>{% endif %}
+  {% if f.affected %}<tr><th>{{ L.labels.affected }}</th><td><code>{{ f.affected }}</code></td></tr>{% endif %}
+  {% if f.remediation_md %}<tr><th>{{ L.labels.remediation }}</th><td>{{ f.remediation_md|md }}</td></tr>{% endif %}
+  {% if f.references %}<tr><th>{{ L.labels.references }}</th><td><ul class="refs">{% for r in f.references %}<li>{{ r }}</li>{% endfor %}</ul></td></tr>{% endif %}
+  </tbody>
+</table>
+
+{% if f.walkthrough %}
+<h3>{{ L.labels.walkthrough }}</h3>
+<ol class="steps">
+  {% for s in f.walkthrough %}
+  <li>
+    {% if s.lead %}<b class="lead">{{ s.lead }}</b> {% endif %}{{ s.text_md|md_inline }}
+    {% if s.command %}<pre class="cmd">{{ s.command|trim }}</pre>{% endif %}
+    {% if s.figure and s.figure.src %}
+    <figure>
+      <img src="{{ engagement_dir }}{{ s.figure.src }}" alt="{{ L.figure }} {{ s.figure.number }}">
+      <figcaption><b>{{ L.figure }} {{ s.figure.number }}.</b> {{ s.figure.caption }}</figcaption>
+    </figure>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ol>
+{% endif %}
+
+{% if f.remediation_summary %}
+<h3>{{ L.labels.rem_summary }}</h3>
+<dl class="remsum">
+  {% if f.remediation_summary.short_md %}<dt>{{ L.labels.short_term }}</dt><dd>{{ f.remediation_summary.short_md|md }}</dd>{% endif %}
+  {% if f.remediation_summary.medium_md %}<dt>{{ L.labels.medium_term }}</dt><dd>{{ f.remediation_summary.medium_md|md }}</dd>{% endif %}
+  {% if f.remediation_summary.long_md %}<dt>{{ L.labels.long_term }}</dt><dd>{{ f.remediation_summary.long_md|md }}</dd>{% endif %}
+</dl>
+{% endif %}

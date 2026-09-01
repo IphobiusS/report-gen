@@ -1,0 +1,39 @@
+[project]
+name = "report-gen"
+version = "0.9.0"
+description = "Generador propio de informes de pentesting: engagement.yaml como fuente de verdad, secciones canonicas activables, salida PDF/DOCX/MD consistente, editor local estilo SysReptor."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Sebastian Latorre Munoz", email = "iphobiuss@proton.me" }]
+license = "MIT"
+dependencies = [
+  "jinja2",
+  "pyyaml",
+  "markdown",
+  "weasyprint",
+  "pdfplumber",
+  "python-docx",
+  "flask",
+  "pillow",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[tool.setuptools]
+packages = ["cvss", "exporters"]
+py-modules = ["engine", "export", "sections", "validate", "wizard"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+exclude = ["out", "webapp/projects", "reports"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]

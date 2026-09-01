@@ -1,0 +1,14 @@
+{# Appendix: proof/flags autogenerado (etiquetas por idioma) #}
+<section class="frontsec" id="sec-appendix">
+  {{ pm('appendix') }}
+  <h2 class="sec-title"><span class="sec-num">A</span> {{ L.labels.appendix }}</h2>
+  <p>{{ L.appendix_intro }}</p>
+  <table class="appendix">
+    <thead><tr><th>{{ L.labels.host }}</th><th>{{ L.labels.item }}</th><th>{{ L.labels.value }}</th><th>{{ L.labels.notes }}</th></tr></thead>
+    <tbody>
+    {% for r in appendix %}
+    <tr><td>{{ r.host }}</td><td><code>{{ r.item }}</code></td><td><code class="hashval">{{ r.value }}</code></td><td>{{ r.notes }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>

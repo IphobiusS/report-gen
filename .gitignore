@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Salidas generadas
+out/
+*.pdf
+!reports/**/img/*.pdf
+report.pdf
+
+# Proyectos locales del editor (datos del usuario)
+webapp/projects/*
+!webapp/projects/.gitkeep
+
+# Temporales
+.pass1.pdf
+tests/_cvss_harness.js
+.DS_Store
+
+# venv del sello upstream (local del usuario)
+.venv-seal/

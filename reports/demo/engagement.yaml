@@ -1,0 +1,137 @@
+# engagement.yaml  |  demo Fase 1 (dos findings, uno de cada modo)
+meta:
+  lang: "en"
+  report_title: "PhantomKernel AI Security Assessment"
+  report_subtitle: "Report of Findings"
+  client: "PhantomKernel Ltd."
+  assessor: "Sebastian Latorre Munoz (iphobiuss)"
+  assessor_title: "AI Red Team Operator"
+  date: "2026-04-10"
+  version: "1.0"
+  theme: "serio"
+  branding:
+    wordmark: "iphobiuss"
+    byline: "Sebastian Latorre Munoz / iphobiuss"
+    accent: "#39ff14"
+    confidential_text: "CONFIDENTIAL"
+  contacts:
+    client:
+      - { name: "J. Marks", title: "IT Department", email: "it@phantomkernel.htb" }
+      - { name: "A. Vela", title: "Security Lead", email: "security@phantomkernel.htb" }
+    assessor:
+      - { name: "Sebastian Latorre Munoz", title: "AI Red Team Operator", email: "iphobiuss@proton.me" }
+  scope:
+    - target: "mcp.phantomkernel.htb"
+      description: "Model Context Protocol server exposing internal tooling"
+    - target: "www.phantomkernel.htb"
+      description: "Public company website"
+    - target: "192.168.102.0/24"
+      description: "Internal assessment subnet"
+
+findings:
+  # ---------------------------------------------------------------- MODO VULN
+  - id: F1
+    mode: vuln
+    title: "OS Command Injection in MCP Server Newsletter Export Tool"
+    severity: critical
+    cvss: "9.9"
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H"
+    cwe: "CWE-78: Improper Neutralization of Special Elements used in an OS Command"
+    affected: "mcp.phantomkernel.htb"
+    description_md: |
+      The MCP server exposes a tool named `create_newsletter_subscriber_export` that builds
+      a subscriber list and hands it off to a mail delivery routine. The `domain_filter`
+      parameter is concatenated straight into a shell command with no escaping or
+      validation, so any shell metacharacter supplied by the caller is interpreted by the
+      underlying `/bin/sh`. Because the tool is reachable by any authenticated MCP client,
+      a low privileged user can run arbitrary operating system commands on the host.
+    impact_md: |
+      An attacker who can reach the MCP endpoint gains remote code execution as the
+      `mcpuser` service account. From there the whole application backend is exposed:
+      reading application secrets and mail credentials, pivoting to internal services,
+      and staging further escalation to root. This is a full compromise of the MCP host.
+    remediation_md: |
+      Never pass user input to a shell. Replace the shell out with a native mail library
+      (`smtplib`) and an argument list, and reject any `domain_filter` value that is not a
+      strict hostname. If a subprocess is unavoidable, use `subprocess.run([...])` with an
+      explicit argument vector and `shell=False`.
+    references:
+      - "https://cwe.mitre.org/data/definitions/78.html"
+      - "https://owasp.org/www-community/attacks/Command_Injection"
+    walkthrough:
+      - lead: "Reaching the vulnerable tool."
+        text_md: >
+          Connected to the MCP server with the low privileged credentials recovered
+          earlier and enumerated the available tools. The
+          `create_newsletter_subscriber_export` tool accepts a `domain_filter` string that
+          is echoed back verbatim in error messages, a first hint that it is used unsafely.
+        figure:
+          src: "img/fig1.png"
+          caption: "MCP tool listing showing create_newsletter_subscriber_export and its domain_filter parameter."
+      - lead: "Breaking out of the command."
+        text_md: >
+          Supplying a single backslash in `domain_filter` produced a shell parsing error in
+          the response, confirming the value lands inside a `/bin/sh -c` string rather than
+          in a safe argument vector.
+        command: 'domain_filter="\\"'
+      - lead: "Confirming RCE."
+        text_md: >
+          Injected a command substitution that writes the output of `whoami` to stderr. The
+          server returned `mcpuser`, proving arbitrary command execution in the context of
+          the service account.
+        command: 'domain_filter="test\"$(whoami >&2)\""'
+        figure:
+          src: "img/fig2.png"
+          caption: "Server response leaking the mcpuser account, confirming command execution."
+    remediation_summary:
+      short_md: "Disable the `create_newsletter_subscriber_export` tool until it is rewritten."
+      medium_md: "Rebuild the export path on `smtplib` with an explicit argument vector and strict hostname validation of `domain_filter`."
+      long_md: "Adopt a secure coding standard that bans `os.system` and `shell=True`, and add CI linting (Bandit/Semgrep) to catch shell concatenation before release."
+
+  # ------------------------------------------------------------- MODO MACHINE
+  - id: F2
+    mode: machine
+    title: "TOASTER"
+    host:
+      ip: "192.168.102.111"
+      name: "TOASTER"
+      os: "Windows Server 2019 (Build 17763)"
+    open_ports: "22 (OpenSSH), 135/139/445 (SMB), 5985 (WinRM)"
+    summary_md: >
+      A world writable SMB share allowed dropping a malicious scheduled task payload that
+      ran as the service account, giving an initial WinRM shell. Local privilege escalation
+      followed from an unquoted service path pointing into a writable directory.
+    phases:
+      - name: "Initial Access"
+        steps:
+          - lead: "Writable SMB share."
+            text_md: >
+              Enumerating shares with smbmap against the host showed a `Backups` share
+              exposed with READ and WRITE for the anonymous session, which is the foothold
+              for planting a payload the host will later execute.
+            command: "smbmap -H 192.168.102.111"
+            figure:
+              src: "img/fig3.png"
+              caption: "smbmap confirms READ/WRITE on the Backups share."
+          - lead: "Payload delivery."
+            text_md: >
+              Generated a reverse shell executable and uploaded it into the writable share,
+              then triggered execution through a scheduled task that the host runs on a short
+              interval. A listener caught the callback as the `svc_backup` account.
+            command: "impacket-smbclient 'anonymous@192.168.102.111'"
+      - name: "Privilege Escalation"
+        steps:
+          - lead: "Unquoted service path."
+            text_md: >
+              WinPEAS flagged a service configured with an unquoted `ImagePath` that resolves
+              through a directory writable by `svc_backup`. Placing an executable at the
+              intercepted path and restarting the service ran it as SYSTEM.
+            command: "wmic service get name,pathname,startmode | findstr /i /v \"C:\\Windows\\\\\""
+            figure:
+              src: "img/fig4.png"
+              caption: "Unquoted service path resolving into a writable directory."
+    proof:
+      - name: "local.txt"
+        value: "c30789bf9a4b2e7d1f0a6c8e5b3d92a1"
+      - name: "proof.txt"
+        value: "4385908a1c7e6f2b0d94a53e8c1f7b60"

@@ -1,0 +1,20 @@
+meta:
+  lang: es
+  report_title: "Informe por secciones"
+  theme: corporativo
+  client: "Acme"
+report:
+  sections:
+    - {key: confidentiality}
+    - {key: executive_summary, summary: "Resumen de prueba."}
+    - {key: findings_summary}
+    - {key: findings}
+    - {key: appendix}
+findings:
+  - id: F1
+    mode: vuln
+    title: "RCE de prueba"
+    severity: critical
+    cvss: "9.8"
+    cvss_vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    description_md: "Texto con `codigo`."

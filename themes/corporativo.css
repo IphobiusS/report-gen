@@ -1,0 +1,22 @@
+/* themes/corporativo.css | tema sobrio para clientes conservadores.
+   Portada clara, tipografia sans, acento azul. Mismo motor, otro traje. */
+@import "_common.css";
+
+:root {
+  --ink: #1c2434; --ink-soft: #33415c; --muted: #667085; --rule: #e2e5ec;
+  --panel: #f2f5fa; --paper: #ffffff;
+  --accent: #1f5fa8; --accent-ink: #1a4e88; --cyan: #256b78; --cyan-ink: #256b78;
+  --sev-critical: #b3001b; --sev-high: #d9530b; --sev-medium: #b58900; --sev-low: #1d8a12; --sev-info: #0b7f88;
+
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", "DejaVu Sans Mono", monospace;
+  --font-body: "Carlito", "IBM Plex Sans", "DejaVu Sans", sans-serif;
+  --font-display: "Carlito", "IBM Plex Sans", "DejaVu Sans", sans-serif;
+  --font-heading: "Carlito", "IBM Plex Sans", "DejaVu Sans", sans-serif;
+
+  --code-bg: #1c2434;
+  --code-inline-bg: #eef2f8; --code-inline-fg: #1a4e88; --code-inline-border: #cdd8ea;
+
+  --cover-bg: #ffffff; --cover-fg: #1c2434; --cover-muted: #667085; --cover-title: #14213d;
+  --cover-subtitle: #1f5fa8; --cover-rule: #1f5fa8; --cover-wordmark: #1a4e88;
+  --cover-tag-fg: #1a4e88; --cover-tag-border: #1f5fa8; --cover-meta-border: #e2e5ec;
+}
