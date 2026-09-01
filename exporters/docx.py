@@ -344,7 +344,6 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     sec1 = doc.sections[-1]
     sec1.page_width = Cm(21); sec1.page_height = Cm(29.7)
     sec1.left_margin = sec1.right_margin = Cm(1.8); sec1.top_margin = Cm(1.6); sec1.bottom_margin = Cm(1.6)
-    contentw = Cm(21 - 3.6)
     conf = br.get("confidential_text", "CONFIDENTIAL")
     rhright = f"{conf}  |  v{meta.get('version','')}  |  {meta.get('date','')}"
     sec1.header.is_linked_to_previous = False
