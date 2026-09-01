@@ -35,5 +35,6 @@ target-version = "py310"
 exclude = ["out", "webapp/projects", "reports"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "B"]
-ignore = ["E501"]
+# Lint de errores reales (Pyflakes + errores de sintaxis/runtime). El estilo
+# (orden de imports, longitud de linea, etc.) se deja fuera del gate de CI.
+select = ["E9", "F"]

@@ -9,7 +9,6 @@ El modulo JS NO esta cableado a la UI todavia: este checkpoint es exclusivamente
 "JS 4.0 implementado; paridad Python<->JS demostrada", sin tocar Flask/HTML/calc.
 """
 import json
-import os
 import random
 import shutil
 import subprocess
