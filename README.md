@@ -8,8 +8,11 @@
 
 Engagements estructurados · PDF / DOCX / Markdown · CVSS 3.1 y 4.0 · Editor visual · Informes reproducibles
 
-</div>
+![CI](https://github.com/IphobiusS/report-gen/actions/workflows/tests.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Python 3.12+](https://img.shields.io/badge/Python-3.12+-blue.svg)
 
+</div>
 <div align="center">
 
 <img src="docs/img/report-gen-ui.png" alt="Editor de report-gen" width="900">
