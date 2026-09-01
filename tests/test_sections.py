@@ -49,3 +49,21 @@ def test_resolve_ignores_unknown_keys():
     data = {"report": {"sections": [{"key": "no_existe"}, {"key": "confidentiality"}]}}
     resolved = sections.resolve_sections(data, {}, "es")
     assert [s["key"] for s in resolved] == ["confidentiality"]
+
+
+def test_presets_load_and_resolve():
+    """Los presets cargan, resuelven secciones validas y traen contenido bilingue."""
+    import sections
+    presets = sections.load_presets()
+    ids = {p["id"] for p in presets}
+    assert {"base", "client", "exam", "cpts", "cwes", "ctf"} <= ids
+    catalog_keys = {s["key"] for s in sections.load_catalog()["sections"]}
+    for p in presets:
+        for sec in sections.preset_sections(p["id"], "es"):
+            assert sec["key"] in catalog_keys  # todas las secciones existen
+    # contenido base bilingue
+    ctf_es = sections.preset_sections("ctf", "es")[0]
+    ctf_en = sections.preset_sections("ctf", "en")[0]
+    assert "Walkthrough" in ctf_es.get("summary", "") and ctf_es["summary"] != ctf_en["summary"]
+    # preset inexistente -> default
+    assert sections.preset_sections("nope", "es") == sections.default_enabled()

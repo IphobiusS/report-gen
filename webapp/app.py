@@ -109,6 +109,13 @@ def cwe_list():
     return jsonify({k: v for k, v in data.items() if not k.startswith("_")})
 
 
+@app.route("/api/presets")
+def presets_list():
+    return jsonify([{"id": p["id"], "name_es": p.get("name_es", p["id"]), "name_en": p.get("name_en", p["id"]),
+                     "desc_es": p.get("desc_es", ""), "desc_en": p.get("desc_en", "")}
+                    for p in sectionlib.load_presets()])
+
+
 @app.route("/api/owasp/<kind>")
 def owasp(kind):
     if kind not in ("web", "llm"):
@@ -187,7 +194,9 @@ def create_project():
             {"name": "Sebastian Latorre Munoz", "title": "AI Red Team Operator", "email": ""}]},
         "scope": [],
     }
-    report = {"sections": sectionlib.default_enabled()}
+    preset = body.get("preset")
+    sections = sectionlib.preset_sections(preset, model["lang"]) if preset else sectionlib.default_enabled()
+    report = {"sections": sections}
     dump_yaml({"meta": meta, "report": report, "findings": []}, d / "engagement.yaml")
     return jsonify({"slug": slug})
 

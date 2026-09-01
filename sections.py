@@ -1,9 +1,13 @@
+import pathlib
 """Catalogo canonico de secciones y resolucion para el renderizador."""
 from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent
 CATALOG_PATH = ROOT / "designs" / "report_sections.yaml"
+
+
+HERE = pathlib.Path(__file__).resolve().parent
 
 
 def load_catalog():
@@ -19,12 +23,37 @@ def default_enabled():
     return [{"key": s["key"]} for s in sorted(cat["sections"], key=lambda x: x.get("order", 999)) if s.get("on_by_default")]
 
 
-def preset_sections(name):
-    cat = load_catalog()
-    keys = cat.get("presets", {}).get(name)
-    if not keys:
+def load_presets():
+    import yaml
+    path = HERE / "designs" / "presets.yaml"
+    if not path.exists():
+        return []
+    return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("presets", [])
+
+
+def preset_by_id(preset_id):
+    for p in load_presets():
+        if p.get("id") == preset_id:
+            return p
+    return None
+
+
+def preset_sections(preset_id, lang="es"):
+    """Devuelve la lista de secciones (con contenido base en el idioma dado) del
+    preset. Si el preset no existe o su lista esta vacia, usa default_enabled()."""
+    p = preset_by_id(preset_id)
+    if not p or not p.get("sections"):
         return default_enabled()
-    return [{"key": k} for k in keys]
+    out = []
+    for sec in p["sections"]:
+        entry = {"key": sec["key"]}
+        for field, bylang in (sec.get("content") or {}).items():
+            if isinstance(bylang, dict):
+                entry[field] = bylang.get(lang) or bylang.get("es") or ""
+            else:
+                entry[field] = bylang
+        out.append(entry)
+    return out
 
 
 def resolve_sections(data, L, lang):

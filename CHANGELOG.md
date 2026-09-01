@@ -2,6 +2,15 @@
 
 Formato basado en Keep a Changelog. Versionado semantico aproximado.
 
+## [Unreleased]
+
+### Anadido
+- Plantillas (presets) de secciones al crear proyecto: Pentest cliente, Examen de
+  certificacion (estilo OSCP), certificacion HTB (estilo CPTS: pentest de red con
+  narrativa de ataque, y estilo CWES: explotacion web), y CTF/Maquina. Encienden las
+  secciones tipicas y rellenan texto base bilingue (ES/EN). Nombres descriptivos, sin
+  logos y con nota de no-afiliacion a OffSec / Hack The Box.
+
 ## [0.9.0] - 2026-09-01
 ### Anadido
 - Buscador global: campo en la barra superior que busca una palabra en TODO el

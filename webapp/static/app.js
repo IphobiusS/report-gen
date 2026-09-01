@@ -48,7 +48,7 @@ function cvssCompute(m) {
 function cvssParse(v) { const m = Object.assign({}, CV.D); (v || "").split("/").forEach(p => { const [k, val] = p.split(":"); if (CV.M.includes(k)) m[k] = val; }); return m; }
 
 // ---- estado ----------------------------------------------------------------
-const S = { designs: [], projects: [], slug: null, data: null, sel: { type: "report", idx: -1 }, owasp: {}, cwe: {}, uiLang: "es", previewMode: "live", previewVisible: true };
+const S = { designs: [], projects: [], slug: null, data: null, sel: { type: "report", idx: -1 }, owasp: {}, cwe: {}, presets: [], uiLang: "es", previewMode: "live", previewVisible: true };
 
 // ---- i18n del sitio -------------------------------------------------------
 const I18N = {
@@ -57,6 +57,7 @@ const I18N = {
     hide_preview:"Ocultar preview", show_preview:"Mostrar preview", preview_toggle_title:"Mostrar u ocultar la vista previa",
     ui_lang_title:"Idioma del sitio", update_preview:"Actualizar preview", export:"Exportar",
     rename:"Renombrar", rename_title:"Cambiar el nombre del proyecto (título del informe)", rename_prompt:"Nuevo nombre del proyecto:",
+    preset_label:"Plantilla", preset_note:"Los nombres «estilo OSCP/HTB» son descriptivos; no afiliado a OffSec ni Hack The Box.",
     search_ph:"Buscar en el proyecto\u2026", search_none:"Sin resultados",
     export_format_title:"Formato de exportacion", project_title:"Proyecto",
     saved:"guardado", saving:"guardando\u2026", ready:"listo", uptodate:"al dia", updating:"actualizando\u2026", err:"error",
@@ -108,6 +109,7 @@ const I18N = {
     hide_preview:"Hide preview", show_preview:"Show preview", preview_toggle_title:"Show or hide the preview",
     ui_lang_title:"Site language", update_preview:"Refresh preview", export:"Export",
     rename:"Rename", rename_title:"Rename the project (report title)", rename_prompt:"New project name:",
+    preset_label:"Template", preset_note:"«OSCP/HTB-style» names are descriptive; not affiliated with OffSec or Hack The Box.",
     search_ph:"Search the project\u2026", search_none:"No results",
     export_format_title:"Export format", project_title:"Project",
     saved:"saved", saving:"saving\u2026", ready:"ready", uptodate:"up to date", updating:"updating\u2026", err:"error",
@@ -265,6 +267,7 @@ async function init() {
   S.owasp.llm = await api.get("/api/owasp/llm");
   S.catalog = await api.get("/api/sections/catalog");
   S.cwe = await api.get("/api/cwe");
+  S.presets = await api.get("/api/presets");
   S.catBy = {};
   (S.catalog.sections || []).forEach(s => { S.catBy[s.key] = s; });
   await refreshProjects();
@@ -1028,6 +1031,14 @@ function bindUI() {
   // nuevo proyecto
   const dm = $("#mDesign"); dm.innerHTML = "";
   S.designs.forEach(d => dm.append(h("option", { value: d.key }, d.label)));
+  const pm = $("#mPreset"); pm.innerHTML = "";
+  (S.presets || []).forEach(p => pm.append(h("option", { value: p.id }, p["name_" + (S.uiLang || "es")] || p.name_es)));
+  function presetDesc() {
+    const sel = (S.presets || []).find(p => p.id === pm.value);
+    const d = sel ? (sel["desc_" + (S.uiLang || "es")] || sel.desc_es || "") : "";
+    $("#mPresetDesc").textContent = d ? d + "  —  " + t("preset_note") : t("preset_note");
+  }
+  pm.addEventListener("change", presetDesc); presetDesc();
   $("#newProjectBtn").addEventListener("click", () => $("#newModal").classList.add("open"));
   $("#deleteProjectBtn").addEventListener("click", deleteProject);
   $("#renameProjectBtn").addEventListener("click", renameProject);
@@ -1074,7 +1085,7 @@ function updateDeleteBtn() {
 }
 
 async function createProject() {
-  const body = { model: $("#mDesign").value, title: $("#mTitle").value, client: $("#mClient").value, slug: $("#mSlug").value };
+  const body = { model: $("#mDesign").value, preset: $("#mPreset").value, title: $("#mTitle").value, client: $("#mClient").value, slug: $("#mSlug").value };
   const r = await api.post("/api/projects", body);
   if (!r.ok) { const resp = await r.json().catch(() => ({})); alert(resp.error || t("create_fail")); return; }
   const { slug } = await r.json();

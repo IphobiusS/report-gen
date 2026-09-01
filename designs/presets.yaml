@@ -1,0 +1,174 @@
+# Presets de secciones para nuevos proyectos.
+#
+# Los nombres "estilo OSCP" / "estilo HTB" son descriptivos y solo indican el tipo
+# de informe al que se parecen. report-gen NO esta afiliado, asociado ni respaldado
+# por OffSec, Hack The Box ni ninguna certificacion, y no reproduce sus plantillas
+# oficiales. Son puntos de partida genericos que enciendes y editas.
+
+presets:
+  - id: base
+    name_es: "Base (por defecto)"
+    name_en: "Base (default)"
+    desc_es: "Secciones por defecto del catalogo."
+    desc_en: "Catalog default sections."
+    sections: []          # vacio => usa default_enabled()
+
+  - id: client
+    name_es: "Pentest para cliente"
+    name_en: "Client pentest"
+    desc_es: "Informe profesional: resumen ejecutivo, alcance, metodologia, hallazgos con CVSS y plan de remediacion."
+    desc_en: "Professional report: executive summary, scope, methodology, findings with CVSS and remediation plan."
+    sections:
+      - {key: confidentiality}
+      - {key: contacts}
+      - key: executive_summary
+        content:
+          summary:
+            es: "Entre [fecha inicio] y [fecha fin] se realizo una evaluacion de seguridad de [alcance]. Se identificaron N hallazgos (X criticos, Y altos, Z medios). El riesgo principal es [describir]. Se recomienda priorizar la correccion de los hallazgos critico y alto de forma inmediata."
+            en: "Between [start date] and [end date] a security assessment of [scope] was performed. N findings were identified (X critical, Y high, Z medium). The main risk is [describe]. Prioritising the critical and high findings is recommended."
+      - key: scope
+        content:
+          objectives:
+            es: "El objetivo fue identificar y explotar vulnerabilidades en [aplicacion/red], determinando el impacto real sobre confidencialidad, integridad y disponibilidad."
+            en: "The goal was to identify and exploit vulnerabilities in [application/network], assessing the real impact on confidentiality, integrity and availability."
+          assumptions:
+            es: "Modalidad [grey/black/white]-box. Fuera de alcance: DoS, ingenieria social y terceros. Ventana: [fechas/horario]."
+            en: "[grey/black/white]-box. Out of scope: DoS, social engineering and third parties. Window: [dates/hours]."
+      - key: methodology
+        content:
+          approach:
+            es: "La evaluacion siguio un enfoque alineado con OWASP WSTG / PTES: reconocimiento, enumeracion, explotacion, post-explotacion y verificacion de la remediacion."
+            en: "The assessment followed an OWASP WSTG / PTES aligned approach: reconnaissance, enumeration, exploitation, post-exploitation and remediation verification."
+      - {key: findings_summary}
+      - {key: findings}
+      - key: remediation_plan
+        content:
+          overview:
+            es: "Plan de remediacion priorizado por riesgo. Corregir primero critico/alto."
+            en: "Risk-prioritised remediation plan. Fix critical/high first."
+      - {key: appendix}
+
+  - id: exam
+    name_es: "Examen de certificacion (estilo OSCP)"
+    name_en: "Certification exam (OSCP-style)"
+    desc_es: "Informe por host: resumen de alto nivel, metodologia, maquinas comprometidas con pasos y comandos, y apendice de evidencias/flags. No oficial."
+    desc_en: "Host-based report: high-level summary, methodology, compromised machines with steps and commands, and evidence/flags appendix. Unofficial."
+    sections:
+      - {key: confidentiality}
+      - key: document_control
+        content:
+          distribution:
+            es: "Candidato: [nombre]  ·  OSID: [id]  ·  Examen: [fecha]."
+            en: "Candidate: [name]  ·  OSID: [id]  ·  Exam: [date]."
+      - key: executive_summary
+        content:
+          summary:
+            es: "Este informe documenta el compromiso de las maquinas del examen. Se obtuvo acceso inicial y escalada a administrador/root en [N] de [M] objetivos; las flags local.txt y proof.txt se recolectaron como evidencia."
+            en: "This report documents the compromise of the exam machines. Initial access and escalation to administrator/root were achieved on [N] of [M] targets; local.txt and proof.txt flags were collected as evidence."
+      - key: scope
+        content:
+          objectives:
+            es: "Objetivos del examen y reglas de compromiso segun la guia oficial."
+            en: "Exam targets and rules of engagement per the official guide."
+      - key: methodology
+        content:
+          enumeration:
+            es: "Escaneo de puertos/servicios (nmap) y enumeracion de servicios expuestos (web, SMB, etc.)."
+            en: "Port/service scanning (nmap) and enumeration of exposed services (web, SMB, etc.)."
+          exploitation:
+            es: "Explotacion del vector identificado para obtener una shell inicial."
+            en: "Exploitation of the identified vector to obtain an initial shell."
+          post_exploitation:
+            es: "Enumeracion local, escalada de privilegios y recoleccion de flags/evidencia."
+            en: "Local enumeration, privilege escalation and flag/evidence collection."
+      - {key: findings}
+      - key: appendix
+        content:
+          host_service_discovery:
+            es: "Resumen de hosts y puertos abiertos por objetivo."
+            en: "Summary of hosts and open ports per target."
+
+  - id: cpts
+    name_es: "Certificacion HTB (estilo CPTS)"
+    name_en: "HTB certification (CPTS-style)"
+    desc_es: "Pentest de red/entorno: resumen ejecutivo, alcance, metodologia, hallazgos con CVSS, narrativa de ataque de extremo a extremo y remediacion. No oficial."
+    desc_en: "Network/environment pentest: executive summary, scope, methodology, findings with CVSS, end-to-end attack narrative and remediation. Unofficial."
+    sections:
+      - {key: confidentiality}
+      - {key: contacts}
+      - key: executive_summary
+        content:
+          summary:
+            es: "Se realizo una prueba de penetracion del entorno [cliente/laboratorio]. Se comprometieron [N] sistemas y se alcanzo [control del dominio / Domain Admin] mediante [cadena de ataque]. Se identificaron N hallazgos (X criticos, Y altos). El riesgo principal es [describir]."
+            en: "A penetration test of the [client/lab] environment was performed. [N] systems were compromised and [domain control / Domain Admin] was achieved via [attack chain]. N findings were identified (X critical, Y high). The main risk is [describe]."
+      - key: scope
+        content:
+          objectives:
+            es: "Evaluar la seguridad del entorno [red/dominio], identificar vectores de compromiso y determinar el impacto, incluida la posibilidad de comprometer el dominio."
+            en: "Assess the [network/domain] environment, identify compromise vectors and determine impact, including the potential to compromise the domain."
+      - key: methodology
+        content:
+          approach:
+            es: "Enfoque alineado con PTES: reconocimiento, enumeracion, explotacion, movimiento lateral, escalada de privilegios y post-explotacion."
+            en: "PTES-aligned approach: reconnaissance, enumeration, exploitation, lateral movement, privilege escalation and post-exploitation."
+      - {key: findings_summary}
+      - {key: findings}
+      - key: attack_narrative
+        content:
+          narrative:
+            es: "Ruta de ataque de extremo a extremo:\n1. [Foothold inicial] via [vector].\n2. [Movimiento lateral] hacia [host].\n3. [Escalada] hasta [administrador de dominio].\nIncluye comandos y capturas por fase."
+            en: "End-to-end attack path:\n1. [Initial foothold] via [vector].\n2. [Lateral movement] to [host].\n3. [Escalation] to [domain administrator].\nInclude commands and screenshots per phase."
+      - key: remediation_plan
+        content:
+          overview:
+            es: "Recomendaciones priorizadas por riesgo; corregir primero critico/alto."
+            en: "Risk-prioritised recommendations; fix critical/high first."
+      - {key: appendix}
+
+  - id: cwes
+    name_es: "Certificacion HTB (estilo CWES / explotacion web)"
+    name_en: "HTB certification (CWES-style / web exploitation)"
+    desc_es: "Explotacion web avanzada: hallazgos web con cadena de explotacion y PoC reproducible, impacto tecnico y remediacion. No oficial."
+    desc_en: "Advanced web exploitation: web findings with exploitation chain and reproducible PoC, technical impact and remediation. Unofficial."
+    sections:
+      - {key: confidentiality}
+      - key: executive_summary
+        content:
+          summary:
+            es: "Evaluacion de explotacion web de [app/URL]. Se encadenaron [N] vulnerabilidades hasta [RCE / exfiltracion / toma de control], incluidas [SQLi avanzada / SSTI / deserializacion / prototype pollution / ...]. Cada hallazgo documenta la cadena de explotacion completa con PoC reproducible."
+            en: "Web exploitation assessment of [app/URL]. [N] vulnerabilities were chained up to [RCE / exfiltration / takeover], including [advanced SQLi / SSTI / deserialization / prototype pollution / ...]. Each finding documents the full exploitation chain with a reproducible PoC."
+      - key: scope
+        content:
+          objectives:
+            es: "Explotar en profundidad la aplicacion web [URL]: identificar, encadenar y demostrar el impacto tecnico de cada vulnerabilidad con PoC reproducible."
+            en: "Deeply exploit the [URL] web application: identify, chain and demonstrate the technical impact of each vulnerability with a reproducible PoC."
+      - key: methodology
+        content:
+          approach:
+            es: "Mapeo de superficie, analisis de la logica de la aplicacion, identificacion de vectores y construccion de cadenas de explotacion (bypass de filtros, encadenamiento de primitivas)."
+            en: "Attack-surface mapping, application logic analysis, vector identification and building exploitation chains (filter bypass, chaining primitives)."
+          information_gathering:
+            es: "Fingerprinting, spidering y analisis de endpoints, parametros y flujos de la aplicacion."
+            en: "Fingerprinting, spidering and analysis of the application's endpoints, parameters and flows."
+      - {key: findings_summary}
+      - {key: findings}
+      - key: remediation_plan
+        content:
+          overview:
+            es: "Correcciones por hallazgo y por eslabon de la cadena (validacion, codificacion de salida, sandboxing, deserializacion segura, control de acceso), priorizadas por riesgo."
+            en: "Fixes per finding and per chain link (validation, output encoding, sandboxing, safe deserialization, access control), risk-prioritised."
+      - {key: appendix}
+
+  - id: ctf
+    name_es: "CTF / Maquina (estilo HTB)"
+    name_en: "CTF / Machine (HTB-style)"
+    desc_es: "Walkthrough minimalista: resumen breve, la maquina con ruta de ataque y fases, y flags. No oficial."
+    desc_en: "Minimal walkthrough: brief summary, the machine with attack path and phases, and flags. Unofficial."
+    sections:
+      - key: executive_summary
+        content:
+          summary:
+            es: "Walkthrough de la maquina [nombre] ([dificultad], [SO]). Cadena: [enumeracion -> foothold -> escalada]. Flags user.txt y root.txt obtenidas."
+            en: "Walkthrough of the [name] machine ([difficulty], [OS]). Chain: [enumeration -> foothold -> privesc]. user.txt and root.txt flags obtained."
+      - {key: findings}
+      - {key: appendix}
