@@ -173,8 +173,21 @@ textarea.grow { overflow: hidden; min-height: 92px; resize: none; }
 #splash { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center;
   background: var(--bg, #0d1621); transition: opacity .45s ease; }
 #splash.hide { opacity: 0; pointer-events: none; }
-.splash-inner { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-.splash-logo { width: 76px; height: 76px; animation: splashpulse 1.4s ease-in-out infinite; }
-.splash-name { font-size: 26px; font-weight: 700; letter-spacing: .5px; color: var(--fg, #e8eef4); font-family: var(--mono, monospace); }
+.splash-inner { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.splash-logo { width: 76px; height: 76px; animation: splashspin 1.5s cubic-bezier(.5,.1,.3,1) infinite; }
+.splash-name { font-size: 26px; font-weight: 700; letter-spacing: .5px; color: var(--fg, #e8eef4); font-family: var(--mono, monospace); margin-top: 6px; }
 .splash-name span { color: var(--accent, #4db6ac); }
-@keyframes splashpulse { 0%,100% { transform: scale(1); opacity: .85; } 50% { transform: scale(1.08); opacity: 1; } }
+.splash-tag { font-size: 13px; color: var(--muted, #7f8ca0); letter-spacing: .2px; }
+.splash-tag-en { opacity: .65; font-style: italic; }
+@keyframes splashspin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* crédito del autor (pie discreto) */
+.app-credit { position: fixed; right: 12px; bottom: 8px; z-index: 30;
+  font-size: 11px; color: var(--muted, #7f8ca0); background: color-mix(in srgb, var(--panel, #16212f) 82%, transparent);
+  border: 1px solid var(--line, #223041); border-radius: 8px; padding: 3px 9px; letter-spacing: .2px;
+  display: flex; align-items: center; gap: 6px; backdrop-filter: blur(3px); }
+.app-credit a { color: var(--fg, #cdd6df); text-decoration: none; }
+.app-credit a:hover { color: var(--accent, #4db6ac); text-decoration: underline; }
+.app-credit .sep { opacity: .5; }
+.app-credit .credit-htb { font-weight: 700; color: #9fef00; margin-left: 2px; }
+.app-credit .credit-htb:hover { color: #9fef00; }

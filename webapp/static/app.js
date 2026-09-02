@@ -57,7 +57,7 @@ const I18N = {
     hide_preview:"Ocultar preview", show_preview:"Mostrar preview", preview_toggle_title:"Mostrar u ocultar la vista previa",
     ui_lang_title:"Idioma del sitio", update_preview:"Actualizar preview", export:"Exportar",
     rename:"Renombrar", rename_title:"Cambiar el nombre del proyecto (título del informe)", rename_prompt:"Nuevo nombre del proyecto:",
-    recommended:"recomendada", sec_title:"Título de la sección", sec_body:"Contenido (Markdown)", lang_label:"Idioma", cert_label:"Certificación", htb_family:"HTB (certificación)", preset_label:"Plantilla", preset_note:"Los nombres «estilo OSCP/HTB» son descriptivos; no afiliado a OffSec ni Hack The Box.",
+ credit_by:"Desarrollado por", recommended:"recomendada", sec_title:"Título de la sección", sec_body:"Contenido (Markdown)", lang_label:"Idioma", cert_label:"Certificación", htb_family:"HTB (certificación)", preset_label:"Plantilla", preset_note:"Los nombres «estilo OSCP/HTB» son descriptivos; no afiliado a OffSec ni Hack The Box.",
     search_ph:"Buscar en el proyecto\u2026", search_none:"Sin resultados",
     export_format_title:"Formato de exportacion", project_title:"Proyecto",
     saved:"guardado", saving:"guardando\u2026", ready:"listo", uptodate:"al dia", updating:"actualizando\u2026", err:"error",
@@ -109,7 +109,7 @@ const I18N = {
     hide_preview:"Hide preview", show_preview:"Show preview", preview_toggle_title:"Show or hide the preview",
     ui_lang_title:"Site language", update_preview:"Refresh preview", export:"Export",
     rename:"Rename", rename_title:"Rename the project (report title)", rename_prompt:"New project name:",
-    recommended:"recommended", sec_title:"Section title", sec_body:"Content (Markdown)", lang_label:"Language", cert_label:"Certification", htb_family:"HTB (certification)", preset_label:"Template", preset_note:"«OSCP/HTB-style» names are descriptive; not affiliated with OffSec or Hack The Box.",
+ credit_by:"Developed by", recommended:"recommended", sec_title:"Section title", sec_body:"Content (Markdown)", lang_label:"Language", cert_label:"Certification", htb_family:"HTB (certification)", preset_label:"Template", preset_note:"«OSCP/HTB-style» names are descriptive; not affiliated with OffSec or Hack The Box.",
     search_ph:"Search the project\u2026", search_none:"No results",
     export_format_title:"Export format", project_title:"Project",
     saved:"saved", saving:"saving\u2026", ready:"ready", uptodate:"up to date", updating:"updating\u2026", err:"error",
@@ -277,11 +277,13 @@ async function init() {
   if (S.projects.length) loadProject(S.projects[0].slug);
   hideSplash();
 }
+const SPLASH_MIN_MS = 3000;
+const _splashStart = Date.now();
 function hideSplash() {
   const s = document.getElementById("splash");
   if (!s) return;
-  s.classList.add("hide");
-  setTimeout(() => s.remove(), 500);
+  const wait = Math.max(0, SPLASH_MIN_MS - (Date.now() - _splashStart));
+  setTimeout(() => { s.classList.add("hide"); setTimeout(() => s.remove(), 500); }, wait);
 }
 async function refreshProjects() {
   S.projects = await api.get("/api/projects");
