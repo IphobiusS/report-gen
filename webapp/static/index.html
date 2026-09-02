@@ -31,6 +31,8 @@
     <div id="searchResults" class="search-results"></div>
   </div>
   <button id="previewToggle" class="btn sm" data-i18n-title="preview_toggle_title">Ocultar preview</button>
+  <button id="themeToggle" class="btn sm" title="Tema claro/oscuro" aria-label="Tema">☾</button>
+  <button id="validateBtn" class="btn sm" data-i18n-title="validate_title" title="Validar">✓</button>
   <button id="langToggle" class="btn sm" data-i18n-title="ui_lang_title">ES</button>
   <span id="saveState" class="savestate" data-i18n="ready">listo</span>
   <button id="previewBtn" class="btn primary" data-i18n="update_preview">Actualizar preview</button>
@@ -73,7 +75,13 @@
       </span>
       <span id="pvStatus" class="pv-status"></span>
     </div>
-    <iframe id="pdfPreview" src="about:blank"></iframe>
+    <div class="preview-body">
+      <iframe id="pdfPreview" src="about:blank"></iframe>
+      <div id="previewLoading" class="preview-loading" aria-hidden="true">
+        <img src="/static/logo.png" class="pl-paw" alt="">
+        <span class="pl-txt" data-i18n="translating">Actualizando\u2026</span>
+      </div>
+    </div>
   </section>
 </main>
 

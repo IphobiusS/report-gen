@@ -55,7 +55,7 @@ const I18N = {
   es: {
     new_project:"Nuevo proyecto", delete:"Eliminar", delete_title:"Eliminar el proyecto actual",
     hide_preview:"Ocultar preview", show_preview:"Mostrar preview", preview_toggle_title:"Mostrar u ocultar la vista previa",
-    ui_lang_title:"Idioma del sitio", update_preview:"Actualizar preview", export:"Exportar",
+    ui_lang_title:"Idioma del sitio", validate_title:"Validar informe", translating:"Actualizando\u2026", toast_created:"Proyecto creado", toast_exported:"Exportado", toast_copied:"Copiado", exporting:"Generando", validate_ok:"Sin avisos", validate_issues:"aviso(s)", dash_sort_sev:"Severidad", dash_sort_manual:"Manual", theme_light:"Tema claro", theme_dark:"Tema oscuro", update_preview:"Actualizar preview", export:"Exportar",
     rename:"Renombrar", rename_title:"Cambiar el nombre del proyecto (título del informe)", rename_prompt:"Nuevo nombre del proyecto:",
  credit_by:"Desarrollado por", recommended:"recomendada", sec_title:"Título de la sección", sec_body:"Contenido (Markdown)", lang_label:"Idioma", cert_label:"Certificación", htb_family:"HTB (certificación)", preset_label:"Plantilla", preset_note:"Los nombres «estilo OSCP/HTB» son descriptivos; no afiliado a OffSec ni Hack The Box.",
     search_ph:"Buscar en el proyecto\u2026", search_none:"Sin resultados",
@@ -93,7 +93,7 @@ const I18N = {
     phase:"Fase", remove_phase:"\u2715 fase", add_phase:"+ Fase", procedure:"Procedimiento detallado",
     add_ref:"+ Referencia", evidence:"Evidencia (local.txt / proof.txt / flags)", ev_name:"Nombre", ev_value:"Valor / hash",
     note_summary:"Se genera automaticamente desde los hallazgos y sus severidades.",
-    note_findings:"Los hallazgos se editan en el panel Hallazgos.",
+    dash_sev:"Severidad", dash_finding:"Hallazgo", dash_cwe:"CWE", dash_cvss:"CVSS", dash_empty:"Aún no hay hallazgos. Añade uno desde «Añadir hallazgo».", dash_machine:"Máquina",
     note_appendix:"La tabla de evidencias (hosts, flags, hashes) se genera desde los hallazgos; arriba puedes anadir apendices en texto.", report_title_ph:"Evaluacion de Seguridad ...", client_ph:"Cliente Ltd.",
     slug_label:"Nombre de carpeta (slug)", slug_ph:"cliente-2026", cancel:"Cancelar", create:"Crear", close:"Cerrar",
     sections_modal_h:"Secciones del informe", sections_hint:"Activa las secciones que necesites. Las obligatorias no se pueden desmarcar.",
@@ -107,7 +107,7 @@ const I18N = {
   en: {
     new_project:"New project", delete:"Delete", delete_title:"Delete the current project",
     hide_preview:"Hide preview", show_preview:"Show preview", preview_toggle_title:"Show or hide the preview",
-    ui_lang_title:"Site language", update_preview:"Refresh preview", export:"Export",
+    ui_lang_title:"Site language", validate_title:"Validate report", translating:"Updating\u2026", toast_created:"Project created", toast_exported:"Exported", toast_copied:"Copied", exporting:"Generating", validate_ok:"No warnings", validate_issues:"warning(s)", dash_sort_sev:"Severity", dash_sort_manual:"Manual", theme_light:"Light theme", theme_dark:"Dark theme", update_preview:"Refresh preview", export:"Export",
     rename:"Rename", rename_title:"Rename the project (report title)", rename_prompt:"New project name:",
  credit_by:"Developed by", recommended:"recommended", sec_title:"Section title", sec_body:"Content (Markdown)", lang_label:"Language", cert_label:"Certification", htb_family:"HTB (certification)", preset_label:"Template", preset_note:"«OSCP/HTB-style» names are descriptive; not affiliated with OffSec or Hack The Box.",
     search_ph:"Search the project\u2026", search_none:"No results",
@@ -145,7 +145,7 @@ const I18N = {
     phase:"Phase", remove_phase:"\u2715 phase", add_phase:"+ Phase", procedure:"Detailed procedure",
     add_ref:"+ Reference", evidence:"Evidence (local.txt / proof.txt / flags)", ev_name:"Name", ev_value:"Value / hash",
     note_summary:"Auto-generated from the findings and their severities.",
-    note_findings:"Findings are edited in the Findings panel.",
+    dash_sev:"Severity", dash_finding:"Finding", dash_cwe:"CWE", dash_cvss:"CVSS", dash_empty:"No findings yet. Add one from \u00abAdd finding\u00bb.", dash_machine:"Machine",
     note_appendix:"The evidence table (hosts, flags, hashes) is generated from the findings; above you can add text appendices.", report_title_ph:"Security Assessment ...", client_ph:"Client Ltd.",
     slug_label:"Folder name (slug)", slug_ph:"client-2026", cancel:"Cancel", create:"Create", close:"Close",
     sections_modal_h:"Report sections", sections_hint:"Enable the sections you need. Required ones cannot be unchecked.",
@@ -176,6 +176,7 @@ function setUiLang(lang) {
 }
 function toggleUiLang() { setUiLang(S.uiLang === "en" ? "es" : "en"); }
 
+const SEV_RANK = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
 const SEV = [["critical", "Crítica"], ["high", "Alta"], ["medium", "Media"], ["low", "Baja"], ["info", "Informativa"]];
 
 // ---- reordenar arrastrando --------------------------------------------------
@@ -221,6 +222,63 @@ async function doSave() {
   if (S.previewMode === "live") refreshLivePreview();
 }
 function setSaveState(t) { $("#saveState").textContent = t; }
+function toast(msg, kind) {
+  let host = document.getElementById("toastHost");
+  if (!host) { host = h("div", { id: "toastHost" }); document.body.append(host); }
+  const el = h("div", { class: "toast" + (kind ? " toast-" + kind : "") }, msg);
+  host.append(el);
+  requestAnimationFrame(() => el.classList.add("show"));
+  setTimeout(() => { el.classList.add("hide"); setTimeout(() => el.remove(), 320); }, 2200);
+}
+let _plTimer = null, _plStart = 0;
+function showPreviewLoading() {
+  const el = document.getElementById("previewLoading");
+  if (!el || !S.previewVisible) return;
+  _plStart = Date.now(); clearTimeout(_plTimer); el.classList.add("show");
+}
+function hidePreviewLoading() {
+  const el = document.getElementById("previewLoading");
+  if (!el) return;
+  const wait = Math.max(0, 480 - (Date.now() - _plStart));  // patita visible un mínimo
+  clearTimeout(_plTimer); _plTimer = setTimeout(() => el.classList.remove("show"), wait);
+}
+function applyUiTheme(mode) {
+  document.documentElement.setAttribute("data-theme", mode);
+  try { localStorage.setItem("rg.uiTheme", mode); } catch (_) {}
+  const b = $("#themeToggle"); if (b) { b.textContent = mode === "light" ? "\u2600" : "\u263e"; b.title = t(mode === "light" ? "theme_dark" : "theme_light"); }
+}
+function toggleUiTheme() {
+  const cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  applyUiTheme(cur === "light" ? "dark" : "light");
+}
+async function runValidation() {
+  if (!S.data) return;
+  const badge = $("#validateBtn");
+  try {
+    const r = await fetch("/api/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
+    const d = await r.json(); const issues = d.issues || [];
+    badge.classList.remove("has-err", "has-warn", "ok");
+    if (!issues.length) { badge.classList.add("ok"); badge.textContent = "\u2713"; toast(t("validate_ok"), "ok"); return; }
+    const errs = issues.filter(i => i.level === "error").length;
+    badge.classList.add(errs ? "has-err" : "has-warn");
+    badge.textContent = String(issues.length);
+    showValidationPanel(issues);
+  } catch (_) { /* silencioso */ }
+}
+function showValidationPanel(issues) {
+  let m = document.getElementById("validateModal");
+  if (m) m.remove();
+  const list = h("div", { class: "val-list" });
+  issues.forEach(i => list.append(h("div", { class: "val-item val-" + i.level },
+    h("span", { class: "val-lvl" }, i.level === "error" ? "\u2715" : "!"),
+    h("span", {}, i.message))));
+  m = h("div", { id: "validateModal", class: "modal open", onclick: e => { if (e.target === m) m.remove(); } },
+    h("div", { class: "modal-box" },
+      h("div", { class: "modal-title" }, issues.length + " " + t("validate_issues")),
+      list,
+      h("div", { class: "modal-actions" }, h("button", { class: "btn", onclick: () => m.remove() }, "OK"))));
+  document.body.append(m);
+}
 function setPvStatus(t) { $("#pvStatus").textContent = t; }
 
 function updateLangBtn() {
@@ -229,7 +287,7 @@ function updateLangBtn() {
 
 async function refreshLivePreview() {
   if (!S.slug) return;
-  setPvStatus(t("updating"));
+  setPvStatus(t("updating")); showPreviewLoading();
   try {
     const r = await fetch(`/api/projects/${S.slug}/preview`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
     const html = await r.text();
@@ -239,6 +297,7 @@ async function refreshLivePreview() {
     f.srcdoc = html;
     setPvStatus(t("uptodate"));
   } catch (e) { setPvStatus(t("err")); }
+  finally { hidePreviewLoading(); }
 }
 function setPreviewVisible(vis) {
   S.previewVisible = vis;
@@ -273,6 +332,7 @@ async function init() {
   await refreshProjects();
   bindUI();
   { let l = "es"; try { l = localStorage.getItem("rg.uiLang") || "es"; } catch (_) {} S.uiLang = l; }
+  { let th = "dark"; try { th = localStorage.getItem("rg.uiTheme") || "dark"; } catch (_) {} applyUiTheme(th); }
   updateLangBtn(); applyStaticI18n();
   if (S.projects.length) loadProject(S.projects[0].slug);
   hideSplash();
@@ -292,7 +352,7 @@ async function refreshProjects() {
   S.projects.forEach(p => sel.append(h("option", { value: p.slug }, `${p.title} [${p.theme}/${p.lang}]`)));
 }
 async function loadProject(slug) {
-  S.slug = slug;
+  S.slug = slug; S.dashFilter = null;
   S.data = await api.get(`/api/projects/${slug}`);
   S.data.findings = S.data.findings || [];
   S.data.report = S.data.report || { sections: [] };
@@ -411,6 +471,79 @@ function renderMain() {
   else el.append(findingEditor(S.data.findings[S.sel.idx]));
 }
 
+function findingsDashboard() {
+  const box = h("div", {});
+  const all = (S.data.findings || []);
+  const vulns = all.filter(f => f.mode !== "machine");
+  const machines = all.filter(f => f.mode === "machine");
+  const counts = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
+  vulns.forEach(f => { if (counts[f.severity] != null) counts[f.severity]++; });
+  const totalV = vulns.length;
+  // barra de distribución
+  if (totalV) {
+    const bar = h("div", { class: "dash-bar" });
+    SEV.forEach(([k]) => { if (counts[k]) bar.append(h("span", { class: "dash-bar-seg sev-" + k, style: "flex:" + counts[k] })); });
+    box.append(bar);
+  }
+  // píldoras clicables (filtro por severidad)
+  const sumBar = h("div", { class: "dash-summary" });
+  SEV.forEach(([k, lab]) => sumBar.append(h("button", {
+    class: "dash-pill sev-" + k + (S.dashFilter === k ? " active" : ""),
+    onclick: () => { S.dashFilter = S.dashFilter === k ? null : k; renderMain(); }
+  }, String(counts[k]), h("small", {}, lab))));
+  if (machines.length) sumBar.append(h("button", {
+    class: "dash-pill sev-machine" + (S.dashFilter === "machine" ? " active" : ""),
+    onclick: () => { S.dashFilter = S.dashFilter === "machine" ? null : "machine"; renderMain(); }
+  }, String(machines.length), h("small", {}, t("dash_machine"))));
+  box.append(sumBar);
+  if (!all.length) { box.append(h("p", { class: "dash-empty" }, t("dash_empty"))); return box; }
+  // conmutador de orden: severidad (defecto) o manual (arrastrable)
+  const sortMode = S.dashSort || "sev";
+  const toolbar = h("div", { class: "dash-toolbar" },
+    h("button", { class: "dash-tab" + (sortMode === "sev" ? " active" : ""), onclick: () => { S.dashSort = "sev"; renderMain(); } }, t("dash_sort_sev")),
+    h("button", { class: "dash-tab" + (sortMode === "manual" ? " active" : ""), onclick: () => { S.dashSort = "manual"; renderMain(); } }, t("dash_sort_manual")));
+  box.append(toolbar);
+  let rows = all.map((f, idx) => ({ f, idx }));
+  if (sortMode === "sev") {
+    rows.sort((a, b) => {
+      const am = a.f.mode === "machine", bm = b.f.mode === "machine";
+      if (am !== bm) return am ? 1 : -1;
+      if (am) return 0;
+      return (SEV_RANK[a.f.severity] ?? 9) - (SEV_RANK[b.f.severity] ?? 9);
+    });
+  }
+  if (S.dashFilter) rows = rows.filter(({ f }) => S.dashFilter === "machine" ? f.mode === "machine" : (f.mode !== "machine" && f.severity === S.dashFilter));
+  const canDrag = sortMode === "manual" && !S.dashFilter;
+  const tbl = h("table", { class: "dash-table" });
+  tbl.append(h("thead", {}, h("tr", {},
+    canDrag ? h("th", { class: "c-drag" }, "") : null,
+    h("th", { class: "c-n" }, "#"), h("th", {}, t("dash_sev")), h("th", {}, t("dash_finding")),
+    h("th", {}, t("dash_cwe")), h("th", { class: "c-cvss" }, t("dash_cvss")))));
+  const tb = h("tbody", {});
+  rows.forEach(({ f, idx }) => {
+    const isM = f.mode === "machine";
+    const sevCell = isM
+      ? h("span", { class: "tag sev-machine" }, t("dash_machine"))
+      : h("span", { class: "tag sev-" + (f.severity || "info") }, (SEV.find(s => s[0] === f.severity) || [, f.severity || "—"])[1]);
+    const cwe = (f.cwe || "").split(" —")[0].split(" -")[0].trim();
+    const cvss = isM ? "—" : (f.cvss ? f.cvss + (f.cvss_version ? "  (" + f.cvss_version + ")" : "") : "—");
+    const host = isM && f.host ? (f.host.name || f.host.ip || "") : "";
+    const incomplete = !isM && (!f.cvss || !cwe);
+    const title = h("td", { class: "c-title" }, f.title || (isM ? host : "—"));
+    if (incomplete) title.append(h("span", { class: "dash-warn", title: t("dash_incomplete") }, "!"));
+    const tr = h("tr", { class: "dash-row", onclick: e => { if (!e.target.closest(".drag")) select("finding", idx); } },
+      canDrag ? h("td", { class: "c-drag" }, dragHandle(S.data.findings, idx)) : null,
+      h("td", { class: "c-n" }, f.id || ("F" + (idx + 1))),
+      h("td", {}, sevCell), title,
+      h("td", { class: "c-cwe" }, isM ? host : (cwe || "—")),
+      h("td", { class: "c-cvss" }, cvss));
+    if (canDrag) makeDropZone(tr, S.data.findings, idx);
+    tb.append(tr);
+  });
+  tbl.append(tb);
+  box.append(tbl);
+  return box;
+}
 function noteCard(text) {
   return h("div", { class: "card" }, h("p", { style: "margin:0;color:var(--muted)" }, text));
 }
@@ -449,7 +582,7 @@ function sectionEditor(key) {
 
   if (sp === "contacts") { wrap.append(contactsEditor()); return wrap; }
   if (sp === "summary") { wrap.append(noteCard(t("note_summary"))); return wrap; }
-  if (sp === "findings") { wrap.append(noteCard(t("note_findings"))); return wrap; }
+  if (sp === "findings") { wrap.append(findingsDashboard()); return wrap; }
 
   // Campos genéricos (resumen ejecutivo, metodología, objetivos del alcance, apéndices en texto…)
   const fields = schema.fields || [];
@@ -738,9 +871,52 @@ const CVSS4_OPTS = {
   SI: [["H", "High"], ["L", "Low"], ["N", "None"]], SA: [["H", "High"], ["L", "Low"], ["N", "None"]],
 };
 
+const METRIC_NAME = {
+  es: { AV:"Vector de ataque", AC:"Complejidad", AT:"Requisitos", PR:"Privilegios", UI:"Interacción",
+        VC:"Confidencialidad", VI:"Integridad", VA:"Disponibilidad",
+        SC:"Conf. posterior", SI:"Integr. posterior", SA:"Disp. posterior",
+        S:"Alcance", C:"Confidencialidad", I:"Integridad", A:"Disponibilidad" },
+  en: { AV:"Attack vector", AC:"Complexity", AT:"Requirements", PR:"Privileges", UI:"Interaction",
+        VC:"Confidentiality", VI:"Integrity", VA:"Availability",
+        SC:"Subseq. conf.", SI:"Subseq. integ.", SA:"Subseq. avail.",
+        S:"Scope", C:"Confidentiality", I:"Integrity", A:"Availability" }
+};
+function cvssMetricLabel(k, val, version) {
+  const opts = version === "4.0" ? CVSS4_OPTS[k] : (CV.OPTS || {})[k];
+  const o = (opts || []).find(x => x[0] === val);
+  return o ? o[1] : (val || "—");
+}
+function cvssPanel(r, dict, version) {
+  const lang = S.uiLang || "es";
+  const nm = METRIC_NAME[lang] || METRIC_NAME.es;
+  const wrap = h("div", { class: "cvss-panel" });
+  const top = h("div", { class: "cvss-panel-top" });
+  top.append(h("div", { class: "cvss-scorecard sc-" + r.severity },
+    h("div", { class: "cvss-score-big" }, r.score.toFixed(1)),
+    h("div", { class: "tag sev-" + r.severity }, r.severity)));
+  if (version === "4.0" && r.macrovector) {
+    top.append(h("div", { class: "cvss-mvcard" },
+      h("div", { class: "cvss-mv-lbl" }, "MacroVector"),
+      h("div", { class: "cvss-mv-val" }, r.macrovector),
+      h("div", { class: "cvss-mv-sub" }, "CVSS 4.0")));
+  } else {
+    top.append(h("div", { class: "cvss-mvcard" },
+      h("div", { class: "cvss-mv-lbl" }, lang === "es" ? "Versión" : "Version"),
+      h("div", { class: "cvss-mv-val" }, "CVSS " + version)));
+  }
+  wrap.append(top);
+  const keys = version === "4.0" ? CVSS4_BASE : CV.M;
+  const grid = h("div", { class: "cvss-metrics" });
+  keys.forEach(k => grid.append(h("div", { class: "cvss-metric" },
+    h("span", { class: "cm-k" }, nm[k] || k),
+    h("span", { class: "cm-v" }, cvssMetricLabel(k, dict[k], version)))));
+  wrap.append(h("div", { class: "cvss-metrics-title" }, lang === "es" ? "Métricas principales" : "Key metrics"), grid);
+  wrap.append(h("div", { class: "cvss-vecrow" }, h("code", { class: "cvss-vec" }, r.vector), copyVectorBtn(r.vector)));
+  return wrap;
+}
 function copyVectorBtn(vector) {
   const b = h("button", { class: "btn sm", style: "padding:3px 9px;flex:none", title: t("copy_vector"),
-    onclick: () => { if (navigator.clipboard) navigator.clipboard.writeText(vector);
+    onclick: () => { if (navigator.clipboard) (navigator.clipboard ? navigator.clipboard.writeText(vector) : Promise.resolve());
       const o = b.textContent; b.textContent = "\u2713"; setTimeout(() => { b.textContent = o; }, 1000); } }, "\u29C9");
   return b;
 }
@@ -793,9 +969,7 @@ function cvss31Widget(f, sevSel) {
     f.cvss = String(r.score); f.cvss_vector = r.vector; f.severity = r.severity;
     if (sevSel) sevSel.value = r.severity;
     out.innerHTML = "";
-    out.append(h("span", { class: "cvss-score" }, r.score.toFixed(1)),
-      h("span", { class: "tag sev-" + r.severity }, r.severity),
-      h("span", { class: "cvss-vec" }, r.vector), copyVectorBtn(r.vector));
+    out.append(cvssPanel(r, metrics, "3.1"));
     scheduleSave(); renderSidebar();
   }
   CV.M.forEach(k => {
@@ -805,9 +979,7 @@ function cvss31Widget(f, sevSel) {
   });
   c.append(bx, out);
   const r0 = cvssCompute(metrics);
-  out.append(h("span", { class: "cvss-score" }, r0.score.toFixed(1)),
-    h("span", { class: "tag sev-" + r0.severity }, r0.severity),
-    h("span", { class: "cvss-vec" }, r0.vector), copyVectorBtn(r0.vector));
+  out.append(cvssPanel(r0, metrics, "3.1"));
   return c;
 }
 
@@ -824,10 +996,7 @@ function cvss4Widget(f, sevSel) {
   const out = h("div", { class: "cvssout" });
   function draw(r) {
     out.innerHTML = "";
-    out.append(h("span", { class: "cvss-score" }, r.score.toFixed(1)),
-      h("span", { class: "tag sev-" + r.severity }, r.severity),
-      h("span", { class: "cvss-vec" }, r.vector),
-      h("span", { class: "cvss-vec" }, "MV " + r.macrovector), copyVectorBtn(r.vector));
+    out.append(cvssPanel(r, base, "4.0"));
   }
   function refresh() {
     const r = C.score(C.buildVector(base));  // toda la logica 4.0 en cvss40.js
@@ -974,24 +1143,31 @@ function insertOwasp(it) {
 // ---- preview / descarga ----------------------------------------------------
 async function renderPdf(download) {
   if (!S.slug) return;
-  setSaveState(t("updating"));
-  const r = await fetch(`/api/projects/${S.slug}/render`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
-  if (!r.ok) { setSaveState(t("err")); const t = await r.json().catch(() => ({})); alert("Render: " + (t.error || r.status)); return; }
-  const blob = await r.blob(); const url = URL.createObjectURL(blob);
-  if (download) { const a = h("a", { href: url, download: (S.slug || "informe") + ".pdf" }); a.click(); }
-  else { const f = $("#pdfPreview"); f.removeAttribute("sandbox"); f.removeAttribute("srcdoc"); f.setAttribute("src", url); }
-  setSaveState(t("saved"));
+  setSaveState(t("updating")); if (!download) showPreviewLoading();
+  try {
+    const r = await fetch(`/api/projects/${S.slug}/render`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); setSaveState(t("err")); toast("Render: " + (e.error || r.status), "err"); return; }
+    const blob = await r.blob(); const url = URL.createObjectURL(blob);
+    if (download) { const a = h("a", { href: url, download: (S.slug || "informe") + ".pdf" }); a.click(); }
+    else { const f = $("#pdfPreview"); f.removeAttribute("sandbox"); f.removeAttribute("srcdoc"); f.setAttribute("src", url); }
+    setSaveState(t("saved"));
+  } finally { if (!download) hidePreviewLoading(); }
 }
 
 async function exportFile() {
   if (!S.slug) return;
   const fmt = $("#exportFormat").value;
-  setSaveState("exportando " + fmt + "…");
-  const r = await fetch(`/api/projects/${S.slug}/export/${fmt}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
-  if (!r.ok) { setSaveState(t("err")); const t = await r.json().catch(() => ({})); alert("Export: " + (t.error || r.status)); return; }
-  const blob = await r.blob(); const url = URL.createObjectURL(blob);
-  const a = h("a", { href: url, download: (S.slug || "informe") + "." + fmt }); a.click();
-  setSaveState("exportado (" + fmt + ")");
+  const btn = $("#downloadBtn");
+  btn.disabled = true; const prev = btn.textContent; btn.textContent = t("exporting") + " " + fmt.toUpperCase() + "\u2026";
+  setSaveState(t("exporting") + " " + fmt + "\u2026");
+  try {
+    const r = await fetch(`/api/projects/${S.slug}/export/${fmt}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
+    if (!r.ok) { const e = await r.json().catch(() => ({})); setSaveState(t("err")); toast("Export: " + (e.error || r.status), "err"); return; }
+    const blob = await r.blob(); const url = URL.createObjectURL(blob);
+    const a = h("a", { href: url, download: (S.slug || "informe") + "." + fmt }); a.click();
+    URL.revokeObjectURL(url);
+    setSaveState(t("saved")); toast(t("toast_exported") + " \u00b7 " + fmt.toUpperCase(), "ok");
+  } finally { btn.disabled = false; btn.textContent = prev; }
 }
 
 // ---- UI binding ------------------------------------------------------------
@@ -1079,6 +1255,17 @@ function bindUI() {
   $("#pvLive").addEventListener("click", () => setPreviewMode("live"));
   $("#pvPdf").addEventListener("click", () => setPreviewMode("pdf"));
   $("#langToggle").addEventListener("click", toggleUiLang);
+  $("#themeToggle").addEventListener("click", toggleUiTheme);
+  $("#validateBtn").addEventListener("click", runValidation);
+  document.addEventListener("keydown", e => {
+    const mod = e.ctrlKey || e.metaKey;
+    if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); const s = $("#globalSearch"); if (s) s.focus(); }
+    else if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); if (S.slug) { doSave(); toast(t("saved"), "ok"); } }
+    else if (e.key === "Escape") {
+      document.querySelectorAll(".modal.open").forEach(m => m.id === "validateModal" ? m.remove() : m.classList.remove("open"));
+      const sr = $("#searchResults"); if (sr) sr.classList.remove("open");
+    }
+  });
   $("#downloadBtn").addEventListener("click", exportFile);
   $("#owaspCancel").addEventListener("click", () => $("#owaspModal").classList.remove("open"));
   $("#manageSections").addEventListener("click", openSectionsModal);
@@ -1139,7 +1326,7 @@ async function createProject() {
   const { slug } = await r.json();
   $("#newModal").classList.remove("open");
   $("#mTitle").value = $("#mClient").value = $("#mSlug").value = "";
-  await refreshProjects(); loadProject(slug);
+  await refreshProjects(); loadProject(slug); toast(t("toast_created"), "ok");
 }
 
 init().catch(e => { console.error(e); }).finally(() => { try { hideSplash(); } catch (_) {} });
