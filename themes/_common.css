@@ -139,3 +139,12 @@ figure.mdfig { margin: 10px 0; text-align: center; }
 figure.mdfig img { display: inline-block; width: auto; max-width: 100%; max-height: none; object-fit: initial; border: 1px solid var(--rule, #ddd); border-radius: 3px; }
 figure.mdfig figcaption { font-size: 8.5pt; color: var(--muted, #666); margin-top: 4px; font-style: italic; }
 .sev-chip.sev-machine { background: var(--panel2, #eef); color: var(--muted, #555); border: 1px solid var(--rule, #ccc); }
+
+/* imagenes de portada (logos + imagen representativa) */
+.cv-logos { display: flex; gap: 10mm; align-items: center; margin-top: 8mm; }
+.cv-logo { max-height: 22mm; max-width: 62mm; object-fit: contain; }
+.cv-image { margin-top: 10mm; }
+.cv-image img { display: block; max-width: 100%; max-height: 92mm; object-fit: contain; }
+
+/* pie de portada (confidencialidad) — oculto salvo temas que lo activan */
+.cover-foot { display: none; }

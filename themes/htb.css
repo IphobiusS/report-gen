@@ -1,0 +1,52 @@
+/* themes/htb.css | diseño propio oscuro "estilo laboratorio" (familia HTB).
+   Fondo oscuro de punta a punta, acento verde-lima, cabeceras mono, portada tipo
+   terminal. Evocador del ecosistema de labs; NO reproduce ninguna plantilla oficial
+   de Hack The Box (diseño e implementación propios). Pensado para envío digital. */
+@import "_common.css";
+
+:root {
+  --ink: #e8eef4; --ink-soft: #b9c6d3; --muted: #7f8ca0; --rule: #223041;
+  --panel: #16212f; --paper: #0d1621;
+  --accent: #9fef00; --accent-ink: #9fef00; --cyan: #37d3b8; --cyan-ink: #37d3b8;
+  --sev-critical: #ff4d5e; --sev-high: #ff8c42; --sev-medium: #ffcf3f; --sev-low: #57d977; --sev-info: #4fc3d6;
+
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", "DejaVu Sans Mono", monospace;
+  --font-body: "IBM Plex Sans", "Carlito", "DejaVu Sans", sans-serif;
+  --font-display: "JetBrains Mono", "IBM Plex Mono", "DejaVu Sans Mono", monospace;
+  --font-heading: "JetBrains Mono", "IBM Plex Mono", "DejaVu Sans Mono", monospace;
+
+  --code-bg: #060d15;
+  --code-inline-bg: #16212f; --code-inline-fg: #9fef00; --code-inline-border: #2a3a4d;
+
+  --cover-bg: #0a121b; --cover-fg: #e8eef4; --cover-muted: #8aa0ad; --cover-title: #ffffff;
+  --cover-subtitle: #9fef00; --cover-rule: #9fef00; --cover-wordmark: #9fef00;
+  --cover-tag-fg: #9fef00; --cover-tag-border: #2f5f1a; --cover-meta-border: #223041;
+}
+
+/* fondo oscuro en TODA la hoja (incluye márgenes) */
+html { background: #0d1621; }
+@page { background: #0d1621; }
+
+/* código: cabeceras/valores más legibles sobre oscuro */
+.sec-title { border-bottom-color: var(--accent); }
+.sec-num { color: var(--accent); }
+.sumlink, .toc-list a { color: var(--ink); }
+pre.cmd { color: #d7f7c2; }
+
+/* portada: disposición centrada (logo propio arriba, logo cliente debajo,
+   título centrado, meta abajo-dcha, pie de confidencialidad). Diseño propio. */
+.cover { text-align: center; padding: 20mm 22mm; }
+.cover-top { display: none; }
+.cv-logos { display: block; text-align: center; margin-top: 8mm; }
+.cv-logo { display: block; height: 22mm; width: auto; max-width: 120mm; margin: 0 auto; }
+.cv-logo-client { display: inline-block; height: 30mm; width: auto; max-width: 130mm; background: #2c333d; padding: 6mm 12mm; border-radius: 3px; margin-top: 40mm; }
+.cover-main { margin-top: 48mm; }
+.cv-rule { display: none; }
+.cv-title { font-size: 25pt; }
+.cv-subtitle::before { content: ""; }
+.cover-meta { margin-top: auto; margin-left: auto; margin-right: 0; width: auto; text-align: right; }
+.cover-meta th { text-align: right; border: none; color: var(--cover-muted); padding: 2px 0; background: none; }
+.cover-meta td { border: none; padding: 2px 0 2px 10px; font-size: 10.5pt; }
+.cover-meta tr:first-child td { color: var(--accent); font-weight: 700; font-size: 12pt; }
+.cover-foot { display: block; margin-top: 7mm; border-top: 1px dotted var(--cover-meta-border);
+  padding-top: 4mm; font-family: var(--font-mono); font-size: 7.5pt; letter-spacing: 1px; color: var(--cover-muted); }

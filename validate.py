@@ -111,7 +111,9 @@ def validate(data, known_section_keys=None):
                 issues.append(("warning", "no se validaron las secciones: catalogo no disponible"))
         else:
             for s in sections_list:
-                if s.get("key") not in keys:
+                # las secciones genericas (apendices a medida) llevan titulo propio y no
+                # estan en el catalogo: son validas, no un error.
+                if s.get("key") not in keys and not s.get("title"):
                     issues.append(("error", f"seccion desconocida en el catalogo: {s.get('key')!r}"))
 
     return issues

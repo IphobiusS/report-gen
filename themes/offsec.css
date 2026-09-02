@@ -1,0 +1,45 @@
+/* themes/offsec.css | diseño propio "estilo examen/certificación" (familia OffSec).
+   Sobrio y reutilizable: claro, sans limpio, azul acero, banda lateral fina.
+   Pensado para informes de examen reales de cualquier pentester (neutro, el diseño
+   no compite con el contenido). Diseño e implementación propios. */
+@import "_common.css";
+
+:root {
+  --ink: #16202e; --ink-soft: #33404f; --muted: #5c6675; --rule: #dde2e9;
+  --panel: #eef1f5; --paper: #ffffff;
+  --accent: #1b3a5b; --accent-ink: #14314f; --cyan: #2a6f97; --cyan-ink: #22597a;
+  --sev-critical: #a4161a; --sev-high: #bc4b00; --sev-medium: #9c7a00; --sev-low: #2d6a24; --sev-info: #1b6a86;
+
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", "DejaVu Sans Mono", monospace;
+  --font-body: "Carlito", "IBM Plex Sans", "DejaVu Sans", sans-serif;
+  --font-display: "Carlito", "IBM Plex Sans", "DejaVu Sans", sans-serif;
+  --font-heading: "Carlito", "IBM Plex Sans", "DejaVu Sans", sans-serif;
+
+  --code-bg: #16202e;
+  --code-inline-bg: #eef1f5; --code-inline-fg: #14314f; --code-inline-border: #ccd5e0;
+
+  --cover-bg: #ffffff; --cover-fg: #16202e; --cover-muted: #5c6675; --cover-title: #102338;
+  --cover-subtitle: #1b3a5b; --cover-rule: #1b3a5b; --cover-wordmark: #14314f;
+  --cover-tag-fg: #14314f; --cover-tag-border: #1b3a5b; --cover-meta-border: #dde2e9;
+}
+
+/* portada: disposición centrada y apilada (título arriba, meta al centro, imagen
+   representativa al centro, aviso al pie). Diseño propio, sin banda lateral. */
+.cover { align-items: center; text-align: center; padding: 22mm 24mm 14mm; border-left: none; }
+.cover-top { display: none; }
+.cover-main { margin-top: 8mm; }
+.cv-rule { display: none; }
+.cv-title { font-size: 28pt; line-height: 1.18; }
+.cv-subtitle { text-transform: uppercase; letter-spacing: 3px; font-size: 9.5pt; color: var(--muted); margin-top: 6px; }
+.cover-meta { margin: 10mm auto 0; width: auto; border-collapse: collapse; }
+.cover-meta th, .cover-meta td { display: table-cell; border: 1px solid var(--rule); padding: 5px 16px; font-size: 11pt; text-align: left; }
+.cover-meta th { background: #2b3138; color: #ffffff; font-weight: 700; }
+.cover-meta td { background: #ffffff; color: var(--ink); }
+.cv-image { margin: auto auto 0; }
+.cv-image img { max-height: 108mm; }
+.cover-foot { display: block; margin-top: auto; padding-top: 6mm; font-size: 8pt; color: var(--muted);
+  border-top: 1px solid var(--cover-meta-border); max-width: 130mm; line-height: 1.5; }
+
+/* cabeceras de seccion: banda fina de acento, sin adornos */
+.sec-title { border-bottom: 2px solid var(--accent); padding-left: 9px; border-left: 4px solid var(--accent); }
+.sec-num { color: var(--accent); }

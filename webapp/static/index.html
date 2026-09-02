@@ -8,6 +8,12 @@
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+<div id="splash" aria-hidden="true">
+  <div class="splash-inner">
+    <img src="/static/logo.png" class="splash-logo" alt="">
+    <div class="splash-name">report<span>-gen</span></div>
+  </div>
+</div>
 <header class="topbar">
   <div class="brand"><img src="/static/logo.png" class="brand-logo" alt="report-gen"> report<span>-gen</span></div>
   <div class="proj">
@@ -76,9 +82,15 @@
     <label><span data-i18n="preset_label">Plantilla</span>
       <select id="mPreset"></select>
     </label>
+    <label id="mCertRow" style="display:none"><span data-i18n="cert_label">Certificación</span>
+      <select id="mCert"></select>
+    </label>
     <p class="modal-hint" id="mPresetDesc"></p>
-    <label><span data-i18n="model_design">Modelo / diseño</span>
-      <select id="mDesign"></select>
+    <label><span data-i18n="lang_label">Idioma</span>
+      <select id="mLang">
+        <option value="corporativo-es">Español</option>
+        <option value="corporativo-en">English</option>
+      </select>
     </label>
     <label><span data-i18n="report_title">Título del informe</span> <input id="mTitle" data-i18n-ph="report_title_ph" placeholder="Evaluación de Seguridad ..."></label>
     <label><span data-i18n="client">Cliente</span> <input id="mClient" data-i18n-ph="client_ph" placeholder="Cliente Ltd."></label>

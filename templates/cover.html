@@ -4,16 +4,27 @@
     <span class="cv-wordmark">{{ wordmark }}</span>
     <span class="cv-tag">{{ conf }}</span>
   </div>
+  {% set b = meta.branding or {} %}
+  {% if b.logo or b.client_logo %}
+  <div class="cv-logos">
+    {% if b.logo %}<img class="cv-logo" src="{{ engagement_dir }}{{ b.logo }}" alt="">{% endif %}
+    {% if b.client_logo %}<img class="cv-logo cv-logo-client" src="{{ engagement_dir }}{{ b.client_logo }}" alt="">{% endif %}
+  </div>
+  {% endif %}
   <div class="cover-main">
     <div class="cv-rule"></div>
     <h1 class="cv-title">{{ meta.report_title }}</h1>
     {% if meta.report_subtitle %}<p class="cv-subtitle">{{ meta.report_subtitle }}</p>{% endif %}
     <div class="cv-rule"></div>
   </div>
+  {% if b.cover_image %}<div class="cv-image"><img src="{{ engagement_dir }}{{ b.cover_image }}" alt=""></div>{% endif %}
   <table class="cover-meta">
     {% if meta.client %}<tr><th>{{ L.labels.client }}</th><td>{{ meta.client }}</td></tr>{% endif %}
-    <tr><th>{{ L.labels.cover_assessor }}</th><td>{{ meta.assessor }}{% if meta.assessor_title %} &middot; {{ meta.assessor_title }}{% endif %}</td></tr>
+    {% if meta.osid %}<tr><th>{{ L.labels.cover_osid }}</th><td>{{ meta.osid }}</td></tr>{% endif %}
+    {% if meta.email %}<tr><th>{{ L.labels.cover_email }}</th><td>{{ meta.email }}</td></tr>{% endif %}
+    {% if meta.assessor %}<tr><th>{{ L.labels.cover_assessor }}</th><td>{{ meta.assessor }}{% if meta.assessor_title %} &middot; {{ meta.assessor_title }}{% endif %}</td></tr>{% endif %}
     {% if meta.date %}<tr><th>{{ L.labels.cover_date }}</th><td>{{ meta.date }}</td></tr>{% endif %}
     {% if meta.version %}<tr><th>{{ L.labels.cover_version }}</th><td>{{ meta.version }}</td></tr>{% endif %}
   </table>
+  <div class="cover-foot">{{ conf }}</div>
 </section>

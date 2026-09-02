@@ -60,7 +60,8 @@ def test_presets_load_and_resolve():
     catalog_keys = {s["key"] for s in sections.load_catalog()["sections"]}
     for p in presets:
         for sec in sections.preset_sections(p["id"], "es"):
-            assert sec["key"] in catalog_keys  # todas las secciones existen
+            # cada seccion es del catalogo, o generica (apendice nombrado) con titulo propio
+            assert sec["key"] in catalog_keys or sec.get("title")
     # contenido base bilingue
     ctf_es = sections.preset_sections("ctf", "es")[0]
     ctf_en = sections.preset_sections("ctf", "en")[0]

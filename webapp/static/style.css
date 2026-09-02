@@ -168,3 +168,13 @@ textarea.grow { overflow: hidden; min-height: 92px; resize: none; }
 /* logo del topbar */
 .brand { display: flex; align-items: center; gap: 8px; }
 .brand-logo { height: 34px; width: 34px; }
+
+/* splash de arranque */
+#splash { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center;
+  background: var(--bg, #0d1621); transition: opacity .45s ease; }
+#splash.hide { opacity: 0; pointer-events: none; }
+.splash-inner { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.splash-logo { width: 76px; height: 76px; animation: splashpulse 1.4s ease-in-out infinite; }
+.splash-name { font-size: 26px; font-weight: 700; letter-spacing: .5px; color: var(--fg, #e8eef4); font-family: var(--mono, monospace); }
+.splash-name span { color: var(--accent, #4db6ac); }
+@keyframes splashpulse { 0%,100% { transform: scale(1); opacity: .85; } 50% { transform: scale(1.08); opacity: 1; } }

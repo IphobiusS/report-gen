@@ -47,6 +47,11 @@ def preset_sections(preset_id, lang="es"):
     out = []
     for sec in p["sections"]:
         entry = {"key": sec["key"]}
+        if sec.get("title"):
+            entry["title"] = sec["title"]           # renombrado de la seccion
+        if sec.get("body") is not None:
+            b = sec["body"]                          # cuerpo de seccion generica (apendices)
+            entry["body"] = (b.get(lang) or b.get("es") or "") if isinstance(b, dict) else b
         for field, bylang in (sec.get("content") or {}).items():
             if isinstance(bylang, dict):
                 entry[field] = bylang.get(lang) or bylang.get("es") or ""
@@ -65,8 +70,18 @@ def resolve_sections(data, L, lang):
         key = sec.get("key")
         schema = bykey.get(key)
         if not schema:
+            # seccion generica (sin schema): titulo propio + cuerpo markdown.
+            # Permite apendices nombrados (Appendix A - ...) y secciones a medida por preset.
+            if sec.get("title") or sec.get("body"):
+                out.append({
+                    "key": key or "sec",
+                    "title": sec.get("title") or key,
+                    "special": None,
+                    "fields": [{"key": "body", "type": "markdown", "label": "",
+                                "value": sec.get("body"), "default_lang": None}],
+                })
             continue
-        title = schema.get(f"title_{lang}") or schema.get("title_es") or key
+        title = sec.get("title") or schema.get(f"title_{lang}") or schema.get("title_es") or key
         item = {"key": key, "title": title, "special": schema.get("special"), "fields": []}
         for f in schema.get("fields") or []:
             fld = {

@@ -57,7 +57,7 @@ const I18N = {
     hide_preview:"Ocultar preview", show_preview:"Mostrar preview", preview_toggle_title:"Mostrar u ocultar la vista previa",
     ui_lang_title:"Idioma del sitio", update_preview:"Actualizar preview", export:"Exportar",
     rename:"Renombrar", rename_title:"Cambiar el nombre del proyecto (título del informe)", rename_prompt:"Nuevo nombre del proyecto:",
-    preset_label:"Plantilla", preset_note:"Los nombres «estilo OSCP/HTB» son descriptivos; no afiliado a OffSec ni Hack The Box.",
+    recommended:"recomendada", sec_title:"Título de la sección", sec_body:"Contenido (Markdown)", lang_label:"Idioma", cert_label:"Certificación", htb_family:"HTB (certificación)", preset_label:"Plantilla", preset_note:"Los nombres «estilo OSCP/HTB» son descriptivos; no afiliado a OffSec ni Hack The Box.",
     search_ph:"Buscar en el proyecto\u2026", search_none:"Sin resultados",
     export_format_title:"Formato de exportacion", project_title:"Proyecto",
     saved:"guardado", saving:"guardando\u2026", ready:"listo", uptodate:"al dia", updating:"actualizando\u2026", err:"error",
@@ -70,6 +70,7 @@ const I18N = {
     wordmark_ph:"ej. tu marca", byline_ph:"ej. Nombre / marca", target_ph:"ej. https://app.cliente.com",
     date:"Fecha (YYYY-MM-DD)", assessor:"Evaluador", assessor_title:"Cargo del evaluador", version:"Version",
     design:"Diseno", report_lang:"Idioma", wordmark:"Wordmark", byline:"Byline (pie)",
+    cover_image:"Imagen de portada", own_logo:"Tu logo", client_logo:"Logo del cliente", remove:"Quitar",
     conf_text:"Texto de confidencialidad", accent:"Color de acento",
     contacts_scope_note:"Los contactos y el alcance se editan en sus secciones (Contactos del engagement y Alcance y objetivos).",
     client_contacts:"Contactos del cliente", assessor_team:"Equipo evaluador", scope_targets:"Alcance (objetivos / targets)",
@@ -93,8 +94,7 @@ const I18N = {
     add_ref:"+ Referencia", evidence:"Evidencia (local.txt / proof.txt / flags)", ev_name:"Nombre", ev_value:"Valor / hash",
     note_summary:"Se genera automaticamente desde los hallazgos y sus severidades.",
     note_findings:"Los hallazgos se editan en el panel Hallazgos.",
-    note_appendix:"La tabla de evidencias (hosts, flags, hashes) se genera desde los hallazgos; arriba puedes anadir apendices en texto.",
-    model_design:"Modelo / diseno", report_title_ph:"Evaluacion de Seguridad ...", client_ph:"Cliente Ltd.",
+    note_appendix:"La tabla de evidencias (hosts, flags, hashes) se genera desde los hallazgos; arriba puedes anadir apendices en texto.", report_title_ph:"Evaluacion de Seguridad ...", client_ph:"Cliente Ltd.",
     slug_label:"Nombre de carpeta (slug)", slug_ph:"cliente-2026", cancel:"Cancelar", create:"Crear", close:"Cerrar",
     sections_modal_h:"Secciones del informe", sections_hint:"Activa las secciones que necesites. Las obligatorias no se pueden desmarcar.",
     done:"Listo", preview_head:"Vista previa", live:"Vivo",
@@ -109,7 +109,7 @@ const I18N = {
     hide_preview:"Hide preview", show_preview:"Show preview", preview_toggle_title:"Show or hide the preview",
     ui_lang_title:"Site language", update_preview:"Refresh preview", export:"Export",
     rename:"Rename", rename_title:"Rename the project (report title)", rename_prompt:"New project name:",
-    preset_label:"Template", preset_note:"«OSCP/HTB-style» names are descriptive; not affiliated with OffSec or Hack The Box.",
+    recommended:"recommended", sec_title:"Section title", sec_body:"Content (Markdown)", lang_label:"Language", cert_label:"Certification", htb_family:"HTB (certification)", preset_label:"Template", preset_note:"«OSCP/HTB-style» names are descriptive; not affiliated with OffSec or Hack The Box.",
     search_ph:"Search the project\u2026", search_none:"No results",
     export_format_title:"Export format", project_title:"Project",
     saved:"saved", saving:"saving\u2026", ready:"ready", uptodate:"up to date", updating:"updating\u2026", err:"error",
@@ -122,6 +122,7 @@ const I18N = {
     wordmark_ph:"e.g. your brand", byline_ph:"e.g. Name / brand", target_ph:"e.g. https://app.client.com",
     date:"Date (YYYY-MM-DD)", assessor:"Assessor", assessor_title:"Assessor title", version:"Version",
     design:"Theme", report_lang:"Language", wordmark:"Wordmark", byline:"Byline (footer)",
+    cover_image:"Cover image", own_logo:"Your logo", client_logo:"Client logo", remove:"Remove",
     conf_text:"Confidentiality text", accent:"Accent color",
     contacts_scope_note:"Contacts and scope are edited in their sections (Engagement contacts and Scope and objectives).",
     client_contacts:"Client contacts", assessor_team:"Assessment team", scope_targets:"Scope (objectives / targets)",
@@ -145,8 +146,7 @@ const I18N = {
     add_ref:"+ Reference", evidence:"Evidence (local.txt / proof.txt / flags)", ev_name:"Name", ev_value:"Value / hash",
     note_summary:"Auto-generated from the findings and their severities.",
     note_findings:"Findings are edited in the Findings panel.",
-    note_appendix:"The evidence table (hosts, flags, hashes) is generated from the findings; above you can add text appendices.",
-    model_design:"Model / theme", report_title_ph:"Security Assessment ...", client_ph:"Client Ltd.",
+    note_appendix:"The evidence table (hosts, flags, hashes) is generated from the findings; above you can add text appendices.", report_title_ph:"Security Assessment ...", client_ph:"Client Ltd.",
     slug_label:"Folder name (slug)", slug_ph:"client-2026", cancel:"Cancel", create:"Create", close:"Close",
     sections_modal_h:"Report sections", sections_hint:"Enable the sections you need. Required ones cannot be unchecked.",
     done:"Done", preview_head:"Preview", live:"Live",
@@ -275,6 +275,13 @@ async function init() {
   { let l = "es"; try { l = localStorage.getItem("rg.uiLang") || "es"; } catch (_) {} S.uiLang = l; }
   updateLangBtn(); applyStaticI18n();
   if (S.projects.length) loadProject(S.projects[0].slug);
+  hideSplash();
+}
+function hideSplash() {
+  const s = document.getElementById("splash");
+  if (!s) return;
+  s.classList.add("hide");
+  setTimeout(() => s.remove(), 500);
 }
 async function refreshProjects() {
   S.projects = await api.get("/api/projects");
@@ -288,7 +295,6 @@ async function loadProject(slug) {
   S.data.findings = S.data.findings || [];
   S.data.report = S.data.report || { sections: [] };
   S.data.report.sections = S.data.report.sections || [];
-  ensureRequiredSections();
   $("#projectSelect").value = slug;
   S.sel = { type: "report", idx: -1 };
   renderSidebar(); renderMain();
@@ -306,7 +312,7 @@ function renderSidebar() {
   secs.forEach((sec, i) => {
     const schema = S.catBy[sec.key] || {};
     const lang = (S.data.meta.lang || "es");
-    const title = schema["title_" + lang] || schema.title_es || sec.key;
+    const title = sec.title || schema["title_" + lang] || schema.title_es || sec.key;
     const li = h("li", { draggable: "true", class: S.sel.type === "section" && S.sel.key === sec.key ? "active" : "", onclick: () => select("section", sec.key) },
       h("span", { class: "ftitle" }, `${i + 1}. ${title}`),
       schema.special ? h("span", { class: "sect-badge" }, schema.special) : null);
@@ -428,8 +434,16 @@ function sectionEditor(key) {
   const lang = (S.data.meta.lang || "es");
   const sec = S.data.report.sections.find(s => s.key === key) || {};
   const wrap = h("div", {});
-  wrap.append(h("h2", {}, schema["title_" + lang] || schema.title_es || key));
+  const isGeneric = !S.catBy[key];
+  wrap.append(h("h2", {}, sec.title || schema["title_" + lang] || schema.title_es || key));
   const sp = schema.special;
+  if (isGeneric) {  // seccion a medida (apendice nombrado, etc.): titulo editable + cuerpo markdown
+    const c = h("div", { class: "card" });
+    c.append(field(t("sec_title"), sec, "title"));
+    c.append(mdEditor(t("sec_body"), sec, "body", { rows: 10 }));
+    wrap.append(c);
+    return wrap;
+  }
 
   if (sp === "contacts") { wrap.append(contactsEditor()); return wrap; }
   if (sp === "summary") { wrap.append(noteCard(t("note_summary"))); return wrap; }
@@ -570,10 +584,11 @@ function reportEditor() {
   const g = h("div", { class: "grid2" });
   g.append(field(t("client"), m, "client", { ph: t("client_ph") }), field(t("date"), m, "date", { type: "date" }),
            field(t("assessor"), m, "assessor", { ph: t("assessor_ph") }), field(t("assessor_title"), m, "assessor_title", { ph: t("assessor_title_ph") }),
-           field(t("version"), m, "version", { ph: t("version_ph") }));
+           field(t("version"), m, "version", { ph: t("version_ph") }),
+           field(t("osid"), m, "osid", { ph: t("osid_ph") }), field(t("email"), m, "email", { ph: t("email_ph") }));
   // diseño (theme) e idioma
   const themeSel = h("select", { onchange: e => { m.theme = e.target.value; scheduleSave(); } },
-    ["serio", "corporativo"].map(t => h("option", { value: t, selected: m.theme === t ? "" : null }, t)));
+    ["serio", "corporativo", "offsec", "htb"].map(t => h("option", { value: t, selected: m.theme === t ? "" : null }, t)));
   const langSel = h("select", { onchange: e => { m.lang = e.target.value; scheduleSave(); } },
     ["es", "en"].map(t => h("option", { value: t, selected: m.lang === t ? "" : null }, t)));
   g.append(h("label", {}, t("design"), themeSel), h("label", {}, t("report_lang"), langSel));
@@ -582,6 +597,7 @@ function reportEditor() {
   const g2 = h("div", { class: "grid2" });
   g2.append(field(t("wordmark"), b, "wordmark", { ph: t("wordmark_ph") }), field(t("byline"), b, "byline", { ph: t("byline_ph") }),
             field(t("conf_text"), b, "confidential_text"), field(t("accent"), b, "accent", { type: "color" }));
+  g2.append(coverImgField(b, "cover_image", t("cover_image")), coverImgField(b, "logo", t("own_logo")), coverImgField(b, "client_logo", t("client_logo")));
   c1.append(g2);
   wrap.append(c1);
   wrap.append(noteCard(t("contacts_scope_note")));
@@ -895,6 +911,19 @@ function stepBlock(steps, s, i) {
   b.append(figWrap);
   return b;
 }
+async function uploadCover(e, b, key) {
+  const file = e.target.files[0]; if (!file) return;
+  const fd = new FormData(); fd.append("file", file);
+  setSaveState(t("saving"));
+  const r = await fetch(`/api/projects/${S.slug}/image`, { method: "POST", body: fd }).then(x => x.json());
+  b[key] = r.src; scheduleSave(); renderMain();
+}
+function coverImgField(b, key, label) {
+  const wrap = h("label", {}, label);
+  wrap.append(h("input", { type: "file", accept: "image/*", onchange: e => uploadCover(e, b, key) }));
+  if (b[key]) wrap.append(h("button", { class: "btn sm danger", style: "margin-top:6px", onclick: () => { delete b[key]; scheduleSave(); renderMain(); } }, t("remove") + " · " + b[key].split("/").pop()));
+  return wrap;
+}
 async function uploadImage(e, s) {
   const file = e.target.files[0]; if (!file) return;
   const fd = new FormData(); fd.append("file", file);
@@ -974,16 +1003,12 @@ function enableSection(key) {
   secs.splice(idx, 0, { key });
 }
 function disableSection(key) {
-  if ((S.catBy[key] || {}).required) return;
   const secs = S.data.report.sections;
   const i = secs.findIndex(s => s.key === key);
   if (i >= 0) secs.splice(i, 1);
   if (S.sel.type === "section" && S.sel.key === key) S.sel = { type: "report", idx: -1 };
 }
 function toggleSection(key, on) { on ? enableSection(key) : disableSection(key); scheduleSave(); renderSidebar(); openSectionsModal(); renderMain(); }
-function ensureRequiredSections() {
-  (S.catalog.sections || []).filter(s => s.required).forEach(s => enableSection(s.key));
-}
 function openSectionsModal() {
   const cat = S.catalog, box = $("#sectionCatalog"); box.innerHTML = "";
   const lang = (S.data.meta.lang || "es");
@@ -995,18 +1020,46 @@ function openSectionsModal() {
     box.append(h("div", { class: "grp" }, g));
     secs.forEach(s => {
       const cb = h("input", { type: "checkbox" });
-      cb.checked = enabled.has(s.key) || !!s.required;
-      if (s.required) cb.disabled = true;
+      cb.checked = enabled.has(s.key);
       cb.addEventListener("change", () => toggleSection(s.key, cb.checked));
       box.append(h("label", { class: "optrow" }, cb,
         s["title_" + lang] || s.title_es,
-        s.required ? h("span", { class: "req-badge" }, "obligatoria") : null,
+        s.required ? h("span", { class: "req-badge" }, t("recommended")) : null,
         s.special ? h("span", { class: "sect-badge" }, " " + s.special) : null));
     });
   });
   $("#sectionsModal").classList.add("open");
 }
 
+function fillCertOptions(fam) {
+  const cm = $("#mCert"); cm.innerHTML = "";
+  const lg = S.uiLang || "es";
+  (S.presets || []).filter(p => p.family === fam).forEach(p => cm.append(h("option", { value: p.id }, p["cert_" + lg] || p.cert_es || p.id)));
+}
+function selectedPresetId() {
+  const v = $("#mPreset").value;
+  return v.startsWith("family:") ? $("#mCert").value : v;
+}
+function refreshPresetDesc() {
+  const v = $("#mPreset").value, fam = v.startsWith("family:") ? v.slice(7) : null;
+  $("#mCertRow").style.display = fam ? "" : "none";
+  if (fam && !$("#mCert").options.length) fillCertOptions(fam);
+  const sel = (S.presets || []).find(p => p.id === selectedPresetId());
+  const lg = S.uiLang || "es";
+  const d = sel ? (sel["desc_" + lg] || sel.desc_es || "") : "";
+  $("#mPresetDesc").textContent = d ? d + "  —  " + t("preset_note") : t("preset_note");
+}
+function populatePresetSelector() {
+  const pm = $("#mPreset"); if (!pm) return;
+  const lg = S.uiLang || "es";
+  pm.innerHTML = ""; const seen = new Set();
+  (S.presets || []).forEach(p => {
+    if (p.family) { if (!seen.has(p.family)) { seen.add(p.family); pm.append(h("option", { value: "family:" + p.family }, t(p.family + "_family"))); } }
+    else pm.append(h("option", { value: p.id }, p["name_" + lg] || p.name_es));
+  });
+  $("#mCert").innerHTML = "";
+  refreshPresetDesc();
+}
 function bindUI() {
   $("#projectSelect").addEventListener("change", e => loadProject(e.target.value));
   $("#navReport").addEventListener("click", () => select("report", -1));
@@ -1029,17 +1082,10 @@ function bindUI() {
   $("#manageSections").addEventListener("click", openSectionsModal);
   $("#sectionsClose").addEventListener("click", () => $("#sectionsModal").classList.remove("open"));
   // nuevo proyecto
-  const dm = $("#mDesign"); dm.innerHTML = "";
-  S.designs.forEach(d => dm.append(h("option", { value: d.key }, d.label)));
-  const pm = $("#mPreset"); pm.innerHTML = "";
-  (S.presets || []).forEach(p => pm.append(h("option", { value: p.id }, p["name_" + (S.uiLang || "es")] || p.name_es)));
-  function presetDesc() {
-    const sel = (S.presets || []).find(p => p.id === pm.value);
-    const d = sel ? (sel["desc_" + (S.uiLang || "es")] || sel.desc_es || "") : "";
-    $("#mPresetDesc").textContent = d ? d + "  —  " + t("preset_note") : t("preset_note");
-  }
-  pm.addEventListener("change", presetDesc); presetDesc();
-  $("#newProjectBtn").addEventListener("click", () => $("#newModal").classList.add("open"));
+  $("#mPreset").addEventListener("change", () => { const v = $("#mPreset").value; if (v.startsWith("family:")) fillCertOptions(v.slice(7)); refreshPresetDesc(); });
+  $("#mCert").addEventListener("change", refreshPresetDesc);
+  populatePresetSelector();
+  $("#newProjectBtn").addEventListener("click", () => { populatePresetSelector(); $("#newModal").classList.add("open"); });
   $("#deleteProjectBtn").addEventListener("click", deleteProject);
   $("#renameProjectBtn").addEventListener("click", renameProject);
   $("#mCancel").addEventListener("click", () => $("#newModal").classList.remove("open"));
@@ -1085,7 +1131,7 @@ function updateDeleteBtn() {
 }
 
 async function createProject() {
-  const body = { model: $("#mDesign").value, preset: $("#mPreset").value, title: $("#mTitle").value, client: $("#mClient").value, slug: $("#mSlug").value };
+  const body = { model: $("#mLang").value, preset: selectedPresetId(), title: $("#mTitle").value, client: $("#mClient").value, slug: $("#mSlug").value };
   const r = await api.post("/api/projects", body);
   if (!r.ok) { const resp = await r.json().catch(() => ({})); alert(resp.error || t("create_fail")); return; }
   const { slug } = await r.json();
@@ -1094,4 +1140,4 @@ async function createProject() {
   await refreshProjects(); loadProject(slug);
 }
 
-init();
+init().catch(e => { console.error(e); }).finally(() => { try { hideSplash(); } catch (_) {} });

@@ -2,7 +2,38 @@
 
 Formato basado en Keep a Changelog. Versionado semantico aproximado.
 
-## [Unreleased]
+## [0.10.0] - 2026-09-01
+
+### Anadido
+- Plantillas por tipo de informe con diseno propio: OffSec (estilo OSCP, claro/azul
+  acero, sans) y HTB (oscuro de punta a punta, verde-lima). Cada plantilla fija su
+  tema automaticamente al crear el proyecto.
+- Familia HTB con selector en dos pasos: al elegir "HTB (certificacion)" aparece un
+  2o selector con 8 certificaciones (CPTS, CWES, CAPE, COAE, CWEE, CWPE, CJCA, CDSA),
+  cada una con su estructura de secciones e indice propios y texto base bilingue.
+- Portadas con imagenes: logo propio y logo del cliente (HTB) e imagen representativa
+  del caso (OffSec), subibles desde el editor; disposicion vertical por tema.
+- Campos OSID y Email en la portada (para informes de examen), en tabla ordenada.
+- Secciones genericas con titulo propio (apendices nombrados A-G, Technical Analysis,
+  Exam Objectives, Phase 1/2, etc.), editables en el webapp y con entrada propia en
+  el indice.
+- Splash de arranque minimalista (patita + report-gen, fade-out al cargar).
+
+### Corregido
+- Coherencia editor <-> informe: el listado de secciones a la izquierda coincide
+  exactamente con el indice del informe en cada plantilla (se elimino el forzado de
+  secciones "obligatorias"; ahora son solo recomendadas y el preset manda).
+- El selector de plantillas del modal se repuebla al abrir, respetando el idioma de
+  la interfaz (antes quedaba en espanol al cambiar a ingles).
+- El validador ya no marca como error las secciones genericas (con titulo propio).
+- i18n completado en el modo maquina, el modo secciones y las nuevas etiquetas.
+
+### Nota de marca
+Los nombres "estilo OSCP/HTB" y las certificaciones (CPTS, CWES, etc.) son
+descriptivos. report-gen no esta afiliado ni respaldado por OffSec ni Hack The Box y
+no reproduce sus plantillas oficiales: los disenos, la estructura y el texto son
+propios; los logos los aporta el usuario.
+
 
 ### Anadido
 - Plantillas (presets) de secciones al crear proyecto: Pentest cliente, Examen de

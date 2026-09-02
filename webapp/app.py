@@ -112,7 +112,8 @@ def cwe_list():
 @app.route("/api/presets")
 def presets_list():
     return jsonify([{"id": p["id"], "name_es": p.get("name_es", p["id"]), "name_en": p.get("name_en", p["id"]),
-                     "desc_es": p.get("desc_es", ""), "desc_en": p.get("desc_en", "")}
+                     "desc_es": p.get("desc_es", ""), "desc_en": p.get("desc_en", ""), "theme": p.get("theme", ""),
+                     "family": p.get("family", ""), "cert_es": p.get("cert_es", ""), "cert_en": p.get("cert_en", "")}
                     for p in sectionlib.load_presets()])
 
 
@@ -195,6 +196,12 @@ def create_project():
         "scope": [],
     }
     preset = body.get("preset")
+    pdef = sectionlib.preset_by_id(preset) if preset else None
+    if pdef:  # la plantilla fija el diseno (tema + acento)
+        if pdef.get("theme") in ALLOWED_THEMES:
+            meta["theme"] = pdef["theme"]
+        if pdef.get("accent"):
+            meta["branding"]["accent"] = pdef["accent"]
     sections = sectionlib.preset_sections(preset, model["lang"]) if preset else sectionlib.default_enabled()
     report = {"sections": sections}
     dump_yaml({"meta": meta, "report": report, "findings": []}, d / "engagement.yaml")

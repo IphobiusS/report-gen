@@ -52,6 +52,8 @@ labels:
   file: "Archivo"
   hash: "Hash"
   cover_assessor: "Evaluador"
+  cover_osid: "OSID"
+  cover_email: "Email"
   cover_date: "Fecha"
   cover_version: "Versión"
 summary:
