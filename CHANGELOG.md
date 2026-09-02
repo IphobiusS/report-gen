@@ -2,36 +2,29 @@
 
 Formato basado en Keep a Changelog. Versionado semantico aproximado.
 
-## [Unreleased]
+## [0.11.0] - 2026-09-02
 
-### Corregido (UI/UX)
-- La barra de la vista previa (Vivo/PDF) ahora se adapta al tema claro/oscuro (antes
-  quedaba oscura en el tema claro).
-
-### Anadido (UI/UX)
+### Anadido
+- Dashboard de hallazgos (seccion Hallazgos): tabla Severidad/Hallazgo/CWE/CVSS con
+  resumen y barra de distribucion, conmutador de orden Severidad/Manual (en Manual se
+  reordena arrastrando), filtro por severidad y marcador de hallazgos incompletos
+  (sin CVSS/CWE).
+- Panel de resultados CVSS en el editor: tarjeta de puntuacion, tarjeta MacroVector y
+  metricas en lenguaje claro (3.1 y 4.0, bilingue).
+- Tema claro/oscuro de la interfaz (persistente), con boton en la barra superior.
 - Indicador de carga en la vista previa (patita giratoria + "Actualizando...") mientras
   se re-renderiza o se cambia el idioma del informe.
-- Tema claro/oscuro de la interfaz (persistente), boton en la barra superior.
-- Toasts de feedback (proyecto creado, exportado, copiado).
-- Estado de exportacion: el boton se deshabilita y muestra "Generando..." mientras
-  se genera el archivo.
-- Validacion visible: boton que revisa el informe y muestra un panel con los avisos
-  (incluye ahora hallazgos sin CVSS o sin titulo); el badge indica errores/avisos.
+- Toasts de feedback (proyecto creado, exportado, copiado) y estado de exportacion
+  (el boton muestra "Generando..." y se deshabilita hasta terminar).
+- Validacion visible: boton que revisa el informe y muestra un panel de avisos; incluye
+  ahora hallazgos sin CVSS o sin titulo, y el badge indica errores/avisos.
 - Atajos de teclado: Ctrl/Cmd+K (buscador), Ctrl/Cmd+S (guardar), Esc (cerrar).
-- Dashboard de hallazgos: conmutador de orden Severidad/Manual; en Manual se pueden
-  reordenar los hallazgos arrastrando.
 
 ### Corregido
 - El primer hallazgo ya no se separa del titulo de su seccion en el PDF (evita la
   pagina casi en blanco con solo el titulo): solo saltan de pagina los hallazgos que
-  siguen a otro (`.finding + .finding`).
-
-### Anadido
-- Dashboard de hallazgos (seccion Hallazgos): tabla Severidad/Hallazgo/CWE/CVSS
-  ordenada por severidad, barra de distribucion, filtro por severidad (clic en la
-  pildora) y marcador de hallazgos incompletos (sin CVSS/CWE).
-- Panel de resultados CVSS en el editor: tarjeta de puntuacion, tarjeta MacroVector y
-  metricas en lenguaje claro (3.1 y 4.0, bilingue).
+  siguen a otro.
+- La barra de la vista previa (Vivo/PDF) ahora se adapta al tema claro/oscuro.
 
 ## [0.10.0] - 2026-09-01
 
