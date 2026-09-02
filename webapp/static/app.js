@@ -100,7 +100,7 @@ const I18N = {
     done:"Listo", preview_head:"Vista previa", live:"Vivo",
     delete_finding_confirm:"¿Eliminar este hallazgo?", copy_vector:"Copiar vector", copied:"Copiado",
     cvss_paste_label:"Pegar vector", cvss_paste_ph:"pega un vector completo (con o sin CVSS:x.x/) y calcula solo",
-    cvss_paste_bad:"vector inválido para esta versión", duplicate_finding:"Duplicar",
+    cvss_paste_bad:"vector inválido para esta versión", duplicate_finding:"Duplicar", save_to_lib:"\u2605 Plantilla", lib_open:"\u2605 Biblioteca", lib_title:"Biblioteca de hallazgos", lib_empty:"No hay plantillas guardadas. Usa \u201c\u2605 Plantilla\u201d en un hallazgo.", lib_insert:"Insertar", lib_delete:"Eliminar", lib_saved:"Guardado en biblioteca", export_findings:"\u21e3 Exportar", import_findings:"\u21e1 Importar", findings_imported:"hallazgo(s) importado(s)", lib_name_prompt:"Nombre de la plantilla:",
     unsaved:"Hay cambios sin guardar. ¿Salir de todas formas?",
     create_fail:"No se pudo crear", delete_confirm:"Eliminar el proyecto \"{n}\"?\nEsto borra su informe y sus imagenes de forma permanente."
   },
@@ -152,7 +152,7 @@ const I18N = {
     done:"Done", preview_head:"Preview", live:"Live",
     delete_finding_confirm:"Delete this finding?", copy_vector:"Copy vector", copied:"Copied",
     cvss_paste_label:"Paste vector", cvss_paste_ph:"paste a full vector (with or without CVSS:x.x/) and it auto-calculates",
-    cvss_paste_bad:"invalid vector for this version", duplicate_finding:"Duplicate",
+    cvss_paste_bad:"invalid vector for this version", duplicate_finding:"Duplicate", save_to_lib:"\u2605 Template", lib_open:"\u2605 Library", lib_title:"Findings library", lib_empty:"No saved templates yet. Use \u201c\u2605 Template\u201d on a finding.", lib_insert:"Insert", lib_delete:"Delete", lib_saved:"Saved to library", export_findings:"\u21e3 Export", import_findings:"\u21e1 Import", findings_imported:"finding(s) imported", lib_name_prompt:"Template name:",
     unsaved:"You have unsaved changes. Leave anyway?",
     create_fail:"Could not create", delete_confirm:"Delete project \"{n}\"?\nThis permanently removes its report and images."
   }
@@ -255,7 +255,7 @@ async function runValidation() {
   if (!S.data) return;
   const badge = $("#validateBtn");
   try {
-    const r = await fetch("/api/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
+    const r = await fetch("/api/validate?lang=" + (S.uiLang || "es"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
     const d = await r.json(); const issues = d.issues || [];
     badge.classList.remove("has-err", "has-warn", "ok");
     if (!issues.length) { badge.classList.add("ok"); badge.textContent = "\u2713"; toast(t("validate_ok"), "ok"); return; }
@@ -765,6 +765,7 @@ function findingEditor(f) {
     const copy = JSON.parse(JSON.stringify(f)); copy.id = nextFid();
     S.data.findings.splice(S.sel.idx + 1, 0, copy); renumberFindings(); scheduleSave(); select("finding", S.sel.idx + 1);
   } }, t("duplicate_finding")));
+  head.append(h("button", { class: "btn sm", style: "float:right;margin-left:8px", onclick: () => saveToLibrary(f) }, t("save_to_lib")));
   head.append(h("button", { class: "btn sm danger", style: "float:right", onclick: () => { if (!confirm(t("delete_finding_confirm"))) return; S.data.findings.splice(S.sel.idx, 1); renumberFindings(); S.sel = { type: "report", idx: -1 }; scheduleSave(); renderSidebar(); renderMain(); } }, t("delete_finding")));
   wrap.append(head);
   wrap.append(f.mode === "machine" ? machineEditor(f) : vulnEditor(f));
@@ -1105,6 +1106,62 @@ async function uploadImage(e, s) {
 }
 
 // ---- OWASP + nuevo hallazgo ------------------------------------------------
+function libGet() { try { return JSON.parse(localStorage.getItem("rg.findingLib") || "[]"); } catch (_) { return []; } }
+function libSet(a) { try { localStorage.setItem("rg.findingLib", JSON.stringify(a)); } catch (_) {} }
+function saveToLibrary(f) {
+  const name = prompt(t("lib_name_prompt"), f.title || (f.host && f.host.name) || "Plantilla");
+  if (name === null) return;
+  const entry = JSON.parse(JSON.stringify(f)); delete entry.id;
+  entry.__name = name.trim() || (f.title || "Plantilla");
+  const lib = libGet(); lib.push(entry); libSet(lib);
+  toast(t("lib_saved"), "ok");
+}
+function openLibrary() {
+  let m = document.getElementById("libModal"); if (m) m.remove();
+  const lib = libGet();
+  const list = h("div", { class: "lib-list" });
+  if (!lib.length) list.append(h("p", { class: "dash-empty" }, t("lib_empty")));
+  lib.forEach((e, i) => {
+    list.append(h("div", { class: "lib-item" },
+      h("span", { class: "lib-sev sev-dot sev-" + (e.severity || "info") }),
+      h("span", { class: "lib-name" }, e.__name || e.title || ("#" + (i + 1))),
+      h("span", { class: "lib-meta" }, (e.mode === "machine" ? "machine" : (e.severity || "")) + (e.cvss ? " · " + e.cvss : "")),
+      h("button", { class: "btn sm primary", onclick: () => { insertFromLibrary(e); m.remove(); } }, t("lib_insert")),
+      h("button", { class: "btn sm danger", onclick: () => { const l = libGet(); l.splice(i, 1); libSet(l); openLibrary(); } }, t("lib_delete"))));
+  });
+  m = h("div", { id: "libModal", class: "modal open", onclick: e => { if (e.target === m) m.remove(); } },
+    h("div", { class: "modal-box wide" },
+      h("h3", {}, t("lib_title")), list,
+      h("div", { class: "modal-actions" }, h("button", { class: "btn", onclick: () => m.remove() }, "OK"))));
+  document.body.append(m);
+}
+function insertFromLibrary(e) {
+  if (!S.data) return;
+  const f = JSON.parse(JSON.stringify(e)); delete f.__name; f.id = nextFid();
+  S.data.findings.push(f); renumberFindings(); scheduleSave(); select("finding", S.data.findings.length - 1);
+}
+function exportFindings() {
+  if (!S.data) return;
+  const blob = new Blob([JSON.stringify(S.data.findings || [], null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = h("a", { href: url, download: (S.slug || "hallazgos") + "-findings.json" }); a.click(); URL.revokeObjectURL(url);
+}
+function importFindings(ev) {
+  const file = ev.target.files[0]; if (!file || !S.data) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      let arr = JSON.parse(rd.result);
+      if (!Array.isArray(arr)) arr = arr.findings || [];
+      let n = 0;
+      arr.forEach(f => { if (f && typeof f === "object") { const g = JSON.parse(JSON.stringify(f)); g.id = nextFid(); delete g.__name; S.data.findings.push(g); n++; } });
+      renumberFindings(); scheduleSave(); renderSidebar(); renderMain();
+      toast(n + " " + t("findings_imported"), "ok");
+    } catch (_) { toast(t("err"), "err"); }
+    ev.target.value = "";
+  };
+  rd.readAsText(file);
+}
 function addFinding(kind) {
   if (!S.data) return;
   if (kind === "blank") {
@@ -1242,6 +1299,10 @@ function bindUI() {
   $("#projectSelect").addEventListener("change", e => loadProject(e.target.value));
   $("#navReport").addEventListener("click", () => select("report", -1));
   document.querySelectorAll("[data-add]").forEach(b => b.addEventListener("click", () => addFinding(b.dataset.add)));
+  { const lb = $("#libBtn"); if (lb) lb.addEventListener("click", openLibrary); }
+  { const eb = $("#exportFindingsBtn"); if (eb) eb.addEventListener("click", exportFindings); }
+  { const ib = $("#importFindingsBtn"); if (ib) ib.addEventListener("click", () => $("#importFindingsInput").click()); }
+  { const ii = $("#importFindingsInput"); if (ii) ii.addEventListener("change", importFindings); }
   {
     const si = $("#globalSearch"); let st = null;
     si.addEventListener("input", e => { clearTimeout(st); st = setTimeout(() => renderSearch(e.target.value), 120); });

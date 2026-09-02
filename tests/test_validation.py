@@ -77,3 +77,17 @@ def test_cvss_40_vectors_not_flagged():
     assert not warns("CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:L/VI:N/VA:N/SC:N/SI:N/SA:N")
     assert not warns("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N")
     assert warns("CVSS:4.0/AV:X/AC:L")  # malformado sí
+
+
+def test_english_messages():
+    data = {"findings": [{"id": "F1", "mode": "machine"}, {"id": "F2", "mode": "vuln"}]}
+    issues = validate.validate(data, known_section_keys=KEYS, lang="en")
+    msgs = " ".join(m for _, m in issues).lower()
+    assert "without host block" in msgs
+    assert "without cvss score" in msgs
+
+
+def test_spanish_is_default():
+    data = {"findings": [{"id": "M1", "mode": "machine"}]}
+    issues = validate.validate(data, known_section_keys=KEYS)
+    assert any("sin bloque host" in m.lower() for _, m in issues)

@@ -2,6 +2,14 @@
 
 Formato basado en Keep a Changelog. Versionado semantico aproximado.
 
+## [Unreleased]
+
+### Anadido
+- Biblioteca de hallazgos reutilizables (guardar un hallazgo como plantilla e
+  insertarlo despues; se guarda en el navegador).
+- Importar / exportar hallazgos en JSON.
+- Mensajes de validacion bilingues (ES/EN) segun el idioma de la interfaz.
+
 ## [0.11.0] - 2026-09-02
 
 ### Anadido

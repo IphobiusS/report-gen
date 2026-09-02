@@ -60,6 +60,12 @@
         <button class="btn add" data-add="blank">＋ <span data-i18n="blank">En blanco</span></button>
         <button class="btn add" data-add="web">＋ OWASP Web</button>
         <button class="btn add" data-add="llm">＋ OWASP LLM</button>
+        <button class="btn add" id="libBtn" data-i18n="lib_open">★ Biblioteca</button>
+        <div class="addfinding-io">
+          <button class="btn sm" id="exportFindingsBtn" data-i18n="export_findings">⇣ Exportar</button>
+          <button class="btn sm" id="importFindingsBtn" data-i18n="import_findings">⇡ Importar</button>
+          <input type="file" id="importFindingsInput" accept="application/json,.json" style="display:none">
+        </div>
       </div>
     </div>
   </aside>

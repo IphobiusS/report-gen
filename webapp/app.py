@@ -88,7 +88,8 @@ def md_preview():
 @app.route("/api/validate", methods=["POST"])
 def validate_engagement():
     data = _json_dict()
-    issues = validatelib.validate(data)
+    lang = request.args.get("lang") or (data.get("meta") or {}).get("lang") or "es"
+    issues = validatelib.validate(data, lang=lang)
     return jsonify({"issues": [{"level": lvl, "message": msg} for lvl, msg in issues]})
 
 
