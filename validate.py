@@ -81,6 +81,11 @@ def validate(data, known_section_keys=None):
             issues.append(("error", f"{fid}: severidad invalida {sev!r}"))
         if mode == "machine" and not (f.get("host") or {}):
             issues.append(("warning", f"{fid}: hallazgo 'machine' sin bloque host"))
+        if mode == "vuln":
+            if not str(f.get("title") or "").strip():
+                issues.append(("warning", f"{fid}: hallazgo sin titulo"))
+            if not str(f.get("cvss") or "").strip():
+                issues.append(("warning", f"{fid}: hallazgo sin puntuacion CVSS"))
         vec = f.get("cvss_vector")
         if vec and not _cvss_vector_ok(vec):
             issues.append(("warning", f"{fid}: vector CVSS con formato inesperado: {vec}"))
