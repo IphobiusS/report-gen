@@ -10,8 +10,9 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 16px; line-height: 1.55; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 .topbar { display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--line); flex: none; }
-.brand { font-family: var(--mono); font-weight: 700; font-size: 17px; letter-spacing: .3px; }
-.brand span { color: var(--accent); }
+.brand { font-family: var(--mono); font-weight: 700; font-size: 17px; letter-spacing: .3px; flex: none; }
+.brand .wm { white-space: nowrap; }
+.brand .wm span { color: var(--accent); }
 .spacer { flex: 1; }
 .proj { display: flex; gap: 8px; align-items: center; }
 .savestate { font-family: var(--mono); font-size: 12px; color: var(--muted); }

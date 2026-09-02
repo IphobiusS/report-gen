@@ -4,6 +4,11 @@ Formato basado en Keep a Changelog. Versionado semantico aproximado.
 
 ## [Unreleased]
 
+### Corregido
+- El logo "report-gen" del topbar ya no se parte en dos lineas cuando la barra esta
+  llena (wordmark envuelto con white-space: nowrap).
+
+
 ### Anadido
 - Biblioteca de hallazgos reutilizables (guardar un hallazgo como plantilla e
   insertarlo despues; se guarda en el navegador).
