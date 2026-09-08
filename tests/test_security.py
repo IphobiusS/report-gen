@@ -1,3 +1,4 @@
+from _support import auth_client
 """Tests de seguridad de la app web con el test client de Flask (sin servidor):
 saneo de theme/lang, path traversal, nombre de imagen malicioso y tema invalido."""
 import io
@@ -8,7 +9,7 @@ import app as webapp
 
 def _client():
     webapp.app.config["TESTING"] = True
-    return webapp.app.test_client()
+    return auth_client(webapp.app)
 
 
 def _cleanup(slug):
@@ -143,7 +144,7 @@ def test_validate_endpoint_flags_bad_data():
 def _sc(): 
     import app as webapp
     webapp.app.config["TESTING"] = True
-    return webapp.app.test_client()
+    return auth_client(webapp.app)
 
 
 def test_slug_length_capped_no_crash():

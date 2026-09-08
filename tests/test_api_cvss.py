@@ -1,3 +1,4 @@
+from _support import auth_client
 """Integracion de /api/cvss: despacho explicito por version 3.1/4.0, sin fallback
 silencioso, y sin score parcial ante error."""
 import app as webapp
@@ -5,7 +6,7 @@ import app as webapp
 
 def _c():
     webapp.app.config["TESTING"] = True
-    return webapp.app.test_client()
+    return auth_client(webapp.app)
 
 
 def test_api_31_preserves_behavior_vector():

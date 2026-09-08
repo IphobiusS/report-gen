@@ -30,7 +30,6 @@
 
 {% for f in findings %}
 <section class="finding mode-{{ f.mode }}{% if f.severity %} sev-{{ f.severity }}{% endif %}" id="{{ f.id }}">
-  {{ pm(f.id) }}
   {% if f.mode == 'vuln' %}{% include 'finding_vuln.html' %}
   {% elif f.mode == 'machine' %}{% include 'finding_machine.html' %}
   {% else %}<p class="error">Modo de finding desconocido: {{ f.mode }}</p>{% endif %}
@@ -39,5 +38,8 @@
 
 {% if appendix %}{% include 'appendix.html' %}{% endif %}
 
+{% for s in workflow_sections %}
+<section class="frontsec brk" id="{{ s.key }}">{{ pm(s.key) }}<h1>{{ s.title }}</h1>{{ s.body|md }}</section>
+{% endfor %}
 </body>
 </html>

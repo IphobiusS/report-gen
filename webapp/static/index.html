@@ -17,10 +17,12 @@
   </div>
 </div>
 <header class="topbar">
-  <div class="brand"><img src="/static/logo.png" class="brand-logo" alt="report-gen"><span class="wm">report<span>-gen</span></span></div>
+  <div class="brand"><img src="/static/logo.png" class="brand-logo" alt="report-gen"> report<span>-gen</span></div>
   <div class="proj">
     <select id="projectSelect" data-i18n-title="project_title"></select>
     <button id="newProjectBtn" class="btn primary sm" data-i18n="new_project">Nuevo proyecto</button>
+    <button id="importProjectBtn" class="btn sm">Abrir respaldo</button>
+    <button id="restoreProjectBtn" class="btn sm" data-i18n="restore" data-i18n-title="restore_title" title="Restaurar la versión anterior">Restaurar</button>
     <button id="renameProjectBtn" class="btn sm" data-i18n="rename" data-i18n-title="rename_title">Renombrar</button>
     <span class="proj-sep"></span>
     <button id="deleteProjectBtn" class="btn sm ghost-danger" data-i18n="delete" data-i18n-title="delete_title">Eliminar</button>
@@ -37,7 +39,7 @@
   <span id="saveState" class="savestate" data-i18n="ready">listo</span>
   <button id="previewBtn" class="btn primary" data-i18n="update_preview">Actualizar preview</button>
   <select id="exportFormat" data-i18n-title="export_format_title" style="width:auto">
-    <option value="pdf">PDF</option><option value="docx">Word (DOCX)</option><option value="md">Markdown</option>
+    <option value="pdf">PDF</option><option value="docx">Word (DOCX)</option><option value="md" data-i18n="markdown_bundle">Markdown + imágenes (ZIP)</option>
   </select>
   <button id="downloadBtn" class="btn" data-i18n="export">Exportar</button>
 </header>
@@ -128,6 +130,8 @@
 </div>
 
 <script src="/static/cvss40.js"></script>
+<script src="/static/save-manager.js"></script>
+<script src="/static/workflow.js"></script>
 <script src="/static/app.js"></script>
 
 <div class="modal" id="sectionsModal">

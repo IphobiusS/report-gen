@@ -106,6 +106,10 @@ def _md_sections(data, meta, L):
 
 
 def to_markdown(data, meta, L, engagement_dir):
+    from workflows import project_report, report_sections
+    data = project_report(data)
+    import engine
+    engine.number_figures(data["findings"])
     if (data.get("report") or {}).get("sections"):
         return _md_sections(data, meta, L)
     lab = L["labels"]
@@ -208,6 +212,8 @@ def to_markdown(data, meta, L, engagement_dir):
             W(f"| {r['host']} | `{r['item']}` | `{r['value']}` | {r['notes']} |")
         W("")
 
+    for extra in report_sections(data):
+        W("\n## " + extra["title"] + "\n\n" + extra["body"] + "\n")
     return "\n".join(out).rstrip() + "\n"
 
 
@@ -230,7 +236,7 @@ def _md_vuln(W, f, L, lab):
     W(f"### {f.get('id','')} {f.get('title','')}\n")
     meta_rows = []
     if sev:
-        meta_rows.append((lab["col_sev"], sev + (f" ({f['cvss']})" if f.get("cvss") else "")))
+        meta_rows.append((lab["col_sev"], sev + (f" ({f['cvss']})" if f.get("cvss") not in (None, "") else "")))
     if f.get("cwe"):
         meta_rows.append((lab["cwe"], f["cwe"]))
     if f.get("cvss_vector"):

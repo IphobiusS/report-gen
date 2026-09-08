@@ -64,7 +64,8 @@ def preset_sections(preset_id, lang="es"):
 def resolve_sections(data, L, lang):
     """Convierte report.sections (activas + datos) en una lista lista para render."""
     bykey = catalog_by_key()
-    enabled = (data.get("report") or {}).get("sections") or []
+    from workflows import report_sections
+    enabled = list((data.get("report") or {}).get("sections") or []) + report_sections(data)
     out = []
     for sec in enabled:
         key = sec.get("key")

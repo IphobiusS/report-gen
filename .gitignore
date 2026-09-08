@@ -22,3 +22,10 @@ tests/_cvss_harness.js
 
 # venv del sello upstream (local del usuario)
 .venv-seal/
+
+# Dependencias y caches de desarrollo
+node_modules/
+.pytest_cache/
+.ruff_cache/
+
+webapp/library/

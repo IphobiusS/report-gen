@@ -11,11 +11,27 @@ function h(tag, attrs, ...kids) {
   for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
   return e;
 }
+let csrfPromise;
+async function appFetch(url, options = {}) {
+  const method = (options.method || "GET").toUpperCase();
+  if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
+    csrfPromise ||= fetch("/api/session").then(async r => {
+      if (!r.ok) throw new Error("No se pudo iniciar la sesión local");
+      return (await r.json()).csrf;
+    });
+    options = { ...options, headers: { ...options.headers, "X-CSRF-Token": await csrfPromise } };
+  }
+  return fetch(url, options);
+}
+async function requireOk(response) {
+  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `HTTP ${response.status}`);
+  return response;
+}
 const api = {
-  get: u => fetch(u).then(r => r.json()),
-  post: (u, b) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b || {}) }),
-  put: (u, b) => fetch(u, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }),
-  del: u => fetch(u, { method: "DELETE" }),
+  get: u => appFetch(u).then(requireOk).then(r => r.json()),
+  post: (u, b) => appFetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b || {}) }),
+  put: (u, b) => appFetch(u, { method: "PUT", headers: { "Content-Type": "application/json", "If-Match": projectStore.etag }, body: JSON.stringify(b) }).then(requireOk),
+  del: u => appFetch(u, { method: "DELETE", headers: { "If-Match": projectStore.etag } }).then(requireOk),
 };
 
 // ---- CVSS 3.1 (port de cvss.py) -------------------------------------------
@@ -60,7 +76,7 @@ const I18N = {
  credit_by:"Desarrollado por", recommended:"recomendada", sec_title:"Título de la sección", sec_body:"Contenido (Markdown)", lang_label:"Idioma", cert_label:"Certificación", htb_family:"HTB (certificación)", preset_label:"Plantilla", preset_note:"Los nombres «estilo OSCP/HTB» son descriptivos; no afiliado a OffSec ni Hack The Box.",
     search_ph:"Buscar en el proyecto\u2026", search_none:"Sin resultados",
     export_format_title:"Formato de exportacion", project_title:"Proyecto",
-    saved:"guardado", saving:"guardando\u2026", ready:"listo", uptodate:"al dia", updating:"actualizando\u2026", err:"error",
+    loading:"cargando…", restore:"Restaurar", restore_title:"Restaurar la versión anterior", restore_pending:"Guarda tus cambios antes de restaurar", markdown_bundle:"Markdown + imágenes (ZIP)", saved:"guardado", saving:"guardando\u2026", ready:"listo", uptodate:"al dia", updating:"actualizando\u2026", err:"error",
     report:"Informe", sections_head:"Secciones del informe", manage_sections:"Gestionar secciones",
     findings_head:"Hallazgos", add_finding:"Anadir hallazgo", blank:"En blanco",
     empty:"Crea un proyecto con \u00abNuevo proyecto\u00bb (arriba) o elige uno del desplegable.",
@@ -112,7 +128,7 @@ const I18N = {
  credit_by:"Developed by", recommended:"recommended", sec_title:"Section title", sec_body:"Content (Markdown)", lang_label:"Language", cert_label:"Certification", htb_family:"HTB (certification)", preset_label:"Template", preset_note:"«OSCP/HTB-style» names are descriptive; not affiliated with OffSec or Hack The Box.",
     search_ph:"Search the project\u2026", search_none:"No results",
     export_format_title:"Export format", project_title:"Project",
-    saved:"saved", saving:"saving\u2026", ready:"ready", uptodate:"up to date", updating:"updating\u2026", err:"error",
+    loading:"loading…", restore:"Restore", restore_title:"Restore the previous version", restore_pending:"Save your changes before restoring", markdown_bundle:"Markdown + images (ZIP)", saved:"saved", saving:"saving\u2026", ready:"ready", uptodate:"up to date", updating:"updating\u2026", err:"error",
     report:"Report", sections_head:"Report sections", manage_sections:"Manage sections",
     findings_head:"Findings", add_finding:"Add finding", blank:"Blank",
     empty:"Create a project with \u00abNew project\u00bb (top) or pick one from the dropdown.",
@@ -159,6 +175,7 @@ const I18N = {
 };
 function t(key) { const L = S.uiLang || "es"; return (I18N[L] && I18N[L][key]) || I18N.es[key] || key; }
 function applyStaticI18n() {
+  WorkflowUI.updateNav();
   document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.getAttribute("data-i18n")); });
   document.querySelectorAll("[data-i18n-title]").forEach(el => { el.title = t(el.getAttribute("data-i18n-title")); });
   document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.getAttribute("data-i18n-ph")); });
@@ -201,25 +218,36 @@ function makeDropZone(el, arr, i) {
     }
   });
 }
-function renumberFindings() { (S.data.findings || []).forEach((f, i) => { f.id = "F" + (i + 1); }); }
+function renumberFindings() { (S.data.findings || []).forEach((f, i) => { f.id = "F" + (i + 1); f.uid = f.uid || WorkflowUI.uid(); }); }
 
-let saveTimer = null;
-window.addEventListener("beforeunload", e => { if (S.dirty) { e.preventDefault(); e.returnValue = t("unsaved"); return t("unsaved"); } });
+const projectStore = new ProjectStore(appFetch, (state, error) => {
+  S.dirty = projectStore.dirty;
+  if (state === "loaded") return;
+  setSaveState(t(state === "error" ? "err" : state));
+  if (state === "saved" && !projectStore.loading) {
+    const opt = [...$("#projectSelect").options].find(o => o.value === S.slug);
+    if (opt && S.data) opt.textContent = `${S.data.meta.report_title || S.slug} [${S.data.meta.theme}/${S.data.meta.lang}]`;
+    if (S.previewVisible && S.previewMode === "live") refreshLivePreview();
+  }
+  if (error) toast(error.message, "err");
+});
+window.addEventListener("beforeunload", e => { if (projectStore.dirty) { e.preventDefault(); e.returnValue = t("unsaved"); } });
 function scheduleSave() {
-  S.dirty = true;
-  setSaveState(t("saving"));
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(doSave, 700);
+  projectStore.data = S.data;
+  projectStore.changed();
 }
 async function doSave() {
-  if (!S.slug) return;
-  setSaveState(t("saving"));
-  await api.put(`/api/projects/${S.slug}`, S.data);
-  S.dirty = false;
-  const opt = [...$("#projectSelect").options].find(o => o.value === S.slug);
-  if (opt && S.data) opt.textContent = `${(S.data.meta.report_title || S.slug)} [${S.data.meta.theme}/${S.data.meta.lang}]`;
-  setSaveState(t("saved"));
-  if (S.previewMode === "live") refreshLivePreview();
+  try {
+    await projectStore.save();
+    const opt = [...$("#projectSelect").options].find(o => o.value === S.slug);
+    if (opt && S.data) opt.textContent = `${S.data.meta.report_title || S.slug} [${S.data.meta.theme}/${S.data.meta.lang}]`;
+    if (S.previewMode === "live") refreshLivePreview();
+    return true;
+  } catch (_) { return false; }
+}
+function busyProject(busy) {
+  document.querySelector(".layout").inert = busy;
+  ["#projectSelect", "#newProjectBtn", "#renameProjectBtn", "#deleteProjectBtn", "#restoreProjectBtn", "#importProjectBtn"].forEach(id => { const el = $(id); if (el) el.disabled = busy; });
 }
 function setSaveState(t) { $("#saveState").textContent = t; }
 function toast(msg, kind) {
@@ -255,7 +283,8 @@ async function runValidation() {
   if (!S.data) return;
   const badge = $("#validateBtn");
   try {
-    const r = await fetch("/api/validate?lang=" + (S.uiLang || "es"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
+    const r = await appFetch("/api/validate?lang=" + (S.uiLang || "es"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
+    await requireOk(r);
     const d = await r.json(); const issues = d.issues || [];
     badge.classList.remove("has-err", "has-warn", "ok");
     if (!issues.length) { badge.classList.add("ok"); badge.textContent = "\u2713"; toast(t("validate_ok"), "ok"); return; }
@@ -263,7 +292,7 @@ async function runValidation() {
     badge.classList.add(errs ? "has-err" : "has-warn");
     badge.textContent = String(issues.length);
     showValidationPanel(issues);
-  } catch (_) { /* silencioso */ }
+  } catch (error) { toast(error.message, "err"); }
 }
 function showValidationPanel(issues) {
   let m = document.getElementById("validateModal");
@@ -285,12 +314,16 @@ function updateLangBtn() {
   $("#langToggle").textContent = (S.uiLang || "es").toUpperCase();
 }
 
+let previewGeneration = 0;
 async function refreshLivePreview() {
-  if (!S.slug) return;
+  if (!S.slug || projectStore.loading) return;
+  const slug = S.slug, generation = ++previewGeneration;
   setPvStatus(t("updating")); showPreviewLoading();
   try {
-    const r = await fetch(`/api/projects/${S.slug}/preview`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
+    const r = await appFetch(`/api/projects/${S.slug}/preview`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
+    await requireOk(r);
     const html = await r.text();
+    if (slug !== S.slug || generation !== previewGeneration) return;
     const f = $("#pdfPreview");
     f.removeAttribute("src");
     f.setAttribute("sandbox", "allow-same-origin");  // el preview no ejecuta scripts del contenido
@@ -352,21 +385,23 @@ async function refreshProjects() {
   S.projects.forEach(p => sel.append(h("option", { value: p.slug }, `${p.title} [${p.theme}/${p.lang}]`)));
 }
 async function loadProject(slug) {
-  S.slug = slug; S.dashFilter = null;
-  S.data = await api.get(`/api/projects/${slug}`);
-  S.data.findings = S.data.findings || [];
-  S.data.report = S.data.report || { sections: [] };
-  S.data.report.sections = S.data.report.sections || [];
-  $("#projectSelect").value = slug;
-  S.sel = { type: "report", idx: -1 };
-  renderSidebar(); renderMain();
-  setSaveState(t("ready"));
-  updateLangBtn();
-  if (S.previewMode === "live") refreshLivePreview();
+  if (projectStore.loading) return;
+  busyProject(true);
+  try {
+    if (!await projectStore.load(slug)) return;
+    S.slug = projectStore.slug; S.data = projectStore.data; S.dashFilter = null;
+    S.data.findings ||= []; S.data.report ||= { sections: [] }; S.data.report.sections ||= [];
+    S.sel = { type: "report", idx: -1 };
+    $("#projectSelect").value = S.slug;
+    renderSidebar(); renderMain(); updateLangBtn();
+    if (S.previewMode === "live") refreshLivePreview();
+  } catch (_) { $("#projectSelect").value = S.slug || ""; }
+  finally { busyProject(false); updateDeleteBtn(); }
 }
 
 // ---- sidebar ---------------------------------------------------------------
 function renderSidebar() {
+  WorkflowUI.updateNav();
   $("#navReport").classList.toggle("active", S.sel.type === "report");
   // secciones activas
   const sl = $("#sectionList"); sl.innerHTML = "";
@@ -468,6 +503,7 @@ function renderMain() {
   if (!S.data) { el.append(h("div", { class: "empty" }, t("empty"))); return; }
   if (S.sel.type === "report") el.append(reportEditor());
   else if (S.sel.type === "section") el.append(sectionEditor(S.sel.key));
+  else if (S.sel.type === "workflow") WorkflowUI.render(S.sel.idx, el);
   else el.append(findingEditor(S.data.findings[S.sel.idx]));
 }
 
@@ -526,9 +562,9 @@ function findingsDashboard() {
       ? h("span", { class: "tag sev-machine" }, t("dash_machine"))
       : h("span", { class: "tag sev-" + (f.severity || "info") }, (SEV.find(s => s[0] === f.severity) || [, f.severity || "—"])[1]);
     const cwe = (f.cwe || "").split(" —")[0].split(" -")[0].trim();
-    const cvss = isM ? "—" : (f.cvss ? f.cvss + (f.cvss_version ? "  (" + f.cvss_version + ")" : "") : "—");
+    const cvss = isM ? "—" : (f.cvss != null && f.cvss !== "" ? f.cvss + (f.cvss_version ? "  (" + f.cvss_version + ")" : "") : "—");
     const host = isM && f.host ? (f.host.name || f.host.ip || "") : "";
-    const incomplete = !isM && (!f.cvss || !cwe);
+    const incomplete = !isM && (f.cvss == null || f.cvss === "" || !cwe);
     const title = h("td", { class: "c-title" }, f.title || (isM ? host : "—"));
     if (incomplete) title.append(h("span", { class: "dash-warn", title: t("dash_incomplete") }, "!"));
     const tr = h("tr", { class: "dash-row", onclick: e => { if (!e.target.closest(".drag")) select("finding", idx); } },
@@ -629,6 +665,7 @@ function field(label, obj, key, opts = {}) {
   } else {
     inp = h("input", { type: opts.type || "text", value: obj[key] || "", oninput: e => { obj[key] = e.target.value; scheduleSave(); } });
   }
+  inp.dataset.field = key;
   if (opts.ph) inp.setAttribute("placeholder", opts.ph);
   return h("label", {}, label, inp);
 }
@@ -637,7 +674,7 @@ function field(label, obj, key, opts = {}) {
 function mdEditor(label, obj, key, opts = {}) {
   obj[key] = obj[key] || "";
   const ta = h("textarea", { rows: opts.rows || 10, class: "grow" });
-  ta.value = obj[key];
+  ta.value = obj[key]; ta.dataset.field = key;
   const prev = h("div", { class: "mded-prev", style: "display:none" });
 
   function apply() { obj[key] = ta.value; autoGrow(ta); scheduleSave(); }
@@ -669,9 +706,8 @@ function mdEditor(label, obj, key, opts = {}) {
   const fileInp = h("input", { type: "file", accept: "image/*", style: "display:none",
     onchange: async e => {
       const file = e.target.files[0]; if (!file) return;
-      const fd = new FormData(); fd.append("file", file);
-      setSaveState(t("saving"));
-      const r = await fetch(`/api/projects/${S.slug}/image`, { method: "POST", body: fd }).then(x => x.json());
+      const r = await sendImage(file);
+      if (!r) return;
       insertAtCursor(`\n![epígrafe de la imagen](${r.src}){width="auto"}\n`);
       setSaveState(t("saved"));
     } });
@@ -700,7 +736,7 @@ function mdEditor(label, obj, key, opts = {}) {
     prev.innerHTML = "…";
     ta.style.display = "none"; prev.style.display = ""; pTab.classList.add("active"); wTab.classList.remove("active");
     try {
-      const r = await api.post("/api/md", { text: ta.value, slug: S.slug }).then(x => x.json());
+      const r = await api.post("/api/md", { text: ta.value, slug: S.slug }).then(requireOk).then(x => x.json());
       prev.innerHTML = r.html || "<em>(vacío)</em>";
     } catch (_) { prev.innerHTML = "<em>error al renderizar</em>"; }
   });
@@ -762,13 +798,14 @@ function findingEditor(f) {
     [["vuln", t("vuln")], ["machine", t("machine")]].map(o => h("option", { value: o[0], selected: f.mode === o[0] ? "" : null }, o[1])));
   head.append(modeSel);
   head.append(h("button", { class: "btn sm", style: "float:right;margin-left:8px", onclick: () => {
-    const copy = JSON.parse(JSON.stringify(f)); copy.id = nextFid();
+    const copy = JSON.parse(JSON.stringify(f)); copy.id = nextFid(); copy.uid = WorkflowUI.uid(); delete copy.retests; copy.status = "open";
     S.data.findings.splice(S.sel.idx + 1, 0, copy); renumberFindings(); scheduleSave(); select("finding", S.sel.idx + 1);
   } }, t("duplicate_finding")));
   head.append(h("button", { class: "btn sm", style: "float:right;margin-left:8px", onclick: () => saveToLibrary(f) }, t("save_to_lib")));
   head.append(h("button", { class: "btn sm danger", style: "float:right", onclick: () => { if (!confirm(t("delete_finding_confirm"))) return; S.data.findings.splice(S.sel.idx, 1); renumberFindings(); S.sel = { type: "report", idx: -1 }; scheduleSave(); renderSidebar(); renderMain(); } }, t("delete_finding")));
   wrap.append(head);
   wrap.append(f.mode === "machine" ? machineEditor(f) : vulnEditor(f));
+  wrap.append(WorkflowUI.findingPanel(f));
   if (S.focusTitle) { S.focusTitle = false; setTimeout(() => { const el = document.querySelector("#editor .card input"); if (el) el.focus(); }, 0); }
   return wrap;
 }
@@ -1054,11 +1091,11 @@ function stepsCard(title, steps) {
 function stepsInner(steps) {
   const wrap = h("div", {});
   steps.forEach((s, i) => wrap.append(stepBlock(steps, s, i)));
-  wrap.append(h("button", { class: "btn sm", onclick: () => { steps.push({}); scheduleSave(); renderMain(); } }, t("add_step")));
+  wrap.append(h("button", { class: "btn sm", "data-add-step": "", onclick: () => { steps.push({}); scheduleSave(); renderMain(); } }, t("add_step")));
   return wrap;
 }
 function stepBlock(steps, s, i) {
-  const b = h("div", { class: "block" });
+  const b = h("div", { class: "block", "data-step-index": i });
   const head = h("div", { class: "block-head" },
     h("span", { class: "lbl" }, dragHandle(steps, i), " " + t("step") + " " + (i + 1)),
     h("span", {},
@@ -1073,7 +1110,7 @@ function stepBlock(steps, s, i) {
   // figura
   const fig = s.figure || {};
   const figWrap = h("div", {});
-  const file = h("input", { type: "file", accept: "image/*", onchange: e => uploadImage(e, s) });
+  const file = h("input", { type: "file", "data-field": "src", accept: "image/*", onchange: e => uploadImage(e, s) });
   figWrap.append(h("label", {}, t("image"), file));
   if (fig.src) {
     figWrap.append(h("img", { class: "imgprev", src: `/api/projects/${S.slug}/${fig.src}` }));
@@ -1083,63 +1120,37 @@ function stepBlock(steps, s, i) {
   b.append(figWrap);
   return b;
 }
+async function sendImage(file) {
+  busyProject(true); setSaveState(t("saving"));
+  try {
+    const fd = new FormData(); fd.append("file", file);
+    return await appFetch(`/api/projects/${S.slug}/image`, {method: "POST", body: fd}).then(requireOk).then(r => r.json());
+  } catch (error) { toast(error.message, "err"); setSaveState(t("err")); return null; }
+  finally { busyProject(false); updateDeleteBtn(); }
+}
 async function uploadCover(e, b, key) {
   const file = e.target.files[0]; if (!file) return;
-  const fd = new FormData(); fd.append("file", file);
-  setSaveState(t("saving"));
-  const r = await fetch(`/api/projects/${S.slug}/image`, { method: "POST", body: fd }).then(x => x.json());
+  const r = await sendImage(file);
+  if (!r) return;
   b[key] = r.src; scheduleSave(); renderMain();
 }
 function coverImgField(b, key, label) {
   const wrap = h("label", {}, label);
-  wrap.append(h("input", { type: "file", accept: "image/*", onchange: e => uploadCover(e, b, key) }));
+  wrap.append(h("input", { type: "file", "data-field": key, accept: "image/*", onchange: e => uploadCover(e, b, key) }));
   if (b[key]) wrap.append(h("button", { class: "btn sm danger", style: "margin-top:6px", onclick: () => { delete b[key]; scheduleSave(); renderMain(); } }, t("remove") + " · " + b[key].split("/").pop()));
   return wrap;
 }
 async function uploadImage(e, s) {
   const file = e.target.files[0]; if (!file) return;
-  const fd = new FormData(); fd.append("file", file);
-  setSaveState(t("saving"));
-  const r = await fetch(`/api/projects/${S.slug}/image`, { method: "POST", body: fd }).then(x => x.json());
+  const r = await sendImage(file);
+  if (!r) return;
   s.figure = { src: r.src, caption: (s.figure && s.figure.caption) || "" };
   scheduleSave(); renderMain();
 }
 
 // ---- OWASP + nuevo hallazgo ------------------------------------------------
-function libGet() { try { return JSON.parse(localStorage.getItem("rg.findingLib") || "[]"); } catch (_) { return []; } }
-function libSet(a) { try { localStorage.setItem("rg.findingLib", JSON.stringify(a)); } catch (_) {} }
-function saveToLibrary(f) {
-  const name = prompt(t("lib_name_prompt"), f.title || (f.host && f.host.name) || "Plantilla");
-  if (name === null) return;
-  const entry = JSON.parse(JSON.stringify(f)); delete entry.id;
-  entry.__name = name.trim() || (f.title || "Plantilla");
-  const lib = libGet(); lib.push(entry); libSet(lib);
-  toast(t("lib_saved"), "ok");
-}
-function openLibrary() {
-  let m = document.getElementById("libModal"); if (m) m.remove();
-  const lib = libGet();
-  const list = h("div", { class: "lib-list" });
-  if (!lib.length) list.append(h("p", { class: "dash-empty" }, t("lib_empty")));
-  lib.forEach((e, i) => {
-    list.append(h("div", { class: "lib-item" },
-      h("span", { class: "lib-sev sev-dot sev-" + (e.severity || "info") }),
-      h("span", { class: "lib-name" }, e.__name || e.title || ("#" + (i + 1))),
-      h("span", { class: "lib-meta" }, (e.mode === "machine" ? "machine" : (e.severity || "")) + (e.cvss ? " · " + e.cvss : "")),
-      h("button", { class: "btn sm primary", onclick: () => { insertFromLibrary(e); m.remove(); } }, t("lib_insert")),
-      h("button", { class: "btn sm danger", onclick: () => { const l = libGet(); l.splice(i, 1); libSet(l); openLibrary(); } }, t("lib_delete"))));
-  });
-  m = h("div", { id: "libModal", class: "modal open", onclick: e => { if (e.target === m) m.remove(); } },
-    h("div", { class: "modal-box wide" },
-      h("h3", {}, t("lib_title")), list,
-      h("div", { class: "modal-actions" }, h("button", { class: "btn", onclick: () => m.remove() }, "OK"))));
-  document.body.append(m);
-}
-function insertFromLibrary(e) {
-  if (!S.data) return;
-  const f = JSON.parse(JSON.stringify(e)); delete f.__name; f.id = nextFid();
-  S.data.findings.push(f); renumberFindings(); scheduleSave(); select("finding", S.data.findings.length - 1);
-}
+function saveToLibrary(f) { WorkflowUI.saveTemplate(f).catch(error => toast(error.message, "err")); }
+function openLibrary() { WorkflowUI.openLibrary(); }
 function exportFindings() {
   if (!S.data) return;
   const blob = new Blob([JSON.stringify(S.data.findings || [], null, 2)], { type: "application/json" });
@@ -1154,7 +1165,7 @@ function importFindings(ev) {
       let arr = JSON.parse(rd.result);
       if (!Array.isArray(arr)) arr = arr.findings || [];
       let n = 0;
-      arr.forEach(f => { if (f && typeof f === "object") { const g = JSON.parse(JSON.stringify(f)); g.id = nextFid(); delete g.__name; S.data.findings.push(g); n++; } });
+      arr.forEach(f => { if (f && typeof f === "object") { const g = JSON.parse(JSON.stringify(f)); g.id = nextFid(); g.uid = WorkflowUI.uid(); delete g.__name; delete g.asset_uids; delete g.evidence_uids; delete g.retests; S.data.findings.push(g); n++; } });
       renumberFindings(); scheduleSave(); renderSidebar(); renderMain();
       toast(n + " " + t("findings_imported"), "ok");
     } catch (_) { toast(t("err"), "err"); }
@@ -1199,32 +1210,34 @@ function insertOwasp(it) {
 
 // ---- preview / descarga ----------------------------------------------------
 async function renderPdf(download) {
-  if (!S.slug) return;
+  if (!S.slug || !await doSave()) return;
+  const slug = S.slug;
   setSaveState(t("updating")); if (!download) showPreviewLoading();
   try {
-    const r = await fetch(`/api/projects/${S.slug}/render`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
+    const r = await appFetch(`/api/projects/${S.slug}/render`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
     if (!r.ok) { const e = await r.json().catch(() => ({})); setSaveState(t("err")); toast("Render: " + (e.error || r.status), "err"); return; }
     const blob = await r.blob(); const url = URL.createObjectURL(blob);
-    if (download) { const a = h("a", { href: url, download: (S.slug || "informe") + ".pdf" }); a.click(); }
-    else { const f = $("#pdfPreview"); f.removeAttribute("sandbox"); f.removeAttribute("srcdoc"); f.setAttribute("src", url); }
-    setSaveState(t("saved"));
-  } finally { if (!download) hidePreviewLoading(); }
+    if (download) { const a = h("a", { href: url, download: (slug || "informe") + ".pdf" }); a.click(); }
+    else if (slug === S.slug) { const f = $("#pdfPreview"); f.removeAttribute("sandbox"); f.removeAttribute("srcdoc"); f.setAttribute("src", url); }
+    if (slug === S.slug) setSaveState(t(projectStore.dirty ? "saving" : "saved"));
+  } catch (error) { toast(error.message, "err"); } finally { if (!download) hidePreviewLoading(); }
 }
 
 async function exportFile() {
-  if (!S.slug) return;
+  if (!S.slug || !await doSave()) return;
+  const slug = S.slug;
   const fmt = $("#exportFormat").value;
   const btn = $("#downloadBtn");
   btn.disabled = true; const prev = btn.textContent; btn.textContent = t("exporting") + " " + fmt.toUpperCase() + "\u2026";
   setSaveState(t("exporting") + " " + fmt + "\u2026");
   try {
-    const r = await fetch(`/api/projects/${S.slug}/export/${fmt}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
+    const r = await appFetch(`/api/projects/${S.slug}/export/${fmt}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
     if (!r.ok) { const e = await r.json().catch(() => ({})); setSaveState(t("err")); toast("Export: " + (e.error || r.status), "err"); return; }
     const blob = await r.blob(); const url = URL.createObjectURL(blob);
-    const a = h("a", { href: url, download: (S.slug || "informe") + "." + fmt }); a.click();
+    const a = h("a", { href: url, download: (slug || "informe") + "." + (fmt === "md" ? "zip" : fmt) }); a.click();
     URL.revokeObjectURL(url);
-    setSaveState(t("saved")); toast(t("toast_exported") + " \u00b7 " + fmt.toUpperCase(), "ok");
-  } finally { btn.disabled = false; btn.textContent = prev; }
+    if (slug === S.slug) setSaveState(t(projectStore.dirty ? "saving" : "saved")); toast(t("toast_exported") + " \u00b7 " + fmt.toUpperCase(), "ok");
+  } catch (error) { toast(error.message, "err"); } finally { btn.disabled = false; btn.textContent = prev; }
 }
 
 // ---- UI binding ------------------------------------------------------------
@@ -1296,6 +1309,7 @@ function populatePresetSelector() {
   refreshPresetDesc();
 }
 function bindUI() {
+  WorkflowUI.bind();
   $("#projectSelect").addEventListener("change", e => loadProject(e.target.value));
   $("#navReport").addEventListener("click", () => select("report", -1));
   document.querySelectorAll("[data-add]").forEach(b => b.addEventListener("click", () => addFinding(b.dataset.add)));
@@ -1321,7 +1335,7 @@ function bindUI() {
   document.addEventListener("keydown", e => {
     const mod = e.ctrlKey || e.metaKey;
     if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); const s = $("#globalSearch"); if (s) s.focus(); }
-    else if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); if (S.slug) { doSave(); toast(t("saved"), "ok"); } }
+    else if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); if (S.slug) { doSave().then(ok => { if (ok) toast(t("saved"), "ok"); }); } }
     else if (e.key === "Escape") {
       document.querySelectorAll(".modal.open").forEach(m => m.id === "validateModal" ? m.remove() : m.classList.remove("open"));
       const sr = $("#searchResults"); if (sr) sr.classList.remove("open");
@@ -1338,6 +1352,7 @@ function bindUI() {
   $("#newProjectBtn").addEventListener("click", () => { populatePresetSelector(); $("#newModal").classList.add("open"); });
   $("#deleteProjectBtn").addEventListener("click", deleteProject);
   $("#renameProjectBtn").addEventListener("click", renameProject);
+  $("#restoreProjectBtn").addEventListener("click", restoreProject);
   $("#mCancel").addEventListener("click", () => $("#newModal").classList.remove("open"));
   $("#mCreate").addEventListener("click", createProject);
   ["#mTitle", "#mClient", "#mSlug"].forEach(s => $(s).addEventListener("keydown", e => { if (e.key === "Enter") createProject(); }));
@@ -1350,8 +1365,8 @@ async function renameProject() {
   const nm = name.trim();
   if (!nm) return;
   S.data.meta.report_title = nm;
-  await api.put(`/api/projects/${S.slug}`, S.data);
-  S.dirty = false;
+  scheduleSave();
+  if (!await doSave()) return;
   await refreshProjects();
   $("#projectSelect").value = S.slug;
   renderMain();
@@ -1363,7 +1378,9 @@ async function deleteProject() {
   const proj = S.projects.find(p => p.slug === S.slug);
   const name = proj ? proj.title : S.slug;
   if (!confirm(t("delete_confirm").replace("{n}", name))) return;
-  await api.del(`/api/projects/${S.slug}`);
+  if (!await doSave()) return;
+  try { await api.del(`/api/projects/${S.slug}`); } catch (error) { toast(error.message, "err"); return; }
+  projectStore.reset();
   await refreshProjects();
   if (S.projects.length) {
     loadProject(S.projects[0].slug);
@@ -1375,7 +1392,17 @@ async function deleteProject() {
   }
 }
 
+async function restoreProject() {
+  if (!S.slug || projectStore.dirty) { toast(t("restore_pending"), "err"); return; }
+  if (!confirm(S.uiLang === "en" ? "Restore the previous saved version?" : "¿Restaurar la versión anterior guardada?")) return;
+  try {
+    await appFetch(`/api/projects/${S.slug}/restore`, {method: "POST", headers: {"Content-Type": "application/json", "If-Match": projectStore.etag}, body: "{}"}).then(requireOk);
+    await loadProject(S.slug);
+  } catch (error) { toast(error.message, "err"); }
+}
+
 function updateDeleteBtn() {
+  const restore = $("#restoreProjectBtn"); if (restore) restore.disabled = !S.slug;
   const b = $("#deleteProjectBtn"); if (b) b.disabled = !S.slug;
   const r = $("#renameProjectBtn"); if (r) r.disabled = !S.slug;
 }

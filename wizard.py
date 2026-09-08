@@ -53,8 +53,9 @@ _Dumper.add_representer(str, _str_rep)
 
 
 def dump_yaml(data, path):
-    with path.open("w", encoding="utf-8") as fh:
-        yaml.dump(data, fh, Dumper=_Dumper, allow_unicode=True, sort_keys=False, width=100)
+    from storage import atomic_write
+    text = yaml.dump(data, Dumper=_Dumper, allow_unicode=True, sort_keys=False, width=100)
+    atomic_write(path, text.encode("utf-8"), backup=True)
 
 
 # --- Entrada -----------------------------------------------------------------

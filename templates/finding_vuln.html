@@ -1,14 +1,16 @@
 {# Modo VULN (estilo COAE), etiquetas por idioma #}
+<div class="finding-intro">
+{{ pm(f.id) }}
 <header class="f-head">
   <span class="f-id">{{ f.id }}</span>
   <h2 class="f-title">{{ f.title }}</h2>
-  {% if f.severity %}<span class="sev-chip sev-{{ f.severity }}">{{ L.severity[f.severity] }}{% if f.cvss %} <b>{{ f.cvss }}</b>{% endif %}</span>{% endif %}
+  {% if f.severity %}<span class="sev-chip sev-{{ f.severity }}">{{ L.severity[f.severity] }}{% if f.cvss is defined and f.cvss is not none and f.cvss != "" %} <b>{{ f.cvss }}</b>{% endif %}</span>{% endif %}
 </header>
 
 <table class="meta">
   <tbody>
   {% if f.cwe %}<tr><th>{{ L.labels.cwe }}</th><td>{{ f.cwe }}</td></tr>{% endif %}
-  {% set _cv = f.cvss_vector or "" %}{% if f.cvss %}<tr><th>{{ L.labels.cvss }}{{ " 4.0" if _cv.startswith("CVSS:4.0") else (" 3.1" if _cv.startswith("CVSS:3.1") else "") }}</th><td><span class="score">{{ f.cvss }}</span>{% if f.cvss_vector %} <code class="vector">{{ f.cvss_vector }}</code>{% endif %}</td></tr>{% endif %}
+  {% set _cv = f.cvss_vector or "" %}{% if f.cvss is defined and f.cvss is not none and f.cvss != "" %}<tr><th>{{ L.labels.cvss }}{{ " 4.0" if _cv.startswith("CVSS:4.0") else (" 3.1" if _cv.startswith("CVSS:3.1") else "") }}</th><td><span class="score">{{ f.cvss }}</span>{% if f.cvss_vector %} <code class="vector">{{ f.cvss_vector }}</code>{% endif %}</td></tr>{% endif %}
   {% if f.description_md %}<tr><th>{{ L.labels.desc_root }}</th><td>{{ f.description_md|md }}</td></tr>{% endif %}
   {% if f.impact_md %}<tr><th>{{ L.labels.impact }}</th><td>{{ f.impact_md|md }}</td></tr>{% endif %}
   {% if f.affected %}<tr><th>{{ L.labels.affected }}</th><td><code>{{ f.affected }}</code></td></tr>{% endif %}
@@ -16,6 +18,7 @@
   {% if f.references %}<tr><th>{{ L.labels.references }}</th><td><ul class="refs">{% for r in f.references %}<li>{{ r }}</li>{% endfor %}</ul></td></tr>{% endif %}
   </tbody>
 </table>
+</div>
 
 {% if f.walkthrough %}
 <h3>{{ L.labels.walkthrough }}</h3>

@@ -1,4 +1,6 @@
 {# Modo MACHINE (estilo OSCP+), etiquetas por idioma #}
+<div class="finding-intro">
+{{ pm(f.id) }}
 <header class="f-head">
   <span class="f-id">{{ f.id }}</span>
   <h2 class="f-title">{{ f.host.name if f.host and f.host.name else f.title }}</h2>
@@ -13,6 +15,7 @@
   {% if f.summary_md %}<tr><th>{{ L.labels.attack_path }}</th><td>{{ f.summary_md|md }}</td></tr>{% endif %}
   </tbody>
 </table>
+</div>
 
 {% for phase in f.phases %}
 <h3>{{ phase.name }}</h3>

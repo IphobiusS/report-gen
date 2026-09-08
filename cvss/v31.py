@@ -9,6 +9,8 @@ CIA = {"H": 0.56, "L": 0.22, "N": 0.00}
 PR_U = {"N": 0.85, "L": 0.62, "H": 0.27}
 PR_C = {"N": 0.85, "L": 0.68, "H": 0.50}
 
+VALID = {"AV": "NALP", "AC": "LH", "PR": "NLH", "UI": "NR", "S": "UC", "C": "HLN", "I": "HLN", "A": "HLN"}
+
 METRICS = ["AV", "AC", "PR", "UI", "S", "C", "I", "A"]
 DEFAULT = {"AV": "N", "AC": "L", "PR": "N", "UI": "N", "S": "U", "C": "N", "I": "N", "A": "N"}
 
@@ -36,6 +38,8 @@ def compute(m):
     """m: dict con AV,AC,PR,UI,S,C,I,A. Devuelve {score, severity, vector}."""
     mm = dict(DEFAULT)
     mm.update({k: v for k, v in (m or {}).items() if k in METRICS and v})
+    if any(not isinstance(mm[k], str) or mm[k] not in VALID[k] for k in METRICS):
+        raise ValueError("Métricas CVSS 3.1 inválidas")
     scope_changed = mm["S"] == "C"
     pr = (PR_C if scope_changed else PR_U)[mm["PR"]]
     expl = 8.22 * AV[mm["AV"]] * AC[mm["AC"]] * pr * UI[mm["UI"]]
@@ -55,15 +59,20 @@ def compute(m):
 
 
 def parse_vector(vector):
-    m = dict(DEFAULT)
-    if not vector:
-        return m
-    for part in vector.split("/"):
-        if ":" in part:
-            k, _, v = part.partition(":")
-            if k in METRICS:
-                m[k] = v
-    return m
+    if not isinstance(vector, str) or not vector.startswith("CVSS:3.1/"):
+        raise ValueError("Se esperaba un vector CVSS 3.1 Base completo")
+    metrics = {}
+    for item in vector.split("/")[1:]:
+        parts = item.split(":")
+        if len(parts) != 2:
+            raise ValueError("Segmento CVSS inválido")
+        key, value = parts
+        if key not in VALID or key in metrics or len(value) != 1 or value not in VALID[key]:
+            raise ValueError("Métrica CVSS inválida o duplicada")
+        metrics[key] = value
+    if set(metrics) != set(METRICS):
+        raise ValueError("Vector CVSS incompleto")
+    return metrics
 
 
 if __name__ == "__main__":

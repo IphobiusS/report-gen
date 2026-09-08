@@ -1,6 +1,6 @@
 [project]
 name = "report-gen"
-version = "0.11.0"
+version = "0.13.0"
 description = "Generador propio de informes de pentesting: engagement.yaml como fuente de verdad, secciones canonicas activables, salida PDF/DOCX/MD consistente, editor local estilo SysReptor."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -13,8 +13,10 @@ dependencies = [
   "weasyprint",
   "pdfplumber",
   "python-docx",
-  "flask",
-  "pillow",
+  "flask>=3.1,<4",
+  "nh3>=0.3.2,<0.4",
+  "lxml>=5,<7",
+  "pillow>=10.1",
 ]
 
 [project.optional-dependencies]
@@ -22,7 +24,7 @@ dev = ["pytest", "ruff"]
 
 [tool.setuptools]
 packages = ["cvss", "exporters"]
-py-modules = ["engine", "export", "sections", "validate", "wizard"]
+py-modules = ["engine", "export", "sections", "validate", "wizard", "safe_markup", "resources", "storage", "pdf_pagination", "workflows", "project_history", "evidence", "finding_library"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

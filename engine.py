@@ -7,10 +7,11 @@ import sys
 import tempfile
 from pathlib import Path
 
-import markdown
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from markupsafe import Markup
+from safe_markup import md, md_inline, set_img_base
+from resources import restricted_fetcher
+import validate as validatelib
 
 ROOT = Path(__file__).resolve().parent
 TEMPLATES = ROOT / "templates"
@@ -19,74 +20,11 @@ THEMES = ROOT / "themes"
 SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"]
 SEVERITY_RANK = {s: i for i, s in enumerate(SEVERITY_ORDER)}
 
-MD = markdown.Markdown(extensions=["fenced_code", "tables", "sane_lists", "nl2br"], output_format="html5")
-
-# Imagenes estilo SysReptor: ![epigrafe](src){width="auto"} -> <figure> con epigrafe.
-_IMG_RE = re.compile(r'!\[(?P<alt>[^\]]*)\]\((?P<src>[^)\s]+)(?:\s+"[^"]*")?\)(?:\{(?P<attrs>[^}]*)\})?')
-
-
-_IMG_BASE = {"v": ""}
-
-
-def set_img_base(base):
-    _IMG_BASE["v"] = base or ""
-
-
-def _img_figure(m):
-    alt = (m.group("alt") or "").strip()
-    src = m.group("src")
-    if src.startswith("img/"):
-        src = _IMG_BASE["v"] + src
-    attrs = m.group("attrs") or ""
-    wm = re.search(r'width\s*=\s*"?([^"\s]+)"?', attrs)
-    style = ""
-    if wm and wm.group(1) not in ("auto", ""):
-        style = f' style="width:{wm.group(1)}"'
-    cap = f"<figcaption>{alt}</figcaption>" if alt else ""
-    return f'<figure class="mdfig"><img src="{src}" alt="{alt}"{style}>{cap}</figure>'
-
-
-def _esc_html_outside_code(line):
-    # Escapa < y > en la prosa (fuera de inline-code) para que los payloads HTML
-    # se muestren como TEXTO literal y no se interpreten/ejecuten. Los spans de
-    # codigo `...` y los bloques ``` los escapa el propio Markdown.
-    parts = re.split(r"(`[^`]*`)", line)
-    return "".join(p if p.startswith("`") else p.replace("<", "&lt;").replace(">", "&gt;")
-                   for p in parts)
-
-
-def _preprocess_md(text):
-    out, in_fence = [], False
-    for line in str(text).split("\n"):
-        if line.lstrip().startswith("```"):
-            in_fence = not in_fence
-            out.append(line)
-            continue
-        if in_fence:
-            out.append(line)
-        else:
-            # 1) escapar HTML crudo de la prosa; 2) luego expandir imagenes a <figure>
-            out.append(_IMG_RE.sub(_img_figure, _esc_html_outside_code(line)))
-    return "\n".join(out)
-
-
-def md(text):
-    if not text:
-        return Markup("")
-    MD.reset()
-    return Markup(MD.convert(_preprocess_md(str(text))))
-
-
-def md_inline(text):
-    html = str(md(text)).strip()
-    if html.startswith("<p>") and html.endswith("</p>") and html.count("<p>") == 1:
-        html = html[3:-4]
-    return Markup(html)
-
 
 def load_engagement(path):
     with path.open(encoding="utf-8") as fh:
         data = yaml.safe_load(fh)
+    validatelib.require_valid(data)
     data.setdefault("meta", {})
     data.setdefault("findings", [])
     return data
@@ -105,6 +43,8 @@ def load_lang(lang):
     """Carga en.yaml como base y superpone el idioma pedido (rellena huecos)."""
     base = yaml.safe_load((ROOT / "lang" / "en.yaml").read_text(encoding="utf-8"))
     lang = lang or "en"
+    if lang not in {"en", "es"}:
+        raise ValueError("Idioma no soportado")
     if lang != "en":
         p = ROOT / "lang" / f"{lang}.yaml"
         if p.exists():
@@ -191,8 +131,13 @@ def build_env():
 
 
 def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=None, img_base=None):
+    from workflows import project_report, report_sections
+    data = project_report(data)
+    number_figures(data["findings"])
     meta = data["meta"]
     theme = meta.get("theme", "serio")
+    if theme not in {"serio", "corporativo", "offsec", "htb"}:
+        raise ValueError("Tema no soportado")
     theme_css = THEMES / f"{theme}.css"
     if not theme_css.exists():
         raise ValueError(f"tema no encontrado: {theme}")
@@ -201,7 +146,8 @@ def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=No
     set_img_base(img_base_val)
     section_based = bool((data.get("report") or {}).get("sections"))
     tpl = env.get_template("sections_report.html" if section_based else "base.html")
-    ctx = dict(meta=meta, findings=findings, sum_findings=summary_findings(findings),
+    colors = {key: re.search(r"--sev-" + key + r":\s*(#[0-9A-Fa-f]{6})", theme_css.read_text()).group(1) for key in SEVERITY_ORDER}
+    ctx = dict(workflow_sections=report_sections(data), chart_colors=colors, meta=meta, findings=findings, sum_findings=summary_findings(findings),
                sev_counts=severity_counts(findings), sev_order=SEVERITY_ORDER,
                machine_count=machine_count(findings),
                appendix=appendix_rows(findings),
@@ -211,12 +157,30 @@ def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=No
     if section_based:
         import sections as _sections
         ctx["rsections"] = _sections.resolve_sections(data, L, meta.get("lang", "en"))
-    return tpl.render(**ctx)
+    result = tpl.render(**ctx)
+    if img_base is None:
+        from lxml import html as html_parser
+        from resources import local_image
+        from urllib.parse import urlsplit, unquote
+        from urllib.request import url2pathname
+        for image in html_parser.fromstring(result).xpath("//img[@src]"):
+            source = image.get("src")
+            parsed = urlsplit(source)
+            if parsed.scheme == "file":
+                path = Path(url2pathname(unquote(parsed.path))).resolve()
+                if not path.is_relative_to(engagement_dir.resolve()):
+                    raise ValueError("Imagen fuera del engagement")
+                source = path.relative_to(engagement_dir.resolve()).as_posix()
+            local_image(source, engagement_dir)
+    return result
 
 
 def render_pdf_weasyprint(html, out_pdf, base_url):
     from weasyprint import HTML
-    HTML(string=html, base_url=str(base_url)).write_pdf(str(out_pdf))
+    from pdf_pagination import verify_finding_tables
+    document = HTML(string=html, base_url=str(base_url), url_fetcher=restricted_fetcher(base_url, THEMES)).render()
+    verify_finding_tables(document)
+    document.write_pdf(str(out_pdf))
 
 
 def render_pdf_chromium(html, out_pdf, meta):
@@ -224,6 +188,8 @@ def render_pdf_chromium(html, out_pdf, meta):
     # cabecera/pie y el contador salen del mismo CSS que usa WeasyPrint. No se
     # inyecta header/footer template (duplicaria) ni margin (lo fija @page).
     from playwright.sync_api import sync_playwright
+    from pdf_pagination import mark_finding_tables, verify_table_markers
+    html, table_checks = mark_finding_tables(html)
     with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
                                      dir=str(out_pdf.parent), encoding="utf-8") as tf:
         tf.write(html)
@@ -231,9 +197,23 @@ def render_pdf_chromium(html, out_pdf, meta):
     try:
         with sync_playwright() as p:
             b = p.chromium.launch()
-            pg = b.new_page()
+            pg = b.new_page(java_script_enabled=False)
+            def restrict(route):
+                from urllib.parse import urlsplit, unquote
+                from urllib.request import url2pathname
+                parsed = urlsplit(route.request.url)
+                path = Path(url2pathname(unquote(parsed.path))).resolve() if parsed.scheme == "file" else None
+                if path and (path == tmp or path.is_relative_to(ROOT / "themes") or path.is_relative_to(Path(meta["_resource_root"]))):
+                    route.continue_()
+                else:
+                    route.abort()
+            pg.route("**/*", restrict)
             pg.goto(tmp.as_uri())
             pg.emulate_media(media="print")
+            if table_checks:
+                proof = pg.pdf(prefer_css_page_size=True, print_background=True)
+                verify_table_markers(proof, table_checks)
+            pg.evaluate("document.querySelectorAll('.rg-table-boundary').forEach(node => node.remove())")
             pg.pdf(path=str(out_pdf), prefer_css_page_size=True, print_background=True)
             b.close()
     finally:
@@ -263,7 +243,7 @@ def do_render(html, out_pdf, base_url, meta, backend):
     if backend == "weasyprint":
         render_pdf_weasyprint(html, out_pdf, base_url)
     else:
-        render_pdf_chromium(html, out_pdf, meta)
+        render_pdf_chromium(html, out_pdf, {**meta, "_resource_root": str(base_url)})
 
 
 def read_page_map(pdf_path, keys):
@@ -280,15 +260,17 @@ def read_page_map(pdf_path, keys):
 
 
 def toc_keys(data):
+    from workflows import report_sections
+    extra_keys = [s["key"] for s in report_sections(data)]
     if (data.get("report") or {}).get("sections"):
         keys = [s["key"] for s in data["report"]["sections"] if s.get("key")]
         keys += [f["id"] for f in data["findings"]]
-        return keys
+        return keys + extra_keys
     keys = ["conf", "contacts", "overview", "summary"]
     keys += [f["id"] for f in data["findings"]]
     if appendix_rows(data["findings"]):
         keys.append("appendix")
-    return keys
+    return keys + extra_keys
 
 
 def main():
@@ -306,6 +288,7 @@ def main():
     engagement_dir = yaml_path.parent
     data = load_engagement(yaml_path)
     data["findings"] = select_findings(data["findings"], args.only)
+    validatelib.require_valid(data, final=True)
     number_figures(data["findings"])
 
     meta = data["meta"]
@@ -332,10 +315,14 @@ def main():
     keys = toc_keys(data)
 
     html1 = render_html(env, data, engagement_dir, page_map={}, pagemarks=True, L=L)
-    tmp_pdf = out_dir / f".{engagement_dir.name}.pass1.pdf"
-    do_render(html1, tmp_pdf, engagement_dir, meta, backend)
-    page_map = read_page_map(tmp_pdf, keys)
-    tmp_pdf.unlink(missing_ok=True)
+    out_pdf.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(suffix=".pdf", dir=out_pdf.parent, delete=False) as tmp:
+        tmp_pdf = Path(tmp.name)
+    try:
+        do_render(html1, tmp_pdf, engagement_dir, meta, backend)
+        page_map = read_page_map(tmp_pdf, keys)
+    finally:
+        tmp_pdf.unlink(missing_ok=True)
     missing = [k for k in keys if k not in page_map]
     if missing:
         print(f"[i] sin pagina resuelta para: {', '.join(missing)}")
@@ -349,4 +336,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ValueError as exc:
+        sys.exit(f"[!] {exc}")

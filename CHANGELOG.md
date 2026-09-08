@@ -1,12 +1,77 @@
+# 0.13.0 — 2026-09-08
+
+- Añade historial completo de proyectos con objetos deduplicados, etapas con nombre, comparación por identidad y restauración de archivos con rollback.
+- Añade respaldos portables con manifiesto de integridad y un importador acotado que verifica rutas, tipos de imagen, enlaces, duplicados y tamaños.
+- Añade revisión de entrega, activos, cobertura, limitaciones, seguimiento de correcciones y registros de retest.
+- Añade galería de evidencias compartidas, originales separados y edición que aplana anotaciones/censura en PNG sin metadatos.
+- Añade biblioteca local versionada con etiquetas, variables, saneado de campos del proyecto, revisión de texto e importación/exportación.
+- Introduce identificadores permanentes y migración compatible de proyectos antiguos.
+- Integra activos, evidencias, cobertura y retest en PDF, DOCX y Markdown; incluye sus secciones en el índice PDF.
+- Conserva la paginación continua y la protección de tablas de hallazgos. Evita párrafos vacíos añadidos entre pasos en Word.
+- Incluye guía, respaldo de demostración ficticio y pruebas de los nuevos recorridos con el editor y la API reales.
+
+---
+
 # Changelog
 
 Formato basado en Keep a Changelog. Versionado semantico aproximado.
 
-## [Unreleased]
+## [0.12.1] - 2026-09-08
+
+### Paginación
+- Se elimina el salto obligatorio entre hallazgos en todos los temas PDF y en
+  ambas rutas del exportador DOCX.
+- El encabezado PDF permanece unido a su tabla principal; las tablas del hallazgo
+  no se fragmentan para aprovechar un espacio insuficiente al final de página.
+- Los procedimientos largos conservan el flujo entre páginas.
+- Los marcadores del índice acompañan al encabezado al cambiar de página.
+- Word utiliza filas indivisibles y encadena los párrafos de cada tabla; los
+  encabezados permanecen con su contenido siguiente.
+- WeasyPrint comprueba sus fragmentos de página antes de escribir. Chromium
+  dispone de una comprobación mediante marcadores temporales en un PDF previo;
+  esos marcadores se retiran de la salida final.
+- Un PDF con una tabla demasiado alta se rechaza con un mensaje accionable. La
+  API devuelve el motivo sin cambiar el proyecto guardado.
+- Se añaden pruebas de paginación real, movimiento de tablas, índice, DOCX y API.
+  Detalles y límites en VERIFICACION-0.12.1.md.
+
+## [0.12.0] - 2026-09-08
 
 ### Corregido
-- El logo "report-gen" del topbar ya no se parte en dos lineas cuando la barra esta
-  llena (wordmark envuelto con white-space: nowrap).
+- RG-01: los guardados capturan proyecto, contenido y revisión; cambiar de
+  proyecto espera el guardado pendiente y se cancela si falla.
+- RG-02: los errores HTTP conservan el estado pendiente; las respuestas antiguas
+  no marcan como guardadas ediciones más recientes.
+- RG-03: saneado compartido de Markdown y atributos; payloads HTML visibles como
+  texto, sin ejecución. Las bases de imágenes se aíslan por petición.
+- RG-04: validación de rango y finitud del score, coherencia con vector y severidad,
+  parser CVSS 3.1 estricto y visualización correcta de la puntuación numérica 0.
+- RG-05: validación de estructuras anidadas antes de escribir, y reparación del
+  fallo de traducción del validador. La exportación final exige datos válidos.
+- RG-06: Word conserva las imágenes Markdown, enlaces, listas, tablas y bloques
+  de código con saltos e indentación.
+- RG-07: Markdown se entrega en un ZIP con sus imágenes relativas.
+- RG-08: validación de Host y Origin, CSRF de sesión, tipo JSON obligatorio,
+  política CSP y restricción de recursos externos y rutas en los renderizadores.
+- RG-09: colores explícitos y etiquetas completas en el gráfico SVG del PDF.
+
+### Añadido
+- Escritura atómica del YAML, copia de una versión anterior y botón Restaurar.
+- ETag/If-Match para detectar conflictos entre pestañas; subida de imágenes con
+  nombres únicos y sin sobrescribir evidencias existentes.
+- Exportación desde instantáneas temporales sin modificar el proyecto guardado.
+- Pruebas de regresión, guardado JavaScript y editor con API HTTP real y jsdom.
+- Dependencias de desarrollo JavaScript y CI actualizado; guía de migración y
+  registro de verificación. Nuevas dependencias runtime: nh3 y lxml.
+
+### Compatibilidad
+- Markdown CLI/UI ahora produce `.zip`; `to_markdown` sigue devolviendo texto.
+- Los clientes API deben enviar cookie de sesión, token CSRF y revisión ETag.
+- El YAML sigue siendo compatible; datos inválidos antes tolerados pueden bloquear
+  una exportación hasta que se corrijan. Las imágenes se limitan al proyecto.
+- `tests/run_stdlib.py` requiere pytest y delega la ejecución de la suite.
+
+### Funciones ya presentes en el ZIP recibido
 
 
 ### Anadido

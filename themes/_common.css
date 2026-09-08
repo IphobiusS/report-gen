@@ -80,7 +80,15 @@ body { margin: 0; font-family: var(--font-body); color: var(--ink); background: 
 .sumlink { color: var(--ink); text-decoration: none; }
 
 /* Finding */
-.finding + .finding { break-before: page; }
+/* Findings flow naturally. Keep the heading and its main table together,
+   while long walkthroughs may continue on subsequent pages. */
+.finding + .finding { margin-top: 8mm; }
+.finding-intro { position: relative; break-inside: avoid; page-break-inside: avoid; }
+.finding table { break-inside: avoid; page-break-inside: avoid; }
+.finding tr { break-inside: avoid; page-break-inside: avoid; }
+.finding thead { display: table-header-group; }
+.finding h2, .finding h3, .sec-title { break-after: avoid; page-break-after: avoid; }
+.finding p { orphans: 2; widows: 2; }
 .f-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 10px; background: var(--panel); border-left: 5px solid var(--ink); margin-bottom: 10px; }
 .finding.sev-critical .f-head { border-left-color: var(--sev-critical); }
 .finding.sev-high .f-head { border-left-color: var(--sev-high); }

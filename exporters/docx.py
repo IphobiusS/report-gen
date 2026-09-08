@@ -104,12 +104,16 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     Portada, cabecera/pie con numero de pagina, cajas de finding, chips de
     severidad, bloques de codigo, grafico de severidades e imagenes."""
     import tempfile
+    from workflows import project_report, report_sections
+    data = project_report(data)
+    engine.number_figures(data["findings"])
     from docx import Document
     from docx.shared import Pt, RGBColor, Cm
     from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
     from docx.enum.section import WD_SECTION
     from docx.oxml.ns import qn
     from docx.oxml import OxmlElement
+    from .pagination import keep_table_together
 
     lab = L["labels"]
     hx = _palette(meta)
@@ -187,20 +191,13 @@ def to_docx(data, meta, L, engagement_dir, out_path):
                 p.add_run(tok)
 
     def add_markdown(text):
-        for block in re.split(r"\n\s*\n", (text or "").strip()):
-            block = block.strip()
-            if not block:
-                continue
-            if all(ln.strip().startswith(("- ", "* ")) for ln in block.splitlines()):
-                for ln in block.splitlines():
-                    add_inline(doc.add_paragraph(style="List Bullet"), ln.strip()[2:])
-            else:
-                add_inline(doc.add_paragraph(), block.replace("\n", " "))
+        from .richtext import write_markdown
+        write_markdown(doc, text, engagement_dir, code_block)
 
     def code_block(text):
         p = doc.add_paragraph(); par_bg(p, CODE_BG); par_border(p, ACC_HEX, ("left",), sz=18, space=4)
         p.paragraph_format.left_indent = Cm(0.2); p.paragraph_format.space_before = Pt(3); p.paragraph_format.space_after = Pt(3)
-        lines = text.strip().split("\n")
+        lines = text.split("\n")
         for i, ln in enumerate(lines):
             if i:
                 p.add_run().add_break()
@@ -218,6 +215,8 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             n = p.add_run(str(sec_no[0]) + "  "); n.font.color.rgb = ACC; n.bold = True
         t = p.add_run(text); t.font.color.rgb = INK if level == 1 else INK_S
         t.bold = True
+        p.paragraph_format.keep_with_next = True
+        p.paragraph_format.keep_together = True
         if level == 1:
             t.font.size = Pt(15); par_border(p, hx("ink", "0b0a1a"), ("bottom",), sz=12)
         elif level == 2:
@@ -238,6 +237,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             cell_bg(cells[0], PANEL)
             rk = cells[0].paragraphs[0].add_run(k); rk.font.size = Pt(8.5); rk.font.color.rgb = MUTED; rk.font.name = MONO
             add_inline(cells[1].paragraphs[0], v)
+        keep_table_together(t)
         doc.add_paragraph()
         return t
 
@@ -250,29 +250,28 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             cs = t.add_row().cells
             for i, val in enumerate(row):
                 add_inline(cs[i].paragraphs[0], str(val))
+        keep_table_together(t)
         doc.add_paragraph()
 
     def figure(step):
         fig = step.get("figure")
         if not fig or not fig.get("src"):
             return
-        img = engagement_dir / fig["src"]
-        if img.exists():
-            try:
-                doc.add_picture(str(img), width=Cm(15))
-                doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-            except Exception:
-                pass
+        from resources import local_image
+        img = local_image(fig["src"], engagement_dir)
+        doc.add_picture(str(img), width=Cm(15))
+        doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
         cap = doc.add_paragraph()
         rc = cap.add_run(f"{L['figure']} {fig.get('number','')}. "); rc.bold = True; rc.italic = True; rc.font.size = Pt(9); rc.font.color.rgb = INK_S
         rr = cap.add_run(fig.get("caption", "")); rr.italic = True; rr.font.size = Pt(9); rr.font.color.rgb = MUTED
 
     def step(s):
-        p = doc.add_paragraph()
         if s.get("lead"):
+            p = doc.add_paragraph()
+            p.paragraph_format.keep_with_next = True
             rb = p.add_run(s["lead"] + " "); rb.bold = True
         if s.get("text_md"):
-            add_inline(p, s["text_md"].replace("\n", " "))
+            add_markdown(s["text_md"])
         if s.get("command"):
             code_block(s["command"])
         figure(s)
@@ -345,7 +344,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     sec1.page_width = Cm(21); sec1.page_height = Cm(29.7)
     sec1.left_margin = sec1.right_margin = Cm(1.8); sec1.top_margin = Cm(1.6); sec1.bottom_margin = Cm(1.6)
     conf = br.get("confidential_text", "CONFIDENTIAL")
-    rhright = f"{conf}  |  v{meta.get('version','')}  |  {meta.get('date','')}"
+    rhright = "  |  ".join(str(value) for value in (conf, "v" + str(meta["version"]) if meta.get("version") else "", meta.get("date")) if value)
     sec1.header.is_linked_to_previous = False
     hp = sec1.header.paragraphs[0]; hp.paragraph_format.tab_stops.add_tab_stop(Cm(17.4), WD_TAB_ALIGNMENT.RIGHT)
     r = hp.add_run(br.get("wordmark", "iphobiuss")); r.bold = True; r.font.color.rgb = ACC; r.font.size = Pt(8); r.font.name = MONO
@@ -386,7 +385,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             if rows: kv_table(rows)
             if f.get("summary_md"):
                 p = doc.add_paragraph(); rb = p.add_run(lab["attack_path"] + ". "); rb.bold = True
-                add_inline(p, f["summary_md"].replace("\n", " "))
+                add_markdown(f["summary_md"])
             for ph in f.get("phases", []):
                 heading(ph.get("name", ""), 3)
                 for s in ph.get("steps", []): step(s)
@@ -397,13 +396,13 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             heading(f"{f.get('id','')} {f.get('title','')}", 2, sev=f.get("severity"))
             rows = []
             if f.get("cwe"): rows.append((lab["cwe"], f["cwe"]))
-            if f.get("cvss_vector") or f.get("cvss"): rows.append((cvss_label(lab, f), (f.get("cvss", "") + "  " + f.get("cvss_vector", "")).strip()))
+            if f.get("cvss_vector") or f.get("cvss") not in (None, ""): rows.append((cvss_label(lab, f), (str(f.get("cvss", "")) + "  " + f.get("cvss_vector", "")).strip()))
             if f.get("affected"): rows.append((lab["affected"], f["affected"]))
             if rows: kv_table(rows)
             for key, lbl in [("description_md", lab["desc_root"]), ("impact_md", lab["impact"]), ("remediation_md", lab["remediation"])]:
                 if f.get(key):
-                    p = doc.add_paragraph(); rb = p.add_run(lbl + ". "); rb.bold = True
-                    add_inline(p, f[key].replace("\n", " "))
+                    p = doc.add_paragraph(); p.paragraph_format.keep_with_next = True; rb = p.add_run(lbl + ". "); rb.bold = True
+                    add_markdown(f[key])
             if f.get("references"):
                 heading(lab["references"], 3)
                 for r in f["references"]: doc.add_paragraph(r, style="List Bullet")
@@ -416,7 +415,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
                 for key, lbl in [("short_md", lab["short_term"]), ("medium_md", lab["medium_term"]), ("long_md", lab["long_term"])]:
                     if rs.get(key):
                         p = doc.add_paragraph(style="List Bullet"); rb = p.add_run(lbl + ": "); rb.bold = True
-                        add_inline(p, rs[key])
+                        add_markdown(rs[key])
 
     # ---- Rama por secciones (mismo orden/contenido que el PDF) ----
     if (data.get("report") or {}).get("sections"):
@@ -461,7 +460,6 @@ def to_docx(data, meta, L, engagement_dir, out_path):
                 render_summary_body()
             elif sp == "findings":
                 for idx, f in enumerate(data["findings"]):
-                    if idx: newpage()
                     render_one_finding(f)
             elif sp == "appendix":
                 render_generic(s)
@@ -474,7 +472,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
                 render_generic(s)
         Path(out_path).parent.mkdir(parents=True, exist_ok=True)
         doc.save(str(out_path))
-        return out_path
+        return Path(out_path)
 
     # Confidencialidad
     heading(lab["confidentiality"], 1)
@@ -524,8 +522,6 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     # Findings
     newpage(); heading(lab["findings"], 1)
     for idx, f in enumerate(data["findings"]):
-        if idx:
-            newpage()
         if f.get("mode") == "machine":
             host = f.get("host") or {}
             heading(f"{f.get('id','')} {host.get('name') or f.get('title','')}", 2)
@@ -540,7 +536,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
                 kv_table(rows)
             if f.get("summary_md"):
                 p = doc.add_paragraph(); rb = p.add_run(lab["attack_path"] + ". "); rb.bold = True
-                add_inline(p, f["summary_md"].replace("\n", " "))
+                add_markdown(f["summary_md"])
             for ph in f.get("phases", []):
                 heading(ph.get("name", ""), 3)
                 for s in ph.get("steps", []):
@@ -553,16 +549,16 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             rows = []
             if f.get("cwe"):
                 rows.append((lab["cwe"], f["cwe"]))
-            if f.get("cvss_vector") or f.get("cvss"):
-                rows.append((cvss_label(lab, f), (f.get("cvss", "") + "  " + f.get("cvss_vector", "")).strip()))
+            if f.get("cvss_vector") or f.get("cvss") not in (None, ""):
+                rows.append((cvss_label(lab, f), (str(f.get("cvss", "")) + "  " + f.get("cvss_vector", "")).strip()))
             if f.get("affected"):
                 rows.append((lab["affected"], f["affected"]))
             if rows:
                 kv_table(rows)
             for key, lbl in [("description_md", lab["desc_root"]), ("impact_md", lab["impact"]), ("remediation_md", lab["remediation"])]:
                 if f.get(key):
-                    p = doc.add_paragraph(); rb = p.add_run(lbl + ". "); rb.bold = True
-                    add_inline(p, f[key].replace("\n", " "))
+                    p = doc.add_paragraph(); p.paragraph_format.keep_with_next = True; rb = p.add_run(lbl + ". "); rb.bold = True
+                    add_markdown(f[key])
             if f.get("references"):
                 heading(lab["references"], 3)
                 for r in f["references"]:
@@ -577,7 +573,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
                 for key, lbl in [("short_md", lab["short_term"]), ("medium_md", lab["medium_term"]), ("long_md", lab["long_term"])]:
                     if rs.get(key):
                         p = doc.add_paragraph(style="List Bullet"); rb = p.add_run(lbl + ": "); rb.bold = True
-                        add_inline(p, rs[key])
+                        add_markdown(rs[key])
 
     # Appendix
     appx = engine.appendix_rows(data["findings"])
@@ -586,6 +582,8 @@ def to_docx(data, meta, L, engagement_dir, out_path):
         doc.add_paragraph(L.get("appendix_intro", ""))
         data_table([lab["host"], lab["item"], lab["value"], lab["notes"]], [[r["host"], r["item"], r["value"], r["notes"]] for r in appx])
 
+    for extra in report_sections(data):
+        newpage(); heading(extra["title"], 1); add_markdown(extra["body"])
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(out_path))
-    return out_path
+    return Path(out_path)

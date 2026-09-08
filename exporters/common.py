@@ -4,6 +4,8 @@ import engine
 
 def prepare(yaml_path):
     data = engine.load_engagement(yaml_path)
+    import validate
+    validate.require_valid(data, final=True)
     engine.number_figures(data["findings"])
     meta = data["meta"]
     L = engine.load_lang(meta.get("lang", "en"))
@@ -30,4 +32,4 @@ def summary_sev(L, f):
     if f.get("mode") == "machine":
         return (L.get("labels") or {}).get("machine", "Machine")
     s = sev_label(L, f.get("severity", ""))
-    return s + (f" ({f['cvss']})" if f.get("cvss") else "")
+    return s + (f" ({f['cvss']})" if f.get("cvss") not in (None, "") else "")
