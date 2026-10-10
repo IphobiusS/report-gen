@@ -46,8 +46,8 @@ const WorkflowUI = (() => {
       if(!await doSave())throw Error(w('No se pudo guardar el proyecto.','Could not save project.'));
       const r=await requestJson(url(path,slug),{method:'POST',headers:{'Content-Type':'application/json','If-Match':projectStore.etag},body:JSON.stringify(body)});
       if(S.slug===slug){
-        if(r.body.data){S.data=r.body.data;projectStore.data=S.data;projectStore.base=JSON.parse(JSON.stringify(S.data));}
-        if(r.etag)projectStore.etag=r.etag;
+        if(r.body.data)await adoptSavedProject(r.body.data,r.etag||projectStore.etag);
+        else if(r.etag)projectStore.etag=r.etag;
         renderSidebar();renderMain();if(S.previewMode==='live')refreshLivePreview();
       }
       return r.body;

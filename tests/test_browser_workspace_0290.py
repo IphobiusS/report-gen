@@ -92,7 +92,8 @@ def test_bootstrap_exposes_only_opaque_scope_and_preserves_unscoped_api_clients(
     client = api.app.test_client()
     response = client.get('/api/session')
     data = response.get_json()
-    assert set(data) == {'version', 'csrf', 'workspace_id'}
+    assert set(data) == {'version', 'csrf', 'workspace_id', 'ui_language'}
+    assert data['ui_language'] in {'es', 'en'}
     assert data['workspace_id'] == response.headers['X-Report-Gen-Workspace']
     assert str(tmp_path) not in response.get_data(as_text=True)
     assert client.get('/api/projects').status_code == 200

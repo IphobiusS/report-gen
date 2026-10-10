@@ -28,7 +28,7 @@ const RemediationUI = (() => {
   function updateButtons(state){const allowed=guard(state)&&(!sensitive(state)||state.ack.checked);
     state.previewButton.disabled=!allowed||state.loading;
     state.host.querySelectorAll('[data-remediation-download]').forEach(node=>node.disabled=!allowed||state.loading||!state.token||!state.count);updateReturnButtons(state);}
-  function clearPreview(state){state.token=null;state.count=0;state.preview.replaceChildren();state.status.textContent=w('Previsualiza los campos seleccionados antes de descargar.','Preview selected fields before downloading.');updateButtons(state);}
+  function clearPreview(state){state.token=null;state.count=0;state.preview.replaceChildren();clearDelivery(state);state.status.textContent=w('Previsualiza los campos seleccionados antes de descargar.','Preview selected fields before downloading.');updateButtons(state);}
   function body(state){return {fields:selection(state),lang:state.lang,ack_private:state.ack.checked};}
   async function request(state,operation,options){return requireOk(await appFetch('/api/projects/'+encodeURIComponent(state.slug)+'/remediation-tasks/'+operation,
     {method:'POST',headers:{'Content-Type':'application/json','If-Match':state.etag},body:JSON.stringify(options)}));}
@@ -65,6 +65,7 @@ const RemediationUI = (() => {
   }
   function invalidateReturn(state){
     if(!state.returning)return;
+    clearDelivery(state);
     state.returning.token=null;state.returning.selected.clear();state.returning.changes.replaceChildren();
     state.returning.apply.disabled=true;state.returning.reviewed.checked=false;
   }
@@ -74,26 +75,39 @@ const RemediationUI = (() => {
     r.issue.disabled=!ready||!r.assigned.size||!r.private.checked||!r.retention.checked;
     r.preview.disabled=!ready||!r.text;
     r.apply.disabled=!ready||!r.token||!r.selected.size||!r.reviewed.checked;
+    r.receive.disabled=!ready||!r.token;
+    r.deliveryPreview.disabled=!ready||!r.assigned.size||!r.private.checked||!r.retention.checked;
+    r.deliveryExport.disabled=r.deliveryPreview.disabled||!r.deliveryToken;
     r.file.disabled=!ready;
   }
   async function acceptReturnMutation(state,response,data){
-    if(S.slug!==state.slug||S.data!==state.data||projectStore.etag!==state.etag||projectStore.dirty)
+    if(S.slug!==state.slug||S.data!==state.data||projectStore.etag!==state.etag||projectStore.revision!==state.revision||JSON.stringify(S.data)!==state.json||projectStore.dirty)
       throw Error(w('El proyecto cambió. Recarga el proyecto para ver el resultado guardado.','The project changed. Reload it to see the saved result.'));
-    S.data=data;projectStore.data=data;projectStore.base=JSON.parse(JSON.stringify(data));
-    projectStore.etag=response.headers.get('ETag');projectStore.lastSavedAt=new Date();UndoUI.clear();ProgressUI.saveState('saved');
+    if(!data||typeof data!=='object'||!Array.isArray(data.findings)||!/^"[a-f0-9]{64}"$/.test(response.headers.get('ETag')||''))
+      throw Error(w('Respuesta de guardado inválida. Recarga el proyecto para comprobar el resultado.','Invalid saved response. Reload the project to check the result.'));
+    await adoptSavedProject(data,response.headers.get('ETag'));
+    if(typeof RetestMatrixUI!=='undefined')RetestMatrixUI.invalidate();
+    if(typeof RetestDiffUI!=='undefined')RetestDiffUI.invalidate();
+    if(S.previewVisible&&S.previewMode==='live')refreshLivePreview();
   }
-  async function issueReturn(state){
+  async function issueReturn(state,delivery=false){
     if(!guard(state))return;
-    const r=state.returning,options={finding_uids:[...r.assigned],ack_private:r.private.checked,ack_retention:r.retention.checked};
+    const r=state.returning,options=delivery?{...deliveryBody(state),preview_token:r.deliveryToken}:{finding_uids:[...r.assigned],ack_private:r.private.checked,ack_retention:r.retention.checked};
+    let success=false;
+    let downloaded=false;
     state.loading=true;updateButtons(state);busyProject(true);
     try{
-      const response=await request(state,'return-template',options),blob=await response.blob();
+      const response=await request(state,delivery?'delivery-export':'return-template',options),blob=await response.blob();
+      // The server has already committed this assignment. Do not lose its
+      // artifact if the subsequent project refresh fails or sees another edit.
+      const url=URL.createObjectURL(blob);h('a',{href:url,download:delivery?'remediation-delivery.zip':'remediation-return.csv'}).click();setTimeout(()=>URL.revokeObjectURL(url),1000);downloaded=true;
       const current=await requireOk(await appFetch('/api/projects/'+encodeURIComponent(state.slug)));
       if(current.headers.get('ETag')!==response.headers.get('ETag'))throw Error(w('El proyecto cambió. Recarga antes de emitir otra plantilla.','The project changed. Reload before issuing another template.'));
       await acceptReturnMutation(state,current,await current.json());
-      const url=URL.createObjectURL(blob);h('a',{href:url,download:'remediation-return.csv'}).click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      success=true;
       toast(w('Plantilla emitida y asignación guardada.','Template issued and assignment saved.'),'ok');
-    }finally{state.loading=false;busyProject(false);if(S.slug===state.slug){renderSidebar();select('workflow','remediation_tasks');}}
+    }catch(error){if(mounted===state)r.status.textContent=(downloaded?w('La descarga fue preparada y la asignación se guardó. Recarga el proyecto antes de continuar. ','The download was prepared and the assignment was saved. Reload the project before continuing. '):'')+error.message;throw error;}
+    finally{state.loading=false;busyProject(false);if(success&&mounted===state){renderSidebar();select('workflow','remediation_tasks');}else if(mounted===state)updateButtons(state);}
   }
   async function previewReturn(state){
     if(!guard(state))return;
@@ -121,15 +135,67 @@ const RemediationUI = (() => {
     }catch(error){if(guard(state)){invalidateReturn(state);r.status.textContent=error.message;}}
     finally{if(mounted===state){state.loading=false;updateButtons(state);}}
   }
-  async function applyReturn(state){
+  async function applyReturn(state,receive=false){
     if(!guard(state))return;
-    const r=state.returning,options={text:r.text,preview_token:r.token,selected:[...r.selected],ack_reviewed:r.reviewed.checked};
+    const r=state.returning,options=receive?{text:r.text,preview_token:r.token,ack_reviewed:true}:{text:r.text,preview_token:r.token,selected:[...r.selected],ack_reviewed:r.reviewed.checked};
+    let success=false;
     state.loading=true;updateButtons(state);busyProject(true);
     try{
-      const response=await request(state,'return-apply',options),result=await response.json();
+      const response=await request(state,receive?'return-receive':'return-apply',options),result=await response.json();
       await acceptReturnMutation(state,response,result.data);
-      toast(result.applied+' '+w('cambios guardados. La verificación técnica y los retests se conservan.','changes saved. Technical verification and retests are preserved.'),'ok');
-    }finally{state.loading=false;busyProject(false);if(S.slug===state.slug){renderSidebar();select('workflow','remediation_tasks');}}
+      success=true;
+      toast(receive?w('Recepción registrada. No se aplicaron cambios a hallazgos.','Receipt recorded. No finding changes were applied.'):result.applied+' '+w('cambios guardados. La verificación técnica y los retests se conservan.','changes saved. Technical verification and retests are preserved.'),'ok');
+    }catch(error){if(mounted===state)r.status.textContent=error.message+' '+w('Se conservan el archivo y la selección para reintentar. Si la revisión cambió, recarga el proyecto y compara de nuevo.','The file and selection are preserved for retry. If the revision changed, reload the project and compare again.');throw error;}
+    finally{state.loading=false;busyProject(false);if(success&&mounted===state){renderSidebar();select('workflow','remediation_tasks');}else if(mounted===state)updateButtons(state);}
+  }
+  function clearDelivery(state){const r=state.returning;if(!r)return;r.deliveryToken=null;r.deliveryRows?.replaceChildren();}
+  function deliveryBody(state){const r=state.returning;return {finding_uids:[...r.assigned],fields:selection(state),lang:state.lang,ack_private:r.private.checked,ack_retention:r.retention.checked};}
+  async function previewDelivery(state){
+    if(!guard(state))return;
+    const r=state.returning,options=deliveryBody(state),signature=JSON.stringify(options);clearDelivery(state);
+    state.loading=true;updateButtons(state);
+    try{
+      const response=await request(state,'delivery-preview',options),result=await response.json();
+      if(!guard(state)||JSON.stringify(deliveryBody(state))!==signature)return;
+      if(response.headers.get('ETag')!==state.etag||result.revision!==tag(state.etag)||result.project_slug!==state.slug||result.version!==1||!Array.isArray(result.rows)||JSON.stringify(result.fields)!==JSON.stringify(options.fields))
+        throw Error(w('La revisión recibida no coincide.','The returned revision does not match.'));
+      const labels={owner:w('Responsable','Owner'),due_date:w('Plazo','Due date'),reported_remediation:w('Corrección comunicada (sin verificar)','Reported remediation (unverified)')};
+      result.rows.forEach((row,index)=>{
+        const values=h('dl',{});result.fields.forEach(key=>values.append(h('dt',{},result.labels[key]),h('dd',{},row.card[key]||w('Vacío','Empty'))));
+        const returned=h('dl',{});Object.keys(labels).forEach(key=>returned.append(h('dt',{},labels[key]),h('dd',{},row.return_values[key]||w('Vacío','Empty'))));
+        r.deliveryRows.append(h('details',{class:'rt-card',open:index===0?'':null},h('summary',{},row.card.id+' · '+row.return_values.owner),
+          h('h4',{},w('Ficha con los campos seleccionados arriba','Card with fields selected above')),values,
+          h('h4',{},w('Valores incluidos siempre en el CSV editable','Values always included in the editable CSV')),returned));
+      });
+      r.deliveryToken=result.preview_token;
+      r.status.textContent=w('Revisa las fichas y todos los valores del CSV. El ZIP y su manifiesto reúnen todos los responsables: comparte solo la carpeta de cada destinatario. No se envía automáticamente.','Review the cards and every CSV value. The ZIP and manifest combine all owners: share only each recipient’s folder. Nothing is sent automatically.');
+    }catch(error){if(mounted===state)r.status.textContent=error.message;}
+    finally{if(mounted===state){state.loading=false;updateButtons(state);}}
+  }
+  async function revokeReturn(state,batch){
+    if(!guard(state)||!confirm(w('¿Revocar este lote? Sus retornos dejarán de admitirse. No cambia hallazgos ni borra registros.','Revoke this batch? Its returns will no longer be accepted. Findings and records are preserved.')))return;
+    let success=false;state.loading=true;updateButtons(state);busyProject(true);
+    try{const response=await request(state,'return-revoke',{batch_uid:batch.uid,ack_reviewed:true}),result=await response.json();
+      await acceptReturnMutation(state,response,result.data);success=true;
+    }catch(error){if(mounted===state)state.returning.status.textContent=error.message;throw error;}
+    finally{state.loading=false;busyProject(false);if(success&&mounted===state){renderSidebar();select('workflow','remediation_tasks');}else if(mounted===state)updateButtons(state);}
+  }
+  function ledgerView(state){
+    const labels={issued:w('Emitido localmente','Issued locally'),received:w('Recepción registrada','Receipt recorded'),accepted:w('Cambios aceptados','Changes accepted'),revoked:w('Revocado','Revoked')};
+    const hashLabels={issued:w('SHA-256 de la descarga emitida','SHA-256 of the issued download'),received:w('SHA-256 del CSV recibido','SHA-256 of the received CSV'),accepted:w('SHA-256 de los cambios aceptados','SHA-256 of accepted changes'),revoked:w('SHA-256 de la referencia del lote','SHA-256 of the batch reference')};
+    const box=h('details',{'data-return-ledger':''},h('summary',{},w('Registro local de lotes','Local batch log')),
+      h('p',{},w('Hasta 20 lotes o 4 MiB y 16 eventos por lote. Se indican los eventos anteriores omitidos. Este registro local editable no demuestra envío, identidad del remitente ni verificación técnica. Restaurar una versión antigua también restaura sus lotes y revocaciones.','Up to 20 batches or 4 MiB and 16 events per batch. Older omitted events are counted. This editable local record does not prove delivery, sender identity or technical verification. Restoring an older version also restores its batches and revocations.')));
+    for(const batch of [...(state.data.remediation_exchanges||[])].reverse()){
+      const rows=h('details',{class:'rt-card','data-return-ledger-batch':''},h('summary',{},batch.uid+' · '+(batch.revoked?w('Revocado','Revoked'):w('Admite retornos','Returns accepted'))));
+      if(!batch.events?.length)rows.append(h('p',{},w('Lote anterior sin eventos registrados; no se inventan fechas.','Legacy batch without recorded events; no dates are inferred.')));
+      if(batch.events_omitted)rows.append(h('p',{},batch.events_omitted+' '+w('eventos anteriores omitidos.','older events omitted.')));
+      for(const event of batch.events||[]){const time=h('time',{datetime:event.at},new Date(event.at).toLocaleString(state.lang==='en'?'en':'es-CL'));
+        const count=event.kind==='revoked'?'':' · '+event.count+' '+(event.kind==='accepted'?w('cambios','changes'):w('hallazgos','findings'));
+        rows.append(h('p',{},labels[event.kind]+' · ',time,count),h('dl',{},h('dt',{},w('Revisión de origen','Source revision')),h('dd',{},event.source_revision),h('dt',{},hashLabels[event.kind]),h('dd',{},event.sha256)));}
+      if(!batch.revoked)rows.append(button(w('Revocar este lote','Revoke this batch'),()=>revokeReturn(state,batch)));
+      box.append(rows);
+    }
+    return box;
   }
   function returnView(state){
     const r=state.returning={assigned:new Set(),selected:new Set(),text:'',token:null,sequence:0};
@@ -137,17 +203,21 @@ const RemediationUI = (() => {
     r.status=h('p',{role:'status','aria-live':'polite','data-return-status':''});
     r.private=h('input',{type:'checkbox','data-return-private':''});r.retention=h('input',{type:'checkbox','data-return-retention':''});
     r.reviewed=h('input',{type:'checkbox','data-return-reviewed':''});
-    [r.private,r.retention,r.reviewed].forEach(input=>input.addEventListener('change',()=>updateReturnButtons(state)));
+    [r.private,r.retention,r.reviewed].forEach(input=>input.addEventListener('change',()=>{if(input!==r.reviewed)clearDelivery(state);updateReturnButtons(state);}));
     const assigned=h('fieldset',{class:'rt-fields'},h('legend',{},w('Hallazgos que asignarás','Findings to assign')));
     (S.data.findings||[]).forEach(finding=>{
       const valid=!!finding.owner?.trim(),input=h('input',{type:'checkbox','data-return-finding':finding.uid,disabled:valid?null:''});
-      input.addEventListener('change',()=>{if(input.checked)r.assigned.add(finding.uid);else r.assigned.delete(finding.uid);updateReturnButtons(state);});
+      input.addEventListener('change',()=>{if(input.checked)r.assigned.add(finding.uid);else r.assigned.delete(finding.uid);clearDelivery(state);updateReturnButtons(state);});
       assigned.append(h('label',{class:'rt-check'},input,(finding.id||'')+' · '+(finding.owner||w('Asigna un responsable en el hallazgo','Assign an owner in the finding'))));
     });
     if(!(S.data.findings||[]).length)assigned.append(h('p',{},w('Añade hallazgos y asigna sus responsables primero.','Add findings and assign their owners first.')));
     r.issue=button(w('Emitir plantilla de retorno CSV','Issue return CSV template'),()=>issueReturn(state),{'data-return-issue':'',disabled:''});
     r.preview=button(w('Comparar retorno','Compare return'),()=>previewReturn(state),{'data-return-preview':'',disabled:''});
     r.apply=button(w('Guardar cambios seleccionados','Save selected changes'),()=>applyReturn(state),{'data-return-apply':'',disabled:''});
+    r.receive=button(w('Registrar recepción sin aplicar cambios','Record receipt without applying changes'),()=>applyReturn(state,true),{'data-return-receive':'',disabled:''});
+    r.deliveryPreview=button(w('Previsualizar entrega por responsable','Preview owner delivery'),()=>previewDelivery(state),{'data-return-delivery-preview':'',disabled:''});
+    r.deliveryExport=button(w('Emitir fichas y CSV por responsable (ZIP)','Issue cards and CSV by owner (ZIP)'),()=>issueReturn(state,true),{'data-return-delivery-export':'',disabled:''});
+    r.deliveryRows=h('div',{'data-return-delivery-rows':''});
     r.file=h('input',{type:'file',accept:'.csv,text/csv','data-return-file':''});
     r.file.addEventListener('change',async()=>{
       const sequence=++r.sequence;invalidateReturn(state);r.text='';r.status.textContent='';updateReturnButtons(state);
@@ -155,24 +225,28 @@ const RemediationUI = (() => {
         if(file.size>2*1024*1024)throw Error(w('El CSV supera 2 MiB.','CSV exceeds 2 MiB.'));
         const text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(await file.arrayBuffer());
         if(!guard(state)||r.sequence!==sequence)return;r.text=text;r.status.textContent=w('Archivo leído. Compara antes de guardar.','File read. Compare before saving.');
-      }catch(error){if(guard(state))r.status.textContent=w('No se pudo leer el CSV UTF-8: ','Could not read the UTF-8 CSV: ')+error.message;}
+      }catch(error){if(guard(state)&&r.sequence===sequence)r.status.textContent=w('No se pudo leer el CSV UTF-8: ','Could not read the UTF-8 CSV: ')+error.message;}
       finally{if(mounted===state)updateReturnButtons(state);}
     });
     return h('section',{class:'rt-return','data-remediation-return':''},h('h3',{},w('Recibir avances del responsable','Receive owner updates')),
-      h('p',{},w('Emite una plantilla específica y entrega aparte las tareas informativas si se necesita contexto. Al recibirla, podrás aceptar cada cambio de responsable, plazo o corrección comunicada. Esta importación nunca modifica el estado, la verificación técnica ni los retests.','Issue a specific template and provide the informational tasks separately when context is needed. On return, accept each owner, due date or reported remediation change. This import never modifies status, technical verification or retests.')),
+      h('p',{},w('Emite una plantilla o prepara fichas y CSV juntos por responsable. Al recibirla, podrás aceptar cada cambio de responsable, plazo o corrección comunicada. Esta importación nunca modifica el estado, la verificación técnica ni los retests.','Issue a template or prepare cards and CSV together by owner. On return, accept each owner, due date or reported remediation change. This import never modifies status, technical verification or retests.')),
       h('details',{},h('summary',{},w('1. Emitir una plantilla','1. Issue a template')),assigned,
         h('label',{class:'rt-check rt-private'},r.private,w('Revisé los responsables y las comunicaciones que saldrán del proyecto.','I reviewed the owners and communications that will leave the project.')),
         h('label',{class:'rt-check rt-private'},r.retention,w('Entiendo que emitir guarda una asignación. Se conservan hasta 20 lotes o 4 MiB; los más antiguos dejan de admitirse.','I understand issuance saves an assignment. Up to 20 batches or 4 MiB are retained; older batches stop being accepted.')),
         h('p',{class:'wf-hint'},w('Edita solo owner, due_date y reported_remediation. Conserva el apóstrofo inicial en owner y reported_remediation, incluso si estaban vacíos. Fechas: AAAA-MM-DD. Conserva las referencias y guarda como CSV UTF-8 con comas. Puedes devolver solo algunas filas.','Edit only owner, due_date and reported_remediation. Preserve the initial apostrophe in owner and reported_remediation, even when empty. Dates: YYYY-MM-DD. Preserve references and save as comma-separated UTF-8 CSV. You may return only some rows.')),
-        h('div',{class:'rt-actions'},r.issue)),
+        h('p',{class:'wf-hint'},w('El ZIP completo y manifest.json contienen todos los responsables seleccionados. Comparte únicamente la carpeta owner-NNN que corresponda al destinatario.','The full ZIP and manifest.json contain all selected owners. Share only the owner-NNN folder belonging to the recipient.')),
+        h('div',{class:'rt-actions'},r.issue,r.deliveryPreview,r.deliveryExport),r.deliveryRows),
       h('h4',{},w('2. Revisar el CSV recibido','2. Review the returned CSV')),
       h('label',{},w('Plantilla de retorno CSV (hasta 2 MiB)','Return CSV template (up to 2 MiB)'),r.file),h('div',{class:'rt-actions'},r.preview),r.status,r.changes,
       h('label',{class:'rt-check rt-private'},r.reviewed,w('Revisé cada cambio seleccionado y entiendo que una corrección comunicada no demuestra que esté corregido.','I reviewed each selected change and understand that a reported remediation does not prove it is fixed.')),
-      h('div',{class:'rt-actions'},r.apply));
+      h('div',{class:'rt-actions'},r.apply,r.receive),ledgerView(state));
   }
   function render(host){
     ++generation;mounted=null;
-    const refresh=button(w('Actualizar desde el proyecto guardado','Refresh from saved project'),()=>render(host),{'data-remediation-refresh':''});
+    const refresh=button(w('Recargar proyecto guardado y reiniciar esta vista','Reload saved project and reset this view'),async()=>{
+      if(!S.slug||projectStore.dirty||projectStore.loading||projectBusyCount>0){render(host);return;}
+      const slug=S.slug;await loadProject(slug);if(S.slug===slug&&!projectStore.lastError)select('workflow','remediation_tasks');
+    },{'data-remediation-refresh':''});
     if(!S.slug||!S.data){host.replaceChildren(h('p',{},w('Abre un proyecto para preparar tareas.','Open a project to prepare tasks.')));return;}
     if(projectStore.dirty||projectStore.loading||projectBusyCount>0){host.replaceChildren(h('p',{role:'status'},w('Guarda desde la barra del proyecto y espera a que termine antes de abrir las tareas. Esta vista no guarda el borrador.','Save from the project toolbar and wait for completion before opening tasks. This view does not save the draft.')),refresh);return;}
     const state={host,slug:S.slug,data:S.data,json:JSON.stringify(S.data),etag:projectStore.etag,revision:projectStore.revision,lang:S.uiLang,

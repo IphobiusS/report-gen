@@ -23,7 +23,7 @@ const nmap='<?xml version="1.0"?><!DOCTYPE nmaprun><nmaprun scanner="nmap" versi
   await page.goto(base);await page.locator('.workspace-dashboard').waitFor();
   await page.locator('.workspace-hero-actions .primary').click();
   await page.waitForFunction(()=>S.slug&&S.data?.findings?.length&&!projectStore.loading&&!projectBusyCount);
-  const original=await page.evaluate(()=>({findings:S.data.findings.length,assets:S.data.assets.length,coverage:S.data.coverage.length}));
+  const original=await page.evaluate(()=>({findings:S.data.findings.length,assets:S.data.assets.length,coverage:S.data.coverage.length,revision:projectStore.revision}));
   async function intake(format,raw){
     if(!await page.locator('#studioMore').evaluate(el=>el.open))await page.locator('#studioMore > summary').click();
     if(!await page.locator('#projectActions').evaluate(el=>el.open))await page.locator('#projectActions > summary').click();
@@ -51,6 +51,7 @@ const nmap='<?xml version="1.0"?><!DOCTYPE nmaprun><nmaprun scanner="nmap" versi
   }
   await d.getByRole('button',{name:'Importar selección como pendiente',exact:true}).click();await d.waitFor({state:'detached'});
   check('Nuclei commits one unverified finding awaiting source review',await page.evaluate(n=>{const f=S.data.findings.at(-1);return S.data.findings.length===n+1&&f.verification==='unverified'&&f.import_source.reviewed===false;},original.findings));
+  check('Server import advances saved revision and invalidates the older preview',await page.evaluate(before=>projectStore.revision===before+1&&projectStore.savedRevision===projectStore.revision&&!projectStore.dirty&&document.querySelector('#previewFreshness').dataset.stale==='true',original.revision));
   await page.setViewportSize({width:1366,height:1000});
   d=await intake('nuclei',nuclei);
   check('Reimport disables existing duplicate and commit',await d.locator('[data-intake-row="0"]').isDisabled()&&await d.getByRole('button',{name:'Importar selección como pendiente',exact:true}).isDisabled());
@@ -64,6 +65,15 @@ const nmap='<?xml version="1.0"?><!DOCTYPE nmaprun><nmaprun scanner="nmap" versi
   check('Scanner observations survive reload',await page.evaluate(()=>S.data.coverage.at(-1).import_source.format==='nmap'&&S.data.findings.at(-1).import_source.format==='nuclei'));
   await page.locator('#workspaceResearch > summary').click();await page.locator('[data-workflow=coverage]').click();await page.getByText('Observación Nmap original',{exact:true}).click();
   check('Coverage exposes immutable original provenance',await page.getByText('Observación Nmap original',{exact:true}).isVisible()&&(await page.locator('#editor').innerText()).includes('OpenSSH 9.0'));
+  await page.evaluate(()=>select('workflow','retest'));
+  const retestForm=page.locator('details').filter({has:page.locator('summary').getByText('Registrar retest',{exact:true})}).first();
+  await retestForm.locator('summary').click();
+  await retestForm.locator('[data-field=assessor]').fill('Synthetic revision audit');
+  await retestForm.locator('[data-field=notes_md]').fill('Synthetic control remains open; no technical fix claimed.');
+  const beforeRetest=await page.evaluate(()=>({revision:projectStore.revision,count:(S.data.findings[0].retests||[]).length}));
+  await retestForm.getByRole('button',{name:'Guardar comprobación',exact:true}).click();
+  await page.waitForFunction(before=>(S.data.findings[0].retests||[]).length===before.count+1&&!projectBusyCount,beforeRetest);
+  check('Retest server mutation advances saved revision and invalidates the previous preview',await page.evaluate(before=>projectStore.revision===before.revision+1&&projectStore.savedRevision===projectStore.revision&&!projectStore.dirty&&document.querySelector('#previewFreshness').dataset.stale==='true',beforeRetest));
   check('No scanner target or external network requests',results.external.length===0,results.external);
   check('No browser runtime errors',results.pageErrors.length===0,results.pageErrors);
 }catch(e){results.error=String(e.stack||e);if(page)await page.screenshot({path:path.join(out,'failure.png'),fullPage:true}).catch(()=>{});throw e;}

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Explicit install, diagnosis and local launch using the packaged sources."""
 import argparse
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -11,6 +12,20 @@ import sys
 import venv
 from workspace_paths import select_workspace, workspace_environment, ENVIRONMENT_KEY
 ROOT=Path(__file__).resolve().parent
+
+
+@contextmanager
+def launcher_language(language):
+    """Pass the launcher's initial UI choice without overriding browser preferences."""
+    previous = os.environ.get('REPORT_GEN_UI_LANG')
+    os.environ['REPORT_GEN_UI_LANG'] = language
+    try:
+        yield
+    finally:
+        if previous is None:
+            os.environ.pop('REPORT_GEN_UI_LANG', None)
+        else:
+            os.environ['REPORT_GEN_UI_LANG'] = previous
 
 
 def _words(lang, es, en):
@@ -152,7 +167,7 @@ def main(argv=None):
     local = ROOT / '.venv' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
     try:
         selection = select_workspace(ROOT, args.workspace)
-        with workspace_environment(selection):
+        with workspace_environment(selection), launcher_language(lang):
             if args.setup:
                 _install(local, lang)
                 print(_words(lang, 'Instalado. Ejecuta: ', 'Installed. Run: ') + _launch_hint(selection) + ' --ready')

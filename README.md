@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.29.0
+# report-gen 0.30.0
 
 <a id="qué-es"></a>
 
@@ -59,15 +59,15 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.29.0
+## Novedades de 0.30.0
 
-- **Instalación Linux con acceso local y datos separados:** actualiza la aplicación conservando el mismo espacio de trabajo.
-- **Panel multiproyecto:** busca por título o cliente, ordena por modificación, fecha o retests pendientes y archiva/reactiva sin borrar datos.
-- **Retorno de remediación:** emite una plantilla CSV, compara la respuesta y acepta cambios por campo. Lo comunicado por el responsable nunca se convierte automáticamente en una corrección verificada.
-- **Diagnóstico compartible:** revisa un JSON con versión, sistema y comprobaciones sintéticas antes de descargarlo; no incluye proyectos, rutas ni usuarios.
-- **Releases verificadas:** la publicación exige que pruebas, navegadores, Windows y reconstrucción reproducible aprueben el mismo commit. El ZIP se acompaña de SHA-256 y manifiesto JSON.
+- **Edición por lotes:** selecciona hallazgos y compara cambios de responsable, fecha o causa raíz antes de guardar una versión recuperable. No altera verificación ni retests.
+- **Entregas por responsable:** prepara fichas y CSV juntos, revisa todos los valores compartidos y conserva un registro local de emisión, recepción, aceptación y revocación. Nada se envía automáticamente.
+- **Actualización asistida:** consulta GitHub con autorización explícita, verifica el paquete oficial y prepara una carpeta nueva con respaldo privado. Las instrucciones guían el cambio después de detener el editor.
+- **Menos sorpresas al trabajar:** preferencias separadas por carpeta, reintentos del CSV sin perder la selección, vista previa renovada tras guardar desde el servidor y reordenación por teclado en proyectos pequeños.
+- **Privacidad de la entrega:** los manifiestos compartibles conservan las categorías de avisos sin copiar mensajes privados, rutas ni valores excluidos del informe.
 
-Se mantienen las causas raíz y tareas introducidas en 0.28.0. La revisión nativa en Word y las cinco sesiones con participantes siguen pendientes. [Cambios completos](CHANGELOG.md).
+Se mantienen el instalador, los datos externos, el catálogo multiproyecto y las Releases verificadas de 0.29.0. La revisión nativa en Word y las cinco sesiones con participantes siguen pendientes. [Cambios completos](CHANGELOG.md).
 
 ## Qué comprueba cada entrega
 
@@ -92,7 +92,9 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 ## Actualizar desde una versión anterior
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.29.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+**Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
+
+Si ya usas una carpeta externa, detén el editor, descarga **0.30.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

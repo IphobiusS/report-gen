@@ -241,8 +241,10 @@ def worker(root):
             payload=output.read_bytes()
             atomic_write(root / 'result', payload)
             from version import __version__
+            from engine import load_engagement, report_language
+            language = report_language(load_engagement(root / 'source' / 'engagement.yaml'))
             record = dict(format='report-gen-export-checks', version=1, tool_version=__version__,
-                source_revision=config.get('revision'), warnings=config['captured'].get('issues',[]),
+                source_revision=config.get('revision'), warnings=delivery.public_warnings(config['captured'].get('issues',[]), language),
                 files={config.get('filename',output.name):dict(bytes=len(payload),sha256=sha256(payload).hexdigest(),checks=checks)})
             atomic_write(root / 'verification.json', json.dumps(record,ensure_ascii=False).encode())
     except Exception as exc:

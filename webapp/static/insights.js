@@ -103,17 +103,18 @@ const InsightsUI = (() => {
     } finally { busyProject(false); }
   }
   async function mutate(body,form,context = null) {
-    const slug = S.slug, pending=typeof PendingUI!=='undefined'&&form?PendingUI.active.get(slug+'|insights:'+form._draftkey?.slice(slug.length+1)):null, pendingRevision=pending?.revision;let locked=!!context,cleanupWarning=null;
-    if(context)busyProject(true);
+    const slug = S.slug, pending=typeof PendingUI!=='undefined'&&form?PendingUI.active.get(slug+'|insights:'+form._draftkey?.slice(slug.length+1)):null, pendingRevision=pending?.revision;let locked=true,cleanupWarning=null;
+    busyProject(true);
     try {
       const response = await request('/insights', body);
-      await response.json();
+      await response.json();WorkbenchUI.dirty();
       if(form?._draftkey){const cleanup=pending?await PendingUI.committed(pending,pendingRevision):{finished:true};cleanupWarning=cleanup.warning;if(cleanup.finished)drafts.delete(form._draftkey);}
       if (S.slug !== slug) return;
       await projectStore.load(slug);
       if(S.slug!==slug)return;
       const selectedUid=context&&S.sel.type==='finding'?WorkbenchUI.renderedFindingUid():null;
       S.data = projectStore.data;
+      WorkbenchUI.dirty();
       if (selectedUid && S.sel.type === 'finding') {
         const index = S.data.findings.findIndex(item => item.uid === selectedUid);
         S.sel = index < 0 ? {type:'report',idx:-1} : {type:'finding',idx:index};
@@ -443,7 +444,7 @@ const InsightsUI = (() => {
         button('Aplicar únicamente las propuestas seleccionadas','Apply only selected proposals',async()=>{
           if(!accepted.size)throw Error(w('Selecciona explícitamente una propuesta.','Explicitly select a proposal.'));
           if(projectStore.etag!==snapshot.etag||projectStore.dirty)throw Error(w('La revisión cambió. Obtén una nueva propuesta.','The revision changed. Obtain a new proposal.'));
-          const applied=await request('/assistant/apply',{proposal_id:data.proposal_id,fields:[...accepted]});await applied.json();assistantProposals.delete(slug);await projectStore.load(snapshot.slug);S.data=projectStore.data;renderSidebar();renderMain();reveal($('#insightsTitle'));toast(w('Propuestas seleccionadas guardadas.','Selected proposals saved.'));
+          busyProject(true);try{const applied=await request('/assistant/apply',{proposal_id:data.proposal_id,fields:[...accepted]});await applied.json();WorkbenchUI.dirty();assistantProposals.delete(slug);await projectStore.load(snapshot.slug);S.data=projectStore.data;WorkbenchUI.dirty();renderSidebar();renderMain();reveal($('#insightsTitle'));toast(w('Propuestas seleccionadas guardadas.','Selected proposals saved.'));}finally{busyProject(false);}
         },'assistant-apply',true),button('Descartar esta propuesta','Discard this proposal',async()=>{await discardProposal();proposal.replaceChildren(h('p',{role:'status'},w('Propuesta descartada; el informe sigue intacto.','Proposal discarded; the report remains unchanged.')));},'assistant-discard'));
     },'assistant-propose',true),proposal);
   }

@@ -1,4 +1,4 @@
-"""The warning review shown to the author must survive the saved delivery."""
+"""Review counts survive delivery; private diagnostic detail stays with the author."""
 from hashlib import sha256
 from io import BytesIO
 import json
@@ -117,8 +117,11 @@ def test_acknowledged_validation_warning_survives_all_four_formats(client):
                       json={'formats': ['pdf', 'docx', 'md', 'html'], 'label': 'Entrega revisada',
                             'acknowledge_warnings': True}, headers={'If-Match': tag})
     manifest, readme = record(response)
-    assert manifest['warnings'] == reviewed and len(manifest['warnings']) == 1
-    assert 'CVSS' in manifest['warnings'][0]['message']
+    assert len(manifest['warnings']) == len(reviewed) == 1
+    assert manifest['warnings'][0]['category'] == 'report'
+    assert 'validación' in manifest['warnings'][0]['message']
+    assert 'CVSS' in reviewed[0]['message']
+    assert 'path' not in manifest['warnings'][0] and 'finding_uid' not in manifest['warnings'][0]
     assert 'Avisos revisados: 1' in readme
     assert set(manifest['files']) == {'informe.pdf', 'informe.docx', 'markdown.zip', 'informe.html'}
     assert manifest['source_revision'] == sha256(before).hexdigest()
@@ -134,7 +137,8 @@ def test_acknowledged_mixed_warnings_and_clean_delivery_are_not_changed(client):
         manifest, readme = record(c.post('/api/projects/test/delivery',
             json={'formats': ['md'], 'label': 'Revisado', 'acknowledge_warnings': bool(reviewed)},
             headers={'If-Match': tag}))
-        assert manifest['warnings'] == reviewed
+        assert len(manifest['warnings']) == len(reviewed)
+        assert all(row['level'] == 'warning' and 'details' in row for row in manifest['warnings'])
         assert f'Avisos revisados: {len(reviewed)}' in readme
 
 
@@ -217,7 +221,10 @@ def test_queued_exports_keep_validation_warnings_and_saved_snapshot(client, monk
     key = response.get_json()['id']
     wait_job(c, key)
     verification = c.get('/api/jobs/' + key + '/verification').get_json()
-    assert verification['warnings'] == reviewed
+    assert len(verification['warnings']) == len(reviewed) == 1
+    assert verification['warnings'][0]['category'] == 'report'
+    assert 'validación' in verification['warnings'][0]['message']
+    assert 'CVSS' in reviewed[0]['message']
     assert verification['source_revision'] == sha256(source).hexdigest()
     downloaded = c.get('/api/jobs/' + key + '/download')
     assert downloaded.status_code == 200

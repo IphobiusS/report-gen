@@ -86,6 +86,9 @@ jobs:
           npm run test:project-catalog
           npm run test:remediation-return
           npm run test:workspace-isolation
+          npm run test:bulk-workbench
+          npm run test:remediation-delivery
+          npm run test:guided-update
       - name: Compare all four formats with a complete synthetic case
         run: python scripts/audit-exports-0210.py --output out/export-acceptance
       - name: Export evidence
@@ -112,6 +115,9 @@ jobs:
             out/project-catalog-0290/
             out/remediation-return-0290/
             out/workspace-browser-isolation-0290/
+            out/bulk-workbench-0300/
+            out/remediation-delivery-0300/
+            out/guided-update-0300/
           if-no-files-found: ignore
 
   pytest:

@@ -56,11 +56,20 @@ const WorkbenchUI = (() => {
   let renderedKey=null,previewStale=false,previewSnapshot=null,positionTimer,restoring=false,dialogTrigger=null,shortcutSaving=false;
   let filters={status:'',asset:'',owner:'',verification:''};
   const findingTabs=new Map();
-  function read(key,fallback){try{return JSON.parse(localStorage.getItem('rg.wb.'+key))??fallback;}catch(_){return fallback;}}
-  function write(key,value){try{localStorage.setItem('rg.wb.'+key,JSON.stringify(value));}catch(_){}}
+  function storageKey(key){
+    // Names and positions can disclose project context. Legacy unscoped keys
+    // remain untouched; a same-named project is not proof of ownership.
+    if(/^(filters|views|resume|recent)\./.test(key))return S.workspace_id?'rg.wb.workspace.'+S.workspace_id+'.'+key:null;
+    return 'rg.wb.'+key;
+  }
+  function read(key,fallback){try{const scoped=storageKey(key);return scoped?JSON.parse(localStorage.getItem(scoped))??fallback:fallback;}catch(_){return fallback;}}
+  function write(key,value){try{const scoped=storageKey(key);if(scoped)localStorage.setItem(scoped,JSON.stringify(value));}catch(_){}}
+  function cleanFilters(value){const result={status:'',asset:'',owner:'',verification:''};for(const key of Object.keys(result))if(typeof value?.[key]==='string')result[key]=value[key].slice(0,500);return result;}
+  function views(){const value=read('views.'+S.slug,[]);return Array.isArray(value)?value.filter(v=>v&&typeof v.name==='string'&&v.name.length<=80&&v.filters&&typeof v.filters==='object').slice(-20).map(v=>({...v,filters:cleanFilters(v.filters),severity:typeof v.severity==='string'?v.severity:null})):[];}
+  function recent(){const value=read('recent.'+S.slug,[]);return Array.isArray(value)?value.filter(v=>typeof v==='string').slice(0,12):[];}
   function b(text,run,primary=false){const el=h('button',{type:'button',class:'btn'+(primary?' primary':'')},text);el.addEventListener('click',async()=>{dialogTrigger=el;el.disabled=true;try{await run(el);}catch(e){toast(e.message,'err');}finally{if(el.isConnected)el.disabled=false;UndoUI.update();}});return el;}
   function labelOf(list,value){const row=list.find(x=>x[0]===value);return row?w(row[1],row[2]):value;}
-  function selector(label,items,value,change){const s=h('select',{'aria-label':label},...items.map(x=>h('option',{value:x[0]},x.length===3?w(x[1],x[2]):x[1])));s.value=value;s.addEventListener('change',()=>change(s.value));return h('label',{},label,s);}
+  function selector(label,items,value,change){const options=[...items];if(value&&!options.some(x=>x[0]===value))options.push([value,value+' · '+w('No disponible','Unavailable')]);const s=h('select',{'aria-label':label},...options.map(x=>h('option',{value:x[0]},x.length===3?w(x[1],x[2]):x[1])));s.value=value;s.addEventListener('change',()=>change(s.value));return h('label',{},label,s);}
   function dialog(title){const trigger=document.activeElement===document.body?dialogTrigger:document.activeElement,d=h('dialog',{class:'experience-dialog workbench-dialog','aria-label':title});const body=h('div',{class:'experience-body'});d.append(h('div',{class:'experience-heading'},h('h2',{},title),b(w('Cerrar','Close'),()=>d.close())),body);d.addEventListener('close',()=>{d.remove();const focus=trigger?.closest('details:not([open])')?.querySelector('summary')||trigger;(focus?.isConnected&&!focus.disabled?focus:$('#editor'))?.focus({preventScroll:true});});document.body.append(d);d.showModal();return {d,body};}
   function position(){
     if(restoring||!S.slug||!['finding','section','report'].includes(S.sel.type))return;
@@ -68,20 +77,20 @@ const WorkbenchUI = (() => {
     if(S.sel.type==='finding')entry.uid=S.data.findings[S.sel.idx]?.uid;
     if(S.sel.type==='finding'&&!entry.uid)return;
     write('resume.'+S.slug,entry);
-    if(entry.uid){const recent=read('recent.'+S.slug,[]).filter(x=>x!==entry.uid);write('recent.'+S.slug,[entry.uid,...recent].slice(0,12));}
+    if(entry.uid){const list=recent().filter(x=>x!==entry.uid);write('recent.'+S.slug,[entry.uid,...list].slice(0,12));}
   }
   function resume(){
-    const p=read('resume.'+S.slug,{});
-    let type=p.type||'report',value=p.key??p.idx??-1;
+    const stored=read('resume.'+S.slug,{}),p=stored&&typeof stored==='object'?stored:{};
+    let type=['finding','section','report'].includes(p.type)?p.type:'report',value=p.key??p.idx??-1;
     if(type==='finding'){value=S.data.findings.findIndex(f=>f.uid===p.uid);if(value<0){type='report';value=-1;}}
     if(type==='section'&&!S.data.report.sections.some(s=>s.key===p.key)){type='report';value=-1;}
     select(type,value);restoring=true;
     requestAnimationFrame(()=>{requestAnimationFrame(()=>{$('#editor').scrollTop=Number(p.scroll)||0;if(innerWidth<=760)window.scrollTo(0,Number(p.windowScroll)||0);$('#editor').focus({preventScroll:true});restoring=false;});});
   }
-  function projectChanged(){UndoUI.clear();WorkflowUI.resetReview?.();filters=read('filters.'+S.slug,{status:'',asset:'',owner:'',verification:''});renderedKey=null;previewStale=false;previewSnapshot=null;}
-  function dirty(){previewStale=true;updatePreview();const title=$('#editor .finding-context-title strong');if(title&&S.sel.type==='finding'){const f=S.data.findings.find(item=>item.uid===renderedFindingUid());title.textContent=f?.title||w('Sin título','Untitled');const chips=$('#editor .finding-chips');if(chips&&f)chips.replaceWith(findingChips(f));}}
+  function projectChanged(){UndoUI.clear();WorkflowUI.resetReview?.();filters=cleanFilters(read('filters.'+S.slug,{}));renderedKey=null;previewStale=false;previewSnapshot=null;}
+  function dirty(){previewStale=true;previewSnapshot=null;invalidateLivePreview();updatePreview();const title=$('#editor .finding-context-title strong');if(title&&S.sel.type==='finding'){const f=S.data.findings.find(item=>item.uid===renderedFindingUid());title.textContent=f?.title||w('Sin título','Untitled');const chips=$('#editor .finding-chips');if(chips&&f)chips.replaceWith(findingChips(f));}}
   function previewReady(revision=projectStore.revision,snapshot=null){if(snapshot)previewSnapshot={...snapshot,revision};previewStale=revision!==projectStore.revision;updatePreview();followPreview();}
-  function hasLivePreview(){return previewSnapshot?.slug===S.slug&&previewSnapshot.document===$('#pdfPreview')?.contentDocument&&previewSnapshot.revision===projectStore.revision;}
+  function hasLivePreview(){return !previewStale&&previewSnapshot?.slug===S.slug&&previewSnapshot.document===$('#pdfPreview')?.contentDocument&&previewSnapshot.revision===projectStore.revision;}
   function updatePreview(){const el=$('#previewFreshness');if(el){el.textContent=previewStale?w('Cambios sin reflejar','Preview has older content'):w('Revisión actual','Current revision');el.dataset.stale=String(previewStale);}}
   function followPreview(){
     if(S.previewMode!=='live'||!previewPaneVisible()||previewSnapshot?.slug!==S.slug)return;
@@ -161,7 +170,7 @@ const WorkbenchUI = (() => {
       info.textContent=items.children.length?w('Pendientes concretos de este proyecto.','Actionable items in this project.'):w('Estas comprobaciones no detectaron pendientes. La revisión técnica sigue a tu cargo.','No pending items were detected by these checks. Technical review remains your responsibility.');
     }catch(e){if(box.isConnected){info.textContent=e.message;items.append(b(w('Reintentar','Retry'),()=>renderMain()));}}
   }
-  function recentFindings(){const order=read('recent.'+S.slug,[]);return [...S.data.findings].sort((a,b)=>{const ai=order.indexOf(a.uid),bi=order.indexOf(b.uid);return (ai<0?999:ai)-(bi<0?999:bi);}).slice(0,6);}
+  function recentFindings(){const order=recent();return [...S.data.findings].sort((a,b)=>{const ai=order.indexOf(a.uid),bi=order.indexOf(b.uid);return (ai<0?999:ai)-(bi<0?999:bi);}).slice(0,6);}
   function findingChips(f){
     const list=h('ul',{class:'finding-chips','aria-label':w('Contexto registrado del hallazgo','Recorded finding context')});
     const assets=new Map((S.data.assets||[]).map(a=>[a.uid,a])),evidence=new Set((S.data.evidence||[]).map(e=>e.uid));
@@ -214,7 +223,7 @@ const WorkbenchUI = (() => {
     event.preventDefault();moveFinding(event.key==='j'?1:-1);
   }
   function findingWorkspace(part,f){
-    const slug=S.slug, key=slug+'|'+f.uid, id='finding-workspace-'+f.uid;
+    const slug=S.slug, key=S.workspace_id+'|'+slug+'|'+f.uid, id='finding-workspace-'+f.uid;
     const evidence=h('div',{role:'tabpanel',id:id+'-evidence','aria-labelledby':id+'-tab-evidence','data-finding-panel':'evidence',tabindex:'0'});
     while(part.firstChild)evidence.append(part.firstChild);
     const gallery=h('div',{'data-finding-gallery':f.uid});evidence.append(gallery);
@@ -285,9 +294,11 @@ const WorkbenchUI = (() => {
     const box=h('div',{class:'finding-filters'});const all=[['',w('Todos','All')]];
     const apply=(key,value)=>{filters[key]=value;write('filters.'+S.slug,filters);renderMain();};
     box.append(selector(w('Estado','Status'),[...all,...status],filters.status,v=>apply('status',v)),selector(w('Activo','Asset'),[...all,...S.data.assets.map(a=>[a.uid,a.name||a.target])],filters.asset,v=>apply('asset',v)),selector(w('Responsable','Owner'),[...all,...[...new Set(S.data.findings.map(f=>f.owner).filter(Boolean))].sort().map(o=>[o,o])],filters.owner,v=>apply('owner',v)),selector(w('Verificación técnica','Technical verification'),[...all,...verification.slice(1)],filters.verification,v=>apply('verification',v)));
-    const views=read('views.'+S.slug,[]);const controls=h('div',{class:'filter-actions'});
-    controls.append(selector(w('Vistas guardadas','Saved views'),[['',w('Elegir vista','Choose view')],...views.map((v,i)=>[String(i),v.name])],'',v=>{if(v==='')return;filters={...views[Number(v)].filters};S.dashFilter=views[Number(v)].severity||null;write('filters.'+S.slug,filters);renderMain();}),b(w('Guardar vista','Save view'),()=>{const {d,body}=dialog(w('Guardar vista','Save view'));const name=h('input',{maxlength:80,'aria-label':w('Nombre de la vista','View name')});body.append(h('label',{},w('Nombre','Name'),name),b(w('Guardar','Save'),()=>{if(!name.value.trim())throw Error(w('Escribe un nombre.','Enter a name.'));const current=read('views.'+S.slug,[]).filter(v=>v.name!==name.value.trim());write('views.'+S.slug,[...current,{name:name.value.trim(),filters:{...filters},severity:S.dashFilter}].slice(-20));d.close();renderMain();},true));name.focus();}),b(w('Limpiar filtros','Clear filters'),()=>{filters={status:'',asset:'',owner:'',verification:''};S.dashFilter=null;write('filters.'+S.slug,filters);renderMain();}));
-    if(views.length)controls.append(b(w('Gestionar vistas','Manage views'),()=>{const {body}=dialog(w('Vistas guardadas','Saved views'));views.forEach((v,i)=>body.append(h('div',{class:'row'},h('span',{},v.name),b(w('Eliminar','Delete'),el=>{const list=read('views.'+S.slug,[]).filter(x=>x.name!==v.name);write('views.'+S.slug,list);el.parentElement.remove();}))));}));
+    const savedViews=views();const controls=h('div',{class:'filter-actions'});
+    controls.append(selector(w('Vistas guardadas','Saved views'),[['',w('Elegir vista','Choose view')],...savedViews.map((v,i)=>[String(i),v.name])],'',v=>{if(v==='')return;filters={...savedViews[Number(v)].filters};S.dashFilter=savedViews[Number(v)].severity||null;write('filters.'+S.slug,filters);renderMain();}),b(w('Guardar vista','Save view'),()=>{const {d,body}=dialog(w('Guardar vista','Save view'));const name=h('input',{maxlength:80,'aria-label':w('Nombre de la vista','View name')});body.append(h('label',{},w('Nombre','Name'),name),b(w('Guardar','Save'),()=>{if(!name.value.trim())throw Error(w('Escribe un nombre.','Enter a name.'));const current=views().filter(v=>v.name!==name.value.trim());write('views.'+S.slug,[...current,{name:name.value.trim(),filters:{...filters},severity:S.dashFilter}].slice(-20));d.close();renderMain();},true));name.focus();}),b(w('Limpiar filtros','Clear filters'),()=>{filters={status:'',asset:'',owner:'',verification:''};S.dashFilter=null;write('filters.'+S.slug,filters);renderMain();}));
+    if(savedViews.length)controls.append(b(w('Gestionar vistas','Manage views'),()=>{const {body}=dialog(w('Vistas guardadas','Saved views'));savedViews.forEach((v,i)=>body.append(h('div',{class:'row'},h('span',{},v.name),b(w('Eliminar','Delete'),el=>{const list=views().filter(x=>x.name!==v.name);write('views.'+S.slug,list);el.parentElement.remove();}))));}));
+    if(S.dashFilter&&!['critical','high','medium','low','info','pending','machine'].includes(S.dashFilter))box.append(h('p',{role:'status'},w('Filtro de severidad no disponible: ','Unavailable severity filter: ')+S.dashFilter));
+    const active=Object.values(filters).filter(Boolean).length+(S.dashFilter?1:0);if(active)box.append(h('p',{role:'status'},active+' '+w('filtros activos. Limpiar filtros vuelve a mostrar todos los hallazgos.','active filters. Clear filters shows every finding again.')));
     box.append(controls);return box;
   }
   function commands(){return [
@@ -312,7 +323,7 @@ const WorkbenchUI = (() => {
     const slug=S.slug;busyProject(true);
     try {if(!await doSave())throw Error(w('No se pudo guardar.','Could not save.'));
       const r=await requireOk(await appFetch('/api/projects/'+encodeURIComponent(slug)+path,{method:'POST',headers:{'Content-Type':'application/json','If-Match':projectStore.etag},body:JSON.stringify(body)}));
-      const result=await r.json();S.data=result.data;projectStore.data=S.data;projectStore.base=JSON.parse(JSON.stringify(S.data));projectStore.etag=r.headers.get('ETag');projectStore.lastSavedAt=new Date();UndoUI.clear();ProgressUI.saveState('saved');renderSidebar();renderMain();dirty();if(S.previewMode==='live')refreshLivePreview();return result;
+      const result=await r.json();await adoptSavedProject(result.data,r.headers.get('ETag'));renderSidebar();renderMain();if(S.previewMode==='live')refreshLivePreview();return result;
     }finally{busyProject(false);}
   }
   function capture(recovered=null){

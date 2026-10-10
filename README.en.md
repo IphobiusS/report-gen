@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.29.0
+# report-gen 0.30.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -49,15 +49,15 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
-## New in 0.29.0
+## New in 0.30.0
 
-- **Linux installation with a local shortcut and separate data:** update the application while reusing the same workspace.
-- **Project dashboard:** search by title or client, sort by modification, due date or pending retests, and archive/reactivate without deleting data.
-- **Remediation returns:** issue a CSV template, compare the response and accept changes field by field. An owner's update never automatically becomes a verified fix.
-- **Shareable diagnostics:** review a JSON containing version, generic system and synthetic checks before downloading; it excludes projects, paths and usernames.
-- **Verified releases:** publishing requires tests, browser acceptance, Windows and reproducible rebuilding to pass on the same commit. The ZIP comes with SHA-256 and a JSON manifest.
+- **Bulk editing:** select findings and compare owner, date or root-cause assignments before saving a recoverable revision. Verification and retests are unchanged.
+- **Owner deliveries:** prepare cards and CSV together, review all outgoing values and retain a local log of issuance, receipt, acceptance and revocation. Nothing is sent automatically.
+- **Guided updates:** explicitly allow a GitHub check, verify the official package and prepare a new directory with a private backup. Instructions guide the switch after stopping the editor.
+- **More predictable editing:** workspace-specific preferences, CSV retries that retain selections, refreshed previews after server-side saves and keyboard reordering for small projects.
+- **Delivery privacy:** shared manifests retain warning categories without copying private messages, paths or values excluded from the report.
 
-Root causes and remediation tasks introduced in 0.28.0 remain available. Native desktop Word review and five human sessions remain pending. [Full changes](CHANGELOG.md).
+The installer, external workspaces, project catalogue and verified releases from 0.29.0 remain available. Native desktop Word review and five human sessions remain pending. [Full changes](CHANGELOG.md).
 
 ## What delivery checks establish
 
@@ -77,7 +77,9 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 ## Upgrade from an earlier version
 
-If you already use an external workspace, stop the editor, download **0.29.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+**Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
+
+If you already use an external workspace, stop the editor, download **0.30.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

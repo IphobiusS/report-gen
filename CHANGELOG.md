@@ -1,3 +1,17 @@
+# Cambios 0.30.0 (2026-10-10)
+
+- Edición por lotes de hasta 500 hallazgos: selección explícita, responsable, fecha y grupo de causa raíz, comparación antes/después, guardado atómico y versión recuperable. No altera estado, verificación técnica, evidencias ni retests.
+- Fichas y CSV de retorno en un ZIP organizado por responsable, con revisión de todos los valores salientes. Registro privado de emisión local, recepción, aceptación y revocación, con revisiones, hashes y retención visible. No hay envío automático ni autenticación del remitente.
+- Actualización asistida desde la interfaz: consulta oficial explícita, verificación de etiqueta, paquete y manifiesto, preparación en carpeta nueva y respaldo privado sin cifrar validado mediante restauración temporal. Las instrucciones continúan después de detener el editor; no se ejecuta código descargado durante la preparación.
+- Filtros, vistas, posición y actividad reciente separados por espacio de trabajo y proyecto. Los filtros obsoletos permanecen visibles y pueden limpiarse; las preferencias heredadas sin identidad no se asignan automáticamente.
+- La aceptación de retornos y las asignaciones guardadas desde el servidor invalidan las vistas previas antiguas. Los errores de retorno conservan archivo y selección para reintentar; una descarga ya emitida se conserva aunque falle la recarga posterior del proyecto.
+- Control Mover disponible con teclado para hallazgos de cualquier cantidad, además de la reordenación de secciones.
+- Los manifiestos de entrega y las comprobaciones individuales publican categorías de avisos sin copiar mensajes privados, rutas, valores censurados ni nombres de anexos excluidos. El diagnóstico completo sigue disponible en el editor.
+- Respaldo y restauración funcionan en una extracción nueva que conserva el marcador `.gitkeep` vacío. Se siguen rechazando archivos inesperados, marcadores modificados y enlaces simbólicos.
+- `--lang en` llega al idioma inicial de la interfaz sin sobrescribir una preferencia previa del navegador ni cambiar el idioma del informe.
+- Retirada la constante sin consumidores del retorno CSV. Se conserva la documentación de instalación, uso, seguridad y licencias.
+- Microsoft Word nativo y las cinco sesiones con participantes siguen pendientes. Las pruebas automáticas y los materiales preparados no sustituyen su ejecución.
+
 # Cambios 0.29.0 (2026-10-10)
 
 - Carpeta de datos externa seleccionable con `--workspace` o `REPORT_GEN_WORKSPACE`: proyectos, bibliotecas, historial, originales y anexos se conservan al cambiar la instalación. El arranque sin selección mantiene las rutas anteriores; la migración explícita crea un respaldo y revierte activaciones incompletas.

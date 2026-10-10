@@ -55,7 +55,8 @@ const ExperienceUI = (() => {
       button(w('Probar Nimbus','Try Nimbus'),createDemo,true),
       h('p',{},w('O comienza con tus propios datos desde «Nuevo proyecto».','Or start with your own data using “New project”.')),
       button(w('Abrir biblioteca de informes','Open report design library'),opener=>DesignLibraryUI.gallery(opener)),
-      button(w('Comprobar instalación','Check installation'),diagnostics)));
+      button(w('Comprobar instalación','Check installation'),diagnostics),
+      button(w('Actualizar report-gen','Update report-gen'),opener=>UpdateUI.open(opener))));
   }
   function guide(el) {
     if(!demoSlugs.has(S.slug))return;
@@ -176,12 +177,14 @@ const ExperienceUI = (() => {
     const demo=$('#demoBtn'),delivery=$('#deliveryBtn');
     if(demo)demo.textContent=w('Probar demo','Try demo');
     const diagnose=$('#diagnosticsBtn');if(diagnose)diagnose.textContent=w('Comprobar instalación','Check installation');
+    const updater=$('#updateAppBtn');if(updater)updater.textContent=w('Actualizar report-gen','Update report-gen');
     if(delivery){delivery.textContent=w('Preparar entrega','Prepare delivery');delivery.disabled=!S.slug||projectBusyCount>0;}
   }
   function bind() {
     const demo=button(w('Probar demo','Try demo'),createDemo);demo.id='demoBtn';demo.classList.add('sm');$('#newProjectBtn').after(demo);
     const deliver=button(w('Preparar entrega','Prepare delivery'),prepareDelivery,true);deliver.id='deliveryBtn';deliver.classList.add('sm');$('#downloadBtn').after(deliver);
-    const diagnose=button(w('Comprobar instalación','Check installation'),diagnostics);diagnose.id='diagnosticsBtn';$('.sidebar').append(diagnose);update();
+    const diagnose=button(w('Comprobar instalación','Check installation'),diagnostics);diagnose.id='diagnosticsBtn';$('.sidebar').append(diagnose);
+    const updater=button(w('Actualizar report-gen','Update report-gen'),opener=>UpdateUI.open(opener));updater.id='updateAppBtn';$('.sidebar').append(updater);update();
   }
   return {bind,update,welcome,guide,prepareDelivery,deliveryChecklist,updateDeliveryChecklist};
 })();

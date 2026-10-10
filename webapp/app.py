@@ -5,6 +5,7 @@ Arranca en http://127.0.0.1:8080. Cada proyecto es una carpeta en projects/
 con su engagement.yaml e img/. El render reusa ../engine.py (WeasyPrint/Chromium).
 """
 import re
+import os
 import subprocess
 import secrets
 import threading
@@ -56,7 +57,8 @@ app = Flask(__name__, static_folder=str(HERE / "static"), static_url_path="/stat
 app.secret_key = secrets.token_hex(32)
 app.config.update(TRUSTED_HOSTS=["127.0.0.1", "localhost", "[::1]"], SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Strict")
 app.config.update(LIBRARY_PATH=str(WORKSPACE.findings), DESIGN_LIBRARY_PATH=str(WORKSPACE.designs),
-                  WORKSPACE_ROOT=str(WORKSPACE.root), WORKSPACE_EXTERNAL=WORKSPACE.external)
+                  WORKSPACE_ROOT=str(WORKSPACE.root), WORKSPACE_EXTERNAL=WORKSPACE.external,
+                  UI_LANGUAGE=normalized_language(os.environ.get('REPORT_GEN_UI_LANG', 'es')))
 _PROJECT_LOCK = threading.RLock()
 _BROWSER_WORKSPACES = {}
 
@@ -175,7 +177,8 @@ def local_session():
     if "csrf" not in session:
         session["csrf"] = secrets.token_urlsafe(32)
     from version import __version__
-    return jsonify({"csrf": session["csrf"], "version": __version__, "workspace_id": g.browser_workspace_id})
+    return jsonify({"csrf": session["csrf"], "version": __version__, "workspace_id": g.browser_workspace_id,
+                    "ui_language": normalized_language(app.config['UI_LANGUAGE'])})
 
 
 def scope_api_markup(markup):
@@ -610,6 +613,10 @@ from dashboard_api import register as register_dashboard  # noqa: E402
 register_dashboard(sys.modules[__name__])
 from remediation_api import register as register_remediation  # noqa: E402
 register_remediation(sys.modules[__name__])
+from bulk_api import register as register_bulk  # noqa: E402
+register_bulk(sys.modules[__name__])
+from update_api import register as register_update  # noqa: E402
+register_update(sys.modules[__name__])
 from retest_api import register as register_retest_views  # noqa: E402
 register_retest_views(sys.modules[__name__])
 from experience_api import register as register_experience  # noqa: E402

@@ -1,0 +1,114 @@
+/* Real server/browser regression: guarded bulk edits, keyboard ordering,
+   persistent workspace preferences, and defensive local preference parsing.
+   Editorial inference uses a synthetic local protocol fixture, not an LLM. */
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
+const args=process.argv.slice(2),option=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
+const root=path.resolve(option('--tool',process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..'))),out=path.resolve(option('--output','out/bulk-workbench-0300'));
+const {chromium}=require(process.env.REPORT_GEN_PLAYWRIGHT_MODULE||require.resolve('playwright',{paths:[root,process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES||root]}));
+fs.mkdirSync(out,{recursive:true});
+const temporary=()=>{const directory=fs.mkdtempSync(path.join(os.tmpdir(),'report-gen-acceptance-0211-bulk-'));fs.writeFileSync(path.join(directory,'.test-only'),'synthetic acceptance workspace');return directory;};
+const workspaceA=temporary(),workspaceB=temporary(),results={checks:[],pageErrors:[],externalRequests:[]};
+const save=()=>fs.writeFileSync(out+'/results.json',JSON.stringify(results,null,2));
+const check=(name,value,detail)=>{results.checks.push({name,passed:!!value,...(detail===undefined?{}:{detail})});save();assert.ok(value,name);console.log('PASS '+name);};
+let server,browser,page;
+async function start(workspace,port=0){
+ const fixture="import sys,runpy,json; sys.path[:0]=[sys.argv[1],sys.argv[1]+'/webapp']; import editorial_assistant as a; a._call=lambda path,payload=None,**kwargs: {'/api/tags':{'models':[{'name':'writer:local','size':4194304,'details':{'format':'gguf'},'digest':'fixture'}]},'/api/show':{'details':{'format':'gguf'}},'/api/chat':{'message':{'content':json.dumps({'proposals':[{'field':'description_md','after':'EDITORIAL_FIXTURE_UPDATED_DESCRIPTION'}]})}}}[path]; sys.argv=sys.argv[2:]; runpy.run_path(sys.argv[0],run_name='__main__')";
+ server=spawn(process.env.RG_PYTHON||'python',['-c',fixture,root,root+'/scripts/browser-server-0211.py','--workspace',workspace,'--port',String(port)],{cwd:root,env:{...process.env,REPORT_GEN_UI_LANG:'en',PYTHONPATH:root+path.delimiter+root+'/webapp'}});
+ server.stderr.on('data',b=>fs.appendFileSync(out+'/server.log',b));
+ return new Promise((resolve,reject)=>{let text='';const timer=setTimeout(()=>reject(Error('Server startup timeout')),20000);server.stdout.on('data',b=>{text+=b;for(const line of text.split('\n'))try{const result=JSON.parse(line);if(result.url){clearTimeout(timer);resolve(result);}}catch{}});server.on('exit',code=>{clearTimeout(timer);reject(Error('Server exited '+code));});});
+}
+async function stop(){if(!server||server.exitCode!==null)return;const stopped=new Promise(resolve=>server.once('exit',resolve));server.kill('SIGTERM');await stopped;}
+async function ready(){await page.waitForFunction(()=>typeof BulkUI!=='undefined'&&!document.getElementById('splash')&&!projectBusyCount&&!projectStore.loading);}
+(async()=>{try{
+ const address=await start(workspaceA),base=address.url;
+ browser=await chromium.launch({headless:true,executablePath:process.env.REPORT_GEN_CHROMIUM||process.env.RG_CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox']});results.browser=browser.version();
+ const context=await browser.newContext({viewport:{width:1366,height:1000},reducedMotion:'reduce'});
+ await context.route('**/*',route=>{const url=route.request().url();if(/^https?:/.test(url)&&!url.startsWith(base+'/')){results.externalRequests.push(url);return route.abort();}return route.continue();});
+ page=await context.newPage();page.on('pageerror',e=>{results.pageErrors.push(String(e));save();});page.on('dialog',d=>d.accept());
+ await page.addInitScript(()=>localStorage.setItem('rg.previewVisible','0'));
+ await page.goto(base);await ready();
+ check('A fresh profile uses the explicit English launcher default',await page.evaluate(()=>S.uiLang==='en'&&document.documentElement.lang==='en'));
+ await page.evaluate(()=>setUiLang('es'));await page.reload();await ready();
+ check('A valid saved language takes priority over the launcher default',await page.evaluate(()=>S.uiLang==='es'));
+ await page.evaluate(()=>localStorage.setItem('rg.uiLang','invalid-value'));await page.reload();await ready();
+ check('An arbitrary stored language is rejected in favor of the launcher default',await page.evaluate(()=>S.uiLang==='en'));
+ await page.evaluate(async()=>{
+   setUiLang('es');await requireOk(await api.post('/api/projects',{slug:'bulk',title:'Synthetic bulk'}));await refreshProjects();await loadProject('bulk');
+   S.data.report.sections=[{key:'custom-first',title:'First section',body:'Original first'},{key:'custom-second',title:'Second section',body:'Original second'}];
+   S.data.root_cause_groups=[{uid:WorkflowUI.uid(),name:'Synthetic shared policy',remediation_md:'Shared action'}];
+   S.data.findings=Array.from({length:3},(_,i)=>({uid:WorkflowUI.uid(),id:'F'+(i+1),mode:'vuln',title:'Synthetic finding '+i,owner:'Original',due_date:'2026-10-20',severity:'low',verification:'confirmed',status:'open',description_md:'Technical description',retests:[{uid:WorkflowUI.uid(),tested_on:'2026-10-01',assessor:'Tester',result:'open',notes_md:'Reproduced'}]}));
+   S.data.finding_sequence=3;scheduleSave();await doSave();select('findings');
+ });await ready();
+ const original=await page.evaluate(()=>({data:JSON.parse(JSON.stringify(S.data)),workspace:S.workspace_id,revision:projectStore.revision}));
+ await page.evaluate(()=>{S.dashSort='manual';renderMain();});
+ check('Manual keyboard ordering is available with fewer than 50 findings',await page.locator('[data-finding-move]').count()===3);
+ await page.locator('[data-finding-move]').first().focus();await page.keyboard.press('Enter');await page.locator('[data-finding-position]').fill('3');await page.locator('[data-finding-move-apply]').focus();await page.keyboard.press('Enter');
+ check('Keyboard reorder preserves stable finding IDs and every technical field',await page.evaluate(before=>JSON.stringify(S.data.findings)===JSON.stringify([before[1],before[2],before[0]]),original.data.findings));
+ await page.evaluate(()=>select('section','custom-first'));await page.locator('[data-section-move="custom-first"]').focus();await page.keyboard.press('Enter');await page.locator('[data-section-position]').fill('2');await page.locator('[data-section-move-apply]').focus();await page.keyboard.press('Enter');
+ check('Section keyboard reorder preserves content and selected section identity',await page.evaluate(before=>S.sel.key==='custom-first'&&JSON.stringify(S.data.report.sections)===JSON.stringify([before[1],before[0]]),original.data.report.sections));
+ await page.evaluate(async()=>{await doSave();select('findings');});await page.locator('[data-bulk-open]').click();
+ check('Bulk editing starts without selected findings or fields and cannot save',await page.locator('[data-bulk-finding]:checked').count()===0&&await page.locator('[data-bulk-field]:checked').count()===0&&await page.locator('[data-bulk-apply]').isDisabled());
+ await page.locator('[data-bulk-finding]').nth(0).check();await page.locator('[data-bulk-finding]').nth(1).check();await page.locator('[data-bulk-field="owner"]').check();await page.locator('[data-bulk-value="owner"]').fill('Reviewed owner');
+ const beforeBulk=await page.evaluate(()=>({data:JSON.stringify(S.data),revision:projectStore.revision,etag:projectStore.etag}));
+ check('Unsaved bulk input requests a browser navigation warning',await page.evaluate(()=>{const event=new Event('beforeunload',{cancelable:true});window.dispatchEvent(event);return event.defaultPrevented;}));
+ await page.locator('[data-bulk-compare]').click();await page.locator('[data-bulk-change]').first().waitFor();
+ check('Comparison lists exact before/after values without mutating the report',await page.locator('[data-bulk-change]').count()===2&&await page.locator('[data-bulk-review]').innerText().then(t=>t.includes('Antes: Original')&&t.includes('Después: Reviewed owner'))&&await page.evaluate(before=>JSON.stringify(S.data)===before.data&&projectStore.revision===before.revision,beforeBulk));
+ await page.locator('[data-bulk-ack]').check();await page.locator('[data-bulk-value="owner"]').fill('Reviewed owner revised');
+ check('Changing a reviewed input invalidates the confirmation and comparison',await page.locator('[data-bulk-change]').count()===0&&await page.locator('[data-bulk-apply]').isDisabled()&&!await page.locator('[data-bulk-ack]').isChecked());
+ await page.locator('[data-bulk-compare]').click();await page.locator('[data-bulk-change]').first().waitFor();await page.locator('[data-bulk-ack]').check();
+ await page.evaluate(()=>api.post('/api/__test__/fault',{mode:'disk_full',slug:'bulk'}));
+ await page.locator('[data-bulk-apply]').click();await page.waitForFunction(()=>!projectBusyCount&&document.querySelector('[data-bulk-dialog] [role="alert"]').textContent);
+ check('A real disk write failure preserves selection, values and review for retry',await page.locator('[data-bulk-finding]:checked').count()===2&&await page.locator('[data-bulk-value="owner"]').inputValue()==='Reviewed owner revised'&&await page.locator('[data-bulk-change]').count()===2&&await page.locator('[data-bulk-ack]').isChecked()&&await page.evaluate(before=>JSON.stringify(S.data)===before.data&&projectStore.etag===before.etag,beforeBulk));
+ await page.evaluate(()=>api.post('/api/__test__/fault',{mode:null,slug:'bulk'}));await page.locator('[data-bulk-apply]').click();await page.waitForFunction(()=>!projectBusyCount&&!document.querySelector('[data-bulk-dialog]'));
+ const applied=await page.evaluate(()=>({data:S.data,revision:projectStore.revision,dirty:projectStore.dirty,stale:document.querySelector('#previewFreshness').dataset.stale}));const expectedBulk=JSON.parse(beforeBulk.data);expectedBulk.findings[0].owner='Reviewed owner revised';expectedBulk.findings[1].owner='Reviewed owner revised';
+ check('Retry saves only selected assignments and advances preview freshness revision',require('node:util').isDeepStrictEqual(applied.data,expectedBulk)&&applied.revision>beforeBulk.revision&&!applied.dirty&&applied.stale==='true',{applied,expected:expectedBulk,beforeRevision:beforeBulk.revision});
+ check('Closing a successful bulk dialog restores focus to its logical control',await page.evaluate(()=>document.activeElement.id==='editor'||document.activeElement.hasAttribute('data-bulk-open')));
+ await page.locator('[data-bulk-open]').click();await page.locator('[data-bulk-finding]').first().check();await page.locator('[data-bulk-field="owner"]').check();await page.locator('[data-bulk-value="owner"]').fill('Retry after transient failure');
+ const previewRoute=base+'/api/projects/bulk/bulk-edit/preview';await context.route(previewRoute,route=>route.fulfill({status:503,contentType:'text/plain',body:'Unverified intermediary body'}));await page.locator('[data-bulk-compare]').click();await page.waitForFunction(()=>!projectBusyCount&&document.querySelector('[data-bulk-dialog] [role="alert"]').textContent);
+ check('An unverified transient HTTP error stays visible without discarding input',await page.locator('[data-bulk-value="owner"]').inputValue()==='Retry after transient failure'&&await page.locator('[data-bulk-finding]:checked').count()===1&&!await page.locator('[data-bulk-dialog] [role="alert"]').innerText().then(t=>t.includes('Unverified intermediary body')));
+ await context.unroute(previewRoute);await page.locator('[data-bulk-compare]').click();await page.locator('[data-bulk-change]').first().waitFor();
+ check('A transient response does not permanently prevent a reviewed retry',await page.locator('[data-bulk-change]').count()===1);
+ await page.screenshot({path:out+'/bulk-desktop.png',fullPage:true});
+ await page.setViewportSize({width:320,height:844});await page.evaluate(()=>{for(const [el,size]of [...document.querySelectorAll('[data-bulk-dialog], [data-bulk-dialog] *')].filter(el=>el instanceof HTMLElement).map(el=>[el,parseFloat(getComputedStyle(el).fontSize)]))el.style.fontSize=size*2+'px';});
+ check('Bulk comparison reflows at 320 pixels and 200 percent text',await page.evaluate(()=>{const dialog=document.querySelector('[data-bulk-dialog]');return dialog.scrollWidth<=dialog.clientWidth+1&&document.documentElement.scrollWidth<=innerWidth;}));
+ await page.evaluate(()=>document.querySelector('[data-bulk-dialog]').scrollTop=0);await page.screenshot({path:out+'/bulk-mobile-200.png',fullPage:true});
+ await context.route(base+'/__test__/axe.js',route=>route.fulfill({status:200,contentType:'application/javascript',body:fs.readFileSync(require.resolve('axe-core/axe.min.js',{paths:[root]}),'utf8')}));await page.addScriptTag({url:base+'/__test__/axe.js'});const axe=await page.evaluate(()=>axe.run(document.querySelector('[data-bulk-dialog]'),{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}));results.axe={violations:axe.violations,incomplete:axe.incomplete.map(i=>({id:i.id,impact:i.impact,nodes:i.nodes.length}))};check('Bulk dialog has no automated WCAG violations; inconclusive checks are retained',axe.violations.length===0,results.axe);
+ await page.keyboard.press('Escape');await page.setViewportSize({width:1366,height:1000});await page.reload();await ready();
+ await page.evaluate(async()=>{S.data.report.sections.push({key:'findings',enabled:true});scheduleSave();await doSave();await loadProject('bulk');select('finding',0);setPreviewVisible(true);});await page.waitForFunction(()=>WorkbenchUI.hasLivePreview());
+ const zeroPreview=await page.evaluate(()=>({revision:projectStore.revision,generation:previewGeneration}));
+ check('The decision regression starts from a real current preview at revision zero',zeroPreview.revision===0);
+ await page.getByRole('tab',{name:'Decisiones',exact:true}).click();await page.locator('[data-finding-decisions-ready="true"]').waitFor();await page.locator('[data-insights-field="statement"]').fill('Synthetic decision on existing evidence');await page.locator('[data-insights-action="save-claim"]').click();await page.waitForFunction(()=>!projectBusyCount&&S.data.insights?.claims?.length===1&&WorkbenchUI.hasLivePreview());
+ check('Decision save at revision zero regenerates the previous live snapshot',await page.evaluate(before=>projectStore.revision===0&&previewGeneration>before.generation&&WorkbenchUI.hasLivePreview(),zeroPreview));
+ await page.evaluate(()=>InsightsUI.open('editorial'));await page.locator('[data-insights-action="assistant-models"]').click();await page.locator('[data-insights-field="model"]').selectOption('writer:local');const editorialUid=await page.evaluate(()=>S.data.findings[0].uid);await page.locator('[data-insights-field="finding_uid"]').selectOption(editorialUid);await page.locator('[data-insights-check="assistant-confirm"]').check();await page.locator('[data-insights-action="assistant-propose"]').click();await page.locator('[data-insights-check="accept-description_md"]').check();
+ const assistantBefore=await page.evaluate(()=>({generation:previewGeneration,revision:projectStore.revision}));await page.locator('[data-insights-action="assistant-apply"]').click();await page.waitForFunction(()=>!projectBusyCount&&S.data.findings[0].description_md==='EDITORIAL_FIXTURE_UPDATED_DESCRIPTION');
+ check('An editorial mutation marks a hidden preview stale until it is shown again',await page.evaluate(()=>!WorkbenchUI.hasLivePreview()&&$('#previewFreshness').dataset.stale==='true'));await page.evaluate(()=>select('finding',0));await page.waitForFunction(()=>WorkbenchUI.hasLivePreview());
+ check('Accepting a synthetic editorial proposal refreshes the real report preview',await page.evaluate(before=>projectStore.revision===0&&previewGeneration>before.generation&&$('#pdfPreview').contentDocument.body.textContent.includes('EDITORIAL_FIXTURE_UPDATED_DESCRIPTION'),assistantBefore));
+ let releaseOld,oldReceived=false;const oldHeld=new Promise(resolve=>releaseOld=resolve);let holdNext=true;
+ await context.route(base+'/api/projects/bulk/preview',async route=>{if(!holdNext)return route.continue();holdNext=false;const response=await route.fetch();oldReceived=true;await oldHeld;return route.fulfill({response});});
+ await page.evaluate(()=>{refreshLivePreview();});for(let i=0;i<100&&!oldReceived;i++)await page.waitForTimeout(20);assert.ok(oldReceived,'Held old preview response received');
+ await page.evaluate(async()=>{const current=await api.get('/api/projects/bulk');current.findings[0].description_md='NEWER_SAVED_DESCRIPTION';await requireOk(await appFetch('/api/projects/bulk',{method:'PUT',headers:{'Content-Type':'application/json','If-Match':projectStore.etag},body:JSON.stringify(current)}));await projectStore.load('bulk');S.data=projectStore.data;WorkbenchUI.dirty();renderMain();});await page.waitForFunction(()=>WorkbenchUI.hasLivePreview()&&$('#pdfPreview').contentDocument.body.textContent.includes('NEWER_SAVED_DESCRIPTION'));
+ const latestGeneration=await page.evaluate(()=>previewGeneration);releaseOld();await page.waitForTimeout(150);await context.unroute(base+'/api/projects/bulk/preview');
+ check('A delayed prior response cannot claim freshness after a revision reset',await page.evaluate(generation=>previewGeneration===generation&&WorkbenchUI.hasLivePreview()&&$('#pdfPreview').contentDocument.body.textContent.includes('NEWER_SAVED_DESCRIPTION'),latestGeneration));
+ await page.evaluate(()=>setPreviewVisible(false));
+ await page.evaluate(()=>{
+   localStorage.setItem('rg.wb.filters.bulk',JSON.stringify({owner:'LEGACY OWNER'}));localStorage.setItem('rg.wb.views.bulk',JSON.stringify([{name:'LEGACY PRIVATE VIEW',filters:{}}]));
+   const prefix='rg.wb.workspace.'+S.workspace_id+'.';localStorage.setItem(prefix+'filters.bulk',JSON.stringify({owner:'DELETED OWNER',status:'unknown-status'}));localStorage.setItem(prefix+'views.bulk',JSON.stringify([{name:'A PRIVATE VIEW',filters:{owner:'DELETED OWNER'},severity:'unknown-severity'}]));WorkbenchUI.projectChanged();select('findings');
+ });
+ check('Obsolete filters display their actual value and unavailable status',await page.getByLabel('Responsable',{exact:true}).inputValue()==='DELETED OWNER'&&await page.getByLabel('Responsable',{exact:true}).locator('option:checked').innerText().then(t=>t.includes('No disponible'))&&await page.locator('.finding-filters').innerText().then(t=>t.includes('2 filtros activos')));
+ await page.getByRole('button',{name:'Limpiar filtros',exact:true}).click();check('Clearing obsolete filters restores all findings',await page.locator('.dash-row').count()===3);
+ await page.getByLabel('Vistas guardadas',{exact:true}).selectOption('0');check('An obsolete saved severity is explicit rather than an invisible active filter',await page.locator('.finding-filters').innerText().then(t=>t.includes('unknown-severity')));
+ await page.getByRole('button',{name:'Limpiar filtros',exact:true}).click();
+ await page.evaluate(()=>{const prefix='rg.wb.workspace.'+S.workspace_id+'.';localStorage.setItem(prefix+'filters.bulk',JSON.stringify({owner:['malformed']}));localStorage.setItem(prefix+'views.bulk',JSON.stringify({not:'an array'}));localStorage.setItem(prefix+'resume.bulk','null');localStorage.setItem(prefix+'recent.bulk',JSON.stringify({not:'an array'}));WorkbenchUI.projectChanged();WorkbenchUI.resume();select('findings');});
+ check('Malformed preference shapes do not crash rendering or hide findings',await page.locator('.dash-row').count()===3&&results.pageErrors.length===0);
+ await page.evaluate(()=>{const prefix='rg.wb.workspace.'+S.workspace_id+'.';localStorage.setItem(prefix+'views.bulk',JSON.stringify([{name:'A PRIVATE VIEW',filters:{owner:'Original'}}]));select('finding',2);WorkbenchUI.position();});
+ const savedA=await page.evaluate(()=>({workspace:S.workspace_id,selected:S.data.findings[S.sel.idx].uid,keys:Object.keys(localStorage).filter(k=>k.startsWith('rg.wb.workspace.')).sort()}));
+ await stop();await start(workspaceB,address.port);await page.reload();await ready();
+ await page.evaluate(async()=>{await requireOk(await api.post('/api/projects',{slug:'bulk',title:'Another workspace'}));await refreshProjects();await loadProject('bulk');S.data.findings=[{uid:WorkflowUI.uid(),id:'F1',mode:'vuln',title:'B only',severity:'info',owner:'B owner'}];S.data.finding_sequence=1;scheduleSave();await doSave();select('findings');});await ready();
+ check('A real workspace change on the same origin isolates same-slug views and filters',await page.evaluate(before=>S.workspace_id!==before.workspace,savedA)&&await page.getByLabel('Vistas guardadas',{exact:true}).locator('option').count()===1&&await page.getByLabel('Responsable',{exact:true}).inputValue()===''&&await page.locator('.dash-row').count()===1);
+ check('Unscoped legacy project preferences remain untouched and are never auto-adopted',await page.evaluate(()=>localStorage.getItem('rg.wb.views.bulk').includes('LEGACY PRIVATE VIEW'))&&!await page.locator('.finding-filters').innerText().then(t=>t.includes('LEGACY')));
+ await stop();await start(workspaceA,address.port);await page.reload();await ready();await page.evaluate(()=>{WorkbenchUI.resume();});
+ check('Returning to the original workspace restores only its own reading position',await page.evaluate(before=>S.workspace_id===before.workspace&&S.sel.type==='finding'&&S.data.findings[S.sel.idx].uid===before.selected,savedA));
+ await page.evaluate(()=>select('findings'));check('Returning to the original workspace retains its own private view',await page.getByLabel('Vistas guardadas',{exact:true}).locator('option').allTextContents().then(items=>items.includes('A PRIVATE VIEW')));
+ check('All browser paths complete without page errors or external requests',results.pageErrors.length===0&&results.externalRequests.length===0);save();
+ }catch(error){if(page)await page.screenshot({path:out+'/failure.png',fullPage:true}).catch(()=>{});throw error;}finally{await browser?.close();await stop();fs.rmSync(workspaceA,{recursive:true,force:true});fs.rmSync(workspaceB,{recursive:true,force:true});}})().catch(error=>{results.error=String(error.stack||error);save();console.error(error);process.exitCode=1;});

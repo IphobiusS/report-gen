@@ -19,6 +19,37 @@ from export_formats import REGISTRY, get
 FORMATS = tuple(REGISTRY)
 
 
+def public_warnings(issues, language='es'):
+    """Keep advisory counts and categories, never private diagnostic payloads.
+
+    The author reviews complete messages in the editor. Those messages can
+    interpolate excluded annex names, original redaction needles, private CSV
+    history, or source text before redaction. The client manifest must not copy
+    messages, paths, finding identities, or help strings across that boundary.
+    """
+    en = language == 'en'
+    labels = {
+        'findings': ('Aviso de hallazgo revisado', 'Finding warning reviewed'),
+        'coverage': ('Aviso de cobertura revisado', 'Coverage warning reviewed'),
+        'root_cause_groups': ('Aviso de causa raíz revisado', 'Root cause warning reviewed'),
+        'attachments': ('Aviso de anexo revisado', 'Annex warning reviewed'),
+        'publication': ('Aviso de publicación revisado', 'Publication warning reviewed'),
+        'report': ('Aviso de validación revisado', 'Validation warning reviewed'),
+        'audience': ('Aviso de alcance del extracto revisado', 'Derivative scope warning reviewed'),
+    }
+    rows = []
+    for issue in issues:
+        # Only fixed categories leave the source context. Unknown/private paths
+        # deliberately share a generic label rather than exposing field names.
+        root = re.split(r'[.\[]', str(issue.get('path', '')), maxsplit=1)[0]
+        label = labels.get(root, ('Aviso privado revisado', 'Private warning reviewed'))
+        rows.append({'level': 'warning', 'category': root if root in labels else 'private',
+                     'message': label[1 if en else 0],
+                     'details': ('Diagnostic details remain in the private project; review does not establish technical validity.' if en else
+                                 'El detalle del diagnóstico permanece en el proyecto privado; la revisión no acredita validez técnica.')})
+    return rows
+
+
 def capture(directory, target):
     """Caller holds the project lock; copy only resources of the enabled report."""
     data = deepcopy(engine.load_engagement(directory / 'engagement.yaml'))
@@ -182,10 +213,11 @@ def build(snapshot, formats, identity, label, captured, output_dir, progress=lam
         raise ValueError(backend_message('Indica un nombre de entrega de 1 a 120 caracteres'))
     manifest = {'format': 'report-gen-delivery', 'version': 1, 'tool_version': VERSION,
                 'label': label.strip(), 'created': datetime.now(timezone.utc).isoformat(),
-                'source_revision': identity, 'warnings': captured['issues'], 'files': {}}
+                'source_revision': identity, 'files': {}}
     from design_library import guidance
     document=engine.load_engagement(snapshot / 'engagement.yaml')
     en=document['meta'].get('lang')=='en'
+    manifest['warnings'] = public_warnings(captured['issues'], 'en' if en else 'es')
     guide=guidance(document)
     if guide: manifest["design_guidance"]=guide
     output_dir.mkdir()

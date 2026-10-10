@@ -82,9 +82,17 @@ def _read_library(path, kind):
     return data
 
 
+def _project_entries(projects):
+    """Exclude only the exact empty regular marker shipped in the package."""
+    rows = sorted(projects.iterdir()) if projects.exists() else []
+    return [path for path in rows if not (
+        path.name == '.gitkeep' and not path.is_symlink()
+        and path.is_file() and path.stat().st_size == 0)]
+
+
 def _empty(paths):
     projects, findings, designs = paths
-    if projects.exists() and (not projects.is_dir() or any(projects.iterdir())):
+    if projects.exists() and (not projects.is_dir() or _project_entries(projects)):
         raise ValueError(backend_message('Restaura únicamente en una instalación vacía: ya hay proyectos o archivos'))
     if _read_library(findings, 'findings')['templates'] or _read_library(designs, 'designs')['templates']:
         raise ValueError(backend_message('Restaura únicamente en una instalación vacía: ya hay plantillas personales'))
@@ -131,7 +139,7 @@ def export_workspace(projects, findings, designs):
     recover(*paths)
     history.recover_transactions(paths[0])
     files = {}
-    rows = sorted(paths[0].iterdir()) if paths[0].exists() else []
+    rows = _project_entries(paths[0])
     # Refuse to silently omit a damaged project, a stray file or a symlink.
     if len(rows) > MAX_PROJECTS:
         raise ValueError(backend_message('Límite de 200 proyectos por respaldo integral'))

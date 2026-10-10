@@ -124,7 +124,9 @@ def test_warnings_require_acknowledgement_and_are_retained(client):
     r=client.post('/api/projects/test/delivery',json=body,headers={'If-Match':tag})
     assert r.status_code==200
     with zipfile.ZipFile(BytesIO(r.data)) as z:
-        assert 'Texto pendiente' in json.loads(z.read('verificacion.json'))['warnings'][0]['message']
+        warning=json.loads(z.read('verificacion.json'))['warnings'][0]
+        assert warning['category']=='findings' and 'hallazgo' in warning['message']
+        assert 'privado' in warning['details']
 
 
 @pytest.mark.parametrize('preset', [p['id'] for p in sections.load_presets()])

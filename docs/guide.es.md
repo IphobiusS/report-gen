@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.29.0
+# Guía de uso de report-gen 0.30.0
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -32,7 +32,7 @@ El diagnóstico distingue el editor de cada motor de exportación. Puedes editar
 | Consultar el diagnóstico sin instalar ni arrancar | `python3 start.py --diagnose` |
 | Arrancar con el entorno ya preparado, sin instalar | `python3 start.py` |
 
-Añade `--lang en` para mensajes del lanzador en inglés. **Node.js no es necesario para el uso normal.**
+Añade `--lang en` para mensajes del lanzador y el idioma inicial de la interfaz en inglés. Si el navegador ya tiene una preferencia de idioma, se conserva; puedes cambiarla desde el editor. El idioma del informe es independiente. **Node.js no es necesario para el uso normal.**
 
 En Debian/Kali, si faltan las bibliotecas de PDF o venv:
 
@@ -76,6 +76,18 @@ En **Inicio → Tus proyectos**, busca por título, cliente o identificador; la 
 
 **Archivar** conserva el contenido y permite abrirlo, editarlo y **Reactivar** después. No elimina archivos ni convierte el proyecto en solo lectura. El inicio automático elige un proyecto activo; los archivados siguen accesibles desde su filtro y el selector. Fechas y estado de archivo viajan en respaldos e historial, y no se publican como contenido del informe.
 
+## Editar hallazgos por lotes
+
+En **Hallazgos → Editar por lotes**, selecciona expresamente los hallazgos. La búsqueda y las páginas de 50 elementos conservan la selección de otras páginas; el contador incluye todos los seleccionados. El límite es de 500 hallazgos por operación.
+
+1. Marca los campos que quieres cambiar: **Responsable**, **Fecha de corrección** o **Grupo de causa raíz**. Un valor vacío retira esa asignación; los campos no marcados se conservan.
+2. Pulsa **Comparar cambios**. Se guardan primero los cambios pendientes del informe y se presenta cada valor anterior y propuesto, también para hallazgos ocultos por la búsqueda.
+3. Revisa la comparación, marca la confirmación y pulsa **Guardar cambios revisados**. La asignación se guarda en una sola operación y crea una versión recuperable en **Versiones**. Si el proyecto cambia mientras revisas, debes comparar de nuevo.
+
+No modifica estado, verificación técnica, evidencias ni retests. Un error de guardado conserva la selección y propuesta en el diálogo para reintentar; no se promete recuperar este formulario tras recargar o cerrar el navegador. Cerrar una propuesta sin guardar requiere confirmar su descarte.
+
+**Mover** permite reordenar hallazgos con teclado también en proyectos pequeños; no exige arrastrar. Los filtros, vistas guardadas, posición y actividad reciente se separan por espacio de trabajo y proyecto. Las preferencias antiguas sin identidad no se adoptan por coincidencia de nombre. Si un filtro apunta a un valor eliminado, aparece **No disponible** junto al contador de filtros activos; **Limpiar filtros** vuelve a mostrar todos los hallazgos.
+
 ## Compartir un diagnóstico
 
 Abre **Comprobar instalación**. Las pruebas generan archivos sintéticos temporales para los motores PDF y DOCX y comprueban la escritura del espacio de trabajo; no exportan proyectos reales. Un motor ausente aparece como fallo, separado de los demás.
@@ -87,6 +99,8 @@ La comprobación DOCX genera y vuelve a leer un documento: no acredita la pagina
 ## Qué comprueba cada entrega
 
 **Ver comprobaciones** muestra revisión, SHA-256, tamaño y controles de cada descarga. HTML, Markdown y Word comparan párrafos, código literal, metadatos, destinos de enlaces y colocaciones de evidencia dentro de su hallazgo, además de tablas y listas. La imagen se compara por su huella pública, pie y contexto precedente. Para código solo se normalizan los finales de línea CRLF/CR a LF; se conservan espacios, tabulaciones, comillas y líneas vacías. Markdown omite el gráfico de severidad y su leyenda de alcance; se registra esa diferencia.
+
+Los manifiestos y registros de comprobación descargables conservan categorías y cantidad de avisos, pero no sus mensajes privados, rutas ni valores de origen. El detalle completo permanece en el editor para revisión. Esta separación no censura los campos que decidas incluir en el informe o en un anexo.
 
 Los IDs existentes, como `F10`, no se renumeran al editar la lista. Los nuevos reciben un identificador no reutilizado. Una referencia interna a un destino inexistente bloquea la publicación y muestra el enlace que hay que corregir. La comparación estática de HTML detecta `hidden`, `display:none`, `visibility:hidden`, opacidad cero y sus ancestros. No certifica geometría, oclusiones ni todos los estados de CSS y JavaScript: todos los formatos requieren revisión visual.
 
@@ -116,9 +130,25 @@ La censura de texto se aplica a una copia de publicación. La censura de imagen 
 
 El HTML portátil contiene todo el informe; los filtros y la vista ejecutiva son opciones de lectura, no permisos de acceso. La comparación compartible omite imágenes históricas; la comparación interna puede incluir capturas privadas y no debe entregarse al cliente.
 
+## Actualización asistida
+
+Abre **Actualizar report-gen**. No hay consultas de red en segundo plano ni actualizaciones automáticas.
+
+1. Marca **Permitir consulta y descarga desde GitHub** y pulsa **Comprobar versión oficial**. Se consulta exclusivamente el repositorio oficial `IphobiusS/report-gen`; no se envían informes, rutas locales ni credenciales. Si no existe una versión estable más reciente, se indica sin preparar archivos.
+2. Revisa la versión, el tamaño, el SHA-256 y su publicación. Confirma por separado la preparación del paquete y del **respaldo privado sin cifrar**; pulsa **Descargar, verificar y respaldar**. Se guardan los cambios pendientes del proyecto abierto antes de preparar.
+3. Descarga las **instrucciones privadas**. Incluyen las rutas de la nueva aplicación y del respaldo, su fecha y SHA-256, los comandos para continuar y cómo volver a la instalación anterior.
+4. Guarda o descarga los borradores pendientes de otras pestañas, ciérralas y detén el editor con `Ctrl+C`. No cambies proyectos entre el respaldo y la actualización. Ejecuta las líneas indicadas una a una; si alguna falla, detente. Instalar las dependencias de la nueva carpeta requiere Internet.
+5. Comprueba proyectos, imágenes, historial y exportaciones antes de retirar la instalación anterior; conserva el respaldo.
+
+La preparación verifica la etiqueta y su commit, los tres archivos de la Release, el SHA-256 del ZIP y todos los archivos del manifiesto. Rechaza rutas y tipos de entrada no admitidos. Comprueba integridad desde el origen oficial por HTTPS; no es una firma criptográfica independiente del repositorio. El paquete fuente admite hasta 128 MiB comprimidos, 256 MiB extraídos y 4.000 archivos.
+
+Los archivos quedan en `~/report-gen-updates/update-*/`: `application/`, `workspace-backup.zip` y `receipt.json`. Cada preparación captura los datos guardados actuales y valida una restauración temporal del respaldo. Una captura idéntica puede reutilizar la preparación verificada; si cambian los datos, se crea otra conservando el respaldo anterior. Estos archivos son privados y el ZIP de respaldo no está cifrado. Los borradores del navegador quedan fuera.
+
+No se ejecuta el código descargado ni se reemplaza la aplicación mientras preparas. Las instrucciones reutilizan el espacio externo o trasladan explícitamente los datos heredados a uno nuevo. En Linux usan el instalador local; Windows y macOS usan el lanzador Python. Conserva la aplicación anterior y ejecuta solo un proceso sobre el espacio de trabajo. Para volver, detén el nuevo editor y usa el comando mostrado. Si ya editaste con la nueva versión, conserva ambas carpetas y restaura el respaldo en un espacio vacío en vez de sobrescribir trabajo.
+
 ## Actualizar desde una versión anterior
 
-Si ya tienes datos externos, detén el editor, descomprime o clona 0.29.0 en una carpeta nueva y ejecuta `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Así preparas la nueva `.venv` y actualizas el acceso para reutilizar esos datos; no necesitas importarlos ni `--upgrade-from`. No abras dos procesos sobre el mismo espacio de trabajo. Una vez comprobada la nueva instalación, puedes retirar la carpeta de la aplicación anterior conservando los datos externos.
+Si prefieres actualizar manualmente y ya tienes datos externos, detén el editor, descomprime o clona 0.30.0 en una carpeta nueva y ejecuta `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Así preparas la nueva `.venv` y actualizas el acceso para reutilizar esos datos; no necesitas importarlos ni `--upgrade-from`. No abras dos procesos sobre el mismo espacio de trabajo. Una vez comprobada la nueva instalación, puedes retirar la carpeta de la aplicación anterior conservando los datos externos.
 
 Para separar datos que aún están dentro de una instalación antigua, detén ambos editores y ejecuta desde la nueva carpeta:
 
@@ -134,7 +164,7 @@ El respaldo se conserva en `~/report-gen-backups/upgrade-*/workspace.zip`, fuera
 
 La migración conserva los proyectos, evidencias, historial y bibliotecas incluidos en el respaldo integral. No copia `.venv`, salidas de entregas ni borradores del navegador. Descarga un borrador pendiente antes de cambiar de instalación u origen del navegador. Abre tus proyectos, verifica las imágenes y el historial y conserva también las entregas que necesites antes de retirar la carpeta anterior.
 
-Como alternativa, crea **Respaldo integral** con la versión anterior y restáuralo en la instalación nueva vacía. Si un proyecto antiguo solo conserva su revisión previa en `engagement.yaml.bak`, sin historial, el exportador de 0.21.2 omite esa copia. Conserva el directorio original y usa el traslado de 0.29.0 para incorporar esa recuperación heredada. Un ZIP antiguo que ya omitió la copia no permite reconstruirla.
+Como alternativa, crea **Respaldo integral** con la versión anterior y restáuralo en la instalación nueva vacía. Si un proyecto antiguo solo conserva su revisión previa en `engagement.yaml.bak`, sin historial, el exportador de 0.21.2 omite esa copia. Conserva el directorio original y usa el traslado de 0.30.0 para incorporar esa recuperación heredada. Un ZIP antiguo que ya omitió la copia no permite reconstruirla.
 
 Los proyectos anteriores siguen siendo legibles. Los respaldos que contengan el directorio de anexos requieren 0.21.0 o posterior; una versión anterior puede rechazarlos. Los registros de anexos con el campo `required` necesitan 0.21.1 o posterior, aunque su valor sea falso. Desde 0.21.2, el contador `finding_sequence` impide reutilizar números eliminados; no modifica los IDs existentes. Versiones anteriores no conservan esta garantía. Si una edición antigua ya cambió el significado de una referencia, esta versión no puede inferir el destino original: revisa las referencias heredadas.
 
@@ -223,9 +253,19 @@ En **Tareas de remediación → Recibir avances del responsable**, abre **1. Emi
 
 Entrega `remediation-return.csv` y pide editar solo `owner`, `due_date` y `reported_remediation`. Conserva referencias, cabeceras y apóstrofos iniciales en los campos de texto, incluido `project_slug`; son parte del formato reversible que neutraliza fórmulas. El responsable no puede quedar vacío. La fecha usa `AAAA-MM-DD`; dejarla vacía propone borrar el plazo. Guarda CSV UTF-8 separado por comas, hasta 2 MiB y 500 filas. Se pueden devolver algunas filas, pero no combinar lotes. El CSV informativo de tareas no sirve como plantilla de retorno.
 
-Sube el archivo y elige **Comparar retorno**. Se muestran valor actual y propuesta; si cambió desde la emisión, también el valor emitido. Ningún campo queda aceptado por defecto. Selecciona cada cambio, confirma su revisión y pulsa **Guardar cambios seleccionados**. Un cambio concurrente exige repetir la comparación.
+Sube el archivo y elige **Comparar retorno**. Se muestran valor actual y propuesta; si cambió desde la emisión, también el valor emitido. Ningún campo queda aceptado por defecto. Selecciona cada cambio, confirma su revisión y pulsa **Guardar cambios seleccionados**. Un cambio concurrente exige repetir la comparación. Ante un error temporal al guardar, el archivo leído y las selecciones permanecen en la pestaña para reintentar. Después de guardar, la vista previa del informe deja de presentar la revisión anterior como actual; si está visible en modo vivo, se solicita de nuevo.
 
 La comunicación se conserva separada como **Corrección comunicada por retorno (sin verificar)**. Importar no cambia estado, verificación técnica, retests, descripción ni evidencias: registra cualquier comprobación real en **Correcciones y retest**. La plantilla identifica el lote y proyecto, pero no autentica a quien la devuelve; revisa la procedencia antes de aceptar cambios.
+
+## Entregas y registro por responsable
+
+En **Tareas de remediación → Recibir avances del responsable → 1. Emitir una plantilla**, selecciona hallazgos con responsable y los campos de las fichas en los controles superiores. Confirma los datos privados y la retención. Usa **Previsualizar entrega por responsable** para revisar tanto las fichas como los valores incluidos siempre en el CSV: `owner`, `due_date` y `reported_remediation`, incluida la última comunicación existente.
+
+**Emitir fichas y CSV por responsable (ZIP)** crea `remediation-delivery.zip` y guarda el lote en el proyecto. Cada carpeta `owner-001/`, `owner-002/`, etc., contiene un índice HTML, fichas y su CSV de retorno. El manifiesto registra campos, responsables, revisión de origen y hashes; `INSTRUCTIONS.txt` explica cómo separar la entrega. Las fichas incluyen únicamente los campos seleccionados; no añaden imágenes ni anexos. Su texto no ejecuta HTML o Markdown. El ZIP completo reúne a todos los responsables seleccionados: revisa y separa las carpetas que corresponden a cada destinatario antes de compartirlas. No hay envío automático ni permisos de acceso dentro del ZIP.
+
+**Registro local de lotes** distingue emisión local, recepción registrada, cambios aceptados y revocación, con fechas, revisión de origen y hashes. Comparar un CSV es de solo lectura. Tras revisarlo puedes elegir **Registrar recepción sin aplicar cambios**, o seleccionar cambios y guardarlos; ninguna de las dos opciones certifica la identidad del remitente. **Revocar este lote** impide aceptar nuevos retornos de ese lote, sin borrar hallazgos ni registros.
+
+Se conservan hasta 20 lotes o 4 MiB en total y 16 eventos por lote; el registro señala cuántos eventos antiguos se omitieron. Los lotes viajan en respaldos e historial y se excluyen del informe publicado. Restaurar una versión antigua también restaura su estado de lotes y revocaciones. Es un registro local editable: no demuestra que alguien recibió el archivo, autenticidad del remitente ni remediación verificada.
 
 ## Publicaciones descargables
 

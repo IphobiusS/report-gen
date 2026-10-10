@@ -1,4 +1,4 @@
-# report-gen 0.29.0 user guide
+# report-gen 0.30.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -18,6 +18,8 @@ python3 scripts/install.py --desktop --lang en
 The first command installs dependencies into `.venv` using the audited constraints and creates `~/.local/bin/report-gen`. `--desktop` also adds an application-menu shortcut that opens a terminal. Installation needs connectivity, Python 3.10+ and venv support; it does not use `sudo` or install system packages. This is not a standalone executable: retain the extracted application directory and `.venv`. The shortcut points to that location and the chosen workspace; subsequent launches do not reinstall or download dependencies. If you move the application, rerun the installer from its new location.
 
 Workspace selection is `--workspace`, then `REPORT_GEN_WORKSPACE`, then `$XDG_DATA_HOME/report-gen` or `~/.local/share/report-gen`. For example, `python3 scripts/install.py --desktop --workspace /path/to/data --lang en` selects a specific external directory. Existing data is not migrated automatically: read the migration instructions before interpreting an empty list as lost projects.
+
+`--lang en` sets the launcher messages and initial interface language to English. An existing browser language preference takes precedence; change it in the editor when needed. Report language remains independent.
 
 The existing `python3 start.py --ready --lang en` route remains available. Without `--workspace` or the environment variable, this launch retains the traditional `webapp/` location. `--ready` allows dependency installation when the local environment is missing or incomplete, runs diagnostics and starts the editor if its requirements are available. Setup creates `.venv`, updates pip and installs dependencies constrained by `requirements-audited.txt`. Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. Use `python3 start.py --ready --port 8081 --lang en` for another local port.
 
@@ -78,6 +80,18 @@ Under **Overview → Your projects**, search titles, clients or identifiers; acc
 
 **Archive** retains content, allows opening and editing, and can be reversed with **Reactivate**. It neither deletes files nor makes the project read-only. Automatic startup selects an active project; archived projects remain reachable through their filter and the project selector. Dates and archive state travel with backups and history, and are excluded from report publication.
 
+## Bulk edit findings
+
+Open **Findings → Bulk edit** and explicitly select findings. Search and pages of 50 entries retain selections from other pages; the counter includes every selected finding. An operation can contain up to 500 findings.
+
+1. Enable the fields to change: **Owner**, **Remediation date** or **Root cause group**. An empty value clears that assignment; fields not enabled remain unchanged.
+2. Choose **Compare changes**. Pending report changes are saved first, then each previous and proposed value is displayed, including selected findings hidden by the search.
+3. Review the comparison, acknowledge it and choose **Save reviewed changes**. The assignment is saved in one operation with a recoverable revision under **Versions**. If the project changes during review, compare again.
+
+Status, technical verification, evidence and retests are unchanged. A save error retains the selection and proposal in the dialog for retry; this form is not guaranteed to survive reloading or closing the browser. Closing an unsaved proposal requires confirming its discard.
+
+**Move** supports keyboard reordering even in small projects; dragging is not required. Filters, saved views, reading position and recent activity are separated by workspace and project. Older preferences without a workspace identity are not adopted because project names match. A filter whose value was removed remains labelled **Unavailable**, alongside the active-filter count; **Clear filters** shows all findings again.
+
 ## Share diagnostics
 
 Open **Check installation**. The checks generate temporary synthetic PDF and DOCX files and probe workspace write access; they do not export real projects. An unavailable engine is reported separately as failed.
@@ -100,6 +114,8 @@ Project integers must be within −9,007,199,254,740,991 to 9,007,199,254,740,99
 
 Native Microsoft Word validation requires a licensed Windows desktop installation. The opt-in workflow is implemented; local OOXML and LibreOffice checks do not substitute for that native validation.
 
+Shared delivery manifests and downloadable verification records retain warning categories and counts, without copying private diagnostic messages, paths or source values. The complete details remain in the editor for review. This separation does not redact fields you choose to include in a report or annex.
+
 ## Recovery and privacy
 
 The external workspace contains `projects/` and `library/`; originals, history and annexes stay inside each project. The launcher resolves `--workspace` before `REPORT_GEN_WORKSPACE`. Without either selection it retains `webapp/projects/` and `webapp/library/`; it does not search for or move data automatically. **Workspace backup** includes all projects, originals and libraries. Treat it as private data.
@@ -116,9 +132,25 @@ Text redaction applies to the publication copy; image redaction creates a pixel 
 
 Portable HTML contains the entire report. Executive view and filters are presentation options, not access control. Shareable comparisons omit historical images. Internal comparisons may contain private captures and are not client deliverables.
 
+## Guided updates
+
+Open **Update report-gen**. There are no background network checks or automatic updates.
+
+1. Check **Allow checking and downloading from GitHub**, then choose **Check official version**. Only the official `IphobiusS/report-gen` repository is queried; reports, local paths and credentials are not sent. If no newer stable version exists, the dialog says so without preparing files.
+2. Review the version, size, SHA-256 and release. Separately acknowledge preparing the package and an **unencrypted private backup**, then choose **Download, verify and back up**. Pending changes to the open project are saved before preparation.
+3. **Download private instructions**. They include the new application and backup locations, capture time and SHA-256, continuation commands and a command to return to the previous installation.
+4. Save or download pending drafts in other tabs, close those tabs and stop the editor with `Ctrl+C`. Do not edit projects between the backup and update. Run the supplied lines one at a time; stop if one fails. Installing dependencies in the new directory requires Internet access.
+5. Check projects, images, history and exports before retiring the previous installation; keep the backup.
+
+Preparation verifies the tag and commit, all three release assets, the ZIP's SHA-256 and every file in its manifest. Unsupported archive paths and entry types are rejected. This checks integrity against the official HTTPS source; it is not a cryptographic signature independent of that repository. Source packages are limited to 128 MiB compressed, 256 MiB extracted and 4,000 files.
+
+Files are staged under `~/report-gen-updates/update-*/`: `application/`, `workspace-backup.zip` and `receipt.json`. Every preparation captures current saved data and validates a temporary restoration of the backup. An identical capture can reuse verified preparation; changed data creates another while preserving the preceding backup. These files are private, and the backup ZIP is not encrypted. Browser drafts are excluded.
+
+Downloaded code is not executed and the running application is not replaced during preparation. The instructions reuse an external workspace or explicitly migrate legacy data into a new one. Linux uses the local installer; Windows and macOS use the Python launcher. Keep the previous installation and run only one process against a workspace. To return, stop the new editor and use the displayed command. If you already edited with the new version, retain both directories and restore the backup into an empty workspace instead of overwriting work.
+
 ## Upgrade from an earlier version
 
-If your data already lives outside the application, stop the editor, extract or clone 0.29.0 into a new directory and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en`. This prepares the new `.venv` and updates the shortcut to reuse your data; no import or `--upgrade-from` is needed. Do not run two processes against the same workspace. Once the new installation is checked, you can retire the previous application directory while retaining the external data.
+For a manual update when your data already lives outside the application, stop the editor, extract or clone 0.30.0 into a new directory and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en`. This prepares the new `.venv` and updates the shortcut to reuse your data; no import or `--upgrade-from` is needed. Do not run two processes against the same workspace. Once the new installation is checked, you can retire the previous application directory while retaining the external data.
 
 To separate data still held inside an old installation, stop both editors and run from the new directory:
 
@@ -134,7 +166,7 @@ The private backup is kept at `~/report-gen-backups/upgrade-*/workspace.zip`, ou
 
 Migration retains projects, evidence, history and libraries covered by workspace backup. It does not copy `.venv`, delivery outputs or browser drafts. Download a pending draft before changing installation or browser origin. Open your projects, verify images and history and retain any delivery files you need before retiring the previous directory.
 
-Alternatively, create **Workspace backup** in the previous version and restore it into the empty new installation. If an old project has its only preceding revision in `engagement.yaml.bak`, without snapshot history, the 0.21.2 exporter omits that copy. Keep the original directory and use the 0.29.0 migration to include this legacy recovery state. An older ZIP that already omitted the copy cannot reconstruct it. Existing projects remain readable. Backups containing annexes require 0.21.0 or later.
+Alternatively, create **Workspace backup** in the previous version and restore it into the empty new installation. If an old project has its only preceding revision in `engagement.yaml.bak`, without snapshot history, the 0.21.2 exporter omits that copy. Keep the original directory and use the 0.30.0 migration to include this legacy recovery state. An older ZIP that already omitted the copy cannot reconstruct it. Existing projects remain readable. Backups containing annexes require 0.21.0 or later.
 
 Existing IDs are retained. Since 0.21.2, the `finding_sequence` counter prevents deleted IDs from being reused; older versions do not preserve this guarantee. References already misdirected by older edits cannot be repaired automatically without knowing their original intent.
 
@@ -202,9 +234,19 @@ In **Remediation tasks → Receive owner updates**, open **1. Issue a template**
 
 Provide `remediation-return.csv` and request edits only to `owner`, `due_date` and `reported_remediation`. Preserve references, headers and leading apostrophes on text fields, including `project_slug`; these belong to the reversible format that neutralizes formulas. Owner cannot be empty. Dates use `YYYY-MM-DD`; an empty date proposes clearing the deadline. Save comma-separated UTF-8 CSV, limited to 2 MiB and 500 rows. A subset of rows can be returned, but batches cannot be mixed. The informational task CSV is not a return template.
 
-Upload the file and choose **Compare return**. Current and proposed values are shown, with the issued value when it has changed since issuance. No field is accepted by default. Select each change, acknowledge its review and choose **Save selected changes**. Concurrent changes require a fresh comparison.
+Upload the file and choose **Compare return**. Current and proposed values are shown, with the issued value when it has changed since issuance. No field is accepted by default. Select each change, acknowledge its review and choose **Save selected changes**. Concurrent changes require a fresh comparison. A temporary save failure retains the loaded file and selected changes in the tab for retry. After a successful save, the report preview no longer marks the preceding revision as current; a visible live preview is requested again.
 
 The communication is stored separately as **Remediation reported through return (unverified)**. Importing never changes status, technical verification, retests, description or evidence: record actual checks in **Remediation and retest**. The template identifies a project and batch but does not authenticate the sender; verify provenance before accepting updates.
+
+## Owner deliveries and local batch log
+
+In **Remediation tasks → Receive owner updates → 1. Issue a template**, select findings with an assigned owner and choose card fields in the controls above. Acknowledge private data and retention. Choose **Preview owner delivery** to inspect both the cards and the fields always included in the CSV: `owner`, `due_date` and `reported_remediation`, including the existing last communication.
+
+**Issue cards and CSV by owner (ZIP)** creates `remediation-delivery.zip` and saves the batch in the project. Each `owner-001/`, `owner-002/`, etc., directory contains an HTML index, task cards and its return CSV. The manifest records fields, owners, source revision and hashes; `INSTRUCTIONS.txt` explains how to separate the delivery. Cards contain only the selected fields; images and annexes are not added. Card text does not execute HTML or Markdown. The complete ZIP includes every selected owner: review and separate the directories appropriate to each recipient before sharing. Nothing is sent automatically, and the ZIP has no access controls.
+
+**Local batch log** distinguishes local issuance, recorded receipt, accepted changes and revocation, with timestamps, source revision and hashes. Comparing a CSV is read-only. After review, choose **Record receipt without applying changes**, or select and save changes; neither action authenticates the sender. **Revoke this batch** prevents further returns for that batch without deleting findings or records.
+
+Retention is limited to 20 batches or 4 MiB overall and 16 events per batch; the log states how many earlier events were omitted. Batches travel with backups and revision history and are excluded from published reports. Restoring an earlier revision also restores its batch and revocation state. This editable local log does not prove that a recipient received the file, authenticate the sender or establish verified remediation.
 
 ## Downloadable releases
 

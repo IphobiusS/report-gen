@@ -396,6 +396,11 @@ function updateLangBtn() {
 let previewGeneration = 0;
 let previewPdfUrl = null;
 let livePreviewRequest = null;
+function invalidateLivePreview() {
+  previewGeneration++;livePreviewRequest=null;
+  const frame=$("#pdfPreview");if(frame)frame.onload=null;
+  hidePreviewLoading();
+}
 function previewPaneVisible() {
   return !!S.previewVisible && !!$("#pdfPreview")?.getClientRects().length;
 }
@@ -490,7 +495,7 @@ async function init() {
   if(typeof GuideUI!=="undefined")GuideUI.bind();
   if(typeof InsightsUI!=="undefined")InsightsUI.bind();
   if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.bind();
-  { let l = "es"; try { l = localStorage.getItem("rg.uiLang") || "es"; } catch (_) {} S.uiLang = l; }
+  { let l = ["es","en"].includes(sessionInfo.ui_language) ? sessionInfo.ui_language : "es"; try { const stored = localStorage.getItem("rg.uiLang"); if (["es","en"].includes(stored)) l = stored; } catch (_) {} S.uiLang = l; }
   { let th = "dark"; try { th = localStorage.getItem("rg.uiTheme") || "dark"; } catch (_) {} applyUiTheme(th); }
   updateLangBtn(); applyStaticI18n();
   if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.update();
@@ -569,6 +574,7 @@ function renderSidebar(pageOverride) {
       schema.special ? h("span", { class: "sect-badge" }, schema.special) : null));
     li.addEventListener("dragstart", e => { dragCtx = { arr: secs, from: i }; e.dataTransfer.effectAllowed = "move"; });
     makeDropZone(li, secs, i);
+    if(secs.length>1)li.append(h("button",{type:"button",class:"btn sm","data-section-move":sec.key,"aria-label":(S.uiLang==="en"?"Move ":"Mover ")+title,onclick:()=>moveFindingDialog(sec.key,true)},S.uiLang==="en"?"Move":"Mover"));
     sl.append(li);
   });
   // hallazgos
@@ -730,30 +736,41 @@ function renderMain() {
   if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();
 }
 
-function moveFindingDialog(identity) {
-  const findings=S.data?.findings||[], index=findings.findIndex(f=>f.uid===identity);
+// Successful server mutations must advance the local revision too: otherwise
+// a cached preview could incorrectly keep its "Current revision" label.
+async function adoptSavedProject(data, etag) {
+  S.data=data;projectStore.data=data;projectStore.base=JSON.parse(JSON.stringify(data));projectStore.etag=etag;
+  projectStore.revision++;projectStore.savedRevision=projectStore.revision;projectStore.lastSavedAt=new Date();projectStore.lastError=null;
+  let draftCleanupFailed=false;
+  try{if(projectStore.journal)await projectStore.journal.clearOwn(S.slug);projectStore.recoverableRevision=0;projectStore.draftError=null;}
+  catch(error){projectStore.draftError=error;draftCleanupFailed=true;toast(S.uiLang==='en'?'Saved. An older browser draft could not be removed; review Stored private data.':'Guardado. No se pudo eliminar un borrador anterior del navegador; revisa Datos privados guardados.','err');}
+  UndoUI.clear();WorkbenchUI.dirty();WorkflowUI.resetReview?.();ProgressUI.saveState('saved');
+  return {draftCleanupFailed};
+}
+function moveFindingDialog(identity, section=false) {
+  const findings=(section?S.data?.report?.sections:S.data?.findings)||[], idKey=section?"key":"uid", index=findings.findIndex(f=>f[idKey]===identity);
   if(index<0)return;
   const previous=document.activeElement, slug=S.slug, titleId="finding-move-"+WorkflowUI.uid();
   const dialog=h("dialog",{class:"experience-dialog","aria-labelledby":titleId}),body=h("div",{class:"experience-body"});
   const close=h("button",{type:"button",class:"btn",onclick:()=>dialog.close()},S.uiLang==="en"?"Close":"Cerrar");
-  const position=h("input",{type:"number",min:1,max:findings.length,value:index+1,"data-finding-position":""});
+  const position=h("input",{type:"number",min:1,max:findings.length,value:index+1,"data-finding-position":section?null:"","data-section-position":section?"":null});
   const label=S.uiLang==="en"?"Destination position":"Posición de destino";
   const error=h("p",{role:"alert"});
-  body.append(h("p",{},S.uiLang==="en"?"Change the manual order across pages. Finding IDs and evidence links stay unchanged.":"Cambia el orden manual entre páginas. Los IDs y vínculos de evidencia se conservan."),h("label",{},label,position),error,
-    h("button",{type:"button",class:"btn primary","data-finding-move-apply":"",onclick:()=>{
-      if(S.slug!==slug||S.data?.findings!==findings||projectBusyCount>0){error.textContent=S.uiLang==="en"?"The project changed. Reopen the move dialog.":"El proyecto cambió. Vuelve a abrir el diálogo de orden.";return;}
-      const to=Number(position.value), from=findings.findIndex(f=>f.uid===identity);
+  body.append(h("p",{},S.uiLang==="en"?(section?"Change section order without changing its content.":"Change the manual order across pages. Finding IDs and evidence links stay unchanged."):(section?"Cambia el orden de las secciones sin modificar su contenido.":"Cambia el orden manual entre páginas. Los IDs y vínculos de evidencia se conservan.")),h("label",{},label,position),error,
+    h("button",{type:"button",class:"btn primary","data-finding-move-apply":section?null:"","data-section-move-apply":section?"":null,onclick:()=>{
+      if(S.slug!==slug||(section?S.data?.report?.sections:S.data?.findings)!==findings||projectBusyCount>0){error.textContent=S.uiLang==="en"?"The project changed. Reopen the move dialog.":"El proyecto cambió. Vuelve a abrir el diálogo de orden.";return;}
+      const to=Number(position.value), from=findings.findIndex(f=>f[idKey]===identity);
       if(!position.value.trim()||!Number.isInteger(to)||to<1||to>findings.length||from<0){error.textContent=S.uiLang==="en"?"Choose an existing position.":"Elige una posición existente.";position.focus();return;}
       if(from===to-1){dialog.close();return;}
-      const selected=S.sel.type==="finding"?findings[S.sel.idx]?.uid:null;
+      const selected=!section&&S.sel.type==="finding"?findings[S.sel.idx]?.uid:null;
       UndoUI.move(findings,from,to-1);
       if(selected)S.sel.idx=findings.findIndex(f=>f.uid===selected);
       scheduleSave();renderSidebar();renderMain();
-      if(S.sel.type==="findings"){findingPageState.board=Math.floor((to-1)/50);renderMain();}
+      if(!section&&S.sel.type==="findings"){findingPageState.board=Math.floor((to-1)/50);renderMain();}
       dialog.close();
-    }},S.uiLang==="en"?"Move finding":"Mover hallazgo"));
-  dialog.append(h("div",{class:"experience-heading"},h("h2",{id:titleId},findings[index].id+" · "+(S.uiLang==="en"?"Manual order":"Orden manual")),close),body);
-  dialog.addEventListener("close",()=>{dialog.remove();(previous?.isConnected?previous:$("#editor")).focus({preventScroll:true});});
+    }},S.uiLang==="en"?(section?"Move section":"Move finding"):(section?"Mover sección":"Mover hallazgo")));
+  dialog.append(h("div",{class:"experience-heading"},h("h2",{id:titleId},(section?(findings[index].title||findings[index].key):findings[index].id)+" · "+(S.uiLang==="en"?"Manual order":"Orden manual")),close),body);
+  dialog.addEventListener("close",()=>{dialog.remove();const replacement=document.querySelector('['+(section?'data-section-move':'data-finding-move')+'="'+CSS.escape(identity)+'"]');(previous?.isConnected?previous:replacement||$("#editor")).focus({preventScroll:true});});
   document.body.append(dialog);dialog.showModal();position.focus();position.select();
 }
 function findingsDashboard() {
@@ -761,6 +778,7 @@ function findingsDashboard() {
   const actions=h("div",{class:"finding-create-actions"},
     h("button",{type:"button",class:"btn primary","data-finding-create":"blank",onclick:()=>{addFinding("blank");$("#editor").focus({preventScroll:true});}},t("add_finding")),
     h("button",{type:"button",class:"btn","data-finding-create":"library",onclick:()=>$("#libBtn").click()},S.uiLang==="en"?"Use finding library":"Usar biblioteca de hallazgos"));
+  if(typeof BulkUI!=="undefined")actions.append(h("button",{type:"button",class:"btn","data-bulk-open":"",onclick:()=>BulkUI.open()},S.uiLang==="en"?"Bulk edit":"Editar por lotes"));
   box.append(actions);
   const all = (S.data.findings || []);
   const vulns = all.filter(f => f.mode !== "machine");
@@ -829,7 +847,7 @@ function findingsDashboard() {
     title.append(WorkbenchUI.findingChips(f));
     if (incomplete) title.append(h("span", { class: "dash-warn", title: t("dash_incomplete") }, "!"));
     const tr = h("tr", { class: "dash-row", "data-finding-uid":f.uid, onclick: e => { if (!e.target.closest(".drag")) select("finding", idx); } },
-      canDrag ? h("td", { class: "c-drag" }, dragHandle(S.data.findings, idx),all.length>50?h("button",{type:"button",class:"btn sm","data-finding-move":f.uid,"aria-label":(S.uiLang==="en"?"Move ":"Mover ")+f.id,onclick:event=>{event.stopPropagation();moveFindingDialog(f.uid);}},S.uiLang==="en"?"Move":"Mover"):null) : null,
+      canDrag ? h("td", { class: "c-drag" }, dragHandle(S.data.findings, idx),h("button",{type:"button",class:"btn sm","data-finding-move":f.uid,"aria-label":(S.uiLang==="en"?"Move ":"Mover ")+f.id,onclick:event=>{event.stopPropagation();moveFindingDialog(f.uid);}},S.uiLang==="en"?"Move":"Mover")) : null,
       h("td", { class: "c-n" }, f.id || ("F" + (idx + 1))),
       h("td", {}, sevCell), title,
       h("td", { class: "c-cwe" }, isM ? host : (cwe || "—")),
