@@ -58,7 +58,17 @@ server.stderr.on('data',b=>fs.appendFileSync(out+'/server.log',b));let browser,t
   await page.getByRole('button',{name:'Cerrar',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('.workspace-backup-dialog'));
   await page.setViewportSize({width:1280,height:960});await page.evaluate(()=>setUiLang('en'));await page.locator('#workspaceBackupBtn').click();
   await page.locator('[data-backup-routine] summary').click();await page.waitForFunction(()=>document.querySelector('[data-routine-run]')&&!document.querySelector('[data-routine-run]').disabled);
-  check('English controls preserve saved configuration and private consent',await page.getByRole('button',{name:'Create and check copy now',exact:true}).isEnabled()&&!await page.locator('[data-routine-ack]').isChecked()&&await page.locator('[data-routine-destination]').inputValue()===destination);
+  check('English controls preserve available actions and renewed private consent',await page.getByRole('button',{name:'Create and check copy now',exact:true}).isEnabled()&&!await page.locator('[data-routine-ack]').isChecked());
+  const savedStatus=await page.evaluate(async()=>{const response=await appFetch('/api/workspace/backup-routine');if(!response.ok)throw Error('Backup status unavailable');return response.json();});
+  const savedConfig=JSON.parse(fs.readFileSync(path.join(workspace,'.report-gen-backup-routine.json'),'utf8'));
+  const displayedDestination=await page.locator('[data-routine-destination]').inputValue();
+  check('English controls display the persisted destination, frequency, retention and disabled state',displayedDestination===savedStatus.destination&&displayedDestination===savedConfig.destination&&await page.locator('[data-routine-interval]').inputValue()===String(savedConfig.interval_seconds)&&savedConfig.interval_seconds===86400&&await page.locator('[data-routine-retention]').inputValue()===String(savedConfig.retention)&&savedConfig.retention===2&&!await page.locator('[data-routine-enabled]').isChecked()&&savedStatus.enabled===false&&savedConfig.enabled===false);
+  // Windows may expand a short 8.3 temporary path or canonicalize casing.
+  // Compare directory identity instead of spelling, without weakening the
+  // independent UI/server/disk persistence and renewed-consent checks above.
+  const chosenDirectory=fs.statSync(destination,{bigint:true}),shownDirectory=fs.statSync(displayedDestination,{bigint:true});
+  results.destinationCheck={selected:destination,displayed:displayedDestination,selectedCanonical:fs.realpathSync.native(destination),displayedCanonical:fs.realpathSync.native(displayedDestination),sameDirectory:chosenDirectory.dev===shownDirectory.dev&&chosenDirectory.ino===shownDirectory.ino};save();
+  check('Persisted canonical destination identifies the originally selected directory',chosenDirectory.isDirectory()&&shownDirectory.isDirectory()&&results.destinationCheck.sameDirectory);
   const scheduledDestination=path.join(destination,'scheduled');fs.mkdirSync(scheduledDestination);
   await page.locator('[data-routine-destination]').fill(scheduledDestination);await page.locator('[data-routine-enabled]').check();await page.locator('[data-routine-ack]').check();
   await page.locator('[data-routine-save]').click();await page.waitForFunction(()=>document.querySelector('[data-routine-status]')?.textContent.startsWith('Schedule saved'));
