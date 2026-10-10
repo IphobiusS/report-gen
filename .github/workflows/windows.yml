@@ -39,13 +39,19 @@ jobs:
         run: |
           npm test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -m pytest tests/test_progress_0170.py tests/test_workflows.py tests/test_workspace_0160.py tests/test_workbench_0180.py tests/test_release_0200.py tests/test_release_0202.py tests/test_release_0210.py tests/test_release_0211.py tests/test_launcher_0260.py tests/test_checkout_integrity_0260.py tests/test_workspace_paths_0290.py tests/test_browser_workspace_0290.py tests/test_project_catalog_0290.py tests/test_remediation_return_0290.py --junitxml=windows-results.xml
+          npm run test:editor-modules
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pytest tests/test_progress_0170.py tests/test_workflows.py tests/test_workspace_0160.py tests/test_workbench_0180.py tests/test_release_0200.py tests/test_release_0202.py tests/test_release_0210.py tests/test_release_0211.py tests/test_launcher_0260.py tests/test_checkout_integrity_0260.py tests/test_workspace_paths_0290.py tests/test_browser_workspace_0290.py tests/test_project_catalog_0290.py tests/test_remediation_return_0290.py tests/test_backup_routine_0310.py --junitxml=windows-results.xml
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Real browser on Windows
         run: |
           node scripts/audit-browser-0210.cjs --output windows-evidence/base
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node scripts/audit-browser-0211.cjs --output windows-evidence/recovery
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Scheduled backup controls on Windows
+        run: |
+          npm run test:backup-routine
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Save evidence (Microsoft Word is not installed on this runner)
         if: always()
@@ -55,3 +61,4 @@ jobs:
           path: |
             windows-results.xml
             windows-evidence/
+            out/backup-routine-0310/

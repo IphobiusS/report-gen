@@ -148,3 +148,13 @@ button:focus-visible,a:focus-visible,summary:focus-visible,[tabindex="0"]:focus-
 
 .support-review-label { display:flex!important; align-items:flex-start; gap:10px; margin:16px 0; }
 .support-review-label input { width:auto; flex:none; margin:3px 0 0; }
+/* Private backup controls share the workspace dialog's spacing and colors. */
+[data-backup-routine]{margin-block:20px;border:1px solid var(--line);border-radius:var(--radius)}
+[data-backup-routine]>summary{padding:14px 16px;cursor:pointer;font-weight:600}
+[data-backup-routine] .experience-body{padding:0 16px 16px}
+[data-backup-routine] .modal-actions{flex-wrap:wrap;justify-content:flex-start}
+[data-backup-routine] .btn{max-width:100%;min-height:44px;white-space:normal;text-align:left;overflow-wrap:anywhere}
+[data-backup-routine] .update-digest{overflow-wrap:anywhere}
+
+.workspace-backup-dialog{max-width:calc(100vw - 16px)}
+@media(max-width:600px){[data-backup-routine] .experience-body{padding-inline:10px}}

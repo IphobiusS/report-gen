@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.30.0
+# report-gen 0.31.0
 
 <a id="qué-es"></a>
 
@@ -59,15 +59,16 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.30.0
+## Novedades de 0.31.0
 
-- **Edición por lotes:** selecciona hallazgos y compara cambios de responsable, fecha o causa raíz antes de guardar una versión recuperable. No altera verificación ni retests.
-- **Entregas por responsable:** prepara fichas y CSV juntos, revisa todos los valores compartidos y conserva un registro local de emisión, recepción, aceptación y revocación. Nada se envía automáticamente.
-- **Actualización asistida:** consulta GitHub con autorización explícita, verifica el paquete oficial y prepara una carpeta nueva con respaldo privado. Las instrucciones guían el cambio después de detener el editor.
-- **Menos sorpresas al trabajar:** preferencias separadas por carpeta, reintentos del CSV sin perder la selección, vista previa renovada tras guardar desde el servidor y reordenación por teclado en proyectos pequeños.
-- **Privacidad de la entrega:** los manifiestos compartibles conservan las categorías de avisos sin copiar mensajes privados, rutas ni valores excluidos del informe.
+- **Rutina de respaldo opcional:** elige una carpeta externa, frecuencia y copias que conservar. Mientras el servidor esté abierto, prepara respaldos privados sin cifrar y comprueba su restauración antes de rotar las copias propias. La pantalla muestra el último resultado y permite comprobar una copia manualmente. Los borradores del navegador no se incluyen.
+- **Vectores CVSS 3.1 sin correcciones silenciosas:** pegar un vector incompleto, duplicado o inválido muestra un error y conserva el hallazgo anterior. Los vectores válidos mantienen el mismo cálculo.
+- **Editor más mantenible:** transporte, cálculo CVSS y vista previa tienen módulos propios; el proyecto conserva un único estado guardado. Una pestaña bloqueada por cambio de carpeta ya no reanuda una escritura al terminar de preparar la sesión.
+- **Pruebas de escala reproducibles:** corpus sintéticos con cientos de hallazgos e imágenes distintas, medidas de interfaz y exportación en los cuatro formatos. Los resultados identifican entorno y tamaño; no prometen tiempos universales.
+- **Revisión más ligera:** la comprobación de posibles secretos en texto valida las imágenes sin recomprimirlas. El inspector completo y las exportaciones mantienen su limpieza y comprobaciones.
+- **Materiales externos comprobados:** los cuatro DOCX del kit pasan la inspección estructural automatizada antes de entregarse a revisión. Word nativo y las cinco sesiones con participantes siguen pendientes.
 
-Se mantienen el instalador, los datos externos, el catálogo multiproyecto y las Releases verificadas de 0.29.0. La revisión nativa en Word y las cinco sesiones con participantes siguen pendientes. [Cambios completos](CHANGELOG.md).
+Se mantienen la edición por lotes, las entregas por responsable, el instalador y la actualización asistida. [Cambios completos](CHANGELOG.md).
 
 ## Qué comprueba cada entrega
 
@@ -94,7 +95,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.30.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.31.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

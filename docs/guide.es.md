@@ -225,6 +225,20 @@ En la importación existente puedes elegir CSV, Burp, Nuclei (JSONL) o Nmap (XML
 
 En el Inspector de publicación, solicita OCR para una imagen concreta. Requiere Tesseract local con el idioma `eng`; no descarga motores ni envía imágenes a un servicio. Acepta imágenes estáticas de hasta 12 MiB y 12 megapíxeles. Señala categorías y regiones de posibles datos sensibles sin devolver el texto reconocido. Una ausencia de alertas no demuestra que la imagen sea segura: revisa la captura y aplica manualmente una copia censurada cuando proceda. La imagen original no se modifica. Los errores, límites o motor ausente quedan visibles; no se presentan como una revisión completada.
 
+## Respaldos periódicos opcionales
+
+En **Respaldo integral → Respaldos periódicos opcionales**, escribe la ruta absoluta de una carpeta existente, fuera de la aplicación y del espacio de trabajo. Elige **cada hora**, **cada día** o **cada semana**, y entre **1 y 90 copias**. Revisa el destino, confirma que las copias son privadas **sin cifrar** y pulsa **Guardar programación**. La opción viene desactivada. Para detenerla, usa **Desactivar programación**; las copias existentes permanecen.
+
+La programación funciona únicamente mientras sigue abierto el servidor local iniciado por el lanzador de report-gen. Cerrar una pestaña no detiene ese servidor; cerrar el proceso sí. Al reiniciar el editor se comprueba si hay una copia vencida, sin crear una copia por cada intervalo perdido. Se revisa al iniciar y cada minuto. Tras un fallo se espera al menos cinco minutos antes de reintentar. No se instala una tarea del sistema ni se envían datos por red.
+
+Cada copia incluye los proyectos, originales, anexos, versiones y bibliotecas guardados. La captura comparte el bloqueo de las ediciones, de modo que no combina una operación a medias. No incluye borradores o formularios pendientes del navegador; guarda o descarga ese trabajo aparte. **Crear y comprobar copia ahora** guarda primero el proyecto abierto; una ejecución programada solo captura datos que ya están en disco. No se conservan contraseñas. Usa una carpeta protegida y, si buscas protección ante una avería del disco, un disco distinto.
+
+El programa crea una subcarpeta `report-gen-backups-<identificador>`. Antes de registrar una copia y retirar las antiguas, restaura el ZIP en una carpeta temporal, valida su contenido y comprueba los bytes escritos. La retención solo afecta a archivos registrados e intactos de esa serie; archivos ajenos, copias alteradas y destinos anteriores se conservan. Cambiar de destino inicia otra serie, incluso si después regresas a la carpeta anterior. Un aviso indica si la retención quedó pendiente por permisos o por una copia alterada. Si un archivo cambia durante la retirada y no se puede devolver a su nombre original sin sobrescribir otro, queda conservado en una subcarpeta privada `.retention-*`; revísala antes de cualquier limpieza manual. Esta medida no aísla los archivos de un proceso malicioso que ya tenga acceso a la misma cuenta del sistema.
+
+El panel muestra la última copia correcta, la última restauración temporal correcta, su ruta privada y su SHA-256. **Actualizar estado** consulta el estado actual; **Comprobar última copia** vuelve a restaurarla en una carpeta temporal sin modificar tus proyectos actuales. Una fecha anterior no acredita que el último intento haya funcionado: revisa los avisos. Si falta espacio, desconectaste el disco o cambiaron permisos, corrige la causa y vuelve a crear o comprobar una copia.
+
+La configuración se guarda de forma privada en el espacio de trabajo y queda fuera de las exportaciones y del respaldo integral. Al trasladar o restaurar tus proyectos a otro espacio, configura de nuevo la programación. Para recuperar una copia, selecciona su ZIP con la opción de restauración integral en una instalación vacía. La comprobación temporal verifica que el respaldo es recuperable con esta versión; no sustituye mantener una copia en otro dispositivo.
+
 ## Respaldos privados con contraseña
 
 Instala la dependencia opcional en el entorno del proyecto:

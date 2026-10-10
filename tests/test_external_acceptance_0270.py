@@ -22,10 +22,13 @@ def test_prepared_documents_and_blank_sessions_remain_unaccepted(tmp_path):
     result = module.prepare(tmp_path / "kit")
     assert result["word_native"] == result["human_sessions"] == "not_run"
     assert result["human_observations_recorded"] == 0
+    assert result["prepared_docx_content"] == "verified"
     assert {row["case"] for row in result["documents"]} == {"quality-lab", "pending-severity", "nimbus", "long-content"}
     for row in result["documents"]:
         path = tmp_path / "kit" / row["docx"]
         assert hashlib.sha256(path.read_bytes()).hexdigest() == row["docx_sha256"]
+        assert row["content_checks"]["editable_document"] is True
+        assert row["content_checks"]["archive_integrity"] is True
         with zipfile.ZipFile(path) as package:
             document = etree.fromstring(package.read("word/document.xml"))
             assert document.xpath('//*[local-name()="p"]')
@@ -42,6 +45,7 @@ def test_prepared_documents_and_blank_sessions_remain_unaccepted(tmp_path):
     assert summary["word_native"] == summary["word_visual"] == summary["human_sessions"] == "not_run"
     assert summary["word_acceptance"] == "pending"
     assert summary["usability_acceptance"] == "not_assessed"
+    assert summary["prepared_docx_content"] == "verified"
 
 
 def test_preparation_preserves_existing_evidence(tmp_path):

@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.30.0
+# report-gen 0.31.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -49,15 +49,16 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
-## New in 0.30.0
+## New in 0.31.0
 
-- **Bulk editing:** select findings and compare owner, date or root-cause assignments before saving a recoverable revision. Verification and retests are unchanged.
-- **Owner deliveries:** prepare cards and CSV together, review all outgoing values and retain a local log of issuance, receipt, acceptance and revocation. Nothing is sent automatically.
-- **Guided updates:** explicitly allow a GitHub check, verify the official package and prepare a new directory with a private backup. Instructions guide the switch after stopping the editor.
-- **More predictable editing:** workspace-specific preferences, CSV retries that retain selections, refreshed previews after server-side saves and keyboard reordering for small projects.
-- **Delivery privacy:** shared manifests retain warning categories without copying private messages, paths or values excluded from the report.
+- **Optional backup routine:** choose an external destination, frequency and retained generations. While the local server is open, it creates private unencrypted backups and tests restoration before rotating its own copies. Review the latest result or verify a copy manually. Browser drafts are not included.
+- **Strict CVSS 3.1 vectors:** incomplete, duplicate or invalid pasted metrics show an error and preserve the previous finding. Valid vectors retain the same calculation.
+- **A more maintainable editor:** transport, CVSS and preview have dedicated modules while saved project state remains shared. A tab blocked by a workspace change cannot resume a write after session preparation finishes.
+- **Reproducible scale measurements:** synthetic projects with hundreds of findings and distinct images, interface timings and real exports in all four formats. Results identify the environment and corpus; they are not universal performance guarantees.
+- **Lighter delivery preparation:** outgoing-text checks validate images without recompressing them. The complete inspector and exports retain their sanitization and verification.
+- **Checked external-review materials:** all four Word inputs pass automated structural delivery checks. Native Microsoft Word review and the five participant sessions remain pending.
 
-The installer, external workspaces, project catalogue and verified releases from 0.29.0 remain available. Native desktop Word review and five human sessions remain pending. [Full changes](CHANGELOG.md).
+Bulk editing, per-owner deliveries, the installer and guided updates remain available. [Full changelog](CHANGELOG.md).
 
 ## What delivery checks establish
 
@@ -79,7 +80,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.30.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.31.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

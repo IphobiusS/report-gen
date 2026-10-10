@@ -81,17 +81,19 @@ def test_python_js_parity():
     node = shutil.which("node")
     if not node:  # pragma: no cover
         return
-    harness = ROOT / "tests" / "_cvss_harness.js"
-    src = (ROOT / "webapp" / "static" / "app.js").read_text(encoding="utf-8")
-    cv = src[src.index("const CV = {"):src.index("function roundup")]
-    fns = src[src.index("function roundup"):src.index("function cvssParse")]
-    fns += "function cvssParse(v){const m=Object.assign({},CV.D);(v||'').split('/').forEach(p=>{const[k,val]=p.split(':');if(CV.M.includes(k))m[k]=val;});return m;}"
-    harness.write_text(cv + "\n" + fns + "\nconst out=[];function rec(i,m){const K=CV.M;if(i===K.length){out.push(cvssCompute(m).score.toFixed(1));return;}const vals={AV:'NALP',AC:'LH',PR:'NLH',UI:'NR',S:'UC',C:'HLN',I:'HLN',A:'HLN'};for(const c of vals[K[i]]){m[K[i]]=c;rec(i+1,Object.assign({},m));}}rec(0,{});console.log(JSON.stringify(out));\n", encoding="utf-8")
-    try:
-        res = subprocess.run([node, str(harness)], capture_output=True, text=True, timeout=60)
-        js_scores = json.loads(res.stdout)
-    finally:
-        harness.unlink(missing_ok=True)
+    module = str(ROOT / "webapp" / "static" / "cvss31.js")
+    script = "const {metrics:CV,compute,parse}=require(" + json.dumps(module) + ");" + """
+const out=[];
+function rec(i,m){
+  if(i===CV.M.length){const scored=compute(m);out.push(scored.score.toFixed(1));
+    if(compute(parse(scored.vector)).score!==scored.score)throw Error('Round-trip changed score');return;}
+  const vals={AV:'NALP',AC:'LH',PR:'NLH',UI:'NR',S:'UC',C:'HLN',I:'HLN',A:'HLN'};
+  for(const value of vals[CV.M[i]])rec(i+1,{...m,[CV.M[i]]:value});
+}
+rec(0,{});console.log(JSON.stringify(out));
+"""
+    res = subprocess.run([node, "-e", script], capture_output=True, text=True, timeout=60, check=True)
+    js_scores = json.loads(res.stdout)
     py_scores = []
     keys = ["AV", "AC", "PR", "UI", "S", "C", "I", "A"]
     for combo in itertools.product(*[VALS[k] for k in keys]):

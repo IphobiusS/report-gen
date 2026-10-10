@@ -32,3 +32,7 @@ node_modules/
 
 webapp/library/
 webapp/.report-gen-browser-id
+
+# Configuración privada de respaldos en el workspace tradicional
+webapp/.report-gen-backup-routine.json
+webapp/.write-*

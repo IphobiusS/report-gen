@@ -34,7 +34,9 @@ jobs:
           ruff check .
       - run: npm ci --ignore-scripts
       - name: JavaScript save contracts
-        run: npm test
+        run: |
+          npm test
+          npm run test:editor-modules
 
   editor_exports:
     name: Editor journeys and four export formats
@@ -89,6 +91,7 @@ jobs:
           npm run test:bulk-workbench
           npm run test:remediation-delivery
           npm run test:guided-update
+          npm run test:backup-routine
       - name: Compare all four formats with a complete synthetic case
         run: python scripts/audit-exports-0210.py --output out/export-acceptance
       - name: Export evidence
@@ -118,7 +121,47 @@ jobs:
             out/bulk-workbench-0300/
             out/remediation-delivery-0300/
             out/guided-update-0300/
+            out/backup-routine-0310/
           if-no-files-found: ignore
+
+  scale:
+    name: Image-heavy projects and external-review inputs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      RG_PYTHON: python
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-audited.txt
+      - run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - run: npm ci --ignore-scripts
+      - name: Install Chromium
+        run: |
+          npx playwright install --with-deps chromium
+          node -e "process.stdout.write('REPORT_GEN_CHROMIUM=' + require('playwright').chromium.executablePath() + '\n')" >> "$GITHUB_ENV"
+      - name: Measure two image-heavy projects and verify all four formats
+        run: npm run test:scale
+      - name: Prepare and structurally inspect four DOCX inputs
+        run: python scripts/prepare-external-acceptance.py --output out/external-acceptance-0310
+      - name: Preserve measured results and pending external-review kit
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: scale-and-external-inputs-${{ github.sha }}
+          path: |
+            out/workspace-scale-0310/
+            out/external-acceptance-0310/
+          if-no-files-found: error
+          retention-days: 7
 
   pytest:
     name: Pytest shard ${{ matrix.shard }} of 4
@@ -164,7 +207,7 @@ jobs:
   test:
     name: test
     if: always()
-    needs: [quick, editor_exports, pytest]
+    needs: [quick, editor_exports, scale, pytest]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -172,8 +215,9 @@ jobs:
         env:
           QUICK: ${{ needs.quick.result }}
           EDITOR: ${{ needs.editor_exports.result }}
+          SCALE: ${{ needs.scale.result }}
           PYTEST: ${{ needs.pytest.result }}
-        run: test "$QUICK" = success && test "$EDITOR" = success && test "$PYTEST" = success
+        run: test "$QUICK" = success && test "$EDITOR" = success && test "$SCALE" = success && test "$PYTEST" = success
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7.0.0
         with:

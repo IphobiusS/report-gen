@@ -9,10 +9,12 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import engine
+import delivery
 import export
 import project_history
 from version import __version__
@@ -67,6 +69,7 @@ def summarize(destination):
               "word_native": "not_run", "word_visual": "not_run", "human_sessions": "not_run",
               "human_observations_recorded": 0, "participants_complete": 0,
               "outcomes": dict.fromkeys(sorted(OUTCOMES), 0), "usability_acceptance": "not_assessed"}
+    result["prepared_docx_content"] = "verified" if all(row.get("content_checks") for row in expected.values()) else "not_recorded"
     native_file = destination / "word-verified/word-validation.json"
     native_rows = {}
     if native_file.exists():
@@ -175,10 +178,16 @@ def prepare(destination):
         source = sources / name / "engagement.yaml"
         data = engine.load_engagement(source)
         target = export.export(source, "docx", documents / f"{name}.docx")
+        # These are the same image, reference and scoped-content checks used
+        # for deliveries. They establish artifact integrity, not Word layout.
+        with TemporaryDirectory(prefix="rg-word-corpus-") as temporary:
+            captured = delivery.capture(source.parent, Path(temporary) / "snapshot")
+            content_checks = delivery.inspect_export(target, "docx", captured)
         results.append({"case": name, "findings": len(data.get("findings", [])),
                         "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
                         "docx": str(target.relative_to(destination)),
-                        "docx_sha256": hashlib.sha256(target.read_bytes()).hexdigest()})
+                        "docx_sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+                        "content_checks": content_checks})
     with (destination / "human-sessions.csv").open("w", newline="", encoding="utf-8") as stream:
         writer = csv.writer(stream)
         writer.writerow(["participant", "task", "version", "commit", "os_browser_viewer", "seconds", "setup_seconds", "interventions", "observed_blocker", "outcome", "observer", "observed_at"])
@@ -192,6 +201,8 @@ def prepare(destination):
             writer.writerow([name, "", "", "", "", "", "", "", ""])
     (destination / "INSTRUCTIONS.txt").write_text(
         "PENDING: preparing this kit does not test native Word or observe people.\n"
+        "The four generated DOCX files passed automated scoped-text, image and reference checks. "
+        "This does not prove pagination, typography or compatibility with desktop Word.\n"
         "1. On Windows with licensed Word: scripts/verify-microsoft-word.ps1 "
         "-InputDirectory <kit>/word-input -OutputDirectory <kit>/word-verified\n"
         "2. Inspect EVERY rendered PDF page. Complete word-review.csv with pass/fail for literal text/commands, "
@@ -206,7 +217,7 @@ def prepare(destination):
         "automatically establish usability acceptance. Never fill missing observations from assumptions.\n",
         encoding="utf-8")
     result = {"schema": 2, "version": __version__, "commit": commit, "source_state": source_state(commit), "synthetic": True, "documents": results,
-              "word_native": "not_run", "human_sessions": "not_run", "human_observations_recorded": 0,
+              "word_native": "not_run", "prepared_docx_content": "verified", "human_sessions": "not_run", "human_observations_recorded": 0,
               "instructions": "Use CONTRIBUTING.md for voluntary sessions. Run verify-microsoft-word.ps1 on licensed desktop Word; inspect its rendered pages. Blank CSV rows are not completed sessions."}
     (destination / "acceptance-preparation.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return result

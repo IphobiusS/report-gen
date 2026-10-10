@@ -125,18 +125,39 @@ def _jpeg_without_metadata(blob):
     raise ValueError(backend_message('JPEG sin terminador / JPEG without terminator'))
 
 
+def _image_format(source):
+    fmt=source.format
+    if fmt not in ('PNG','JPEG','WEBP','GIF'): raise ValueError(backend_message('Imagen no admitida / Unsupported image'))
+    if source.width*source.height>25_000_000: raise ValueError(backend_message('Imagen demasiado grande / Image too large'))
+    if source.width*source.height*getattr(source,'n_frames',1)>50_000_000: raise ValueError(backend_message('Animación demasiado grande / Animation too large'))
+    if getattr(source,'n_frames',1)>200: raise ValueError(backend_message('Máximo 200 fotogramas / Maximum 200 image frames'))
+    return fmt
+
+
+def validate_image(blob):
+    """Decode the bounded image without creating a sanitized export copy.
+
+    A text-only preparation check still rejects missing/invalid rendered images,
+    but does not recompress every image just to count outgoing text alerts.
+    """
+    with Image.open(BytesIO(blob)) as source:
+        fmt=_image_format(source)
+        if fmt=='JPEG' and source.getexif().get(274,1)==1:
+            _jpeg_without_metadata(blob)
+            return
+        for index in range(getattr(source,'n_frames',1)):
+            source.seek(index)
+            ImageOps.exif_transpose(source).load()
+
+
 def clean_image(blob):
     """New pixels, no EXIF/PNG comments/XMP/ICC. Orientation and GIF frames retained."""
     with Image.open(BytesIO(blob)) as source:
-        fmt=source.format
-        if fmt not in ('PNG','JPEG','WEBP','GIF'): raise ValueError(backend_message('Imagen no admitida / Unsupported image'))
-        if source.width*source.height>25_000_000: raise ValueError(backend_message('Imagen demasiado grande / Image too large'))
+        fmt=_image_format(source)
         if fmt=='JPEG' and source.getexif().get(274,1)==1: return _jpeg_without_metadata(blob)
-        if source.width*source.height*getattr(source,'n_frames',1)>50_000_000: raise ValueError(backend_message('Animación demasiado grande / Animation too large'))
         frames=[]
         durations=[]
         for index in range(getattr(source,'n_frames',1)):
-            if index>=200: raise ValueError(backend_message('Máximo 200 fotogramas / Maximum 200 image frames'))
             source.seek(index)
             oriented=ImageOps.exif_transpose(source)
             mode='RGB' if fmt=='JPEG' or (source.mode=='RGB' and 'transparency' not in source.info) else 'RGBA'
@@ -216,8 +237,7 @@ def rendered_text(node):
     return walk(node).strip()
 
 
-def inspect(data,directory):
-    tree=render(data,directory)
+def _inspect_text(data, tree):
     body=tree.find('body')
     text=rendered_text(body)
     decisions={x['id']:x['reason'] for x in data.get('publication',{}).get('exceptions',[])}
@@ -228,12 +248,26 @@ def inspect(data,directory):
             identity=sha256((kind+'\0'+m[0]).encode()).hexdigest()
             if any(x['id']==identity for x in alerts): continue
             alerts.append({'id':identity,'kind':kind,'preview':m[0][:min(6,len(m[0]))]+'…','reason':decisions.get(identity,'')})
+    return dict(text=text,alerts=alerts,redactions=len(data.get('publication',{}).get('redactions',[])),private_captures=len(data.get('capture_inbox',[])))
+
+
+def inspect_text(data,directory):
+    """Outgoing text patterns with bounded image validity, without image export."""
+    tree=render(data,directory)
+    for path in images(tree,directory).values():
+        validate_image(path.read_bytes())
+    return _inspect_text(data,tree)
+
+
+def inspect(data,directory):
+    tree=render(data,directory)
+    result=_inspect_text(data,tree)
     inventory=[]
     for name,path in images(tree,directory).items():
         original=path.read_bytes();clean=clean_image(original)
         with Image.open(BytesIO(original)) as im: metadata=sorted(k for k in im.info if k not in ('duration','loop','transparency'))
         inventory.append(dict(name=name,bytes=len(clean),original_sha256=sha256(original).hexdigest(),sha256=sha256(clean).hexdigest(),metadata=metadata,metadata_removed=True))
-    return dict(text=text,images=inventory,alerts=alerts,redactions=len(data.get('publication',{}).get('redactions',[])),private_captures=len(data.get('capture_inbox',[])))
+    return dict(result,images=inventory)
 
 def comparison_projection(data,files):
     """Use actual rendered output, not every YAML field or every stored image."""

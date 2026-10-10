@@ -41,7 +41,7 @@ def checklist(data, directory, issues, lang='es'):
             counts=dict(included=selected, excluded=excluded, unreviewed=pending_review,
                         required_pending=required_pending, selected_missing=selected_missing)))
         try:
-            inspected = publication.inspect(data, directory)
+            inspected = publication.inspect_text(data, directory)
             alerts = inspected['alerts']
             exceptions = sum(bool(alert['reason'].strip()) for alert in alerts)
             pending = len(alerts) - exceptions

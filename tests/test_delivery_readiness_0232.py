@@ -8,6 +8,8 @@ import app as webapp
 import publication
 import readiness
 import workflows
+import pytest
+from PIL import Image
 from storage import revision
 from wizard import dump_yaml
 from _support import auth_client
@@ -138,6 +140,39 @@ def test_invalid_image_bytes_do_not_break_review_or_invent_clean_result(tmp_path
     result=prepared(data,tmp_path)
     assert item(result,'secrets')['status']=='not_checked'
     assert 'invalid.png' not in json.dumps(item(result,'secrets'))
+
+
+@pytest.mark.parametrize('fmt,extension', [('PNG','png'),('JPEG','jpg'),('WEBP','webp'),('GIF','gif')])
+def test_text_readiness_preserves_alerts_without_reencoding_images(tmp_path,monkeypatch,fmt,extension):
+    data=document()
+    data['findings'][0]['description_md']='password=SYNTHETIC_READINESS_TOKEN_0310'
+    path=tmp_path/'img'/f'example.{extension}';path.parent.mkdir()
+    image=Image.new('RGB',(120,80),(24,80,45))
+    image.save(path,format=fmt)
+    data['findings'][0]['walkthrough'].append({'figure':{'src':f'img/example.{extension}'}})
+    original=path.read_bytes()
+    full=publication.inspect(data,tmp_path)
+    data['publication']={'exceptions':[{'id':full['alerts'][0]['id'],'reason':'Synthetic fixture'}]}
+    full=publication.inspect(data,tmp_path)
+    def no_reencode(_):
+        raise AssertionError('Readiness must not create sanitized copies of every image.')
+    monkeypatch.setattr(publication,'clean_image',no_reencode)
+    text=publication.inspect_text(data,tmp_path)
+    assert text=={key:value for key,value in full.items() if key!='images'}
+    result=prepared(data,tmp_path)
+    assert item(result,'secrets')['counts']==dict(unresolved=0,excepted=1)
+    assert path.read_bytes()==original
+
+
+def test_truncated_decodable_header_still_blocks_text_readiness(tmp_path):
+    data=document();path=tmp_path/'img'/'truncated.png';path.parent.mkdir()
+    # Keep a valid PNG header but cut the actual pixel stream.
+    Image.effect_noise((120,80),70).save(path,format='PNG')
+    path.write_bytes(path.read_bytes()[:200])
+    data['findings'][0]['walkthrough'].append({'figure':{'src':'img/truncated.png'}})
+    with pytest.raises((OSError,ValueError)):
+        publication.inspect(data,tmp_path)
+    assert item(prepared(data,tmp_path),'secrets')['status']=='not_checked'
 
 
 def test_api_returns_etag_revision_and_recomputes_without_writing(tmp_path,monkeypatch):

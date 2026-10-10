@@ -206,6 +206,20 @@ The existing import flow accepts CSV, Burp, Nuclei JSONL and Nmap XML. Review an
 
 Request OCR for a specific published image from the Publication inspector. It requires local Tesseract with `eng` data; no engine downloads or external image service. Static images are limited to 12 MiB and 12 megapixels. Results contain possible sensitive-data categories and regions, never recognized secret values. No alerts is not proof of safety: review the image and explicitly create a redacted publication copy when needed. Originals are unchanged. Missing engine, errors and limits are reported honestly.
 
+## Optional periodic backups
+
+Under **Workspace backup → Optional periodic backups**, enter the absolute path of an existing directory outside the application and workspace. Choose **every hour**, **every day** or **every week**, and retain **1–90 copies**. Review the destination, acknowledge that these are **unencrypted private copies**, then choose **Save schedule**. Scheduling is disabled by default. Use **Disable schedule** to stop it; existing copies remain.
+
+Scheduling runs only while the local server started by the report-gen launcher remains open. Closing a tab does not stop that server; stopping its process does. Restarting the editor checks for an overdue copy, without creating one copy for every missed interval. Checks run at startup and every minute. A failed attempt waits at least five minutes before retrying. No operating-system task is installed and no data is sent over the network.
+
+Each copy includes saved projects, originals, annexes, versions and libraries. Capture shares the editing lock, so it cannot include an operation halfway through. Pending browser drafts and forms are excluded; save or download that work separately. **Create and check copy now** saves the open project first; scheduled runs capture only data already saved on disk. Passwords are never retained. Use a protected directory, on a different disk if you need protection against disk failure.
+
+The application creates a `report-gen-backups-<identifier>` subdirectory. Before recording a new copy and removing older ones, it restores the ZIP into a temporary directory, validates its contents and checks the bytes written. Retention affects only registered, intact files from that series; unrelated files, modified copies and previous destinations are preserved. Changing destination starts another series, even if you later return to the earlier directory. A warning identifies pending retention caused by permissions or a modified copy. If a file changes during removal and cannot be returned to its original name without replacing another, it remains in a private `.retention-*` subdirectory; review it before any manual cleanup. This does not isolate files from a malicious process that already has access to the same operating-system account.
+
+The panel shows the last successful copy, last successful temporary restoration, private path and SHA-256. **Refresh status** fetches the current state; **Check latest copy** restores it again into a temporary directory without changing your current projects. An earlier date does not establish that the latest attempt succeeded: read the warnings. If space is exhausted, a disk was disconnected or permissions changed, address the cause and create or check another copy.
+
+Configuration is private to the workspace and excluded from report exports and workspace backups. Configure scheduling again after moving or restoring projects into another workspace. To recover a copy, select its ZIP using workspace restoration in an empty installation. A temporary restoration proves that the archive is recoverable with this version; it does not replace keeping a copy on another device.
+
 ## Password-encrypted private backups
 
 Install the optional dependency inside the project environment:

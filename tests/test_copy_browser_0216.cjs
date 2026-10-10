@@ -6,10 +6,10 @@ const root=path.resolve(opt('--tool',path.join(__dirname,'..')));
 const out=path.resolve(opt('--output',path.join(root,'out/copy-0216')));
 const {chromium}=require(process.env.REPORT_GEN_PLAYWRIGHT_MODULE||require.resolve('playwright',{paths:[root,process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES||root]}));
 const source=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8');
-const helper=source.slice(0,source.indexOf('let csrfPromise;'));
+const helper=source.slice(0,source.indexOf('// ---- shared transport'));
 const translations=source.slice(source.indexOf('const I18N ='),source.indexOf('function applyStaticI18n('));
 const toast=source.slice(source.indexOf('function toast('),source.indexOf('function openModal('));
-const copy=source.slice(source.indexOf('function copyVectorBtn('),source.indexOf('function applyPastedVector('));
+const copy=['cvss31.js','cvss-editor.js'].map(file=>fs.readFileSync(path.join(root,'webapp/static',file),'utf8')).join('\n');
 assert.ok(helper&&translations&&toast&&copy,'Extract the actual complete product functions.');
 fs.mkdirSync(out,{recursive:true});let browser;const result={checks:[],cases:[]};
 function check(name,condition){result.checks.push({name,passed:!!condition});assert.ok(condition,name);}
@@ -31,7 +31,7 @@ function check(name,condition){result.checks.push({name,passed:!!condition});ass
   },{language,scenario});
   await page.addScriptTag({content:helper+'\n'+translations+'\n'+toast+'\n'+copy});
   const vector='CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N';
-  await page.evaluate(vector=>{document.querySelector('#vector').textContent=vector;document.querySelector('main').append(copyVectorBtn(vector));},vector);
+  await page.evaluate(vector=>{document.querySelector('#vector').textContent=vector;document.querySelector('main').append(CVSSEditor.copyVectorButton(vector));},vector);
   const button=page.locator('button'),prefix=language+' / '+scenario;
   await button.click();await page.waitForTimeout(40);
   if(scenario==='pending'){

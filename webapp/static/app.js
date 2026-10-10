@@ -11,88 +11,23 @@ function h(tag, attrs, ...kids) {
   for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
   return e;
 }
-let csrfPromise;
-let browserWorkspaceId=null;
-function scopedResourceURL(value){
-  if(typeof value!=='string'||!value.startsWith('/api/'))return value;
-  if(!browserWorkspaceId)throw Error('Espacio de trabajo todavía no preparado / Workspace is not ready');
-  const url=new URL(value,location.href);url.searchParams.set('workspace_id',browserWorkspaceId);return url.pathname+url.search+url.hash;
-}
-function changedWorkspaceError(){
-  BrowserWorkspace.block();
-  const message=S.uiLang==='en'?'The server changed workspace. This tab will not send changes. Download your draft before reloading.':'El servidor cambió de espacio. Esta pestaña no enviará cambios. Descarga tu borrador antes de recargar.';
-  let notice=document.querySelector('[data-workspace-changed]');
-  if(!notice){notice=h('p',{'data-workspace-changed':'',class:'wf-error',role:'alert'});document.querySelector('.workspace-toolbar')?.append(notice);}
-  notice.textContent=message;const error=new Error(message);error.status=409;return error;
-}
-function checkResponseWorkspace(response,uiLanguage){
-  if(!browserWorkspaceId)return;
-  const identity=response.headers.get('X-Report-Gen-Workspace');
-  if(identity===browserWorkspaceId)return;
-  if(identity!==null||response.ok)throw changedWorkspaceError();
-  // An intermediary can fail without the app's headers. Reject its unverified
-  // body, but retain the original scope and allow a deliberate retry.
-  const error=new Error(uiLanguage==='en'?'The server returned an unverified error. Your changes are still pending; try again.':'El servidor devolvió un error sin verificar. Tus cambios siguen pendientes; vuelve a intentarlo.');
-  error.status=response.status;throw error;
-}
-async function appFetch(url, options = {}) {
-  if(BrowserWorkspace.blocked())throw changedWorkspaceError();
-  const uiLanguage = S.uiLang === "en" ? "en" : "es";
-  options = { ...options, headers: { ...options.headers, "X-UI-Language": uiLanguage,
-    ...(browserWorkspaceId?{'X-Report-Gen-Workspace':browserWorkspaceId}:{}) } };
-  const method = (options.method || "GET").toUpperCase();
-  if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
-    csrfPromise ||= fetch("/api/session", { headers: { "X-UI-Language": uiLanguage,
-      ...(browserWorkspaceId?{'X-Report-Gen-Workspace':browserWorkspaceId}:{}) } }).then(async r => {
-      checkResponseWorkspace(r,uiLanguage);
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || (uiLanguage === "en" ? "Could not start the local session" : "No se pudo iniciar la sesión local"));
-      return (await r.json()).csrf;
-    }).catch(error => { csrfPromise = null; throw error; });
-    options = { ...options, headers: { ...options.headers, "X-CSRF-Token": await csrfPromise } };
-  }
-  const response=await fetch(url, options);
-  checkResponseWorkspace(response,uiLanguage);
-  return response;
-}
-async function requireOk(response) {
-  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `HTTP ${response.status}`);
-  return response;
-}
-const api = {
-  get: u => appFetch(u).then(requireOk).then(r => r.json()),
-  post: (u, b) => appFetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b || {}) }),
-  put: (u, b) => appFetch(u, { method: "PUT", headers: { "Content-Type": "application/json", "If-Match": projectStore.etag }, body: JSON.stringify(b) }).then(requireOk),
-  del: u => appFetch(u, { method: "DELETE", headers: { "If-Match": projectStore.etag } }).then(requireOk),
-};
-
-// ---- CVSS 3.1 (port de cvss.py) -------------------------------------------
-const CV = {
-  AV: { N: .85, A: .62, L: .55, P: .2 }, AC: { L: .77, H: .44 }, UI: { N: .85, R: .62 },
-  CIA: { H: .56, L: .22, N: 0 }, PRU: { N: .85, L: .62, H: .27 }, PRC: { N: .85, L: .68, H: .5 },
-  M: ["AV", "AC", "PR", "UI", "S", "C", "I", "A"],
-  D: { AV: "N", AC: "L", PR: "N", UI: "N", S: "U", C: "N", I: "N", A: "N" },
-  OPTS: {
-    AV: [["N", "Network"], ["A", "Adjacent"], ["L", "Local"], ["P", "Physical"]],
-    AC: [["L", "Low"], ["H", "High"]], PR: [["N", "None"], ["L", "Low"], ["H", "High"]],
-    UI: [["N", "None"], ["R", "Required"]], S: [["U", "Unchanged"], ["C", "Changed"]],
-    C: [["H", "High"], ["L", "Low"], ["N", "None"]], I: [["H", "High"], ["L", "Low"], ["N", "None"]],
-    A: [["H", "High"], ["L", "Low"], ["N", "None"]],
+// ---- shared transport and preview interfaces -------------------------------
+const transport = ReportTransport.create({
+  fetch: (...args) => fetch(...args), workspace: BrowserWorkspace,
+  getLanguage: () => S.uiLang, getETag: () => projectStore.etag,
+  baseURL: () => location.href,
+  onWorkspaceChanged(message) {
+    let notice = document.querySelector('[data-workspace-changed]');
+    if (!notice) {
+      notice = h('p', {'data-workspace-changed':'', class:'wf-error', role:'alert'});
+      document.querySelector('.workspace-toolbar')?.append(notice);
+    }
+    notice.textContent = message;
   },
-};
-function roundup(x) { const i = Math.round(x * 100000); return i % 10000 === 0 ? i / 100000 : (Math.floor(i / 10000) + 1) / 10; }
-function cvssSeverity(s) { return s === 0 ? "info" : s < 4 ? "low" : s < 7 ? "medium" : s < 9 ? "high" : "critical"; }
-function cvssCompute(m) {
-  const mm = Object.assign({}, CV.D, m || {});
-  const ch = mm.S === "C";
-  const pr = (ch ? CV.PRC : CV.PRU)[mm.PR];
-  const expl = 8.22 * CV.AV[mm.AV] * CV.AC[mm.AC] * pr * CV.UI[mm.UI];
-  const iss = 1 - (1 - CV.CIA[mm.C]) * (1 - CV.CIA[mm.I]) * (1 - CV.CIA[mm.A]);
-  const impact = ch ? 7.52 * (iss - .029) - 3.25 * Math.pow(iss - .02, 15) : 6.42 * iss;
-  let score = impact <= 0 ? 0 : ch ? roundup(Math.min(1.08 * (impact + expl), 10)) : roundup(Math.min(impact + expl, 10));
-  score = Math.round(score * 10) / 10;
-  return { score, severity: cvssSeverity(score), vector: "CVSS:3.1/" + CV.M.map(k => k + ":" + mm[k]).join("/"), metrics: mm };
-}
-function cvssParse(v) { const m = Object.assign({}, CV.D); (v || "").split("/").forEach(p => { const [k, val] = p.split(":"); if (CV.M.includes(k)) m[k] = val; }); return m; }
+});
+const {request: appFetch, scopedResourceURL, requireOk, api} = transport;
+const {invalidateLivePreview, previewPaneVisible, ensureLivePreview, refreshLivePreview,
+  setPreviewVisible, setPreviewMode, renderPdf} = PreviewController;
 
 // ---- estado ----------------------------------------------------------------
 const S = { designs: [], projects: [], slug: null, data: null, sel: { type: "report", idx: -1 }, owasp: {}, cwe: {}, presets: [], uiLang: "es", previewMode: "live", previewVisible: true };
@@ -335,18 +270,6 @@ function openModal(modal) {
   modal.showModal();
 }
 function closeModal(modal) { if (modal.open) modal.close(); }
-let _plTimer = null, _plStart = 0;
-function showPreviewLoading() {
-  const el = document.getElementById("previewLoading");
-  if (!el || !S.previewVisible) return;
-  _plStart = Date.now(); clearTimeout(_plTimer); el.classList.add("show");
-}
-function hidePreviewLoading() {
-  const el = document.getElementById("previewLoading");
-  if (!el) return;
-  const wait = Math.max(0, 480 - (Date.now() - _plStart));  // patita visible un mínimo
-  clearTimeout(_plTimer); _plTimer = setTimeout(() => el.classList.remove("show"), wait);
-}
 function applyUiTheme(mode) {
   document.documentElement.setAttribute("data-theme", mode);
   try { localStorage.setItem("rg.uiTheme", mode); } catch (_) {}
@@ -393,89 +316,11 @@ function updateLangBtn() {
   $("#langToggle").textContent = (S.uiLang || "es").toUpperCase();
 }
 
-let previewGeneration = 0;
-let previewPdfUrl = null;
-let livePreviewRequest = null;
-function invalidateLivePreview() {
-  previewGeneration++;livePreviewRequest=null;
-  const frame=$("#pdfPreview");if(frame)frame.onload=null;
-  hidePreviewLoading();
-}
-function previewPaneVisible() {
-  return !!S.previewVisible && !!$("#pdfPreview")?.getClientRects().length;
-}
-function ensureLivePreview() {
-  if (S.previewMode === 'live' && previewPaneVisible() && !projectStore.loading &&
-      livePreviewRequest === null && !WorkbenchUI.hasLivePreview()) refreshLivePreview();
-}
-function releasePdfPreview() {
-  if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
-  previewPdfUrl = null;
-}
-async function refreshLivePreview() {
-  if (!S.slug || !previewPaneVisible() || projectStore.loading || S.previewMode !== 'live') return;
-  const slug = S.slug, generation = ++previewGeneration, snapshotRevision=projectStore.revision;
-  const findingIds = new Map((S.data.findings || []).map(f => [f.uid, f.id]));
-  livePreviewRequest = generation;
-  let waitingForDocument = false;
-  setPvStatus(t("updating")); showPreviewLoading();
-  try {
-    const r = await appFetch(`/api/projects/${S.slug}/preview`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
-    await requireOk(r);
-    const html = await r.text();
-    if (slug !== S.slug || generation !== previewGeneration || !previewPaneVisible() || S.previewMode !== 'live') return;
-    const f = $("#pdfPreview");
-    f.removeAttribute("src");
-    f.setAttribute("sandbox", "allow-same-origin");  // el preview no ejecuta scripts del contenido
-    waitingForDocument = true;
-    f.onload = () => {
-      if (slug !== S.slug || generation !== previewGeneration || S.previewMode !== 'live') return;
-      const doc=f.contentDocument;
-      // A queued load from an older srcdoc cannot claim the newer snapshot.
-      if(doc?.querySelector('meta[name="rg-preview-generation"]')?.content!==String(generation))return;
-      if (livePreviewRequest === generation) livePreviewRequest = null;
-      if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.ready(doc);
-      if(typeof WorkbenchUI!=="undefined")WorkbenchUI.previewReady(snapshotRevision,{slug,findingIds,document:doc});
-    };
-    f.srcdoc = html.replace(/<head(?:\s[^>]*)?>/i,head=>head+'<meta name="rg-preview-generation" content="'+generation+'">');
-    releasePdfPreview();
-    setPvStatus(t("uptodate"));
-  } catch (e) { if (generation === previewGeneration) setPvStatus(t("err")); }
-  finally {
-    if (!waitingForDocument && livePreviewRequest === generation) livePreviewRequest = null;
-    if (generation === previewGeneration) hidePreviewLoading();
-  }
-}
-function setPreviewVisible(vis) {
-  S.previewVisible = vis;
-  document.querySelector(".layout").classList.toggle("no-preview", !vis);
-  const btn = $("#previewToggle");
-  if (btn) btn.textContent = vis ? t("hide_preview") : t("show_preview");
-  // el botón "Actualizar preview" no aplica cuando está oculto
-  const pv = $("#previewBtn"); if (pv) pv.style.display = vis ? "" : "none";
-  try { localStorage.setItem("rg.previewVisible", vis ? "1" : "0"); } catch (_) { /* sin storage */ }
-  if (vis && S.previewMode === "live") refreshLivePreview();
-}
-
-function setPreviewMode(m) {
-  previewGeneration++;
-  livePreviewRequest = null;
-  $("#pdfPreview").onload = null;
-  S.previewMode = m;
-  if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.update();
-  $("#pvLive").classList.toggle("primary", m === "live");
-  $("#pvPdf").classList.toggle("primary", m === "pdf");
-  if (m === "live") refreshLivePreview();
-  else renderPdf(false);
-}
-
 // ---- carga -----------------------------------------------------------------
 
 async function init() {
   const sessionInfo = await api.get("/api/session");
-  browserWorkspaceId=BrowserWorkspace.bind(sessionInfo.workspace_id);
-  csrfPromise=Promise.resolve(sessionInfo.csrf);
-  S.workspace_id=browserWorkspaceId;
+  S.workspace_id=transport.bindSession(sessionInfo);
   S.version=sessionInfo.version;
   $(".brand-caption").textContent="Pentest reporting / v"+S.version;
   S.formats = await api.get("/api/export-formats");
@@ -526,7 +371,7 @@ function renderProjectSelect() {
 async function loadProject(slug) {
   if (projectStore.loading) return;
   if(typeof WorkbenchUI!=="undefined")WorkbenchUI.position();
-  previewGeneration++;
+  invalidateLivePreview();
   busyProject(true);
   try {
     if (!await projectStore.load(slug)) return;
@@ -536,9 +381,7 @@ async function loadProject(slug) {
     S.sel = { type: typeof WorkspaceUI!=='undefined' ? "home" : "report", idx: -1 };
     $("#projectSelect").value = S.slug;
     renderSidebar(); renderMain(); updateLangBtn();
-    releasePdfPreview();
-    livePreviewRequest = null;
-    const frame = $("#pdfPreview"); frame.onload=null; frame.removeAttribute('src'); frame.removeAttribute('srcdoc');
+    PreviewController.clearDocument();
     if (S.previewMode === "live") refreshLivePreview();
     else renderPdf(false);
   } catch (_) { $("#projectSelect").value = S.slug || ""; }
@@ -1154,7 +997,7 @@ function vulnEditor(f) {
   const g = h("div", { class: "grid2" });
   g.append(h("label", {}, t("dash_sev"), sevSel), cweField(f), field(t("affected"), f, "affected"));
   c.append(g);
-  c.append(h("details",{class:"cvss-details"},h("summary",{},"CVSS / "+(f.cvss||"—")),cvssWidget(f, sevSel)));
+  c.append(h("details",{class:"cvss-details"},h("summary",{},"CVSS / "+(f.cvss||"—")),CVSSEditor.widget(f, sevSel)));
   const description=h("section",{"data-workpart":"description",class:"finding-part"});description.append(c);box.append(description);
 
   const c2 = h("div", { class: "card" }, h("h4", {}, t("content")));
@@ -1184,187 +1027,6 @@ function vulnEditor(f) {
   c3.append(field(S.uiLang==="en"?"Short term":"Corto plazo", rs, "short_md",{onChange:persistRemediation}), field(S.uiLang==="en"?"Medium term":"Mediano plazo", rs, "medium_md",{onChange:persistRemediation}), field(S.uiLang==="en"?"Long term":"Largo plazo", rs, "long_md",{onChange:persistRemediation}));
   box.append(h("section",{"data-workpart":"remediation",class:"finding-part"},c3));
   return box;
-}
-
-// Etiquetas de metricas 4.0 (solo UI; la logica vive en cvss40.js).
-const CVSS_TIP = {
-  AV: "Attack Vector: por donde se explota (Red/Adyacente/Local/Fisico)",
-  AC: "Attack Complexity: condiciones para explotar (Baja/Alta)",
-  AT: "Attack Requirements: prerrequisitos del ataque (Ninguno/Presente)",
-  PR: "Privileges Required: privilegios previos (Ninguno/Bajo/Alto)",
-  UI: "User Interaction: interaccion de la victima (Ninguna/Pasiva/Activa)",
-  VC: "Confidencialidad del sistema vulnerable", VI: "Integridad del sistema vulnerable",
-  VA: "Disponibilidad del sistema vulnerable", SC: "Confidencialidad de sistemas posteriores",
-  SI: "Integridad de sistemas posteriores", SA: "Disponibilidad de sistemas posteriores",
-  S: "Scope: cambio de alcance (Unchanged/Changed)", C: "Impacto en Confidencialidad",
-  I: "Impacto en Integridad", A: "Impacto en Disponibilidad"
-};
-const CVSS4_BASE = ["AV", "AC", "AT", "PR", "UI", "VC", "VI", "VA", "SC", "SI", "SA"];
-const CVSS4_OPTS = {
-  AV: [["N", "Network"], ["A", "Adjacent"], ["L", "Local"], ["P", "Physical"]],
-  AC: [["L", "Low"], ["H", "High"]], AT: [["N", "None"], ["P", "Present"]],
-  PR: [["N", "None"], ["L", "Low"], ["H", "High"]],
-  UI: [["N", "None"], ["P", "Passive"], ["A", "Active"]],
-  VC: [["H", "High"], ["L", "Low"], ["N", "None"]], VI: [["H", "High"], ["L", "Low"], ["N", "None"]],
-  VA: [["H", "High"], ["L", "Low"], ["N", "None"]], SC: [["H", "High"], ["L", "Low"], ["N", "None"]],
-  SI: [["H", "High"], ["L", "Low"], ["N", "None"]], SA: [["H", "High"], ["L", "Low"], ["N", "None"]],
-};
-
-const METRIC_NAME = {
-  es: { AV:"Vector de ataque", AC:"Complejidad", AT:"Requisitos", PR:"Privilegios", UI:"Interacción",
-        VC:"Confidencialidad", VI:"Integridad", VA:"Disponibilidad",
-        SC:"Conf. posterior", SI:"Integr. posterior", SA:"Disp. posterior",
-        S:"Alcance", C:"Confidencialidad", I:"Integridad", A:"Disponibilidad" },
-  en: { AV:"Attack vector", AC:"Complexity", AT:"Requirements", PR:"Privileges", UI:"Interaction",
-        VC:"Confidentiality", VI:"Integrity", VA:"Availability",
-        SC:"Subseq. conf.", SI:"Subseq. integ.", SA:"Subseq. avail.",
-        S:"Scope", C:"Confidentiality", I:"Integrity", A:"Availability" }
-};
-function cvssMetricLabel(k, val, version) {
-  const opts = version === "4.0" ? CVSS4_OPTS[k] : (CV.OPTS || {})[k];
-  const o = (opts || []).find(x => x[0] === val);
-  return o ? o[1] : (val || "—");
-}
-function cvssPanel(r, dict, version) {
-  const lang = S.uiLang || "es";
-  const nm = METRIC_NAME[lang] || METRIC_NAME.es;
-  const wrap = h("div", { class: "cvss-panel" });
-  const top = h("div", { class: "cvss-panel-top" });
-  top.append(h("div", { class: "cvss-scorecard sc-" + r.severity },
-    h("div", { class: "cvss-score-big" }, r.score.toFixed(1)),
-    h("div", { class: "tag sev-" + r.severity }, r.severity)));
-  if (version === "4.0" && r.macrovector) {
-    top.append(h("div", { class: "cvss-mvcard" },
-      h("div", { class: "cvss-mv-lbl" }, "MacroVector"),
-      h("div", { class: "cvss-mv-val" }, r.macrovector),
-      h("div", { class: "cvss-mv-sub" }, "CVSS 4.0")));
-  } else {
-    top.append(h("div", { class: "cvss-mvcard" },
-      h("div", { class: "cvss-mv-lbl" }, lang === "es" ? "Versión" : "Version"),
-      h("div", { class: "cvss-mv-val" }, "CVSS " + version)));
-  }
-  wrap.append(top);
-  const keys = version === "4.0" ? CVSS4_BASE : CV.M;
-  const grid = h("div", { class: "cvss-metrics" });
-  keys.forEach(k => grid.append(h("div", { class: "cvss-metric" },
-    h("span", { class: "cm-k" }, nm[k] || k),
-    h("span", { class: "cm-v" }, cvssMetricLabel(k, dict[k], version)))));
-  wrap.append(h("div", { class: "cvss-metrics-title" }, lang === "es" ? "Métricas principales" : "Key metrics"), grid);
-  wrap.append(h("div", { class: "cvss-vecrow" }, h("code", { class: "cvss-vec" }, r.vector), copyVectorBtn(r.vector)));
-  return wrap;
-}
-function copyVectorBtn(vector) {
-  let restoreTimer;
-  const b = h("button", { type: "button", class: "btn sm", style: "padding:3px 9px;flex:none",
-    title: t("copy_vector"), "aria-label": t("copy_vector"),
-    onclick: async () => {
-      clearTimeout(restoreTimer);
-      b.disabled = true; b.setAttribute("aria-busy", "true"); b.textContent = "\u2026";
-      try {
-        if (typeof navigator.clipboard?.writeText !== "function") throw new Error("Clipboard unavailable");
-        await navigator.clipboard.writeText(vector);
-        b.textContent = "\u2713"; toast(t("copied"), "ok");
-        restoreTimer = setTimeout(() => { b.textContent = "\u29C9"; }, 1000);
-      } catch (_) {
-        b.textContent = "\u29C9"; toast(t("copy_vector_failed"), "err");
-      } finally {
-        b.disabled = false; b.removeAttribute("aria-busy");
-      }
-    } }, "\u29C9");
-  return b;
-}
-function applyPastedVector(f, raw, errEl) {
-  let v = (raw || "").trim().replace(/\s+/g, "");  // admite espacios: "AV:N / AC:H" -> "AV:N/AC:H"
-  if (!v) { errEl.textContent = ""; return; }
-  let ver = f.cvss_version || "3.1";
-  const mpref = v.match(/^CVSS:([0-9.]+)\//i);
-  if (mpref) { ver = (mpref[1] === "4.0") ? "4.0" : (mpref[1].indexOf("3.") === 0 ? "3.1" : ver); v = v.slice(mpref[0].length); }
-  const full = "CVSS:" + ver + "/" + v;
-  try {
-    if (ver === "4.0") {
-      const r = window.CVSS40.score(full);
-      f.cvss_version = "4.0"; f.cvss = String(r.score); f.cvss_vector = r.vector; f.severity = r.severity; f.macrovector = r.macrovector;
-    } else {
-      const r = cvssCompute(cvssParse(full));
-      f.cvss_version = "3.1"; f.cvss = String(r.score); f.cvss_vector = r.vector; f.severity = r.severity;
-    }
-    errEl.textContent = ""; scheduleSave(); renderMain();
-  } catch (_) { errEl.textContent = t("cvss_paste_bad"); }
-}
-
-function cvssWidget(f, sevSel) {
-  const version=f.cvss_version||"3.1";
-  const wrap = h("div", { style: "margin-top:10px" });
-  const verSel = h("select", { "aria-label":S.uiLang==="en"?"CVSS version":"Versión de CVSS", style: "width:auto;display:inline-block;margin-left:8px",
-    onchange: e => {
-      f.cvss_version = e.target.value;
-      f.cvss = ""; f.cvss_vector = ""; f.macrovector = "";  // estado incompatible entre versiones
-      scheduleSave(); renderMain();
-    } },
-    ["3.1", "4.0"].map(v => h("option", { value: v, selected: version === v ? "" : null }, "CVSS " + v)));
-  wrap.append(h("h4", {}, t("calculator"), verSel));
-  const pasteErr = h("span", { class: "cvss-paste-err" });
-  const paste = h("input", { class: "cvss-paste", placeholder: t("cvss_paste_ph"), value: f.cvss_vector || "",
-    onchange: e => applyPastedVector(f, e.target.value, pasteErr),
-    onkeydown: e => { if (e.key === "Enter") applyPastedVector(f, e.target.value, pasteErr); } });
-  wrap.append(h("label", { style: "margin-top:6px" }, t("cvss_paste_label"), h("div", { style: "display:flex;gap:8px;align-items:center" }, paste, pasteErr)));
-  wrap.append(version === "4.0" ? cvss4Widget(f, sevSel) : cvss31Widget(f, sevSel));
-  return wrap;
-}
-
-function cvss31Widget(f, sevSel) {
-  const c = h("div", {});
-  const bx = h("div", { class: "cvssbox" });
-  const metrics = cvssParse(f.cvss_vector || "");
-  const out = h("div", { class: "cvssout" });
-  function refresh() {
-    const r = cvssCompute(metrics);
-    f.cvss_version="3.1"; f.cvss = String(r.score); f.cvss_vector = r.vector; f.severity = r.severity;
-    if (sevSel) sevSel.value = r.severity;
-    out.innerHTML = "";
-    out.append(cvssPanel(r, metrics, "3.1"));
-    scheduleSave(); renderSidebar();
-  }
-  CV.M.forEach(k => {
-    const sel = h("select", { title: (S.uiLang==="en"?METRIC_NAME.en[k]:CVSS_TIP[k]) || "", onchange: e => { metrics[k] = e.target.value; refresh(); } },
-      CV.OPTS[k].map(o => h("option", { value: o[0], selected: metrics[k] === o[0] ? "" : null }, `${k}: ${o[1]}`)));
-    bx.append(h("div", { class: "m" }, sel));
-  });
-  c.append(bx, out);
-  const r0 = cvssCompute(metrics);
-  out.append(cvssPanel(r0, metrics, "3.1"));
-  return c;
-}
-
-function cvss4Widget(f, sevSel) {
-  const c = h("div", {});
-  if (!window.CVSS40) { c.append(h("p", { class: "cvss-vec" }, S.uiLang==="en"?"CVSS 4.0 calculator could not load":"No se pudo cargar la calculadora CVSS 4.0")); return c; }
-  const C = window.CVSS40;
-  const base = {};
-  if ((f.cvss_vector || "").startsWith("CVSS:4.0/")) {
-    try { const p = C.parseVector(f.cvss_vector); CVSS4_BASE.forEach(k => { base[k] = p[k]; }); } catch (_) { /* re-init */ }
-  }
-  CVSS4_BASE.forEach(k => { if (!base[k]) base[k] = CVSS4_OPTS[k][0][0]; });
-  const bx = h("div", { class: "cvssbox" });
-  const out = h("div", { class: "cvssout" });
-  function draw(r) {
-    out.innerHTML = "";
-    out.append(cvssPanel(r, base, "4.0"));
-  }
-  function refresh() {
-    const r = C.score(C.buildVector(base));  // toda la logica 4.0 en cvss40.js
-    f.cvss = String(r.score); f.cvss_vector = r.vector; f.severity = r.severity; f.macrovector = r.macrovector;
-    if (sevSel) sevSel.value = r.severity;
-    draw(r); scheduleSave(); renderSidebar();
-  }
-  CVSS4_BASE.forEach(k => {
-    const sel = h("select", { title: (S.uiLang==="en"?METRIC_NAME.en[k]:CVSS_TIP[k]) || "", onchange: e => { base[k] = e.target.value; refresh(); } },
-      CVSS4_OPTS[k].map(o => h("option", { value: o[0], selected: base[k] === o[0] ? "" : null }, `${k}: ${o[1]}`)));
-    bx.append(h("div", { class: "m" }, sel));
-  });
-  c.append(bx, out);
-  draw(C.score(C.buildVector(base)));
-  return c;
 }
 
 function machineEditor(f) {
@@ -1542,25 +1204,6 @@ function insertOwasp(it) {
 }
 
 // ---- preview / descarga ----------------------------------------------------
-async function renderPdf(download) {
-  const generation = download ? previewGeneration : ++previewGeneration;
-  if (!S.slug || !await doSave()) return;
-  const slug = S.slug, snapshotRevision=projectStore.revision;
-  if (!download && (generation !== previewGeneration || S.previewMode !== 'pdf')) return;
-  setSaveState(t("updating")); if (!download) showPreviewLoading();
-  try {
-    const r = await appFetch(`/api/projects/${S.slug}/render`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
-    if (!r.ok) { const e = await r.json().catch(() => ({})); setSaveState(t("err")); toast("Render: " + (e.error || r.status), "err"); return; }
-    const blob = await r.blob();
-    if (!download && (slug !== S.slug || generation !== previewGeneration || S.previewMode !== 'pdf')) return;
-    const url = URL.createObjectURL(blob);
-    if (download) { const a = h("a", { href: url, download: (slug || "informe") + ".pdf" }); a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
-    else { const f = $("#pdfPreview"); f.removeAttribute("sandbox"); f.removeAttribute("srcdoc"); f.setAttribute("src", url); releasePdfPreview(); previewPdfUrl = url; }
-    if (slug === S.slug) {setSaveState(t(projectStore.dirty ? "saving" : "saved"));if(!download)WorkbenchUI.previewReady(snapshotRevision); }
-  } catch (error) { if (download || generation === previewGeneration) toast(error.message, "err"); }
-  finally { if (!download && generation === previewGeneration) hidePreviewLoading(); }
-}
-
 async function exportFile() {
   if (!S.slug || !await doSave()) return;
   try { await ProgressUI.enqueue(S.slug,projectStore.etag,{kind:'export',formats:[$('#exportFormat').value],label:(S.data.meta.report_title||S.slug).slice(0,120)}); }
@@ -1720,8 +1363,7 @@ async function deleteProject() {
     if(typeof InsightsUI!=="undefined")InsightsUI.projectDeleted(slug);
     projectStore.reset();
     S.slug = null; S.data = null; S.sel = { type: "report", idx: -1 };
-    previewGeneration++; releasePdfPreview();
-    const frame = $("#pdfPreview"); frame.removeAttribute('src'); frame.removeAttribute('srcdoc');
+    PreviewController.clearDocument();
     await refreshProjects();
     if (S.projects.length) await loadProject(S.projects[0].slug);
     else { $("#projectSelect").innerHTML = ""; renderSidebar(); renderMain(); }

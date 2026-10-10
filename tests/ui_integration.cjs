@@ -30,7 +30,7 @@ async function until(predicate, attempts=150) {
   w.HTMLAnchorElement.prototype.click=function(){downloads.push(this.download);};
   w.URL.createObjectURL=()=> 'blob:report-test';w.URL.revokeObjectURL=()=>{};
   const sources=[];
-  for(const name of ['cvss40.js','drafts.js','save-manager.js','workflow.js','experience.js','design-library.js','workspace.js','progress.js','workbench.js','studio.js','annexes.js','app.js']) {
+  for(const name of ['cvss40.js','drafts.js','save-manager.js','workflow.js','experience.js','design-library.js','backup-routine.js','workspace.js','progress.js','workbench.js','studio.js','annexes.js','transport.js','cvss31.js','cvss-editor.js','preview-controller.js','app.js']) {
     let source=fs.readFileSync(path.join(root,'webapp/static',name),'utf8');
     if(name==='app.js')source+='\nwindow.qa={S,projectStore,scheduleSave,doSave,loadProject,exportFile,runValidation,WorkflowUI,select,renderMain,ensureFindingIds,saveToLibrary,renderPdf,refreshLivePreview,setPreviewMode};';
     sources.push(source);

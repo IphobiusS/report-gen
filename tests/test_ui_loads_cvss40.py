@@ -12,7 +12,15 @@ def test_index_html_loads_cvss40_before_app():
 
 
 def test_app_js_delegates_40_to_module_not_duplicated():
-    js = (ROOT / "webapp" / "static" / "app.js").read_text(encoding="utf-8")
+    js = (ROOT / "webapp" / "static" / "cvss-editor.js").read_text(encoding="utf-8")
     # la UI 4.0 debe llamar al modulo, no reimplementar la interpolacion
     assert "window.CVSS40" in js
     assert "MAX_SEVERITY" not in js and "MAX_COMPOSED" not in js  # sin tablas 4.0 duplicadas en app.js
+
+
+def test_editor_modules_load_in_dependency_order():
+    html = (ROOT / "webapp" / "static" / "index.html").read_text(encoding="utf-8")
+    for module in ["transport", "cvss31", "cvss-editor", "preview-controller"]:
+        assert html.count(f'/static/{module}.js') == 1
+        assert html.index(f'/static/{module}.js') < html.index('/static/app.js')
+    assert html.index('/static/cvss31.js') < html.index('/static/cvss-editor.js')

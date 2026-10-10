@@ -14,7 +14,7 @@ let dom;
   w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
   w.HTMLAnchorElement.prototype.click=function(){downloads.push(this.download);};
   w.URL.createObjectURL=()=> 'blob:workspace-test';w.URL.revokeObjectURL=()=>{};
-  const sources=['cvss40.js','drafts.js','save-manager.js','workflow.js','experience.js','design-library.js','workspace.js','progress.js','workbench.js','studio.js','annexes.js','app.js'].map(n=>fs.readFileSync(path.join(root,'webapp/static',n),'utf8'));
+  const sources=['cvss40.js','drafts.js','save-manager.js','workflow.js','experience.js','design-library.js','backup-routine.js','workspace.js','progress.js','workbench.js','studio.js','annexes.js','transport.js','cvss31.js','cvss-editor.js','preview-controller.js','app.js'].map(n=>fs.readFileSync(path.join(root,'webapp/static',n),'utf8'));
   w.eval(sources.join('\n')+'\nwindow.qa={S,projectStore,select,doSave,scheduleSave,loadProject,setUiLang,WorkspaceUI,DesignLibraryUI,refreshProjects};');
   const q=w.qa;
   await until(()=>doc.querySelector('.workspace-dashboard'));

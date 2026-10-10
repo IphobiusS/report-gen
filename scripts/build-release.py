@@ -27,7 +27,9 @@ def forbidden(path):
         return False
     return (path.startswith(("webapp/projects/", "webapp/library/", "out/"))
             or any(p in {".git", "node_modules", "__pycache__", ".venv", "venv",
-                         ".pytest_cache", ".ruff_cache", ".report-gen-browser-id"} or p.endswith(".egg-info") for p in parts))
+                         ".pytest_cache", ".ruff_cache", ".report-gen-browser-id",
+                         ".report-gen-backup-routine.json", ".report-gen-owner"}
+                   or p.startswith(".write-") or p.endswith(".egg-info") for p in parts))
 
 
 def build_release(repo, ref, output):

@@ -625,6 +625,8 @@ from design_api import register as register_designs  # noqa: E402
 register_designs(sys.modules[__name__])
 from workspace_api import register as register_workspace  # noqa: E402
 register_workspace(sys.modules[__name__])
+from backup_routine_api import register as register_backup_routine  # noqa: E402
+backup_routine = register_backup_routine(sys.modules[__name__])
 from progress_api import register as register_progress  # noqa: E402
 register_progress(sys.modules[__name__])
 from workbench_api import register as register_workbench  # noqa: E402
@@ -638,9 +640,17 @@ register_publication(sys.modules[__name__])
 def create_local_server(port=8080):
     """One process preserves the shared project lock; never expose the editor."""
     from waitress import create_server
-    return create_server(app, host='127.0.0.1', port=port, threads=4,
-                         max_request_body_size=project_history.MAX_ARCHIVE + 1024 * 1024,
-                         channel_timeout=180, clear_untrusted_proxy_headers=True)
+    server = create_server(app, host='127.0.0.1', port=port, threads=4,
+                           max_request_body_size=project_history.MAX_ARCHIVE + 1024 * 1024,
+                           channel_timeout=180, clear_untrusted_proxy_headers=True)
+    routine = backup_routine()
+    original_close = server.close
+    def close_with_backups():
+        routine.stop()
+        original_close()
+    server.close = close_with_backups
+    routine.start()
+    return server
 
 
 

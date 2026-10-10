@@ -8,13 +8,17 @@ const workspace='a'.repeat(64),otherWorkspace='b'.repeat(64);
 
 function fixture(fetch) {
   const root=path.resolve(process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..'));
-  const source=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8');
-  const boundary=source.indexOf('// ---- CVSS 3.1');
-  assert.ok(boundary>0,'Load the actual request helpers');
-  const notice={textContent:''},document={querySelector:()=>notice};
-  const context=vm.createContext({fetch,document,Error});
-  vm.runInContext(fs.readFileSync(path.join(root,'webapp/static/drafts.js'),'utf8'),context);
-  vm.runInContext('const S={uiLang:"es"}; const projectStore={etag:"rev-7"};\n'+source.slice(0,boundary)+'\nbrowserWorkspaceId=BrowserWorkspace.bind('+JSON.stringify(workspace)+');',context);
+  const context=vm.createContext({fetch,Error,URL});
+  for(const file of ['drafts.js','transport.js']) {
+    vm.runInContext(fs.readFileSync(path.join(root,'webapp/static',file),'utf8'),context);
+  }
+  vm.runInContext(`
+    const S={uiLang:'es'}, projectStore={etag:'rev-7'};
+    BrowserWorkspace.bind(${JSON.stringify(workspace)});
+    const transport=ReportTransport.create({fetch,workspace:BrowserWorkspace,
+      getLanguage:()=>S.uiLang,getETag:()=>projectStore.etag,baseURL:()=>'http://localhost/'});
+    const {request:appFetch,api}=transport;
+  `,context);
   return {run:expression=>vm.runInContext(expression,context)};
 }
 const response=(ok=true,error)=>({ok,status:ok?200:403,headers:{get:()=>workspace},json:async()=>error?{error}:{csrf:'local-token'}});
@@ -115,5 +119,38 @@ test('a foreign or unidentified successful CSRF response cannot send a mutation 
     await assert.rejects(f.run('api.post("/api/projects",{})'),error=>error.status===409);
     assert.equal(f.run('BrowserWorkspace.blocked()'),true);assert.equal(bodyReads,0);assert.equal(calls,1);
     assert.equal(f.run('BrowserWorkspace.current()'),workspace);
+  }
+});
+
+test('a pending CSRF handshake cannot resume a mutation after another response blocks the workspace',async()=>{
+  const calls=[];let release;
+  const handshake=new Promise(resolve=>{release=resolve;});
+  const f=fixture(async(url,options)=>{
+    calls.push({url,options});
+    return url==='/api/session'?handshake:{...response(),headers:{get:()=>otherWorkspace}};
+  });
+  const mutation=f.run('api.put("/api/projects/demo",{})');
+  await assert.rejects(f.run('appFetch("/api/projects/changed")'),error=>error.status===409);
+  release(response());
+  await assert.rejects(mutation,error=>error.status===409);
+  assert.deepEqual(calls.map(call=>call.url),['/api/session','/api/projects/changed']);
+});
+
+test('an older same-workspace response is discarded when another response already blocked the tab',async()=>{
+  let release;
+  const pending=new Promise(resolve=>{release=resolve;});
+  const f=fixture(async url=>url.endsWith('/older')?pending:{...response(),headers:{get:()=>otherWorkspace}});
+  const older=f.run('appFetch("/api/projects/older")');
+  await assert.rejects(f.run('appFetch("/api/projects/changed")'),error=>error.status===409);
+  release(response());
+  await assert.rejects(older,error=>error.status===409);
+});
+
+test('resource URLs keep query and fragment while enforcing the bound workspace',()=>{
+  const f=fixture(async()=>response());
+  assert.equal(f.run('transport.scopedResourceURL("/api/projects/demo/img/evidence.png?raw=1&workspace_id=foreign#caption")'),
+    '/api/projects/demo/img/evidence.png?raw=1&workspace_id='+workspace+'#caption');
+  for(const url of ['/static/logo.png','#finding','https://example.invalid/api/image']){
+    assert.equal(f.run('transport.scopedResourceURL('+JSON.stringify(url)+')'),url);
   }
 });

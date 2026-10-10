@@ -4,15 +4,24 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
-const {spawn, spawnSync} = require('node:child_process');
+const {spawn, spawnSync, execFile} = require('node:child_process');
+const {promisify} = require('node:util');
+const runFile = promisify(execFile);
 const {performance} = require('node:perf_hooks');
 const root = path.resolve(process.env.REPORT_GEN_TOOL_ROOT || path.join(__dirname, '..'));
 const args = process.argv.slice(2);
+if (args.includes('--help')) {
+  console.log('Synthetic local benchmark: --counts 50,250,1000 --rounds 1 --evidence-limit 50 (0 = one per finding) --image-mode tiny|distinct --export-formats pdf,docx,md,html --export-timeout-seconds 600 --assert-bounded --output <empty directory>. Timings are observations, never universal thresholds. Distinct mode creates unique 800x450 synthetic screenshots; exports use the saved revision and verify all public content.');
+  process.exit(0);
+}
 const opt = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
 const output = path.resolve(opt('--output', 'out/workspace-scale-0230'));
 const counts = opt('--counts', '50,250,1000').split(',').map(Number);
 const rounds = Number(opt('--rounds', '1'));
 const evidenceLimit = Number(opt('--evidence-limit', '50'));
+const imageMode = opt('--image-mode', 'tiny');
+const exportFormats = opt('--export-formats', '').split(',').filter(Boolean);
+const exportTimeoutSeconds = Number(opt('--export-timeout-seconds', '600'));
 const assertBounded = args.includes('--assert-bounded');
 const legacyRecords = args.includes('--legacy-records');
 const insightsRecords = Number(opt('--insights-records','0'));
@@ -22,13 +31,24 @@ const python = process.env.RG_PYTHON || (process.platform==='win32'?'python':'py
 const {chromium} = require(require.resolve('playwright', {paths: [root, process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES || root]}));
 const canonical = value => JSON.stringify((function sort(v){return Array.isArray(v)?v.map(sort):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,sort(v[k])])):v;})(value));
 const sha = value => crypto.createHash('sha256').update(value).digest('hex');
+if (fs.existsSync(output) && fs.readdirSync(output).length) throw Error('Use an empty benchmark output directory; previous results are preserved.');
 fs.mkdirSync(output, {recursive:true});
-const report = {format:'report-gen-workspace-benchmark-1', input:root, counts, rounds, evidenceLimit, started:new Date().toISOString(), hardware:{platform:os.platform(), arch:os.arch(), cpu:os.cpus()[0]?.model, logicalCpus:os.cpus().length, totalMemoryBytes:os.totalmem()}, scope:'Shared execution machine: other QA may run concurrently. Local loopback server; fresh Chromium context per size/round; preview hidden; synthetic text and one reused tiny PNG. Timings include browser automation and HTTP waits and are not universal speed guarantees. Seed generation is excluded. Memory is the sampled server/browser process tree RSS, not every system allocation.', runtime:{node:process.version,python:spawnSync(python,['--version'],{encoding:'utf8'}).stdout.trim()}, sourceHashes:{}, samples:[], errors:[], checks:[]};
-for(const file of ['webapp/static/app.js','webapp/static/workflow.js','webapp/static/save-manager.js','webapp/static/workbench.js']) report.sourceHashes[file]=sha(fs.readFileSync(path.join(root,file)));
-const seedPython = `import sys,json,base64\nfrom pathlib import Path\nsys.path.insert(0,sys.argv[1])\nimport project_history,workflows\nrequest=json.load(sys.stdin)\ndirectory=Path(sys.argv[2])/'projects'/request['slug']\n(directory/'img').mkdir(parents=True,exist_ok=True)\n(directory/'img'/'synthetic.png').write_bytes(base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='))\nfor index in range(request.get('unregistered_images',0)):\n    (directory/'img'/('unregistered-%04d.png'%(index+1))).write_bytes((directory/'img'/'synthetic.png').read_bytes())\nworkflows.normalize(request['data'])\nproject_history.save(directory,request['data'])\nprint(json.dumps(request['data']))`;
+const report = {format:'report-gen-workspace-benchmark-2', counts, rounds, evidenceLimit, imageMode, exportFormats, started:new Date().toISOString(), hardware:{platform:os.platform(), arch:os.arch(), cpu:os.cpus()[0]?.model, logicalCpus:os.cpus().length, totalMemoryBytes:os.totalmem()}, scope:'Shared execution machine: other QA may run concurrently. Local loopback server; fresh Chromium context per size/round; preview hidden; synthetic text with '+(imageMode==='distinct'?'distinct 800x450 synthetic PNG screenshots':'one reused tiny PNG')+'. Timings include browser automation and HTTP waits and are not universal speed guarantees. Seed generation is excluded. Memory is the sampled server/browser process tree RSS, not every system allocation. Export worker timings separate snapshot preparation, actual generation, and content verification; no native Word or human visual approval is implied.', runtime:{node:process.version,python:spawnSync(python,['--version'],{encoding:'utf8'}).stdout.trim()}, sourceHashes:{}, samples:[], errors:[], checks:[]};
+const runtimeFiles = () => ['scripts/benchmark-workspace-0230.cjs','scripts/benchmark-workspace.py','requirements-audited.txt','package-lock.json',
+  ...fs.readdirSync(path.join(root,'webapp/static')).filter(file=>file.endsWith('.js')).map(file=>'webapp/static/'+file),
+  ...fs.readdirSync(root).filter(file=>file.endsWith('.py')),
+  ...fs.readdirSync(path.join(root,'exporters')).filter(file=>file.endsWith('.py')).map(file=>'exporters/'+file),
+  ...fs.readdirSync(path.join(root,'webapp')).filter(file=>file.endsWith('.py')).map(file=>'webapp/'+file)].sort();
+const hashes = () => Object.fromEntries(runtimeFiles().map(file=>[file,sha(fs.readFileSync(path.join(root,file)))]));
+report.sourceHashes = hashes();
+report.commit = spawnSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).stdout.trim();
+report.sourceState = spawnSync('git',['status','--porcelain'],{cwd:root,encoding:'utf8'}).stdout.trim()?'worktree_modified':'committed';
+const versions = spawnSync(python,['-c','import importlib.metadata,json;print(json.dumps({name:importlib.metadata.version(name) for name in ("Pillow","Flask","PyYAML","python-docx","weasyprint","pypdf")}))'],{encoding:'utf8'});
+report.runtime.packages = versions.status===0?JSON.parse(versions.stdout):{status:'unavailable'};
+const worker = path.join(root, 'scripts/benchmark-workspace.py');
 function uid(group, number) { return '00000000-0000-4000-8000-'+String(group*100000+number).padStart(12,'0'); }
 function fixture(size,evidenceCount){
-  const evidence=Array.from({length:evidenceCount},(_,i)=>({uid:uid(2,i+1),title:'Synthetic evidence '+(i+1),caption:'Fictional one-pixel image. No real pentest.',src:'img/synthetic.png'}));
+  const evidence=Array.from({length:evidenceCount},(_,i)=>({uid:uid(2,i+1),title:'Synthetic evidence '+(i+1),caption:imageMode==='distinct'?'Fictional 800x450 screenshot. No real pentest.':'Fictional one-pixel image. No real pentest.',src:'img/synthetic.png'}));
   const findings=Array.from({length:size},(_,i)=>({uid:uid(1,i+1),id:'F'+(i+1),mode:'vuln',title:i===size-1?'needle-tail-'+size:'Synthetic finding '+(i+1),severity:i%2?'low':'high',cvss:i%2?3.1:7.5,cvss_version:'3.1',cwe:'CWE-200',affected:'portal.example',description_md:'Synthetic observation and boundary. '.repeat(12),impact_md:'Fictional business impact; not executed.',remediation_md:'Proposed synthetic remediation.',references:[],walkthrough:[],remediation_summary:{},status:'open',verification:'unverified',owner:'Synthetic team',asset_uids:[],evidence_uids:evidenceCount?[evidence[i%evidenceCount].uid]:[],retests:[]}));
   return {schema_version:2,finding_sequence:size,meta:{lang:'es',theme:'corporativo',report_title:'Synthetic scale '+size,report_subtitle:'SIMULATION',client:'Synthetic Client .example',assessor:'Synthetic QA',assessor_title:'QA',date:'2026-10-08',version:'1.0',contacts:{client:[],assessor:[]},scope:[],branding:{wordmark:'SYNTHETIC',byline:'Local QA',accent:'#1f5fa8',confidential_text:'SIMULATION'}},report:{sections:[{key:'findings'}],workflow:{}},findings,assets:[],evidence,coverage:[]};
 }
@@ -61,13 +81,14 @@ async function sample(size,round){
     Object.assign(initial.findings[0],{mode:'machine',host:{name:'Synthetic legacy machine .example'},phases:[{name:'Synthetic empty legacy phase'}]});
     delete initial.findings[0].proof;
   }
-  const seed=spawnSync(python,['-c',seedPython,root,workspace],{cwd:root,input:JSON.stringify({slug,data:initial,unregistered_images:unregisteredImages}),encoding:'utf8',maxBuffer:20*1024*1024});
+  const seed=spawnSync(python,[worker,'seed',workspace],{cwd:root,input:JSON.stringify({slug,data:initial,unregistered_images:unregisteredImages,image_mode:imageMode}),encoding:'utf8',maxBuffer:20*1024*1024});
   if(seed.status!==0)throw Error('Synthetic seed failed: '+seed.stderr);
-  const initialData=JSON.parse(seed.stdout);
+  const corpus=JSON.parse(seed.stdout);
+  const initialData=corpus.data;
   const yaml=path.join(workspace,'projects',slug,'engagement.yaml');
   const sourceHash=sha(fs.readFileSync(yaml));
   let server,browser,context;
-  const current={size,evidenceCount,unregisteredImages,round,loadAverageStart:os.loadavg(),sourceBytes:fs.statSync(yaml).size,sourceSha256:sourceHash,timings:{},states:[],http:[],requests:[],errors:[]};
+  const current={size,evidenceCount,unregisteredImages,round,imageMode,imageBytes:corpus.imageBytes,uniqueImageHashes:corpus.uniqueImageHashes,corpusSha256:corpus.corpusSha256,loadAverageStart:os.loadavg(),sourceBytes:fs.statSync(yaml).size,sourceSha256:sourceHash,timings:{},exports:[],states:[],http:[],httpHeaders:[],requests:[],errors:[]};
   report.samples.push(current);
   try{
     server=spawn(python,[path.join(root,'scripts/browser-server-0211.py'),'--workspace',workspace],{cwd:root,stdio:['ignore','pipe','pipe']});
@@ -87,6 +108,7 @@ async function sample(size,round){
     await page.addInitScript(()=>{localStorage.setItem('rg.previewVisible','0');localStorage.setItem('rg.uiLang','es');window.__scaleLongTasks=[];try{new PerformanceObserver(list=>window.__scaleLongTasks.push(...list.getEntries().map(e=>({start:e.startTime,duration:e.duration})))).observe({type:'longtask',buffered:true});}catch(_){};});
     page.on('pageerror',error=>current.errors.push(error.message));
     const requests=new Map();page.on('request',request=>{requests.set(request,performance.now());if(request.url().includes('/api/'))current.requests.push({path:new URL(request.url()).pathname,method:request.method()});});page.on('requestfinished',request=>{if(request.url().includes('/api/'))current.http.push({path:new URL(request.url()).pathname,method:request.method(),elapsedMs:performance.now()-(requests.get(request)||performance.now())});});
+    page.on('response',response=>{const request=response.request();if(request.url().includes('/api/'))current.httpHeaders.push({path:new URL(request.url()).pathname,method:request.method(),status:response.status(),elapsedMs:performance.now()-(requests.get(request)||performance.now())});});
     const state=async label=>{const perf=await cdp.send('Performance.getMetrics');const metrics=Object.fromEntries(perf.metrics.map(row=>[row.name,row.value]));current.states.push({label,...await page.evaluate(()=>({documentNodes:document.querySelectorAll('*').length,sidebarFindings:document.querySelectorAll('#findingList li').length,dashboardRows:document.querySelectorAll('.dash-row').length,galleryCards:document.querySelectorAll('.wf-gallery:not([data-unregistered-evidence])>.card').length,unregisteredGalleryCards:document.querySelectorAll('[data-unregistered-evidence]>.card').length,findings:S.data?.findings.length,longTasks:window.__scaleLongTasks})),jsHeapUsedBytes:metrics.JSHeapUsedSize,taskDurationSeconds:metrics.TaskDuration,layoutDurationSeconds:metrics.LayoutDuration,serverMemory:processTreeMemory(serverPid),browserMemory:processTreeMemory(browserPid)});};
     const timed=async(name,run)=>{const started=performance.now();await run();current.timings[name]=performance.now()-started;await state(name);};
     await timed('startupOpenHomeMs',async()=>{await page.goto(base);await page.waitForFunction(slug=>typeof S!=='undefined'&&S.slug===slug&&!projectStore.loading&&projectBusyCount===0,slug);await page.locator('.workspace-dashboard').waitFor();});
@@ -198,7 +220,17 @@ async function sample(size,round){
       check(size+'/'+round+' explicitly showing preview generates the current saved content',await page.locator('#pdfPreview').getAttribute('srcdoc').then(html=>html.includes('needle-tail-'+size+'-qa-change')));
     }
     check(size+'/'+round+' browser has no page errors',current.errors.length===0,current.errors);
+    for (const format of exportFormats) {
+      const started = performance.now();
+      const folder = path.join(output, 'exports-'+size+'-'+round);
+      const generated = await runFile(python, [worker,'export',yaml,format,folder], {cwd:root,env:process.env,encoding:'utf8',maxBuffer:20*1024*1024,timeout:exportTimeoutSeconds*1000});
+      const item = JSON.parse(generated.stdout);
+      item.processElapsedMs = performance.now() - started;
+      current.exports.push(item);
+      check(size+'/'+round+' '+format+' actual export and content verification completed',item.bytes>0&&Boolean(item.checks),{bytes:item.bytes,sha256:item.sha256});
+      fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(report,null,2));
+    }
     current.loadAverageEnd=os.loadavg();current.status='passed';
   }finally{await context?.close().catch(()=>{});await browser?.close().catch(()=>{});server?.kill('SIGTERM');fs.rmSync(workspace,{recursive:true,force:true});}
 }
-(async()=>{try{if(!counts.every(n=>Number.isInteger(n)&&n>0&&n<=1000)||!Number.isInteger(rounds)||rounds<1||rounds>10||!Number.isInteger(evidenceLimit)||evidenceLimit<0||evidenceLimit>1000||!Number.isInteger(insightsRecords)||insightsRecords<0||insightsRecords>1000||!Number.isInteger(unregisteredImages)||unregisteredImages<0||unregisteredImages>1000)throw Error('Use counts 1..1000, rounds 1..10 and evidence-limit 0..1000.');for(const size of counts)for(let round=1;round<=rounds;round++)await sample(size,round);report.status='passed';}catch(error){report.status='failed';report.errors.push(error.stack);process.exitCode=1;}finally{report.finished=new Date().toISOString();fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({status:report.status,samples:report.samples.map(s=>({size:s.size,evidenceCount:s.evidenceCount,timings:s.timings,status:s.status})),checks:report.checks.length,errors:report.errors}));}})();
+(async()=>{try{if(!['tiny','distinct'].includes(imageMode)||exportFormats.some(f=>!['pdf','docx','md','html'].includes(f))||new Set(exportFormats).size!==exportFormats.length||!Number.isInteger(exportTimeoutSeconds)||exportTimeoutSeconds<1||exportTimeoutSeconds>3600)throw Error('Use image-mode tiny/distinct, unique export formats pdf/docx/md/html and timeout 1..3600 seconds.');if(!counts.every(n=>Number.isInteger(n)&&n>0&&n<=1000)||!Number.isInteger(rounds)||rounds<1||rounds>10||!Number.isInteger(evidenceLimit)||evidenceLimit<0||evidenceLimit>1000||!Number.isInteger(insightsRecords)||insightsRecords<0||insightsRecords>1000||!Number.isInteger(unregisteredImages)||unregisteredImages<0||unregisteredImages>1000)throw Error('Use counts 1..1000, rounds 1..10 and evidence-limit 0..1000.');for(const size of counts)for(let round=1;round<=rounds;round++)await sample(size,round);report.status='passed';}catch(error){report.status='failed';report.errors.push(error.stack);process.exitCode=1;}finally{report.finished=new Date().toISOString();report.sourceHashesAfter=hashes();report.sourceChangedDuringRun=canonical(report.sourceHashes)!==canonical(report.sourceHashesAfter);fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify({status:report.status,samples:report.samples.map(s=>({size:s.size,evidenceCount:s.evidenceCount,uniqueImageHashes:s.uniqueImageHashes,imageBytes:s.imageBytes,timings:s.timings,exports:s.exports.map(e=>({format:e.format,exportMs:e.exportMs,verificationMs:e.verificationMs,bytes:e.bytes})),status:s.status})),checks:report.checks.length,errors:report.errors}));}})();

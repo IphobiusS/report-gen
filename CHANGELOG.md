@@ -1,3 +1,14 @@
+# Cambios 0.31.0 (2026-10-10)
+
+- Respaldo periódico local desactivado por defecto: destino externo explícito, frecuencia, retención de copias propias, verificación mediante restauración temporal y estado privado por workspace. Requiere mantener el servidor abierto; las copias no se cifran ni incluyen borradores del navegador.
+- Separación del transporte HTTP, CVSS 3.1, controles de CVSS y vista previa. El estado y las revisiones guardadas siguen compartidos.
+- Corrección del pegado CVSS 3.1: vectores incompletos, duplicados o inválidos se rechazan sin rellenar métricas ni cambiar el hallazgo. Paridad con el cálculo Python para las combinaciones válidas.
+- Corrección de la carrera que podía reanudar una escritura tras bloquear el workspace mientras se esperaba el token CSRF.
+- Corpus de escala con imágenes distintas y mediciones reproducibles de edición y cuatro exportaciones; entorno, contenido y límites explícitos.
+- La preparación de entrega valida las imágenes sin recomprimirlas al contar alertas de texto. Conserva redacciones, excepciones y errores por imágenes no válidas; el inspector completo y los formatos mantienen la limpieza de publicación.
+- Inspección estructural automatizada de los cuatro DOCX preparados para revisión externa. La revisión visual en Word y las cinco sesiones humanas siguen pendientes.
+- Documentación de distribución alineada con las Releases verificadas y exclusión del estado privado de respaldos en los paquetes fuente.
+
 # Cambios 0.30.0 (2026-10-10)
 
 - Edición por lotes de hasta 500 hallazgos: selección explícita, responsable, fecha y grupo de causa raíz, comparación antes/después, guardado atómico y versión recuperable. No altera estado, verificación técnica, evidencias ni retests.
