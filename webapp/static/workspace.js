@@ -96,21 +96,27 @@ const WorkspaceUI = (() => {
   }
   async function backup(opener) {
     const focus=opener instanceof HTMLElement?opener:document.activeElement;
-    const d=h('dialog',{class:'experience-dialog','aria-label':w('Respaldo integral','Workspace backup')}),body=h('div',{class:'experience-body'});
+    const d=h('dialog',{class:'experience-dialog workspace-backup-dialog','aria-label':w('Respaldo integral','Workspace backup')}),body=h('div',{class:'experience-body'});
     d.append(h('div',{class:'experience-heading'},h('h2',{},w('Respaldo integral','Workspace backup')),button(w('Cerrar','Close'),()=>d.close())),body);
     body.append(h('p',{},w('Incluye todos los proyectos, evidencias originales, versiones y las dos bibliotecas personales. Guárdalo como información confidencial.','Includes all projects, original evidence, versions and both personal libraries. Store it as confidential information.')));
+    body.append(h('p',{},w('Las capturas y formularios pendientes del navegador no se incluyen; incorpóralos y guarda antes de respaldar.','Pending browser captures and forms are not included; incorporate them and save before backing up.')));
     const status=h('p',{role:'status'});
-    body.append(button(w('Descargar todo','Download workspace'),async()=>{
+    const password=h('input',{type:'password',minlength:12,maxlength:256,autocomplete:'new-password','data-backup-password':'','aria-label':w('Contraseña del respaldo privado','Private backup password')}),confirmation=h('input',{type:'password',minlength:12,maxlength:256,autocomplete:'new-password','data-backup-confirm':'','aria-label':w('Repetir contraseña','Repeat password')});
+    body.append(h('h3',{},w('Respaldo privado con contraseña','Password-protected private backup')),h('p',{},w('Este archivo contiene los proyectos guardados y sus archivos privados; no es una entrega para el cliente. Usa una contraseña larga y guárdala por separado: no se puede recuperar desde report-gen. El cifrado protege el archivo descargado; no cifra los proyectos en disco ni los borradores del navegador.','This file contains saved projects and their private files; it is not a client deliverable. Use a long password and keep it separately: report-gen cannot recover it. Encryption protects the downloaded file; it does not encrypt projects on disk or browser drafts.')),h('label',{},w('Contraseña (12–256 caracteres)','Password (12–256 characters)'),password),h('label',{},w('Repetir contraseña','Repeat password'),confirmation));
+    async function download(encrypted){
+      if(encrypted&&(password.value.length<12||password.value.length>256||password.value!==confirmation.value))throw Error(w('Usa entre 12 y 256 caracteres y repite la misma contraseña.','Use 12 to 256 characters and repeat the same password.'));
       if(S.slug&&!await doSave())return;busyProject(true);
-      try{status.textContent=w('Preparando respaldo…','Preparing backup…');const r=await requireOk(await appFetch('/api/workspace/backup',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}));
-        const url=URL.createObjectURL(await r.blob());h('a',{href:url,download:'report-gen-workspace.zip'}).click();setTimeout(()=>URL.revokeObjectURL(url),1000);status.textContent=w('Respaldo descargado.','Backup downloaded.');
-      }finally{busyProject(false);}
-    },true),h('h3',{},w('Recuperar en una instalación vacía','Restore to an empty installation')),
+      try{status.textContent=w('Preparando respaldo…','Preparing backup…');const r=await requireOk(await appFetch('/api/workspace/backup'+(encrypted?'/encrypted':''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(encrypted?{password:password.value}:{})}));
+        const url=URL.createObjectURL(await r.blob());h('a',{href:url,download:encrypted?'report-gen-private.rgbackup':'report-gen-workspace.zip'}).click();setTimeout(()=>URL.revokeObjectURL(url),1000);status.textContent=encrypted?w('Respaldo privado cifrado descargado. Conserva su contraseña por separado.','Encrypted private backup downloaded. Keep its password separately.'):w('ZIP privado descargado sin cifrado.','Unencrypted private ZIP downloaded.');
+      }finally{password.value='';confirmation.value='';busyProject(false);}
+    }
+    body.append(button(w('Descargar respaldo cifrado','Download encrypted backup'),()=>download(true),true),button(w('Descargar ZIP sin cifrado','Download unencrypted ZIP'),()=>download(false)),h('h3',{},w('Recuperar en una instalación vacía','Restore to an empty installation')),
     h('p',{},w('La restauración se bloquea si ya hay proyectos o plantillas personales. No combina ni sustituye información existente.','Restoration is blocked if projects or personal templates already exist. It does not merge or replace existing data.')));
-    const file=h('input',{type:'file',accept:'.zip,application/zip','data-workspace-file':'backup'});
+    const file=h('input',{type:'file',accept:'.zip,.rgbackup,application/zip,application/octet-stream','data-workspace-file':'backup'});
+    const restorePassword=h('input',{type:'password',maxlength:256,autocomplete:'current-password','data-restore-password':'','aria-label':w('Contraseña del respaldo cifrado','Encrypted backup password')});
     const restoreButton=button(w('Restaurar espacio de trabajo','Restore workspace'),async()=>{
       if(!file.files.length)throw Error(w('Selecciona un respaldo.','Select a backup.'));
-      const data=new FormData();data.append('file',file.files[0]);busyProject(true);
+      const data=new FormData();data.append('file',file.files[0]);if(restorePassword.value)data.append('password',restorePassword.value);busyProject(true);
       try{
         status.textContent=w('Comprobando y recuperando…','Validating and restoring…');
         const response=await requireOk(await appFetch('/api/workspace/restore',{method:'POST',body:data})),restored=await response.json();
@@ -119,9 +125,9 @@ const WorkspaceUI = (() => {
         if(warnings.length){status.setAttribute('role','alert');status.textContent=w('Espacio de trabajo recuperado. Advertencias: ','Workspace restored. Warnings: ')+warnings.join(' ');file.closest('label').hidden=true;restoreButton.hidden=true;}
         else{d.close();toast(w('Espacio de trabajo recuperado.','Workspace restored.'),'ok');}
       }
-      finally{busyProject(false);}
-    });body.append(h('label',{},w('Archivo de respaldo integral','Workspace backup file'),file),restoreButton,status);
-    d.addEventListener('close',()=>{d.remove();if(focus?.isConnected)focus.focus();});document.body.append(d);d.showModal();
+      finally{restorePassword.value='';busyProject(false);}
+    });body.append(h('label',{},w('Archivo de respaldo integral','Workspace backup file'),file),h('label',{},w('Contraseña (solo para .rgbackup)','Password (only for .rgbackup)'),restorePassword),h('p',{},w('La recuperación autentica el archivo cifrado y valida el contenido antes de activar los proyectos. Un ZIP sin cifrar no usa contraseña.','Restore authenticates the encrypted file and validates its contents before activating projects. An unencrypted ZIP has no password.')),restoreButton,status);
+    d.addEventListener('close',()=>{password.value='';confirmation.value='';restorePassword.value='';d.remove();if(focus?.isConnected)focus.focus();});document.body.append(d);d.showModal();
   }
   function bind() {
     $('#brandHome').addEventListener('click',()=>go('home'));$('#navHome').addEventListener('click',()=>go('home'));

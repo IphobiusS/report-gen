@@ -98,7 +98,7 @@ def register(api):
         else:
             data, count = finding_imports.apply(body, data)
             project_history.save(directory, api.checked_data(data))
-            result = dict(data=data, imported=count)
+            result = dict(data=data, imported=count, import_kind='inventory' if body.get('format') == 'nmap' else 'findings')
         response = jsonify(result)
         response.set_etag(revision(directory / 'engagement.yaml'))
         return response

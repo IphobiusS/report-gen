@@ -62,6 +62,16 @@ def language_argument(function):
 
 
 CATALOG = {
+    'OCR: imagen mayor que 12 MiB. / OCR: image exceeds 12 MiB.': 'OCR: image exceeds 12 MiB.',
+    'Imagen no válida para OCR. / Invalid image for OCR.': 'Invalid image for OCR.',
+    'Contraseña: entre 12 y 256 caracteres. / Password: 12 to 256 characters.': 'Password: 12 to 256 characters.',
+    'Respaldo integral mayor que 256 MiB. / Workspace backup exceeds 256 MiB.': 'Workspace backup exceeds 256 MiB.',
+    'Respaldo cifrado no válido o versión no compatible. / Invalid encrypted backup or unsupported version.': 'Invalid encrypted backup or unsupported version.',
+    'Instala la dependencia opcional report-gen[privacy] para usar respaldos cifrados. / Install optional report-gen[privacy] to use encrypted backups.': 'Install optional report-gen[privacy] to use encrypted backups.',
+    'Contraseña no válida. / Invalid password.': 'Invalid password.',
+    'No se pudo autenticar el respaldo: contraseña incorrecta o archivo alterado. / Backup authentication failed: incorrect password or modified file.': 'Backup authentication failed: incorrect password or modified file.',
+    'Selecciona una imagen publicada. / Select a published image.': 'Select a published image.',
+    'Indica una contraseña para el respaldo privado. / Provide a password for the private backup.': 'Provide a password for the private backup.',
     '#RRGGBB': '#RRGGBB',
     'Abre el proyecto para asignar identidades estables antes de exportar / Open the project to assign stable identities before export': 'Open the project to assign stable identities before export',
     'Abre una sesión local': 'Open a local session',

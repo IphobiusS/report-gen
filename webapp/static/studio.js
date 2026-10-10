@@ -31,9 +31,11 @@ async function resolveDraft(candidate){
   body.append(apply);
 }
 async function recovery(){
-  const rows=projectStore.recovery;if(!rows?.length)return;
+  const slug=S.slug,rows=projectStore.recovery||[];let pending=[];try{if(typeof PendingUI!=='undefined')pending=await PendingUI.list(slug);}catch(error){/* Form status reports unavailable storage when edited. */}if(S.slug!==slug||(!rows.length&&!pending.length))return;
   const {d,body}=dialog(w('Hay borradores recuperables','Recoverable drafts found'));
   body.append(h('p',{},w('Son copias privadas de este navegador, con retención de 30 días. Pueden pertenecer a otra pestaña abierta. Revisa antes de incorporarlas.','These are private copies in this browser, retained for 30 days. Another open tab may own them. Review before applying.')));
+  for(const row of pending)body.append(PendingUI.recoverySection(row));
+  d.addEventListener('close',()=>body.querySelectorAll('[data-pending-record]').forEach(node=>node.release?.()));
   rows.forEach(row=>body.append(h('section',{class:'card'},h('h3',{},new Date(row.updated).toLocaleString()),
     button(w('Comparar y recuperar','Compare and recover'),async()=>{if(row.format!=='report-gen-draft'||row.version!==1)throw Error(w('Versión de borrador no compatible. Descarga una copia.','Unsupported draft version. Download a copy.'));d.close();await resolveDraft(row);},true),
     button(w('Descargar copia','Download copy'),()=>downloadDraft(row)),button(w('Descartar borrador','Discard draft'),async()=>{if(!confirm(w('¿Eliminar esta copia del navegador?','Delete this browser copy?')))return;await projectStore.journal.removeUnchanged(row);projectStore.recovery=projectStore.recovery.filter(x=>x.id!==row.id);d.close();recovery();}))));
@@ -71,8 +73,8 @@ async function inspector(){
   const rules=S.data.publication?.redactions||[];
   if(rules.length)body.append(h('details',{},h('summary',{},rules.length+' '+w('censuras registradas','recorded redactions')),...rules.map((rule,index)=>h('div',{class:'card'},h('code',{},rule.needle+' → '+rule.replacement),button(w('Retirar esta censura','Remove this redaction'),()=>mutate(c=>c.redactions.splice(index,1)))))));
   body.append(h('details',{open:''},h('summary',{},w('Texto que se publicará','Outgoing text')),h('pre',{class:'publication-text',tabindex:0},data.text)));
-  const inventory=h('section',{},h('h3',{},w('Imágenes de publicación','Published images')));
-  for(const img of data.images){inventory.append(h('details',{},h('summary',{},img.name+' / '+Math.round(img.bytes/1024)+' KB'),h('img',{src:'/api/projects/'+encodeURIComponent(slug)+'/publication/image?name='+encodeURIComponent(img.name)+'&revision='+encodeURIComponent(data.revision),alt:img.name,loading:'lazy'}),h('p',{},w('Metadatos retirados de la derivada','Metadata removed from derivative')+(img.metadata.length?': '+img.metadata.join(', '):'')),h('p',{class:'hash'},w('Original privado: ','Private original: ')+img.original_sha256),h('p',{class:'hash'},w('Publicado: ','Published: ')+img.sha256)));}
+  const inventory=h('section',{},h('h3',{},w('Imágenes de publicación','Published images')),h('p',{},w('El OCR opcional usa Tesseract local con datos eng, solo al pulsar el botón de cada imagen. Señala zonas posibles sin mostrar ni guardar el texto reconocido. No censura imágenes ni sustituye la revisión manual.','Optional OCR uses local Tesseract with eng data, only when you press each image button. It flags possible areas without displaying or retaining recognized text. It does not redact images or replace manual review.')));
+  for(const img of data.images){inventory.append(h('details',{},h('summary',{},img.name+' / '+Math.round(img.bytes/1024)+' KB'),h('img',{src:'/api/projects/'+encodeURIComponent(slug)+'/publication/image?name='+encodeURIComponent(img.name)+'&revision='+encodeURIComponent(data.revision),alt:img.name,loading:'lazy'}),h('p',{},w('Metadatos retirados de la derivada','Metadata removed from derivative')+(img.metadata.length?': '+img.metadata.join(', '):'')),h('p',{class:'hash'},w('Original privado: ','Private original: ')+img.original_sha256),h('p',{class:'hash'},w('Publicado: ','Published: ')+img.sha256),PrivacyUI.ocr(img,slug,revision)));}
   body.append(inventory,button(w('Abrir evidencias para censurar una imagen','Open evidence to redact an image'),()=>{d.close();select('workflow','evidence');}),h('p',{},w('Archivos disponibles: informe.pdf, informe.docx, markdown.zip, informe.html y el registro de verificación. Solo se incluyen los formatos que selecciones.','Available files: informe.pdf, informe.docx, markdown.zip, informe.html and the verification record. Only selected formats are included.')));
 }
 function render(el,kind){

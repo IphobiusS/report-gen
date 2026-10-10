@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.26.0
+# Guía de uso de report-gen 0.27.0
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -74,13 +74,13 @@ En **Informe → Espaciado del informe** puedes elegir cómoda o compacta. Es in
 
 Los anexos van exclusivamente en el paquete ZIP bajo `anexos/`, con su hash en `verificacion.json`. Se excluyen hasta que los revises y marques. No se censuran ni se limpian sus metadatos: carga copias ya redactadas. Un anexo seleccionado ausente o alterado bloquea la entrega. Declaraciones pendientes y exclusiones aparecen en los avisos. Al marcar **Obligatorio para entregar**, el paquete queda bloqueado hasta incluir una copia revisada e íntegra, incluso si aceptas los avisos.
 
-**Analizar posibles secretos** busca patrones en el primer MiB de textos UTF-8 y cuenta metadatos de imágenes. No realiza OCR ni inspecciona el contenido de PDF. Muestra alcance y límites, sin reproducir los valores detectados. No sustituye la revisión ni cambia los archivos.
+**Analizar posibles secretos** busca patrones en el primer MiB de textos UTF-8 y cuenta metadatos de imágenes. Ese análisis de anexos no realiza OCR ni inspecciona el contenido de PDF. El Inspector ofrece por separado OCR local opcional de las imágenes publicadas, descrito más abajo. Muestra alcance y límites, sin reproducir los valores detectados. No sustituye la revisión ni cambia los archivos.
 
 ## Datos y recuperación
 
 Los proyectos viven en `webapp/projects/`; las bibliotecas personales, en `webapp/library/`. Usa **Respaldo integral** para trasladar proyectos, originales y bibliotecas juntos. Es información privada.
 
-Los borradores pendientes se conservan en IndexedDB, en el perfil del navegador y el mismo origen (host y puerto), durante 30 días. Solo se anuncian como recuperables cuando la escritura termina. No están cifrados por la aplicación. Recuperan datos del proyecto, no los archivos de imagen ni formularios auxiliares aún sin incorporar. El modo privado, borrar los datos del navegador o cambiar de perfil/puerto puede hacerlos inaccesibles. **Más → Descargar borrador privado** permite guardar una copia de emergencia. Recuperarla exige abrir el mismo proyecto y resolver conflictos; nunca sustituye una revisión concurrente sin elegirlo.
+Los borradores pendientes se conservan en IndexedDB, en el perfil del navegador y el mismo origen (host y puerto), durante 30 días. Solo se anuncian como recuperables cuando la escritura termina. No están cifrados por la aplicación. Recuperan los datos del proyecto. Un registro separado protege las capturas y los formularios de Evidencia y decisiones aún sin incorporar: se recuperan explícitamente como formularios, no se adjuntan ni aprueban solos. El registro admite hasta 16 MiB por imagen, 1 MiB por formulario y 64 MiB en total. Si falla la escritura o se supera el límite, se indica que el trabajo permanece sólo en la pestaña. Los consentimientos de publicación se vuelven a pedir al recuperar. Esta protección cubre Captura rápida y los formularios de Evidencia y decisiones; no todos los diálogos auxiliares. Estas copias pendientes no se incluyen en el respaldo integral ni en el JSON de emergencia: incorpóralas y guarda antes de cambiar de instalación u origen del navegador. El modo privado, borrar los datos del navegador o cambiar de perfil/puerto puede hacerlos inaccesibles. **Más → Descargar borrador privado** permite guardar una copia de emergencia. Recuperarla exige abrir el mismo proyecto y resolver conflictos; nunca sustituye una revisión concurrente sin elegirlo.
 
 **Datos privados guardados** inventaría archivos actuales, originales, historial y anexos retirados. Puedes descargar o eliminar borradores del navegador y limpiar categorías concretas del disco. La limpieza requiere selección y escribir el identificador del proyecto. Conserva los datos actuales y, al limpiar historial, un punto nuevo de recuperación. Las descargas y respaldos externos no se borran desde esta vista.
 
@@ -90,7 +90,7 @@ El HTML portátil contiene todo el informe; los filtros y la vista ejecutiva son
 
 ## Actualizar desde una versión anterior
 
-Descomprime o clona 0.26.0 en una carpeta nueva. Cierra ambos editores antes de trasladar los datos y ejecuta desde la carpeta nueva:
+Descomprime o clona 0.27.0 en una carpeta nueva. Cierra ambos editores antes de trasladar los datos y ejecuta desde la carpeta nueva:
 
 ```bash
 python3 start.py --ready --upgrade-from /ruta/report-gen-anterior
@@ -102,7 +102,7 @@ El respaldo se conserva en `~/report-gen-backups/upgrade-*/workspace.zip`, fuera
 
 La migración conserva los proyectos, evidencias, historial y bibliotecas incluidos en el respaldo integral. No copia `.venv`, salidas de entregas ni borradores del navegador. Descarga un borrador pendiente antes de cambiar de instalación u origen del navegador. Abre tus proyectos, verifica las imágenes y el historial y conserva también las entregas que necesites antes de retirar la carpeta anterior.
 
-Como alternativa, crea **Respaldo integral** con la versión anterior y restáuralo en la instalación nueva vacía. Si un proyecto antiguo solo conserva su revisión previa en `engagement.yaml.bak`, sin historial, el exportador de 0.21.2 omite esa copia. Conserva el directorio original y usa el traslado de 0.26.0 para incorporar esa recuperación heredada. Un ZIP antiguo que ya omitió la copia no permite reconstruirla.
+Como alternativa, crea **Respaldo integral** con la versión anterior y restáuralo en la instalación nueva vacía. Si un proyecto antiguo solo conserva su revisión previa en `engagement.yaml.bak`, sin historial, el exportador de 0.21.2 omite esa copia. Conserva el directorio original y usa el traslado de 0.27.0 para incorporar esa recuperación heredada. Un ZIP antiguo que ya omitió la copia no permite reconstruirla.
 
 Los proyectos anteriores siguen siendo legibles. Los respaldos que contengan el directorio de anexos requieren 0.21.0 o posterior; una versión anterior puede rechazarlos. Los registros de anexos con el campo `required` necesitan 0.21.1 o posterior, aunque su valor sea falso. Desde 0.21.2, el contador `finding_sequence` impide reutilizar números eliminados; no modifica los IDs existentes. Versiones anteriores no conservan esta garantía. Si una edición antigua ya cambió el significado de una referencia, esta versión no puede inferir el destino original: revisa las referencias heredadas.
 
@@ -154,3 +154,27 @@ El editor es de un solo proceso y está limitado a `127.0.0.1`. No lo expongas c
 El repositorio incluye las fuentes, pruebas, demo, diseños y documentación de uso.
 
 El control nativo de Microsoft Word es optativo: `scripts/verify-microsoft-word.ps1` y el workflow manual `word-desktop.yml` requieren Windows con Word instalado. Trabajan sobre copias y no modifican los originales.
+
+## Importar resultados de escáneres
+
+En la importación existente puedes elegir CSV, Burp, Nuclei (JSONL) o Nmap (XML). Primero se presenta una vista previa; selecciona sólo los elementos pertinentes antes de incorporar. Nuclei conserva el origen y entra sin verificación técnica: importar no confirma una vulnerabilidad. Nmap incorpora activos, servicios y cobertura pendiente; un puerto abierto no crea un hallazgo. La incorporación comprueba la revisión del proyecto, conserva la procedencia y evita duplicados. Los archivos se leen localmente; no se ejecutan comandos ni se contactan los objetivos importados. Se admiten hasta 4 MiB, 500 filas o hosts y 10.000 puertos. Nmap omite scripts NSE, OS y traceroute; un escaneo sin cierre satisfactorio registrado se identifica como parcial.
+
+## OCR opcional de capturas
+
+En el Inspector de publicación, solicita OCR para una imagen concreta. Requiere Tesseract local con el idioma `eng`; no descarga motores ni envía imágenes a un servicio. Acepta imágenes estáticas de hasta 12 MiB y 12 megapíxeles. Señala categorías y regiones de posibles datos sensibles sin devolver el texto reconocido. Una ausencia de alertas no demuestra que la imagen sea segura: revisa la captura y aplica manualmente una copia censurada cuando proceda. La imagen original no se modifica. Los errores, límites o motor ausente quedan visibles; no se presentan como una revisión completada.
+
+## Respaldos privados con contraseña
+
+Instala la dependencia opcional en el entorno del proyecto:
+
+```bash
+.venv/bin/python -m pip install -e '.[privacy]' -c requirements-audited.txt
+```
+
+En **Respaldo integral**, indica y confirma una contraseña de 12 a 256 caracteres y elige **Descargar respaldo cifrado**. El `.rgbackup` contiene el espacio privado completo; no es una entrega para un cliente. AES-256-GCM autentica el archivo y scrypt deriva su clave con parámetros fijos. Conserva la contraseña por separado: report-gen no puede recuperarla. Esta opción protege el archivo descargado, no cifra los datos en disco ni los borradores del navegador. El ZIP privado sin cifrar continúa disponible y está identificado como tal.
+
+Para restaurar, selecciona el `.rgbackup` y su contraseña en una instalación vacía. Se autentica antes de validar y activar su contenido mediante el restaurador existente. Contraseña incorrecta, archivo alterado o destino ocupado no autorizan una mezcla de proyectos ni una restauración parcial.
+
+## Materiales para las comprobaciones externas
+
+`python scripts/prepare-external-acceptance.py --output out/external-acceptance` prepara cuatro DOCX ficticios y un CSV vacío de cinco participantes y tres tareas. El manifiesto declara Word y las sesiones humanas como `not_run`. El workflow manual de Word usa ese corpus y necesita un equipo Windows con Word de escritorio instalado. Consulta el protocolo y el comando de revisión en CONTRIBUTING.md. Generar estos materiales o ejecutar pruebas automáticas no equivale a haber observado personas ni a validar Word nativo.

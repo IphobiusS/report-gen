@@ -496,7 +496,7 @@ async function loadProject(slug) {
     if (S.previewMode === "live") refreshLivePreview();
     else renderPdf(false);
   } catch (_) { $("#projectSelect").value = S.slug || ""; }
-  finally { busyProject(false); updateDeleteBtn(); if(projectStore.recovery?.length)StudioUI.recovery(); }
+  finally { busyProject(false); updateDeleteBtn(); StudioUI.recovery(); }
 }
 
 // ---- sidebar ---------------------------------------------------------------

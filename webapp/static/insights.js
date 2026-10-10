@@ -8,8 +8,29 @@ const InsightsUI = (() => {
     visual: ['Revisión visual', 'Visual review'], editorial: ['Ayuda editorial', 'Editorial assistance']
   };
   let generation = 0, state = null, currentSlug = null, publicationKey=null,publicationRequest=null;
-  const drafts=new Map(),assistantProposals=new Map();
-  function draft(key,initial){const id=S.slug+'|'+key;if(!drafts.has(id)){Object.defineProperty(initial,'_draftkey',{value:id,enumerable:false});drafts.set(id,initial);}return drafts.get(id);}
+  const drafts=new Map(),assistantProposals=new Map(),pendingSignatures=new Map();let restoring=null;
+  function draft(key,initial){const id=S.slug+'|'+key;if(!drafts.has(id)){Object.defineProperty(initial,'_draftkey',{value:id,enumerable:false});drafts.set(id,initial);if(typeof PendingUI!=='undefined')pendingSignatures.set(id,JSON.stringify(PendingUI.pack(initial)));}return drafts.get(id);}
+  function pendingLabel(key,form){const labels=key.startsWith('claim-')?['Afirmación pendiente','Pending claim']:key.startsWith('risk-')?['Decisión de negocio pendiente','Pending business decision']:key.startsWith('comment-')?['Observación pendiente','Pending comment']:key.startsWith('resolve-')?['Resolución pendiente','Pending resolution']:key==='review-new'?['Revisión editorial pendiente','Pending editorial review']:['Entrega por destinatario pendiente','Pending audience delivery'];const finding=(S.data.findings||[]).find(row=>row.uid===form.finding_uid);return w(...labels)+(finding?' · '+finding.id+' · '+finding.title:'');}
+  function protectForms(){
+    if(typeof PendingUI==='undefined'||!S.slug)return;
+    for(const [id,form]of drafts){if(!id.startsWith(S.slug+'|'))continue;const signature=JSON.stringify(PendingUI.pack(form));if(pendingSignatures.get(id)===signature)continue;pendingSignatures.set(id,signature);
+      const key=id.slice(S.slug.length+1),handle=PendingUI.track('insights:'+key,pendingLabel(key,form),()=>({data:form}));PendingUI.changed(handle);showPending(handle);
+    }
+  }
+  function showPending(handle){
+    const target=$('[data-insights-content]')||$('[data-finding-panel="decisions"]')||$('#editor');if(!target||target.querySelector('[data-pending-status="'+handle.key+'"]'))return;
+    const block=h('div',{class:'card'},h('strong',{},handle.label),PendingUI.status(handle),button('Descartar formulario pendiente','Discard pending form',async()=>{if(!confirm(w('¿Descartar este formulario? Los datos guardados se conservan.','Discard this form? Saved data is retained.')))return;if(await PendingUI.clear(handle)){drafts.delete(handle.slug+'|'+handle.key.slice(9));pendingSignatures.delete(handle.slug+'|'+handle.key.slice(9));renderMain();}},'discard-pending'));target.append(block);
+  }
+  function restorePending(row){
+    if(row.slug!==S.slug)throw Error(w('Abre el proyecto original.','Open the original project.'));
+    const key=row.key.slice(9),value=PendingUI.unpack(row.data);if(!/^(claim-|risk-|comment-new$|resolve-|review-new$|audience-new$)/.test(key))throw Error(w('Formulario no compatible.','Unsupported form.'));
+    // A recovered configuration is never a fresh consent to publish or send data.
+    if(value.form){value.form.review_confirmed=false;value.form.publish_consent=false;}
+    drafts.delete(S.slug+'|'+key);const form=draft(key,value),handle=PendingUI.track(row.key,row.label,()=>({data:form}),{origin:row});pendingSignatures.set(S.slug+'|'+key,JSON.stringify(PendingUI.pack(form)));PendingUI.changed(handle);
+    restoring={slug:S.slug,key,form};open(key.startsWith('claim-')?'claims':key.startsWith('risk-')?'risk':key==='audience-new'?'audiences':'review');
+  }
+  document.addEventListener('input',event=>{if(event.target.matches('[data-insights-field]'))protectForms();});
+  document.addEventListener('change',event=>{if(event.target.matches('[data-insights-field],[data-insights-check]'))protectForms();});
   const url = path => '/api/projects/' + encodeURIComponent(S.slug) + path;
   const clone = value => JSON.parse(JSON.stringify(value));
   function notice(es, en) { return h('p', {class: 'insights-note'}, w(es, en)); }
@@ -82,12 +103,12 @@ const InsightsUI = (() => {
     } finally { busyProject(false); }
   }
   async function mutate(body,form,context = null) {
-    const slug = S.slug;let locked=!!context;
+    const slug = S.slug, pending=typeof PendingUI!=='undefined'&&form?PendingUI.active.get(slug+'|insights:'+form._draftkey?.slice(slug.length+1)):null, pendingRevision=pending?.revision;let locked=!!context,cleanupWarning=null;
     if(context)busyProject(true);
     try {
       const response = await request('/insights', body);
       await response.json();
-      if(form?._draftkey)drafts.delete(form._draftkey);
+      if(form?._draftkey){const cleanup=pending?await PendingUI.committed(pending,pendingRevision):{finished:true};cleanupWarning=cleanup.warning;if(cleanup.finished)drafts.delete(form._draftkey);}
       if (S.slug !== slug) return;
       await projectStore.load(slug);
       if(S.slug!==slug)return;
@@ -101,7 +122,7 @@ const InsightsUI = (() => {
       if(locked){busyProject(false);locked=false;}
       if(!context)reveal($('#insightsTitle'));
       else if(selectedUid===context.uid)reveal($('#editor [data-finding-tab="decisions"]') || $('#editor .finding-context-title strong'));
-      toast(w('Decisión guardada en esta revisión.', 'Decision saved in this revision.'));
+      toast(cleanupWarning?w('Decisión guardada. No se pudo eliminar su copia local; revísala en Datos privados guardados.','Decision saved. Its local copy could not be deleted; review Stored private data.'):w('Decisión guardada en esta revisión.', 'Decision saved in this revision.'));
     } finally {
       if(locked)busyProject(false);
     }
@@ -192,7 +213,7 @@ const InsightsUI = (() => {
     return row;
   }
   function claimForm(form, context = null) {
-    form=draft('claim-'+(form.uid||(context?'new-'+context.uid:'new')),form);
+    if(restoring?.slug===S.slug&&restoring.key.startsWith('claim-')){form=restoring.form;restoring=null;}else form=draft('claim-'+(form.uid||(context?'new-'+context.uid:'new')),form);
     return h('div', {class: 'insights-form'}, findingFormContext(form, context),
       choose('Tipo de afirmación', 'Claim type', form, 'kind', [['observed','Observación','Observation'],['inference','Inferencia','Inference'],['hypothesis','Hipótesis','Hypothesis']]),
       field('Afirmación', 'Claim', form, 'statement', {rows: 3}), field('Qué demuestra', 'What it demonstrates', form, 'demonstrates', {rows: 3}),
@@ -214,7 +235,7 @@ const InsightsUI = (() => {
       actions(button('Editar decisión', 'Edit decision', () => { editor.replaceChildren(riskForm(clone(item),context)); reveal(editor.querySelector('input,textarea,select')); }, 'edit-risk'), button('Eliminar decisión', 'Remove decision', () => mutate({action: 'delete_risk', uid: item.uid},null,context), 'delete-risk')));
   }
   function riskForm(form, context = null) {
-    form=draft('risk-'+(form.uid||(context?'new-'+context.uid:'new')),form);
+    if(restoring?.slug===S.slug&&restoring.key.startsWith('risk-')){form=restoring.form;restoring=null;}else form=draft('risk-'+(form.uid||(context?'new-'+context.uid:'new')),form);
     return h('div', {class: 'insights-form'}, findingFormContext(form, context), field('Servicio afectado', 'Affected service', form, 'service'),
       ...Object.entries(riskNames).map(([key, labels]) => field(...labels, form, key, {rows: ['consequence','rationale','assumptions'].includes(key) ? 3 : null})),
       choose('Prioridad acordada', 'Agreed priority', form, 'priority', [['unassigned','Sin asignar','Unassigned'],['P1','P1','P1'],['P2','P2','P2'],['P3','P3','P3']]),
@@ -439,7 +460,7 @@ const InsightsUI = (() => {
       if(!etag||responseTag!==etag||projectStore.etag!==etag)throw Error(w('La revisión guardada cambió o no coincide con el editor. Conserva tu borrador y recarga el proyecto antes de consultar las decisiones.','The saved revision changed or differs from the editor. Keep your draft and reload the project before reading decisions.'));
       status.remove(); state=data; currentSlug=slug;
       box.dataset.findingDecisionsReady='true';
-      box.append(notice('Este panel lee las decisiones guardadas. Abrirlo o cambiar de pestaña no guarda el informe ni registra decisiones. Los formularios se conservan por hallazgo en esta sesión hasta usar su botón de guardar.','This panel reads saved decisions. Opening it or switching tabs does not save the report or record decisions. Form drafts stay with each finding in this session until you use their save button.'));
+      box.append(notice('Este panel lee las decisiones guardadas. Abrirlo o cambiar de pestaña no guarda el informe ni registra decisiones. Los formularios editados se protegen localmente cuando su indicador lo confirma, hasta usar su botón de guardar.','This panel reads saved decisions. Opening it or switching tabs does not save the report or record decisions. Edited forms are protected locally when their indicator confirms it, until you use their save button.'));
       if(projectStore.dirty)box.append(notice('El editor tiene cambios sin guardar. Las decisiones mostradas corresponden a la revisión guardada; guardar una decisión guarda primero el borrador del informe.','The editor has unsaved changes. The displayed decisions belong to the saved revision; saving a decision first saves the report draft.'));
       box.append(h('details',{},h('summary',{},w('Identidad de la revisión leída','Identity of the reviewed revision')),h('p',{class:'insights-hash'},'SHA-256: '+data.digest)));
       if(!(data.map?.findings||[]).some(item=>item.uid===uid)){
@@ -456,6 +477,7 @@ const InsightsUI = (() => {
       if(!selectedRisks.length)risksList.append(notice('Sin decisiones de negocio registradas para este hallazgo. La prioridad, la tolerancia y la verificación técnica no se deducen de abrir este panel.','No business decisions are recorded for this finding. Priority, tolerance and technical verification are not inferred by opening this panel.'));
       paged(risksList,selectedRisks,item=>riskRow(item,riskEditor,context));
       box.append(notice('Una afirmación distingue observación, inferencia e hipótesis. La prioridad de negocio es una decisión documentada, separada de la severidad técnica y CVSS.','A claim distinguishes observation, inference and hypothesis. Business priority is a documented decision, separate from technical severity and CVSS.'),claimsList,claimEditor,risksList,riskEditor);
+      if(typeof PendingUI!=='undefined')for(const handle of PendingUI.active.values())if(handle.slug===slug&&handle.revision&&handle.key.startsWith('insights:')&&handle.read().data.finding_uid===uid)showPending(handle);
     } catch(error) {
       if(!active())return;
       status.remove();box.append(h('p',{role:'alert'},error.message),button('Reintentar','Retry',()=>{box.replaceChildren();return renderFinding(box,uid);},'finding-decisions-retry'));
@@ -464,7 +486,7 @@ const InsightsUI = (() => {
   function render(el) {
     const tab=names[S.sel.idx]?S.sel.idx:'claims',token=++generation,slug=S.slug;
     const shell=h('section',{class:'insights-shell','data-insights-page':tab,'aria-labelledby':'insightsTitle'});
-    shell.append(h('header',{},h('p',{class:'insights-eyebrow'},w('EVIDENCIA · DECISIÓN · ENTREGA','EVIDENCE · DECISION · DELIVERY')),h('h1',{id:'insightsTitle',tabindex:'-1'},w('Evidencia y decisiones','Evidence and decisions')),notice('Conecta evidencia, conclusiones y prioridades. Revisa el contenido y prepara una entrega para cada lector.', 'Connect evidence, conclusions and priorities. Review content and prepare a delivery for each reader.')),h('details',{},h('summary',{},w('Cómo se guardan estas decisiones','How these decisions are saved')),notice('Abrir estas pantallas no cambia el proyecto. Los formularios se conservan en esta pestaña hasta pulsar su botón de guardar; no se incorporan al informe mientras los editas.','Opening these screens does not change the project. Form drafts stay in this tab until you press their save button; editing them does not add them to the report.')));
+    shell.append(h('header',{},h('p',{class:'insights-eyebrow'},w('EVIDENCIA · DECISIÓN · ENTREGA','EVIDENCE · DECISION · DELIVERY')),h('h1',{id:'insightsTitle',tabindex:'-1'},w('Evidencia y decisiones','Evidence and decisions')),notice('Conecta evidencia, conclusiones y prioridades. Revisa el contenido y prepara una entrega para cada lector.', 'Connect evidence, conclusions and priorities. Review content and prepare a delivery for each reader.')),h('details',{},h('summary',{},w('Cómo se guardan estas decisiones','How these decisions are saved')),notice('Abrir estas pantallas no cambia el proyecto. Los formularios editados se protegen en este navegador durante 30 días, sin cifrar, cuando su indicador confirma el guardado local. No se incorporan al informe hasta usar su botón de guardar.','Opening these screens does not change the project. Edited forms are protected in this browser for 30 days, unencrypted, when their indicator confirms local storage. They enter the report only when you press their save button.')));
     const nav=h('nav',{class:'insights-nav','aria-label':w('Herramientas de revisión','Review tools')});
     for(const [key,labels]of Object.entries(names)){const b=h('button',{type:'button','data-insights-tab':key,'aria-current':tab===key?'page':null},w(...labels));b.addEventListener('click',()=>open(key));nav.append(b);}
     const box=h('div',{'data-insights-content':tab}),status=h('p',{class:'insights-status',role:'status'},w('Leyendo la revisión guardada…','Reading the saved revision…'));box.append(status);shell.append(nav,box);el.append(shell);
@@ -474,6 +496,7 @@ const InsightsUI = (() => {
       if(projectStore.dirty)box.append(notice('Hay cambios en el borrador. Este mapa muestra lo guardado; una acción explícita guarda antes de continuar.', 'There are draft changes. This map shows saved data; an explicit action saves before continuing.'));
       box.append(h('details',{},h('summary',{},w('Identidad de la revisión leída','Identity of the reviewed revision')),h('p',{class:'insights-hash'},'SHA-256: '+data.digest)));
       if(tab==='claims')claims(box);else if(tab==='risk')risk(box);else if(tab==='review')review(box);else if(tab==='audiences')audiences(box);else if(tab==='visual')await visual(box,slug);else await editorial(box,slug);
+      if(typeof PendingUI!=='undefined')for(const handle of PendingUI.active.values())if(handle.slug===slug&&handle.revision&&(tab==='claims'?handle.key.startsWith('insights:claim-'):tab==='risk'?handle.key.startsWith('insights:risk-'):tab==='review'?/insights:(comment-|resolve-|review-)/.test(handle.key):tab==='audiences'&&handle.key==='insights:audience-new'))showPending(handle);
     }).catch(error=>{if(box.isConnected&&token===generation){status.remove();box.append(h('p',{role:'alert'},error.message),button('Reintentar','Retry',()=>renderMain(),'retry'));}});
   }
   function entry() {
@@ -492,6 +515,6 @@ const InsightsUI = (() => {
     if(active&&$('#workspaceContext'))$('#workspaceContext').textContent=w(...(names[S.sel.idx]||names.claims));
     if(currentSlug!==S.slug)state=null;
   }
-  function resetProject(slug){for(const key of drafts.keys())if(key.startsWith(slug+'|'))drafts.delete(key);assistantProposals.delete(slug);if(currentSlug===slug){state=null;currentSlug=null;generation++;}publicationKey=null;publicationRequest=null;}
-  return{bind,update,render,renderFinding,entry,open,projectDeleted:resetProject,projectCreated:resetProject};
+  function resetProject(slug){if(restoring?.slug===slug)restoring=null;if(typeof PendingUI!=='undefined')PendingUI.reset(slug);for(const key of pendingSignatures.keys())if(key.startsWith(slug+'|'))pendingSignatures.delete(key);for(const key of drafts.keys())if(key.startsWith(slug+'|'))drafts.delete(key);assistantProposals.delete(slug);if(currentSlug===slug){state=null;currentSlug=null;generation++;}publicationKey=null;publicationRequest=null;}
+  return{bind,update,render,renderFinding,entry,open,restorePending,projectDeleted:resetProject,projectCreated:resetProject};
 })();

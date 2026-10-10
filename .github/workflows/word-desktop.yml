@@ -8,16 +8,18 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7.0.1
-      - name: Generate the synthetic acceptance DOCX
+      - name: Prepare synthetic long tables, images, fields and findings
         shell: pwsh
         run: |
           python -m pip install -e '.[dev]' -c requirements-audited.txt
-          python export.py examples/quality-lab/engagement.yaml -f docx -o out/word-input/quality.docx
+          python scripts/prepare-external-acceptance.py --output out/external-acceptance
       - name: Update fields, save a copy and verify internal links
         shell: pwsh
-        run: ./scripts/verify-microsoft-word.ps1 -InputDirectory out/word-input -OutputDirectory out/word-verified
+        run: ./scripts/verify-microsoft-word.ps1 -InputDirectory out/external-acceptance/word-input -OutputDirectory out/word-verified
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: word-native-acceptance
-          path: out/word-verified/
+          path: |
+            out/word-verified/
+            out/external-acceptance/acceptance-preparation.json

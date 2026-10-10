@@ -1,4 +1,4 @@
-# report-gen 0.26.0 user guide
+# report-gen 0.27.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -67,7 +67,7 @@ The sidebar groups capture/coverage and history/follow-up tools in expandable se
 
 Annexes are excluded until individually reviewed and selected. Only the combined delivery includes them. They are copied unchanged, without redaction or metadata removal; upload reviewed copies. Backups containing attachments require 0.21.0 or newer. Annex records with `required` need 0.21.1 or newer, including when false. Required annexes block delivery until reviewed, included and intact; acknowledging warnings does not bypass this.
 
-The annex scanner searches the first MiB of UTF-8 text or counts image metadata. It does not perform OCR or inspect PDF contents. Results include scope and limitations, never matched secret values.
+The annex scanner searches the first MiB of UTF-8 text or counts image metadata. That annex scan does not perform OCR or inspect PDF contents. The Publication inspector offers a separate optional local OCR action for published images. Results include scope and limitations, never matched secret values.
 
 Structured export checks compare paragraphs, literal code, metadata, native tables, links and evidence placement within their finding. Only code line endings are normalized. Missing internal destinations block publication. Static HTML visibility checks do not certify geometry, occlusion, conditional CSS or dynamic states. PDF checks text presence, image counts and index destinations; literal whitespace, block association and layout require manual review. Markdown intentionally omits the severity chart and its scope caption; that difference is recorded.
 
@@ -79,7 +79,7 @@ Native Microsoft Word validation requires a licensed Windows desktop installatio
 
 Projects live in `webapp/projects/`, personal libraries in `webapp/library/`. **Workspace backup** includes all projects, originals and libraries. Treat it as private data.
 
-Pending drafts are stored in this browser profile's IndexedDB for 30 days on the same origin (host and port). The interface only says recoverable after the write completes. Drafts are not encrypted by the application. They recover project data, not image files or auxiliary forms that have not been added to the project. Private browsing, clearing browser storage or switching profile/port can make drafts inaccessible. **More → Download private draft** creates an emergency copy. Recovery requires the matching project and explicit conflict resolution.
+Pending drafts are stored in this browser profile's IndexedDB for 30 days on the same origin (host and port). The interface only says recoverable after the write completes. Drafts are not encrypted by the application. They recover project data. A separate journal protects pending captures and Evidence and decisions forms, with explicit form recovery: it does not attach evidence or approve publication automatically. Limits are 16 MiB per image, 1 MiB per form, 64 MiB in total and 30 days. Storage failures are shown as tab-only work. Publication consent must be given again after recovery. This protects Quick capture and Evidence and decisions forms, not every auxiliary dialog. Pending copies are excluded from workspace backups and emergency project JSON: incorporate and save them before moving installation or browser origin. Private browsing, clearing browser storage or switching profile/port can make drafts inaccessible. **More → Download private draft** creates an emergency copy. Recovery requires the matching project and explicit conflict resolution.
 
 **Stored private data** inventories current files, originals, history and removed annexes. Cleanup requires category selection and the exact project ID. Current data is retained; cleaning history creates one new recovery snapshot. Browser drafts have separate download/delete controls. External backups and downloads cannot be deleted here.
 
@@ -89,7 +89,7 @@ Portable HTML contains the entire report. Executive view and filters are present
 
 ## Upgrade from an earlier version
 
-Extract or clone 0.26.0 into a new directory. Close both editors before transferring data, then run from the new directory:
+Extract or clone 0.27.0 into a new directory. Close both editors before transferring data, then run from the new directory:
 
 ```bash
 python3 start.py --ready --upgrade-from /path/to/previous-report-gen --lang en
@@ -101,7 +101,7 @@ The private backup is kept at `~/report-gen-backups/upgrade-*/workspace.zip`, ou
 
 Migration retains projects, evidence, history and libraries covered by workspace backup. It does not copy `.venv`, delivery outputs or browser drafts. Download a pending draft before changing installation or browser origin. Open your projects, verify images and history and retain any delivery files you need before retiring the previous directory.
 
-Alternatively, create **Workspace backup** in the previous version and restore it into the empty new installation. If an old project has its only preceding revision in `engagement.yaml.bak`, without snapshot history, the 0.21.2 exporter omits that copy. Keep the original directory and use the 0.26.0 migration to include this legacy recovery state. An older ZIP that already omitted the copy cannot reconstruct it. Existing projects remain readable. Backups containing annexes require 0.21.0 or later.
+Alternatively, create **Workspace backup** in the previous version and restore it into the empty new installation. If an old project has its only preceding revision in `engagement.yaml.bak`, without snapshot history, the 0.21.2 exporter omits that copy. Keep the original directory and use the 0.27.0 migration to include this legacy recovery state. An older ZIP that already omitted the copy cannot reconstruct it. Existing projects remain readable. Backups containing annexes require 0.21.0 or later.
 
 Existing IDs are retained. Since 0.21.2, the `finding_sequence` counter prevents deleted IDs from being reused; older versions do not preserve this guarantee. References already misdirected by older edits cannot be repaired automatically without knowing their original intent.
 
@@ -132,3 +132,27 @@ The included `examples/pending-severity/engagement.yaml` fixture contains two fi
 The editor runs in one process on `127.0.0.1`; it is not a multiuser service. Certification profiles are starting points; check current provider requirements before an exam submission. Logos remain their owners' property and imply no affiliation.
 
 The repository includes source, tests, demo, designs and usage documentation.
+
+## Scanner imports
+
+The existing import flow accepts CSV, Burp, Nuclei JSONL and Nmap XML. Review and select items before applying them. Nuclei results remain technically unverified; importing is not confirmation. Nmap adds assets, services and pending coverage, never findings merely because ports are open. Imports preserve provenance, prevent duplicates and check the current project revision. No imported commands are executed or targets contacted. Limits are 4 MiB, 500 rows or hosts and 10,000 ports. Nmap omits NSE scripts, OS and traceroute; a scan lacking a recorded successful finish is identified as partial.
+
+## Optional screenshot OCR
+
+Request OCR for a specific published image from the Publication inspector. It requires local Tesseract with `eng` data; no engine downloads or external image service. Static images are limited to 12 MiB and 12 megapixels. Results contain possible sensitive-data categories and regions, never recognized secret values. No alerts is not proof of safety: review the image and explicitly create a redacted publication copy when needed. Originals are unchanged. Missing engine, errors and limits are reported honestly.
+
+## Password-encrypted private backups
+
+Install the optional dependency inside the project environment:
+
+```bash
+.venv/bin/python -m pip install -e '.[privacy]' -c requirements-audited.txt
+```
+
+In **Workspace backup**, enter and confirm a 12–256-character password, then choose **Download encrypted backup**. The `.rgbackup` contains the complete private workspace, not a client deliverable. AES-256-GCM authenticates the file; scrypt derives its key with fixed parameters. Keep the password separately: report-gen cannot recover it. This encrypts the downloaded backup, not disk projects or browser drafts. The clearly labelled unencrypted ZIP remains available.
+
+Restore the file with its password into an empty installation. Authentication precedes validation and activation by the existing restorer. Wrong passwords, modified files or occupied destinations do not authorize partial restoration or merging.
+
+## External acceptance materials
+
+`python scripts/prepare-external-acceptance.py --output out/external-acceptance` prepares four synthetic DOCX files and a blank five-participant, three-task CSV. Its manifest records native Word and human sessions as `not_run`. The manual Word workflow requires Windows with desktop Word installed. See CONTRIBUTING.md for the observation protocol and native review command. Material preparation and automated checks are not human observations or native Word acceptance.

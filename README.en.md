@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.26.0
+# report-gen 0.27.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -46,11 +46,9 @@ Open **http://127.0.0.1:8080** in your browser. `Ctrl+C` stops the server; `--po
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
-## New in 0.26.0
+## New in 0.27.0
 
-One-command preparation and launch, verified migration from an earlier installation, a more visible first-report journey, and design selection with a recommendation and comparable samples. Specialized options remain available. [Full changes](CHANGELOG.md).
-
-<a id="delivery-checks-and-limits"></a>
+Explicit recovery of pending captures and auxiliary forms, Nuclei and Nmap imports, optional local screenshot OCR, and password-encrypted private backups. Native desktop Word review and five human sessions remain pending; reproducible synthetic materials are provided. [Full changes](CHANGELOG.md).
 
 ## What delivery checks establish
 
@@ -62,13 +60,13 @@ One-command preparation and launch, verified migration from an earlier installat
 
 The editor runs on **`127.0.0.1` in one process**, without accounts or external services for normal editing. After dependency installation, everyday work stays local. Ollama assistance is **optional and explicitly requested**; read which fields it sends and its limitations before enabling it.
 
-Projects live in `webapp/projects/`, personal libraries in `webapp/library/`. **Workspace backup** retains projects, originals and history; it is private material. The application does not encrypt stored data or drafts. [Recovery, backups and privacy](docs/guide.en.md#recovery-and-privacy).
+Projects live in `webapp/projects/`, personal libraries in `webapp/library/`. **Workspace backup** retains projects, originals and history; it is private material. Projects on disk and browser drafts are not encrypted by the application. Install the optional `privacy` extra to download a password-encrypted private backup; it encrypts that file only. [Recovery, backups and privacy](docs/guide.en.md#recovery-and-privacy).
 
 Portable HTML contains the complete report: filters are not access permissions. Possible-secret detectors do not replace human review. Windows compatibility tests do not replace review in desktop Microsoft Word; Word and LibreOffice can paginate differently. Certification profiles imply no affiliation or guarantee of compliance with exam rules.
 
 ## Upgrade from an earlier version
 
-Download **0.26.0 into a new directory**, stop the previous installation and run from the new directory:
+Download **0.27.0 into a new directory**, stop the previous installation and run from the new directory:
 
 ```bash
 python3 start.py --ready --upgrade-from /path/to/previous-report-gen --lang en

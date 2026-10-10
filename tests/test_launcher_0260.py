@@ -235,6 +235,8 @@ def test_missing_optional_pdf_engines_do_not_block_editor(monkeypatch, lang):
 def test_setup_failures_are_actionable_without_traceback(monkeypatch, capsys):
     def failed(*args):
         raise start.subprocess.CalledProcessError(1, 'pip')
+    monkeypatch.setattr(start, '_dependencies', lambda python: False)
+    monkeypatch.setattr(start, '_run_server', lambda *args: pytest.fail('A failed setup must not launch the server'))
     monkeypatch.setattr(start, '_install', failed)
     assert start.main(['--ready', '--lang', 'en']) == 1
     error = capsys.readouterr().err

@@ -405,3 +405,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px
 .annex-error:empty { display:none; }
 .annex-scan p { margin:8px 0; }
 .privacy-dialog input[type=text],.privacy-dialog input:not([type]) { width:100%; }
+
+/* Private backup and inspection stay usable with enlarged text. */
+.workspace-backup-dialog .experience-heading,.studio-dialog .experience-heading,.privacy-dialog .experience-heading{flex-wrap:wrap}
+.workspace-backup-dialog .experience-heading h2,.studio-dialog .experience-heading h2,.privacy-dialog .experience-heading h2{min-width:0;overflow-wrap:anywhere}
+.workspace-backup-dialog .experience-body{overflow-wrap:anywhere}
+.workspace-backup-dialog input{min-width:0;max-width:100%}
+.workspace-backup-dialog .experience-body>.btn{max-width:100%;white-space:normal;overflow-wrap:anywhere;margin:8px 8px 0 0}
+.privacy-ocr{margin-top:16px;overflow-wrap:anywhere}
+.privacy-ocr>.btn{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.studio-dialog .btn,.privacy-dialog .btn{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.studio-dialog .experience-body,.privacy-dialog .experience-body{overflow-wrap:anywhere}

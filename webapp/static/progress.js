@@ -106,12 +106,12 @@ const ProgressUI = (() => {
   async function intake(){
     if(!S.slug||!await doSave())return;
     const slug=S.slug;let etag=projectStore.etag,raw='',bytesBase64='',format='csv',mapping=null,current=null,generation=0,step=1;
-    const {d,body}=dialog(w('Importar CSV o Burp XML','Import CSV or Burp XML'));
-    const steps=h('ol',{class:'import-steps','aria-label':w('Pasos de importación','Import steps')},...[[1,'Archivo','File'],[2,'Columnas','Columns'],[3,'Revisión','Review']].map(([n,es,en])=>h('li',{'data-import-step':n},n+'. '+w(es,en))));
-    const type=h('select',{'aria-label':w('Formato','Format')},h('option',{value:'csv'},'CSV'),h('option',{value:'burp'},'Burp XML'));
-    const file=h('input',{type:'file',accept:'.csv,.xml,text/csv,application/xml','aria-label':w('Archivo UTF-8','UTF-8 file')});
+    const {d,body}=dialog(w('Importar resultados','Import results'));
+    const steps=h('ol',{class:'import-steps','aria-label':w('Pasos de importación','Import steps')},...[[1,'Archivo','File'],[2,'Campos','Fields'],[3,'Revisión','Review']].map(([n,es,en])=>h('li',{'data-import-step':n},n+'. '+w(es,en))));
+    const type=h('select',{'aria-label':w('Formato','Format')},h('option',{value:'csv'},'CSV'),h('option',{value:'burp'},'Burp XML'),h('option',{value:'nuclei'},'Nuclei JSONL'),h('option',{value:'nmap'},'Nmap XML'));
+    const file=h('input',{type:'file',accept:'.csv,.xml,.jsonl,text/csv,application/xml,application/json,application/x-ndjson','aria-label':w('Archivo UTF-8','UTF-8 file')});
     const mapBox=h('div',{class:'intake-mapping'}),rows=h('div',{class:'intake-rows'}),notice=h('p',{role:'status'}),chosen=new Set();
-    const one=h('section',{'data-import-panel':'1'},h('p',{},w('Máximo 4 MiB y 500 filas. Selecciona un archivo UTF-8.','Maximum 4 MiB and 500 rows. Select a UTF-8 file.')),h('label',{},w('Formato','Format'),type),h('label',{},w('Archivo','File'),file));
+    const one=h('section',{'data-import-panel':'1'},h('p',{},w('Máximo 4 MiB y 500 filas o hosts. Selecciona un archivo UTF-8. Nmap importa activos y servicios; Nuclei importa resultados pendientes de revisión.','Maximum 4 MiB and 500 rows or hosts. Select a UTF-8 file. Nmap imports assets and services; Nuclei imports findings awaiting review.')),h('label',{},w('Formato','Format'),type),h('label',{},w('Archivo','File'),file));
     const two=h('section',{'data-import-panel':'2'},h('p',{},w('Comprueba las correspondencias propuestas y sus ejemplos. Los campos opcionales están agrupados.','Check the suggested mappings and their examples. Optional fields are grouped.')),mapBox);
     const three=h('section',{'data-import-panel':'3'},h('p',{},w('Revisa el contenido y la selección. Los duplicados se omiten. Los resultados entran sin verificar; revisa también posibles secretos en mensajes HTTP.','Review content and selection. Duplicates are skipped. Findings arrive unverified; check HTTP messages for possible secrets.')),rows);
     const back=button(w('Anterior','Back'),()=>show(step-1));
@@ -119,9 +119,9 @@ const ProgressUI = (() => {
     const apply=button(w('Importar selección como pendiente','Import selection for review'),async()=>{
       if(!current||!chosen.size)throw Error(w('Selecciona filas válidas.','Select valid rows.'));
       if(S.slug!==slug||projectStore.dirty||projectStore.etag!==etag)throw Error(w('El proyecto cambió; vuelve a abrir la importación.','The project changed; reopen the import.'));
-      busyProject(true);try{const result=await json('/api/projects/'+encodeURIComponent(slug)+'/intake/apply',options({format,text:raw,bytes_base64:bytesBase64,mapping,selected:[...chosen]},etag));S.data=result.data.data;projectStore.data=S.data;projectStore.base=JSON.parse(JSON.stringify(S.data));projectStore.etag=result.etag;projectStore.lastSavedAt=new Date();UndoUI.clear();saveState('saved');d.close();renderSidebar();renderMain();toast(result.data.imported+' '+w('hallazgos pendientes de revisión','findings awaiting review'),'ok');}finally{busyProject(false);}
+      busyProject(true);try{const result=await json('/api/projects/'+encodeURIComponent(slug)+'/intake/apply',options({format,text:raw,bytes_base64:bytesBase64,mapping,selected:[...chosen]},etag));S.data=result.data.data;projectStore.data=S.data;projectStore.base=JSON.parse(JSON.stringify(S.data));projectStore.etag=result.etag;projectStore.lastSavedAt=new Date();UndoUI.clear();saveState('saved');d.close();renderSidebar();renderMain();toast(result.data.imported+' '+(result.data.import_kind==='inventory'?w('observaciones de inventario pendientes de revisión','inventory observations awaiting review'):w('hallazgos pendientes de revisión','findings awaiting review')),'ok');}finally{busyProject(false);}
     },true);
-    function show(n){step=Math.max(1,Math.min(3,n));one.hidden=step!==1;two.hidden=step!==2;three.hidden=step!==3;back.hidden=step===1;next.hidden=step===3;next.textContent=step===2?w('Revisar selección','Review selection'):w('Continuar','Continue');apply.hidden=step!==3;apply.disabled=!current||!chosen.size;steps.querySelectorAll('li').forEach(li=>{if(Number(li.dataset.importStep)===step)li.setAttribute('aria-current','step');else li.removeAttribute('aria-current');});notice.textContent=step===3&&current?current.rows.length+' '+w('filas; ','rows; ')+chosen.size+' '+w('seleccionadas','selected'):'';}
+    function show(n){step=Math.max(1,Math.min(3,n));three.querySelector('p').textContent=format==='nmap'?w('Revisa el alcance y los servicios observados. La selección se incorpora como inventario y cobertura pendiente. Un puerto abierto no confirma una vulnerabilidad.','Review scope and observed services. The selection is added as inventory and pending coverage. An open port does not confirm a vulnerability.'):w('Revisa el contenido y la selección. Los duplicados se omiten. Los resultados entran sin verificar; revisa también posibles secretos en mensajes HTTP.','Review content and selection. Duplicates are skipped. Findings arrive unverified; check HTTP messages for possible secrets.');one.hidden=step!==1;two.hidden=step!==2;three.hidden=step!==3;back.hidden=step===1;next.hidden=step===3;next.textContent=step===2?w('Revisar selección','Review selection'):w('Continuar','Continue');apply.hidden=step!==3;apply.disabled=!current||!chosen.size;steps.querySelectorAll('li').forEach(li=>{if(Number(li.dataset.importStep)===step)li.setAttribute('aria-current','step');else li.removeAttribute('aria-current');});notice.textContent=step===3&&current?current.rows.length+' '+w('filas; ','rows; ')+chosen.size+' '+w('seleccionadas; ','selected; ')+(current.counts?.duplicates||0)+' '+w('coincidencias','matches')+(format==='nmap'?'; '+current.counts.services+' '+w('servicios observados','observed services'):''):'';}
     async function preview(rebuild){
       const run=++generation;current=null;apply.disabled=true;chosen.clear();rows.replaceChildren();notice.textContent=w('Analizando…','Reading…');
       try{if(!raw)return false;const result=await json('/api/projects/'+encodeURIComponent(slug)+'/intake/preview',options({format,text:raw,bytes_base64:bytesBase64,...(mapping?{mapping}:{})},etag));if(!d.isConnected||run!==generation)return false;current=result.data;etag=result.etag;mapping=current.mapping;
@@ -131,11 +131,27 @@ const ProgressUI = (() => {
             const example=h('small',{class:'mapping-example'},w('Ejemplo: ','Example: ')+String(current.rows[0]?.finding[key]||'—').slice(0,160));
             input.addEventListener('change',()=>{generation++;mapping[key]=input.value;current=null;apply.disabled=true;rows.replaceChildren();example.textContent=w('Se comprobará al continuar.','Will be checked when you continue.');});
             (['title','severity','affected','description_md'].includes(key)?mapBox:optional).append(h('label',{},w(...label),input,example));});mapBox.append(advanced);
-        }else mapBox.append(h('p',{},w('Burp XML: campos reconocidos automáticamente. Continúa para revisar cada hallazgo.','Burp XML: fields recognized automatically. Continue to review each finding.')));}
-        for(const row of current.rows){const f=row.finding,blocked=row.existing_duplicate||row.errors.length>0;const checkbox=h('input',{type:'checkbox',checked:(blocked||row.duplicate)?null:'',disabled:blocked?'':null,'data-intake-row':row.index});if(!blocked&&!row.duplicate)chosen.add(row.index);checkbox.addEventListener('change',()=>{if(checkbox.checked)chosen.add(row.index);else chosen.delete(row.index);show(step);});
-          rows.append(h('article',{class:'card'},h('label',{class:'wf-check'},checkbox,f.title||w('Sin título','Untitled')),h('p',{},(f.severity||'?')+' / '+f.affected),row.duplicate?h('p',{},w('Coincidencia: selecciona solo una fila válida.','Match: choose only one valid row.')):null,...row.errors.map(error=>h('p',{class:'wf-error'},error)),h('details',{},h('summary',{},w('Revisar contenido','Review content')),...['description_md','impact_md','remediation_md','cvss_vector','cwe','references'].map(key=>h('section',{},h('h4',{},w(...fields[key])),h('pre',{},Array.isArray(f[key])?f[key].join('\n'):f[key]||'—'))),...(f.walkthrough||[]).map(s=>h('section',{},h('h4',{},s.lead),h('pre',{},s.command))),h('p',{},'ID: '+f.import_source.external_id+' / '+w('Confianza de origen: ','Source confidence: ')+f.import_source.confidence))));}
+        }else mapBox.append(h('p',{},format==='nmap'?w('Nmap: una fila por host, con puertos, estados y versiones observadas. Se reutilizan los activos con la misma IP; cada observación queda en Cobertura como pendiente. No crea vulnerabilidades ni importa scripts NSE.','Nmap: one row per host, with observed ports, states and versions. Assets with the same IP are reused; each observation is added to Coverage as pending. Creates no vulnerabilities and does not import NSE scripts.'):w('Campos reconocidos automáticamente. Revisa cada resultado; una coincidencia del escáner no confirma una vulnerabilidad.','Fields recognized automatically. Review each result; a scanner match does not confirm a vulnerability.')));}
+        for(const row of current.rows){if(row.kind==='inventory'){renderInventory(row);continue;}const f=row.finding,blocked=row.existing_duplicate||row.errors.length>0;const checkbox=h('input',{type:'checkbox',checked:(blocked||row.duplicate)?null:'',disabled:blocked?'':null,'data-intake-row':row.index});if(!blocked&&!row.duplicate)chosen.add(row.index);checkbox.addEventListener('change',()=>{if(checkbox.checked)chosen.add(row.index);else chosen.delete(row.index);show(step);});
+          rows.append(h('article',{class:'card'},h('label',{class:'wf-check'},checkbox,f.title||w('Sin título','Untitled')),h('p',{},(f.severity||'?')+' / '+f.affected),row.duplicate?h('p',{},w('Coincidencia: selecciona solo una fila válida.','Match: choose only one valid row.')):null,...row.errors.map(error=>h('p',{class:'wf-error'},error)),h('details',{},h('summary',{},w('Revisar contenido','Review content')),...['description_md','impact_md','remediation_md','cvss_vector','cwe','references'].map(key=>h('section',{},h('h4',{},w(...fields[key])),h('pre',{},Array.isArray(f[key])?f[key].join('\n'):f[key]||'—'))),...(f.walkthrough||[]).map(s=>h('section',{},h('h4',{},s.lead),h('pre',{},s.command))),h('p',{},'ID: '+f.import_source.external_id+' / '+w('Confianza de origen: ','Source confidence: ')+f.import_source.confidence),h('p',{class:'hash'},'SHA-256: '+f.import_source.file_sha256))));}
         notice.textContent='';apply.disabled=!chosen.size;return true;
       }catch(e){if(run===generation&&d.isConnected){notice.textContent=e.message;current=null;apply.disabled=true;}return false;}
+    }
+    function renderInventory(row){
+      const item=row.inventory,source=item.import_source,blocked=row.existing_duplicate||row.errors.length>0;
+      const checkbox=h('input',{type:'checkbox',checked:(blocked||row.duplicate)?null:'',disabled:blocked?'':null,'data-intake-row':row.index});
+      if(!blocked&&!row.duplicate)chosen.add(row.index);
+      checkbox.addEventListener('change',()=>{if(checkbox.checked)chosen.add(row.index);else chosen.delete(row.index);show(step);});
+      const contents=h('details',{},h('summary',{},w('Revisar servicios y origen','Review services and provenance')),
+        h('p',{},w('Estado del host: ','Host state: ')+item.state),h('p',{},item.hostnames.join(', ')||w('Sin nombre de host','No hostname')),
+        h('pre',{},item.services.map(s=>s.port+'/'+s.protocol+' · '+s.state+' · '+[s.tunnel,s.name,s.product,s.version,s.extrainfo].filter(Boolean).join(' ')).join('\n')||w('Sin puertos individuales en el archivo','No individual ports in this file')),
+        ...item.extraports.map(p=>h('p',{},'Extraports: '+p.state+' ('+p.count+')')),
+        h('p',{},'Nmap '+source.scanner_version+' / '+source.observed_at),h('p',{class:'hash'},'SHA-256: '+source.file_sha256));
+      if(!item.scan_complete)contents.append(h('p',{class:'wf-hint'},w('El archivo no acredita que el escaneo terminara correctamente. La cobertura puede ser parcial.','The file does not record successful scan completion. Coverage may be partial.')));
+      if(source.omitted_scripts)contents.append(h('p',{},source.omitted_scripts+' '+w('scripts NSE omitidos','NSE scripts omitted')));
+      rows.append(h('article',{class:'card'},h('label',{class:'wf-check'},checkbox,item.target),
+        h('p',{},item.services.length+' '+w('servicios; ','services; ')+(row.existing_asset?w('activo existente','existing asset'):w('activo nuevo','new asset'))),
+        row.duplicate?h('p',{},w('Observación ya importada o repetida en el archivo. Selecciona solo una.','Observation already imported or repeated in this file. Select only one.')):null,contents));
     }
     type.addEventListener('change',()=>{generation++;format=type.value;mapping=null;current=null;rows.replaceChildren();mapBox.replaceChildren();show(1);});
     file.addEventListener('change',async()=>{const read=++generation;raw='';mapping=null;current=null;rows.replaceChildren();mapBox.replaceChildren();show(1);const selected=file.files[0];if(!selected)return;try{if(selected.size>4*1024*1024)throw Error(w('El archivo supera 4 MiB.','The file exceeds 4 MiB.'));const bytes=await selected.arrayBuffer();if(read!==generation||!d.isConnected)return;raw=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(bytes);bytesBase64=btoa(Array.from(new Uint8Array(bytes),x=>String.fromCharCode(x)).join(''));if(await preview(true))show(2);}catch(e){if(read===generation)notice.textContent=e.message;}});
@@ -149,6 +165,15 @@ const ProgressUI = (() => {
       h('label',{class:'wf-check'},h('input',{type:'checkbox',checked:source.reviewed?'':null,onchange:e=>{source.reviewed=e.target.checked;scheduleSave();}}),
         w('He revisado el contenido importado. Esto no confirma técnicamente el hallazgo.','I reviewed the imported content. This does not technically confirm the finding.'))));
   }
+  function inventoryReview(item){
+    if(item.import_source?.format!=='nmap')return null;
+    const source=item.import_source;
+    return h('details',{class:'import-origin'},h('summary',{},w('Observación Nmap original','Original Nmap observation')),
+      h('p',{},w('Origen conservado. Editar las notas o marcar la prueba como realizada no modifica esta observación.','Preserved source. Editing notes or marking the test performed does not change this observation.')),
+      h('p',{},source.external_id+' / Nmap '+source.scanner_version+' / '+source.observed_at),
+      h('p',{class:'hash'},'SHA-256: '+source.file_sha256),
+      h('pre',{},(item.services||[]).map(s=>s.port+'/'+s.protocol+' · '+s.state+' · '+[s.tunnel,s.name,s.product,s.version,s.extrainfo].filter(Boolean).join(' ')).join('\n')||w('Sin puertos individuales','No individual ports')));
+  }
   function compare(box,slug,from,to){
     const path='/api/projects/'+encodeURIComponent(slug)+'/history/'+encodeURIComponent(from)+'/visual?lang='+S.uiLang+(to?'&to='+encodeURIComponent(to):'');
     box.replaceChildren(h('h3',{},w('Comparación visual','Visual comparison')),
@@ -158,13 +183,13 @@ const ProgressUI = (() => {
     box.append(button(w('Ver comparación interna privada','View private internal comparison'),()=>{if(!confirm(w('Incluye capturas y borradores privados. ¿Abrir para revisión interna?','Includes private captures and drafts. Open for internal review?')))return;const frame=box.querySelector('iframe');frame.src=path+'&internal=1';box.append(button(w('Descargar comparación interna','Download internal comparison'),()=>{if(confirm(w('Este archivo contiene datos privados. ¿Descargar?','This file contains private data. Download?')))h('a',{href:path+'&internal=1&download=1&ack_private=1',download:'comparison-private.html'}).click();}));}));
     box.scrollIntoView?.({block:'start'});
   }
-  function update(){drawSave();paintJobs();const b=$('#jobsBtn');if(b)b.textContent=w('Exportaciones','Exports');const i=$('#intakeBtn');if(i){i.textContent=w('CSV / Burp XML','CSV / Burp XML');i.disabled=!S.slug||projectBusyCount>0;}}
+  function update(){drawSave();paintJobs();const b=$('#jobsBtn');if(b)b.textContent=w('Exportaciones','Exports');const i=$('#intakeBtn');if(i){i.textContent=w('Importar resultados','Import results');i.disabled=!S.slug||projectBusyCount>0;}}
   function bind(){
     const b=button(w('Exportaciones','Exports'),jobs);b.id='jobsBtn';$('#exportMenu .action-menu-body').append(b);
-    const i=button('CSV / Burp XML',intake);i.id='intakeBtn';$('#projectActionsList').append(i);
+    const i=button(w('Importar resultados','Import results'),intake);i.id='intakeBtn';$('#projectActionsList').append(i);
     const indicator=button('',jobs);indicator.id='exportIndicator';$('.workspace-toolbar').append(indicator);document.body.append(h('span',{id:'exportAnnouncement',class:'export-announcement',role:'status','aria-live':'polite'}));
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&jobsDialog){e.preventDefault();closeJobs();}});
     document.addEventListener('focusin',e=>{if(jobsDialog&&!jobsDialog.contains(e.target)&&e.target!==indicator)closeJobs(false);});pollJobs();update();
   }
-  return {bind,update,saveState,enqueue,jobs,intake,compare,importReview};
+  return {bind,update,saveState,enqueue,jobs,intake,compare,importReview,inventoryReview};
 })();

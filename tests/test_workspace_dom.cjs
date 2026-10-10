@@ -67,7 +67,7 @@ let dom;
   doc.querySelector('#newProjectBtn').click();check('Standard creation defaults to English',doc.querySelector('#mLang').value==='corporativo-en');doc.querySelector('#mCancel').click();
   await q.WorkspaceUI.backup(doc.querySelector('#workspaceBackupBtn'));
   const backup=doc.querySelector('dialog[open]');check('Restore limitation is visible',backup.textContent.includes('empty installation'));
-  click('Download workspace',backup);await until(()=>downloads.includes('report-gen-workspace.zip'));
+  click('Download unencrypted ZIP',backup);await until(()=>downloads.includes('report-gen-workspace.zip'));
   check('Workspace archive downloads from the real endpoint',downloads.includes('report-gen-workspace.zip'));
   backup.close();check('Backup restores opener focus',doc.activeElement.id==='workspaceBackupBtn');
   q.select('report');

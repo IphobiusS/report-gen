@@ -56,7 +56,7 @@ jobs:
             pyproject.toml
             requirements-audited.txt
       - name: Install system libraries
-        run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0
+        run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0 tesseract-ocr tesseract-ocr-eng
       - run: python -m pip install -e ".[dev]" -c requirements-audited.txt
       - run: npm ci --ignore-scripts
       - name: Install Chromium
@@ -77,6 +77,9 @@ jobs:
           npm run test:first-use
           npm run test:first-use-browser
           npm run test:design-selection
+          npm run test:pending-recovery
+          npm run test:scanner-imports
+          npm run test:private-tools
       - name: Compare all four formats with a complete synthetic case
         run: python scripts/audit-exports-0210.py --output out/export-acceptance
       - name: Export evidence
@@ -94,6 +97,9 @@ jobs:
           path: |
             out/first-use-0260/
             out/design-selection-0260/
+            out/pending-recovery-0270/
+            out/scanner-imports-0270/
+            out/private-tools-0270/
           if-no-files-found: ignore
 
   pytest:

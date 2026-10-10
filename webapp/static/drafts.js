@@ -18,6 +18,24 @@ class DraftJournal{
   clearOwn(slug){return this.remove(this.id+':'+slug);}
   list(slug){return this.run('readwrite',(store,done)=>{const r=store.getAll();r.onsuccess=()=>{const cut=Date.now()-30*86400000;for(const row of r.result)if(row.updated<cut)store.delete(row.id);done(r.result.filter(x=>x.slug===slug&&x.updated>=cut).sort((a,b)=>b.updated-a.updated));};});}
 }
+// Pending forms have their own store: saving a project must never clear them.
+class PendingJournal {
+  constructor(){this.tail=Promise.resolve();this.id=root.crypto?.randomUUID?.()||String(Date.now())+Math.random();this.db=null;}
+  async open(){
+    if(this.db)return this.db;
+    if(!root.indexedDB)throw Error('Almacenamiento local no disponible / Local storage unavailable');
+    this.db=await new Promise((resolve,reject)=>{const r=root.indexedDB.open('report-gen-pending',1);r.onupgradeneeded=()=>r.result.createObjectStore('pending',{keyPath:'id'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.onblocked=()=>reject(Error('Almacenamiento local bloqueado / Local storage blocked'));});return this.db;
+  }
+  run(fn){const job=this.tail.catch(()=>{}).then(async()=>{const db=await this.open();return new Promise((resolve,reject)=>{const tx=db.transaction('pending','readwrite'),store=tx.objectStore('pending');let value;try{fn(store,x=>value=x,tx);}catch(e){tx.abort();reject(e);}tx.oncomplete=()=>resolve(value);tx.onerror=()=>reject(tx.error||Error('No se pudo guardar / Could not save'));tx.onabort=()=>reject(tx.error||Error('Límite local de 64 MiB / Local 64 MiB limit'));});});this.tail=job;return job;}
+  put(input){
+    const data=clone(input.data),file=input.file||null,bytes=new Blob([JSON.stringify(data)]).size+(file?.size||0);
+    if(new Blob([JSON.stringify(data)]).size>1024*1024||file?.size>16*1024*1024)return Promise.reject(Error('Máximo 1 MiB de texto y 16 MiB por imagen / Maximum 1 MiB text and 16 MiB per image'));
+    const row={...input,data,file,id:this.id+':'+input.slug+':'+input.key,format:'report-gen-pending',version:1,bytes,updated:Date.now(),token:root.crypto?.randomUUID?.()||String(Date.now())+Math.random()};
+    return this.run((store,done,tx)=>{const r=store.getAll();r.onsuccess=()=>{let size=bytes;for(const old of r.result){if(old.updated<Date.now()-30*86400000)store.delete(old.id);else if(old.id!==row.id)size+=old.bytes||0;}if(size>64*1024*1024){tx.abort();return;}store.put(row);done(row);};});
+  }
+  list(slug){return this.run((store,done)=>{const r=store.getAll();r.onsuccess=()=>{const cut=Date.now()-30*86400000;for(const row of r.result)if(row.updated<cut)store.delete(row.id);done(r.result.filter(row=>row.slug===slug&&row.updated>=cut).sort((a,b)=>b.updated-a.updated));};});}
+  removeUnchanged(row){return this.run((store,done)=>{const r=store.get(row.id);r.onsuccess=()=>{const same=!!r.result&&r.result.token===row.token;if(same)store.delete(row.id);done(same);};});}
+}
 function mergeDraft(base,local,remote,choices={}){
   const conflicts=[];
   function walk(a,b,c,path){
@@ -42,6 +60,6 @@ function mergeDraft(base,local,remote,choices={}){
   }
   return {data:clone(walk(base,local,remote,'')),conflicts};
 }
-root.DraftJournal=DraftJournal;root.mergeDraft=mergeDraft;
-if(typeof module!=='undefined')module.exports={DraftJournal,mergeDraft};
+root.DraftJournal=DraftJournal;root.PendingJournal=PendingJournal;root.mergeDraft=mergeDraft;
+if(typeof module!=='undefined')module.exports={DraftJournal,PendingJournal,mergeDraft};
 })(typeof window!=='undefined'?window:globalThis);

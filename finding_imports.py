@@ -1,4 +1,4 @@
-"""Offline, bounded CSV/Burp XML intake with preview, provenance and deduplication."""
+"""Offline, bounded CSV/Burp/Nuclei/Nmap intake with preview, provenance and deduplication."""
 from error_messages import message as backend_message
 from copy import deepcopy
 from hashlib import sha256
@@ -9,6 +9,7 @@ import re
 from lxml import etree, html
 import cvss
 import workflows
+import scanner_imports
 from input_guard import ensure_data_tree
 from project_history import now
 
@@ -128,8 +129,8 @@ def _csv(raw, mapping):
 
 def preview(body, data):
     kind, raw = body.get('format'), body.get('text')
-    if not isinstance(kind, str) or kind not in ('csv', 'burp'):
-        raise ValueError(backend_message('Selecciona CSV o Burp XML'))
+    if not isinstance(kind, str) or kind not in ('csv', 'burp', 'nuclei', 'nmap'):
+        raise ValueError(backend_message('Selecciona CSV, Burp XML, Nuclei JSONL o Nmap XML', en='Select CSV, Burp XML, Nuclei JSONL or Nmap XML'))
     if not isinstance(raw, str) or not raw.strip() or len(raw.encode('utf-8')) > MAX_BYTES:
         raise ValueError(backend_message('El archivo debe contener texto UTF-8 y no superar 4 MiB'))
     original=raw.encode('utf-8')
@@ -141,9 +142,13 @@ def preview(body, data):
         if len(original)>MAX_BYTES: raise ValueError(backend_message('Archivo demasiado grande / File too large'))
     ensure_data_tree({'text': raw})
     raw = raw.lstrip('\ufeff')
-    headers, mapping, rows = _csv(raw, body.get('mapping')) if kind == 'csv' else _burp(raw)
     digest = sha256(original).hexdigest()
     normalized_digest=sha256(raw.encode()).hexdigest()
+    origin = dict(file_sha256=digest, normalized_sha256=normalized_digest, hash_scope='original_bytes' if 'bytes_base64' in body else 'received_utf8_text')
+    if kind == 'nmap':
+        return scanner_imports.nmap_preview(raw, data, origin)
+    headers, mapping, rows = (_csv(raw, body.get('mapping')) if kind == 'csv' else
+                              scanner_imports.nuclei(raw) if kind == 'nuclei' else _burp(raw))
     seen = {fingerprint(f) for f in data.get('findings', [])}
     seen.update(f['import_source']['fingerprint'] for f in data.get('findings', []) if f.get('import_source'))
     project_seen=set(seen)
@@ -170,10 +175,12 @@ def preview(body, data):
         if not errors: seen.add(key)
         f['import_source'] = {'format': kind, 'file_sha256': digest, 'normalized_sha256': normalized_digest, 'hash_scope': 'original_bytes' if 'bytes_base64' in body else 'received_utf8_text', 'fingerprint': key,
                               'external_id': source.get('external_id', ''), 'confidence': source.get('confidence', ''),
-                              'reviewed': False}
+                              'reviewed': False, **source.get('origin', {})}
         ensure_data_tree(f)
         result.append(dict(index=index, finding=f, duplicate=duplicate, existing_duplicate=key in project_seen, errors=errors))
-    return dict(format=kind, sha256=digest, headers=headers, mapping=mapping, rows=result)
+    return dict(format=kind, kind='findings', sha256=digest, headers=headers, mapping=mapping, rows=result,
+                counts=dict(rows=len(result), valid=sum(not r['errors'] for r in result),
+                            duplicates=sum(r['duplicate'] for r in result)))
 
 
 def apply(body, data):
@@ -182,6 +189,8 @@ def apply(body, data):
     if (not isinstance(selected, list) or not selected or any(type(i) is not int for i in selected)
             or len(set(selected)) != len(selected) or any(i < 0 or i >= len(result['rows']) for i in selected)):
         raise ValueError(backend_message('Selecciona filas válidas, sin duplicarlas'))
+    if result.get('kind') == 'inventory':
+        return scanner_imports.nmap_apply(result, data, selected)
     out = deepcopy(data)
     count = 0
     selected_keys=set()

@@ -1,3 +1,11 @@
+# Cambios 0.27.0 (2026-10-10)
+
+- Recuperación explícita de capturas y formularios de Evidencia y decisiones todavía no incorporados, con registro privado separado por proyecto, límites, caducidad y controles de conflicto. No adjunta archivos ni recupera consentimientos de publicación automáticamente.
+- Importación con vista previa de Nuclei JSONL y Nmap XML: resultados sin verificación técnica, activos y servicios con procedencia, deduplicación y guardas de revisión. Un puerto abierto no se convierte en hallazgo.
+- OCR local opcional de imágenes publicadas mediante Tesseract: categorías y regiones sin devolver secretos reconocidos, límites de recursos y estados explícitos; sin red ni modificación automática de originales.
+- Respaldo integral cifrado opcional `.rgbackup`: AES-256-GCM y scrypt de parámetros fijos, autenticación previa a la restauración y conservación del ZIP sin cifrar. No cifra proyectos en disco ni borradores del navegador.
+- Corpus ampliado de cuatro DOCX y registro vacío reproducible para sesiones externas. Word de escritorio y las cinco sesiones con personas permanecen pendientes; no se sustituyen por pruebas automáticas.
+
 # Cambios 0.26.0 (2026-10-10)
 
 - Preparación, diagnóstico y arranque con `start.py --ready`; los motores opcionales ausentes se distinguen de los requisitos del editor. El arranque habitual y `--diagnose` no instalan dependencias.

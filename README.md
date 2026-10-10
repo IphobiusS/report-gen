@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.26.0
+# report-gen 0.27.0
 
 <a id="qué-es"></a>
 
@@ -56,9 +56,9 @@ Abre **http://127.0.0.1:8080** en tu navegador. `Ctrl+C` detiene el servidor; `-
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.26.0
+## Novedades de 0.27.0
 
-Preparación y arranque con un comando, traslado verificado desde una instalación anterior, un recorrido inicial más visible y selección de diseños con recomendación y muestras comparables. Las opciones especializadas siguen disponibles. [Cambios completos](CHANGELOG.md).
+Recuperación explícita de capturas y formularios pendientes, importación de Nuclei y Nmap, revisión OCR local opcional y respaldos privados cifrados. La revisión nativa en Word y las cinco sesiones con participantes siguen pendientes; se incluyen materiales ficticios para realizarlas. [Cambios completos](CHANGELOG.md).
 
 ## Qué comprueba cada entrega
 
@@ -73,7 +73,7 @@ Preparación y arranque con un comando, traslado verificado desde una instalaci�
 
 El editor trabaja en **`127.0.0.1` y un solo proceso**, sin cuentas ni servicios externos para la edición normal. Después de instalar sus dependencias, el trabajo habitual es local. La asistencia con Ollama es **opcional y explícita**; consulta qué campos envía y sus límites antes de activarla.
 
-Los proyectos están en `webapp/projects/` y las bibliotecas personales en `webapp/library/`. **Respaldo integral** conserva proyectos, originales e historial; es material privado. Los datos y borradores no están cifrados por la aplicación. [Recuperación, copias y privacidad](docs/guide.es.md#datos-y-recuperación).
+Los proyectos están en `webapp/projects/` y las bibliotecas personales en `webapp/library/`. **Respaldo integral** conserva proyectos, originales e historial; es material privado. Los proyectos en disco y borradores del navegador no están cifrados por la aplicación. El respaldo descargado puede cifrarse con contraseña instalando la opción `privacy`; no cifra la instalación ni sustituye conservar la contraseña. [Recuperación, copias y privacidad](docs/guide.es.md#datos-y-recuperación).
 
 El HTML portátil contiene el informe completo: sus filtros no son permisos de acceso. Los detectores de posibles secretos no sustituyen la revisión humana. Las pruebas de compatibilidad de Windows no sustituyen la revisión en Microsoft Word de escritorio; Word y LibreOffice pueden paginar de forma distinta. Los perfiles de certificación no implican afiliación ni garantizan cumplir las reglas de un examen.
 
@@ -81,7 +81,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 ## Actualizar desde una versión anterior
 
-Descarga **0.26.0 en una carpeta nueva**, detén la instalación anterior y ejecuta desde la nueva:
+Descarga **0.27.0 en una carpeta nueva**, detén la instalación anterior y ejecuta desde la nueva:
 
 ```bash
 python3 start.py --ready --upgrade-from /ruta/report-gen-anterior

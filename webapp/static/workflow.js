@@ -215,7 +215,7 @@ const WorkflowUI = (() => {
   }
   function coverage(box){
     const rows=S.data.coverage||(S.data.coverage=[]);const targets=[['',w('General','General')],...(S.data.assets||[]).map(a=>[a.uid,a.name+' · '+a.target])];
-    rows.forEach((c,i)=>box.append(card(field(w('Prueba / control','Test / control'),c,'test'),row(selectField(w('Activo','Asset'),c,'asset_uid',targets),selectField(w('Estado','Status'),c,'status',cover)),field(w('Resultado o impedimento','Result or blocker'),c,'notes',{area:true}),button(w('Eliminar prueba','Delete test'),()=>{rows.splice(i,1);scheduleSave();renderMain();}))));
+    rows.forEach((c,i)=>box.append(card(field(w('Prueba / control','Test / control'),c,'test'),row(selectField(w('Activo','Asset'),c,'asset_uid',targets),selectField(w('Estado','Status'),c,'status',cover)),field(w('Resultado o impedimento','Result or blocker'),c,'notes',{area:true}),ProgressUI.inventoryReview(c),button(w('Eliminar prueba','Delete test'),()=>{rows.splice(i,1);scheduleSave();renderMain();}))));
     box.querySelectorAll(':scope > .wf-card').forEach((c,i)=>{c.dataset.workflowIndex=i;});
     box.append(button(w('Añadir prueba','Add test'),()=>{rows.push({uid:uid(),test:'',asset_uid:'',status:'pending',notes:''});scheduleSave();renderMain();},true),card(mdEditor(w('Limitaciones del trabajo','Engagement limitations'),S.data,'limitations_md')));reportOptions(box,['include_coverage']);
   }

@@ -292,7 +292,7 @@ const WorkbenchUI = (() => {
     [w('Ir a evidencias','Go to evidence'),()=>select('workflow','evidence')],
     [w('Comparar entregas','Compare deliveries'),()=>select('workflow','history')],
     [w('Revisar entrega','Review delivery'),()=>select('workflow','review')],
-    [w('Importar CSV o Burp XML','Import CSV or Burp XML'),()=>ProgressUI.intake()],
+    [w('Importar resultados','Import results'),()=>ProgressUI.intake()],
     [w('Continuar informe','Continue report'),resume],
     [w('Abrir bandeja de captura','Open capture inbox'),()=>select('capture')]
   ];}
@@ -311,21 +311,31 @@ const WorkbenchUI = (() => {
       const result=await r.json();S.data=result.data;projectStore.data=S.data;projectStore.base=JSON.parse(JSON.stringify(S.data));projectStore.etag=r.headers.get('ETag');projectStore.lastSavedAt=new Date();UndoUI.clear();ProgressUI.saveState('saved');renderSidebar();renderMain();dirty();if(S.previewMode==='live')refreshLivePreview();return result;
     }finally{busyProject(false);}
   }
-  function capture(){
-    if(!S.slug)return;const slug=S.slug,{d,body}=dialog(w('Captura rápida','Quick capture'));let kind='note',imageFile=null;
-    const title=h('input',{maxlength:300,'data-capture-title':'','aria-label':w('Título','Title')}),note=h('textarea',{rows:2,maxlength:8000,'data-capture-note':''}),text=h('textarea',{rows:8,maxlength:131072,'data-capture-text':'',spellcheck:'false'});
+  function capture(recovered=null){
+    if(recovered?.format!=='report-gen-pending')recovered=null;
+    if(!S.slug)return;const slug=S.slug,enabled=typeof PendingUI!=='undefined',retained=enabled?PendingUI.active.get(slug+'|capture')?.read():null;
+    const initial=recovered?{data:recovered.data,file:recovered.file}:retained||{data:{kind:'note',title:'',note:'',raw_text:''},file:null};
+    const {d,body}=dialog(w('Captura rápida','Quick capture'));let kind=initial.data.kind,imageFile=initial.file;
+    const title=h('input',{value:initial.data.title,maxlength:300,'data-capture-title':'','aria-label':w('Título','Title')}),note=h('textarea',{rows:2,maxlength:8000,'data-capture-note':''}),text=h('textarea',{rows:8,maxlength:131072,'data-capture-text':'',spellcheck:'false'});note.value=initial.data.note;text.value=initial.data.raw_text;
     const imageInput=h('input',{type:'file',accept:'image/png,image/jpeg,image/webp,image/gif','data-capture-image':''});
-    const imageState=h('p',{role:'status'}),imageBox=h('div',{},h('label',{},w('Imagen','Image'),imageInput),imageState),textBox=h('label',{},w('Contenido original','Original content'),text);imageBox.hidden=true;
+    const imageState=h('p',{role:'status'},imageFile?.name||''),imageBox=h('div',{},h('label',{},w('Imagen','Image'),imageInput),imageState),textBox=h('label',{},w('Contenido original','Original content'),text);imageBox.hidden=kind!=='image';textBox.hidden=kind==='image';
     const choose=selector(w('Tipo','Type'),kinds,kind,v=>{kind=v;imageBox.hidden=v!=='image';textBox.hidden=v==='image';});choose.querySelector('select').dataset.captureKind='';
     body.append(h('p',{},w('Se guarda en la bandeja privada. Solo pasa al informe cuando lo incorporas a un hallazgo.','Saved to the private inbox. It enters the report only when you link it to a finding.')),choose,h('label',{},w('Título','Title'),title),textBox,imageBox,h('label',{},w('Contexto / nota','Context / note'),note));
+    const read=()=>({data:{kind,title:title.value,note:note.value,raw_text:text.value},file:imageFile});
+    const captureActions=h('div',{class:'studio-actions'});
+    const pending=enabled?PendingUI.track('capture',w('Captura rápida pendiente','Pending quick capture'),read,{origin:recovered}):null;
+    if(pending){body.append(PendingUI.status(pending));captureActions.append(b(w('Descartar formulario pendiente','Discard pending form'),async()=>{if(!confirm(w('¿Descartar el formulario y su copia local?','Discard the form and its local copy?')))return;if(await PendingUI.clear(pending))d.close();}));if(recovered)PendingUI.changed(pending);}
+    const protect=()=>{if(pending)PendingUI.changed(pending);};
     imageInput.addEventListener('change',()=>{imageFile=imageInput.files[0];imageState.textContent=imageFile?.name||'';});
-    d.addEventListener('paste',e=>{const file=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(file){e.preventDefault();imageFile=file;kind='image';choose.querySelector('select').value='image';imageBox.hidden=false;textBox.hidden=true;imageState.textContent=w('Imagen pegada: ','Pasted image: ')+file.name;if(!title.value)title.value=w('Captura de pantalla','Screenshot');}});
-    body.append(b(w('Guardar en bandeja','Save to inbox'),async()=>{
+    body.addEventListener('input',protect);body.addEventListener('change',protect);
+    d.addEventListener('paste',e=>{const file=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(file){e.preventDefault();imageFile=file;kind='image';choose.querySelector('select').value='image';imageBox.hidden=false;textBox.hidden=true;imageState.textContent=w('Imagen pegada: ','Pasted image: ')+file.name;if(!title.value)title.value=w('Captura de pantalla','Screenshot');protect();}});
+    body.append(captureActions);captureActions.append(b(w('Guardar en bandeja','Save to inbox'),async()=>{
       if(slug!==S.slug)throw Error(w('El proyecto cambió.','The project changed.'));if(!title.value.trim())throw Error(w('Escribe un título.','Enter a title.'));
-      const payload={kind,title:title.value.trim(),note:note.value,raw_text:kind==='image'?'':text.value};
-      busyProject(true);try{if(!await doSave())throw Error(w('No se pudo guardar.','Could not save.'));
-        if(kind==='image'){if(!imageFile)throw Error(w('Selecciona o pega una imagen.','Select or paste an image.'));const upload=await sendImage(imageFile);if(!upload)throw Error(w('No se pudo subir la imagen.','Image upload failed.'));payload.src=upload.src;}
-        await mutate('/captures',payload);d.close();toast(w('Captura guardada en la bandeja.','Capture saved to inbox.'),'ok');
+      const snapshot=read(),revision=pending?.revision,payload={kind:snapshot.data.kind,title:snapshot.data.title.trim(),note:snapshot.data.note,raw_text:snapshot.data.kind==='image'?'':snapshot.data.raw_text};
+      busyProject(true);try{if(!await doSave())throw Error(w('No se pudo guardar.','Could not save.'));if(slug!==S.slug)throw Error(w('El proyecto cambió.','The project changed.'));
+        if(payload.kind==='image'){if(!snapshot.file)throw Error(w('Selecciona o pega una imagen.','Select or paste an image.'));const upload=await sendImage(snapshot.file);if(!upload)throw Error(w('No se pudo subir la imagen.','Image upload failed.'));payload.src=upload.src;}
+        if(slug!==S.slug)throw Error(w('El proyecto cambió.','The project changed.'));await mutate('/captures',payload);
+        const cleanup=pending?await PendingUI.committed(pending,revision):{finished:true};if(cleanup.finished)d.close();toast(cleanup.warning?w('Captura guardada. No se pudo eliminar su copia local; revísala en Datos privados guardados.','Capture saved. Its local copy could not be deleted; review Stored private data.'):w('Captura guardada en la bandeja.','Capture saved to inbox.'),'ok');
       }finally{busyProject(false);}
     },true));title.focus();
   }

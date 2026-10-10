@@ -38,6 +38,10 @@ This protocol has not been executed as part of the release. Recruit five volunte
 
 ### Preparación / Setup
 
+Genera los materiales ficticios y el registro vacío con `python scripts/prepare-external-acceptance.py --output out/external-acceptance`. Incluye cuatro DOCX (Nimbus, laboratorio de calidad, severidades pendientes y tabla larga) y quince filas vacías para P1–P5. El manifiesto conserva `word_native: not_run` y `human_sessions: not_run`: preparar el material no ejecuta estas comprobaciones. Conserva los registros de participantes fuera de Git. Para Word, ejecuta `scripts/verify-microsoft-word.ps1` con `-InputDirectory out/external-acceptance/word-input` y una carpeta de salida vacía; después inspecciona sus PDF.
+
+Run the preparation command above to create four synthetic DOCX inputs and a blank fifteen-row session record. Its manifest explicitly records native Word and human sessions as not run. Keep participant observations outside Git. The Word workflow uses the same corpus; its output still requires visual inspection.
+
 Entrega a cada participante el mismo paquete identificado por versión y commit, el README y una carpeta nueva de trabajo. Registra sistema operativo, navegador y visor de Word/PDF. Comprueba únicamente los requisitos del equipo; deja que la persona siga la instalación documentada. Usa una instalación aislada para probar la restauración. La demo Nimbus está disponible, pero no dirijas al participante hacia ella antes de observar su elección.
 
 Give each participant the same versioned package and README, a fresh working directory, and synthetic assessment material. Record the OS, browser and document viewers. Let them follow the installation instructions and choose their starting point. Use an isolated installation when checking restoration.

@@ -144,6 +144,26 @@ def structure_errors(data):
                 for key, prefix in [('src', 'img/'), ('original', 'originals/')]:
                     if row.get(key) and not safe_member(row[key], prefix): err(path + '.' + key, backend_message('ruta inválida'))
             if group == 'coverage' and (not isinstance(row.get('status', 'pending'), str) or row.get('status', 'pending') not in COVERAGE): err(path, backend_message('estado de cobertura inválido'))
+            if group in ('assets', 'coverage') and 'import_source' in row:
+                source = row['import_source']
+                if not isinstance(source, dict): err(path + '.import_source', backend_message('debe ser un objeto'))
+                else:
+                    if source.get('format') != 'nmap': err(path, backend_message('origen de importación inválido'))
+                    if type(source.get('reviewed')) is not bool: err(path, backend_message('revisión de importación inválida'))
+                    for field in ('external_id', 'confidence', 'imported_at', 'scanner_version', 'observed_at'):
+                        text(source, field, path + '.import_source')
+                    for field in ('file_sha256', 'fingerprint'):
+                        if not isinstance(source.get(field), str) or not re.fullmatch(r'[0-9a-f]{64}', source[field]):
+                            err(path, backend_message('hash de importación inválido'))
+            if group == 'coverage' and 'services' in row:
+                for i, service in enumerate(rows(row, 'services', path)):
+                    sp = path + f'.services[{i}]'
+                    if type(service.get('port')) is not int or not 0 <= service['port'] <= 65535:
+                        err(sp, 'puerto inválido / invalid port')
+                    if service.get('protocol') not in ('tcp', 'udp', 'sctp', 'ip'):
+                        err(sp, 'protocolo inválido / invalid protocol')
+                    for field in ('state', 'name', 'product', 'version', 'extrainfo', 'tunnel', 'method', 'conf'):
+                        text(service, field, sp)
             if group == 'findings':
                 try: _identifier_number(row.get('id'))
                 except ValueError: err(path + '.id', backend_message('número de identificador fuera del rango portátil / Identifier number outside the portable range'))
@@ -153,7 +173,7 @@ def structure_errors(data):
                     else:
                         for field in ('format', 'file_sha256', 'fingerprint', 'external_id', 'confidence', 'imported_at'):
                             text(source, field, path + '.import_source')
-                        if source.get('format') not in ('csv', 'burp'): err(path, backend_message('origen de importación inválido'))
+                        if source.get('format') not in ('csv', 'burp', 'nuclei'): err(path, backend_message('origen de importación inválido'))
                         if type(source.get('reviewed')) is not bool: err(path, backend_message('revisión de importación inválida'))
                         for field in ('file_sha256', 'fingerprint'):
                             if not isinstance(source.get(field), str) or not re.fullmatch(r'[0-9a-f]{64}', source[field]):

@@ -123,7 +123,7 @@ with tempfile.TemporaryDirectory(prefix='workspace-browser-') as temp:
             check('Spanish personal title remains unchanged',catalog['personal'][0]['sections'][0]['title']['es']==spanish)
             page.locator('#workspaceBackupBtn').click()
             dialog=page.get_by_role('dialog',name='Workspace backup',exact=True)
-            with page.expect_download(timeout=120000) as downloading:dialog.get_by_role('button',name='Download workspace',exact=True).click()
+            with page.expect_download(timeout=120000) as downloading:dialog.get_by_role('button',name='Download unencrypted ZIP',exact=True).click()
             archive=out/'workspace-test.zip';downloading.value.save_as(archive)
             with zipfile.ZipFile(archive) as z:check('Complete ZIP contains both projects and libraries',len([n for n in z.namelist() if n.startswith('projects/')])==2 and {'libraries/findings.json','libraries/designs.json'}<=set(z.namelist()))
             dialog.get_by_role('button',name='Close',exact=True).click()
