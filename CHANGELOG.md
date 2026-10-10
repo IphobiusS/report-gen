@@ -1,5 +1,6 @@
 # Cambios 0.28.0 (2026-10-10)
 
+- Recuperación de borradores sin diálogos duplicados: las lecturas concurrentes o antiguas no muestran registros de otro proyecto ni reinician una revisión abierta.
 - Agrupación explícita por causa raíz y remediación común con identidades estables; los hallazgos conservan su evidencia, valoración y retest individuales.
 - Exportación local de tareas en CSV y fichas HTML, con selección de campos, vista previa ligada a la revisión guardada y protección frente a fórmulas en hojas de cálculo.
 - Criterio de cierre por hallazgo y navegación integrada en el seguimiento del proyecto.

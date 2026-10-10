@@ -14,7 +14,20 @@ await page.locator('[data-capture-title]').fill('Private pending screenshot');aw
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGP8//8/AwMDEwMDAwMDAwAkBgMB/DXemwAAAABJRU5ErkJggg==','base64');await page.locator('[data-capture-image]').setInputFiles({name:'pending.png',mimeType:'image/png',buffer:png});await page.waitForFunction(()=>{const h=PendingUI.active.get(S.slug+'|capture');return h?.revision>0&&h.revision===h.persisted;});
 check('A capture is only announced recoverable after its IndexedDB transaction',await page.locator('[data-pending-status="capture"]').textContent().then(t=>t.includes('recuperable')));
 check('Pending image and fields do not enter project data',await page.evaluate(()=>!S.data.capture_inbox?.length&&!S.data.evidence?.length&&!S.data.findings[0].walkthrough));
-await page.locator('dialog[open]').getByRole('button',{name:'Cerrar',exact:true}).click();await page.evaluate(async()=>{await loadProject('pending-two');WorkbenchUI.capture();});
+await page.locator('dialog[open]').getByRole('button',{name:'Cerrar',exact:true}).click();
+const duplicateRecovery=await page.evaluate(async()=>{
+ const original=PendingUI.list;let reads=0,release;const bothRead=new Promise(resolve=>release=resolve);
+ PendingUI.list=async slug=>{const rows=await original(slug);if(++reads===2)release();await bothRead;return rows;};
+ try{await Promise.all([StudioUI.recovery(),StudioUI.recovery()]);return {reads,dialogs:document.querySelectorAll('dialog[open]').length,records:document.querySelectorAll('[data-pending-record]').length};}
+ finally{PendingUI.list=original;}
+});
+check('Concurrent recovery reads present exactly one dialog and one copy per pending record',duplicateRecovery.reads===2&&duplicateRecovery.dialogs===1&&duplicateRecovery.records===1);
+check('Repeated recovery reuses the visible dialog without resetting its review state',await page.evaluate(async()=>{const section=document.querySelector('[data-pending-record]'),details=section.querySelector('details');details.open=true;await StudioUI.recovery();return document.querySelectorAll('[data-pending-record]').length===1&&document.querySelector('[data-pending-record]')===section&&details.open;}));
+await page.locator('dialog[open]').getByRole('button',{name:'Cerrar',exact:true}).click();
+await page.evaluate(()=>{window.pendingListOriginal=PendingUI.list;window.pendingReadReady=false;const held=new Promise(resolve=>window.releasePendingRead=resolve);PendingUI.list=async slug=>{const rows=await window.pendingListOriginal(slug);if(slug==='pending-one'){window.pendingReadReady=true;await held;}return rows;};window.delayedRecovery=StudioUI.recovery();});
+await page.waitForFunction(()=>window.pendingReadReady);await page.evaluate(async()=>{await loadProject('pending-two');await StudioUI.recovery();window.releasePendingRead();await window.delayedRecovery;PendingUI.list=window.pendingListOriginal;delete window.pendingListOriginal;delete window.releasePendingRead;delete window.delayedRecovery;delete window.pendingReadReady;});
+check('A late pending read cannot present the previous project private records after navigation',await page.locator('[data-pending-record]').count()===0&&await page.locator('dialog[open]').count()===0&&await page.evaluate(()=>S.slug==='pending-two'));
+await page.evaluate(()=>WorkbenchUI.capture());
 check('Switching project never displays or attaches the previous pending capture',await page.locator('[data-capture-title]').inputValue().then(t=>t==='')&&await page.evaluate(()=>!S.data.capture_inbox?.length));await page.locator('dialog[open]').getByRole('button',{name:'Cerrar',exact:true}).click();
 await page.reload();await page.waitForFunction(()=>typeof PendingUI!=='undefined'&&!!$('#insightsBtn'));await page.evaluate(()=>loadProject('pending-one'));await page.locator('[data-pending-record]').waitFor();
 check('Reload exposes the pending record without applying it',await page.evaluate(()=>!S.data.capture_inbox?.length&&!S.data.evidence?.length));await page.getByRole('button',{name:'Recuperar formulario',exact:true}).click();await page.locator('[data-capture-title]').waitFor();

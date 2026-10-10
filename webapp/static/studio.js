@@ -1,7 +1,7 @@
 /* 0.20: task navigation, recovery and the explicit publication boundary. */
 const StudioUI=(()=>{
 'use strict';const w=(es,en)=>S.uiLang==='en'?en:es;
-let mode='work',bound=false,opener=null;
+let mode='work',bound=false,opener=null,recoveryGeneration=0,recoveryDialog=null;
 function button(text,run,primary=false){const b=h('button',{type:'button',class:'btn'+(primary?' primary':'')},text);b.addEventListener('click',async()=>{opener=b;b.disabled=true;try{await run(b);}catch(e){toast(e.message,'err');}finally{b.disabled=false;}});return b;}
 function dialog(title){const previous=document.activeElement===document.body?opener:document.activeElement,d=h('dialog',{class:'experience-dialog studio-dialog','aria-label':title}),body=h('div',{class:'experience-body'});d.append(h('div',{class:'experience-heading'},h('h2',{},title),button(w('Cerrar','Close'),()=>d.close())),body);d.addEventListener('close',()=>{d.remove();const target=previous?.closest('details:not([open])')?.querySelector('summary')||previous;(target?.isConnected?target:$('#editor')).focus();});document.body.append(d);d.showModal();return{d,body};}
 function downloadDraft(record=projectStore.draftFile()){const url=URL.createObjectURL(new Blob([JSON.stringify(record,null,2)],{type:'application/json'}));h('a',{href:url,download:(record.slug||'project')+'.report-gen-draft.json'}).click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
@@ -31,8 +31,22 @@ async function resolveDraft(candidate){
   body.append(apply);
 }
 async function recovery(){
-  const slug=S.slug,rows=projectStore.recovery||[];let pending=[];try{if(typeof PendingUI!=='undefined')pending=await PendingUI.list(slug);}catch(error){/* Form status reports unavailable storage when edited. */}if(S.slug!==slug||(!rows.length&&!pending.length))return;
+  const generation=++recoveryGeneration,slug=S.slug,data=S.data,etag=projectStore.etag,lang=S.uiLang,rows=projectStore.recovery||[];
+  if(recoveryDialog?.isConnected&&recoveryDialog.dataset.recoveryProject!==slug){recoveryDialog.close();recoveryDialog.remove();recoveryDialog=null;}
+  if(!slug||projectStore.loading||projectBusyCount>0)return;
+  let pending=[];try{if(typeof PendingUI!=='undefined')pending=await PendingUI.list(slug);}catch(error){/* Form status reports unavailable storage when edited. */}
+  // Loading and the explicit recovery action can overlap. Only the latest
+  // request for this exact project view may present its private records.
+  if(generation!==recoveryGeneration||S.slug!==slug||S.data!==data||projectStore.etag!==etag||S.uiLang!==lang||projectStore.loading||projectBusyCount>0)return;
+  const signature=JSON.stringify([slug,etag,lang,rows,pending.map(row=>[row.id,row.token])]);
+  if(recoveryDialog?.isConnected){
+    if(recoveryDialog.open&&recoveryDialog.recoverySignature===signature)return;
+    recoveryDialog.close();recoveryDialog.remove();recoveryDialog=null;
+  }
+  if(!rows.length&&!pending.length)return;
   const {d,body}=dialog(w('Hay borradores recuperables','Recoverable drafts found'));
+  recoveryDialog=d;d.dataset.recoveryProject=slug;d.recoverySignature=signature;
+  d.addEventListener('close',()=>{if(recoveryDialog===d)recoveryDialog=null;});
   body.append(h('p',{},w('Son copias privadas de este navegador, con retención de 30 días. Pueden pertenecer a otra pestaña abierta. Revisa antes de incorporarlas.','These are private copies in this browser, retained for 30 days. Another open tab may own them. Review before applying.')));
   for(const row of pending)body.append(PendingUI.recoverySection(row));
   d.addEventListener('close',()=>body.querySelectorAll('[data-pending-record]').forEach(node=>node.release?.()));
