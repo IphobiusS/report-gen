@@ -10,6 +10,7 @@ from urllib.request import url2pathname
 import re
 from lxml import html
 from PIL import Image, ImageOps
+from image_integrity import jpeg_without_metadata as _jpeg_without_metadata, verify_container
 
 # Literal substitutions are opt-in and operate on content, never file names or IDs.
 PRIVATE = {'attachments', 'capture_inbox', 'publication', 'import_source', 'original', 'provenance', 'insights',
@@ -94,37 +95,6 @@ def project(source):
     ensure_data_tree(result)
     return result
 
-def _jpeg_without_metadata(blob):
-    """Drop all APP/COM segments and trailing bytes without recompressing pixels."""
-    if not blob.startswith(b'\xff\xd8'): raise ValueError(backend_message('JPEG inválido / Invalid JPEG'))
-    out=bytearray(blob[:2]);pos=2
-    while pos<len(blob):
-        if blob[pos]!=255: raise ValueError(backend_message('Marcador JPEG inválido / Invalid JPEG marker'))
-        while pos<len(blob) and blob[pos]==255: pos+=1
-        if pos>=len(blob): break
-        marker=blob[pos];pos+=1
-        if marker==0xD9: out.extend(b'\xff\xd9');return bytes(out)
-        if marker in (0x00,0xD8): raise ValueError(backend_message('JPEG inválido / Invalid JPEG'))
-        if marker==1 or 0xD0<=marker<=0xD7:
-            out.extend(bytes((255,marker)));continue
-        if pos+2>len(blob): break
-        length=int.from_bytes(blob[pos:pos+2],'big')
-        if length<2 or pos+length>len(blob): raise ValueError(backend_message('JPEG truncado / Truncated JPEG'))
-        if not (0xE0<=marker<=0xEF or marker==0xFE): out.extend(bytes((255,marker))+blob[pos:pos+length])
-        pos+=length
-        if marker==0xDA:
-            start=pos
-            while pos<len(blob):
-                next_marker=blob.find(b'\xff',pos)
-                if next_marker<0: raise ValueError(backend_message('JPEG truncado / Truncated JPEG'))
-                end=next_marker+1
-                while end<len(blob) and blob[end]==255: end+=1
-                if end>=len(blob): raise ValueError(backend_message('JPEG truncado / Truncated JPEG'))
-                if blob[end]==0 or 0xD0<=blob[end]<=0xD7:pos=end+1;continue
-                out.extend(blob[start:next_marker]);pos=next_marker;break
-    raise ValueError(backend_message('JPEG sin terminador / JPEG without terminator'))
-
-
 def _image_format(source):
     fmt=source.format
     if fmt not in ('PNG','JPEG','WEBP','GIF'): raise ValueError(backend_message('Imagen no admitida / Unsupported image'))
@@ -145,6 +115,7 @@ def validate_image(blob):
         if fmt=='JPEG' and source.getexif().get(274,1)==1:
             _jpeg_without_metadata(blob)
             return
+        verify_container(blob,fmt)
         for index in range(getattr(source,'n_frames',1)):
             source.seek(index)
             ImageOps.exif_transpose(source).load()
@@ -155,6 +126,7 @@ def clean_image(blob):
     with Image.open(BytesIO(blob)) as source:
         fmt=_image_format(source)
         if fmt=='JPEG' and source.getexif().get(274,1)==1: return _jpeg_without_metadata(blob)
+        verify_container(blob,fmt)
         frames=[]
         durations=[]
         for index in range(getattr(source,'n_frames',1)):

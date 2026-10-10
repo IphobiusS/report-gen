@@ -14,9 +14,9 @@ import signal
 import subprocess
 import sys
 import tempfile
-import zlib
 
 from PIL import Image, ImageOps, UnidentifiedImageError
+from image_integrity import verify_container as _verify_container
 from error_messages import message as backend_message
 
 MAX_IMAGE_BYTES = 12 * 1024 * 1024
@@ -33,82 +33,6 @@ def available():
 def _result(blob, status):
     return dict(engine='tesseract', image_sha256=sha256(blob).hexdigest(), alerts=[],
                 manual_review_required=True, complete=False, status=status)
-
-
-def _verify_container(blob, image_format):
-    """Reject incomplete containers, independent of Pillow's permissive decoder.
-
-    This is not a guarantee of pixel correctness or of OCR recognition quality.
-    PNG additionally uses Pillow's CRC-aware verify below.
-    """
-    if image_format == 'PNG':
-        if blob[:8] != b'\x89PNG\r\n\x1a\n':
-            raise ValueError
-        position = 8
-        while position + 12 <= len(blob):
-            size = int.from_bytes(blob[position:position + 4], 'big')
-            end = position + size + 12
-            if end > len(blob):
-                raise ValueError
-            if zlib.crc32(memoryview(blob)[position + 4:end - 4]) != int.from_bytes(blob[end - 4:end], 'big'):
-                raise ValueError
-            if blob[position + 4:position + 8] == b'IEND':
-                if size != 0 or end != len(blob):
-                    raise ValueError
-                return
-            position = end
-        raise ValueError
-    elif image_format == 'JPEG':
-        import publication
-        publication._jpeg_without_metadata(blob)  # Existing parser requires EOI.
-    elif image_format == 'WEBP':
-        if (len(blob) < 12 or blob[:4] != b'RIFF' or blob[8:12] != b'WEBP'
-                or int.from_bytes(blob[4:8], 'little') + 8 != len(blob)):
-            raise ValueError
-        position = 12
-        while position < len(blob):
-            if position + 8 > len(blob):
-                raise ValueError
-            size = int.from_bytes(blob[position + 4:position + 8], 'little')
-            position += 8 + size + size % 2
-        if position != len(blob):
-            raise ValueError
-    elif image_format == 'GIF':
-        if len(blob) < 14 or blob[:6] not in (b'GIF87a', b'GIF89a'):
-            raise ValueError
-        position = 13
-        packed = blob[10]
-        if packed & 128:
-            position += 3 * (2 ** ((packed & 7) + 1))
-        while position < len(blob):
-            marker = blob[position]
-            position += 1
-            if marker == 0x3B:
-                if position != len(blob):
-                    raise ValueError
-                return
-            if marker == 0x21:  # Extension label followed by data sub-blocks.
-                position += 1
-            elif marker == 0x2C:  # Image descriptor, optional local color table.
-                if position + 9 > len(blob):
-                    raise ValueError
-                packed = blob[position + 8]
-                position += 9
-                if packed & 128:
-                    position += 3 * (2 ** ((packed & 7) + 1))
-                position += 1  # LZW minimum code size precedes data sub-blocks.
-            else:
-                raise ValueError
-            while True:
-                if position >= len(blob):
-                    raise ValueError
-                size = blob[position]
-                position += 1 + size
-                if position > len(blob):
-                    raise ValueError
-                if size == 0:
-                    break
-        raise ValueError  # A complete GIF ends with its trailer block.
 
 
 def preflight(blob):

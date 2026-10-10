@@ -164,15 +164,59 @@ def test_text_readiness_preserves_alerts_without_reencoding_images(tmp_path,monk
     assert path.read_bytes()==original
 
 
-def test_truncated_decodable_header_still_blocks_text_readiness(tmp_path):
-    data=document();path=tmp_path/'img'/'truncated.png';path.parent.mkdir()
-    # Keep a valid PNG header but cut the actual pixel stream.
-    Image.effect_noise((120,80),70).save(path,format='PNG')
+@pytest.mark.parametrize('allow_truncated', [False, True])
+@pytest.mark.parametrize('fmt,extension', [('PNG','png'),('JPEG','jpg'),('WEBP','webp'),('GIF','gif')])
+def test_truncated_decodable_header_still_blocks_text_readiness(tmp_path,monkeypatch,allow_truncated,fmt,extension):
+    from PIL import ImageFile
+    # WeasyPrint enables this global flag. Neither inspection path may inherit
+    # that permissive behavior or toggle global decoder state across threads.
+    monkeypatch.setattr(ImageFile,'LOAD_TRUNCATED_IMAGES',allow_truncated)
+    data=document();path=tmp_path/'img'/f'truncated.{extension}';path.parent.mkdir()
+    pixels=bytes((index*17+(index//113)*19)%256 for index in range(120*80*3))
+    Image.frombytes('RGB',(120,80),pixels).save(path,format=fmt)
+    original=path.read_bytes()
+    assert len(original)>200
+    data['findings'][0]['walkthrough'].append({'figure':{'src':f'img/truncated.{extension}'}})
+    assert publication.validate_image(original) is None
+    assert item(prepared(data,tmp_path),'secrets')['status']=='checked'
+    for damaged in (original[:200],original[:-2]):
+        path.write_bytes(damaged)
+        from error_messages import language_scope
+        from image_integrity import verify_container
+        for language,expected in [('es','La imagen está incompleta o dañada.'),
+                                  ('en','The image is incomplete or damaged.')]:
+            with language_scope(language),pytest.raises(ValueError) as failure:
+                verify_container(damaged,fmt)
+            assert str(failure.value)
+            if fmt!='JPEG':
+                assert str(failure.value)==expected
+        with pytest.raises((OSError,ValueError)):
+            publication.inspect(data,tmp_path)
+        with pytest.raises((OSError,ValueError)):
+            publication.validate_image(damaged)
+        assert item(prepared(data,tmp_path),'secrets')['status']=='not_checked'
+        assert ImageFile.LOAD_TRUNCATED_IMAGES is allow_truncated
+
+
+@pytest.mark.parametrize('language,expected', [('es','La imagen está incompleta o dañada.'),
+                                             ('en','The image is incomplete or damaged.')])
+def test_publication_api_returns_readable_localized_image_error(tmp_path,monkeypatch,language,expected):
+    from PIL import ImageFile
+    monkeypatch.setattr(ImageFile,'LOAD_TRUNCATED_IMAGES',True)
+    monkeypatch.setattr(webapp,'PROJECTS',tmp_path)
+    directory=tmp_path/'readiness';(directory/'img').mkdir(parents=True)
+    path=directory/'img'/'private-evidence-name.png'
+    pixels=bytes((index*17+(index//113)*19)%256 for index in range(120*80*3))
+    Image.frombytes('RGB',(120,80),pixels).save(path,format='PNG')
     path.write_bytes(path.read_bytes()[:200])
-    data['findings'][0]['walkthrough'].append({'figure':{'src':'img/truncated.png'}})
-    with pytest.raises((OSError,ValueError)):
-        publication.inspect(data,tmp_path)
-    assert item(prepared(data,tmp_path),'secrets')['status']=='not_checked'
+    data=document()
+    data['findings'][0]['walkthrough'].append({'figure':{'src':'img/private-evidence-name.png'}})
+    dump_yaml(data,directory/'engagement.yaml')
+    response=auth_client(webapp.app).get('/api/projects/readiness/publication',headers={'X-UI-Language':language})
+    assert response.status_code==422
+    assert response.get_json()=={'error':expected}
+    assert response.headers['Content-Language']==language
+    assert 'private-evidence-name' not in response.get_data(as_text=True)
 
 
 def test_api_returns_etag_revision_and_recomputes_without_writing(tmp_path,monkeypatch):

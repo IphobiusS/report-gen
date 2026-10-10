@@ -6,6 +6,7 @@
 - Corrección de la carrera que podía reanudar una escritura tras bloquear el workspace mientras se esperaba el token CSRF.
 - Corpus de escala con imágenes distintas y mediciones reproducibles de edición y cuatro exportaciones; entorno, contenido y límites explícitos.
 - La preparación de entrega valida las imágenes sin recomprimirlas al contar alertas de texto. Conserva redacciones, excepciones y errores por imágenes no válidas; el inspector completo y los formatos mantienen la limpieza de publicación.
+- Inspección y preparación rechazan contenedores de imagen truncados incluso cuando el motor PDF permite decodificación parcial. La validación compartida con OCR no modifica opciones globales de Pillow.
 - Inspección estructural automatizada de los cuatro DOCX preparados para revisión externa. La revisión visual en Word y las cinco sesiones humanas siguen pendientes.
 - Documentación de distribución alineada con las Releases verificadas y exclusión del estado privado de respaldos en los paquetes fuente.
 
