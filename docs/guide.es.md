@@ -1,21 +1,30 @@
-# Guía de uso de report-gen 0.25.0
+# Guía de uso de report-gen 0.26.0
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
-Esta guía reúne la documentación operativa que antes estaba en el README. Todos los comandos se ejecutan desde la raíz del proyecto, donde está `start.py`, salvo indicación contraria. La primera instalación y las descargas opcionales requieren conexión; la edición normal y las exportaciones trabajan localmente.
+Todos los comandos se ejecutan desde la raíz del proyecto, donde está `start.py`, salvo indicación contraria. La primera instalación y las descargas opcionales requieren conexión; la edición normal y las exportaciones trabajan localmente.
 
 ## Instalar y abrir
 
-Ruta prioritaria: Linux/Kali con Python 3.10 o superior. Windows y Microsoft Word de escritorio requieren su propia validación.
+Ruta prioritaria: Linux/Kali con Python 3.10 o superior. Las pruebas de compatibilidad de Windows no sustituyen la revisión de documentos en Microsoft Word de escritorio.
 
 ```bash
 # Desde la raíz del proyecto (donde está start.py)
-python3 start.py --setup
-python3 start.py --diagnose
-python3 start.py
+python3 start.py --ready
 ```
 
-La instalación crea `.venv`, actualiza su instalador pip (26.2 o posterior de la serie 26), usa `requirements-audited.txt` como restricciones y descarga dependencias de Python. Abre **http://127.0.0.1:8080** en el navegador. Revisa los estados de cada motor en el diagnóstico; su código de salida por sí solo no acredita que todos estén disponibles. El lanzador también funciona con un entorno ya preparado. Otro puerto: `python3 start.py --port 8081`.
+`--ready` autoriza la instalación de dependencias si el entorno local falta o está incompleto, ejecuta el diagnóstico y arranca el editor si sus requisitos están disponibles. La instalación crea `.venv`, actualiza pip y usa `requirements-audited.txt` como restricciones. Abre **http://127.0.0.1:8080** en el navegador; `Ctrl+C` detiene el servidor. Otro puerto: `python3 start.py --ready --port 8081`.
+
+El diagnóstico distingue el editor de cada motor de exportación. Puedes editar aunque falte un motor opcional; no presupongas que todos los formatos están disponibles por haber abierto el editor. Si se detiene la preparación, sigue el mensaje y corrige la dependencia indicada antes de repetirla.
+
+| Necesidad | Comando |
+| --- | --- |
+| Preparar, comprobar y abrir | `python3 start.py --ready` |
+| Reinstalar dependencias y terminar | `python3 start.py --setup` |
+| Consultar el diagnóstico sin instalar ni arrancar | `python3 start.py --diagnose` |
+| Arrancar con el entorno ya preparado, sin instalar | `python3 start.py` |
+
+Añade `--lang en` para mensajes del lanzador en inglés. **Node.js no es necesario para el uso normal.**
 
 En Debian/Kali, si faltan las bibliotecas de PDF o venv:
 
@@ -32,7 +41,9 @@ Chromium es un motor PDF alternativo, opcional:
 
 ## Primer informe
 
-En Inicio, pulsa **Abrir guía visual** en la tarjeta **¿Es tu primer informe aquí?**. También puedes usar **Guía: primer informe** en el lateral o en **Más** en móvil. Puedes saltar a cualquier paso y volver a consultar la ayuda mientras trabajas.
+En Inicio, elige **Probar demo Nimbus** o **Crear mi proyecto**. Con un proyecto abierto, la tarjeta **Siguiente acción sugerida** propone un paso según el título y cliente, objetivos de alcance, hallazgos, asociaciones de evidencia y resultados reales de la última revisión guardada. **Ver este paso en la guía** abre su explicación. También puedes abrir **Guía: primer informe** en el lateral o en **Más** en móvil y consultar cualquiera de sus seis pasos.
+
+La sugerencia orienta la escritura, sin exigir que inventes un hallazgo o una captura: puedes ir directamente a la revisión cuando una recomendación no corresponda a tu evaluación. Una revisión sin avisos sugiere preparar la entrega, pero no aprueba su contenido. Si cambias el borrador después de revisarlo, repite la revisión guardada antes de entregar.
 
 1. **Empieza.** Usa **Crear proyecto** o **Nuevo proyecto** para elegir diseño e idioma del informe. Si prefieres aprender con contenido preparado, **Probar demo Nimbus** crea una copia editable de un caso ficticio con 12 hallazgos. También puedes abrir un respaldo de tu trabajo.
 2. **Define el alcance.** Completa cliente, evaluador, fechas y datos del informe. Documenta objetivos, activos incluidos, exclusiones y limitaciones. Registra **Activos** y **Cobertura** cuando sean útiles para tu evaluación.
@@ -43,7 +54,11 @@ En Inicio, pulsa **Abrir guía visual** en la tarjeta **¿Es tu primer informe a
 
 CVSS expresa severidad técnica, no el riesgo empresarial por sí solo. **Postura de riesgo e impacto de negocio** y **Recomendaciones estratégicas** permiten documentar el contexto, las prioridades y el apetito de riesgo que acuerdes con la organización. Puedes activar estos apartados desde **Gestionar secciones**. Sus conclusiones las redactas tú; seleccionar un diseño no las calcula ni las aprueba.
 
-**Biblioteca** conserva 22 perfiles de certificación, seis diseños generales, variantes Marca/Sobria y plantillas personales. Todos los perfiles permiten español e inglés. Cambiar apariencia no reemplaza los hallazgos. Word usa Calibri; PDF y HTML emplean Carlito como fuente compatible. Los comandos conservan su monoespaciada.
+**Biblioteca** recomienda Serio como punto de partida general. Los seis diseños generales se comparan con la misma página de muestra: portada, resumen o página técnica. El catálogo especializado conserva los 22 perfiles de certificación, las variantes Marca/Sobria y tus plantillas personales en un apartado desplegable. Si tu proyecto ya tiene un diseño especializado, la biblioteca abre ese contexto; navegar no cambia su apariencia.
+
+Todos los perfiles permiten español e inglés. Cambiar apariencia no reemplaza los hallazgos. Word usa Calibri; PDF y HTML emplean Carlito como fuente compatible. Los comandos conservan su monoespaciada.
+
+El lateral agrupa **Registro y cobertura** y **Historial y seguimiento** en desplegables. Al abrir directamente una de sus secciones, el grupo se expande para mostrar dónde estás. En Inicio, **Más herramientas del proyecto** reúne controles menos frecuentes; las funciones y los datos existentes se conservan.
 
 ## Qué comprueba cada entrega
 
@@ -75,9 +90,19 @@ El HTML portátil contiene todo el informe; los filtros y la vista ejecutiva son
 
 ## Actualizar desde una versión anterior
 
-Instala 0.25.0 en una carpeta nueva. Crea un respaldo integral con la versión anterior y restáuralo en la instalación nueva vacía. Conserva la carpeta anterior hasta verificar tus proyectos. No copies una `.venv` de otra instalación ni sustituyas tus datos por la demo. Abrir un proyecto no cambia su contenido para adaptarlo a la interfaz.
+Descomprime o clona 0.26.0 en una carpeta nueva. Cierra ambos editores antes de trasladar los datos y ejecuta desde la carpeta nueva:
 
-Si un proyecto antiguo conserva su única revisión previa en `engagement.yaml.bak`, sin historial, el exportador de 0.21.2 omite esa copia. Conserva también una copia completa de `webapp/projects/` y `webapp/library/`. Para trasladar ese estado heredado, copia esos directorios a una instalación nueva de 0.25.0 y genera allí el respaldo: esta versión incorpora la recuperación antigua sin modificar el origen al exportar. Un ZIP antiguo que ya omitió la copia no permite reconstruirla.
+```bash
+python3 start.py --ready --upgrade-from /ruta/report-gen-anterior
+```
+
+El lanzador prepara su propio entorno, crea un respaldo integral del origen, valida una restauración temporal y traslada los datos a la instalación nueva vacía. Muestra el resultado, la ruta del ZIP y su SHA-256; luego comprueba los motores y abre el editor. Si ya instalaste las dependencias y prefieres revisar el resultado antes de arrancar, omite `--ready`: la migración termina después del diagnóstico.
+
+El respaldo se conserva en `~/report-gen-backups/upgrade-*/workspace.zip`, fuera de ambas instalaciones, junto a `result.json` con su SHA-256 y contadores. Es privado: incluye los originales y el historial. Si falla la activación en el destino, el respaldo ya creado se conserva y la instalación anterior no se modifica. Las rutas solapadas, enlaces simbólicos, estados de recuperación pendientes y destinos con proyectos o bibliotecas personales se rechazan para evitar una mezcla o sobrescritura. Corrige la causa indicada y utiliza un destino vacío; no borres tus datos para forzar la operación.
+
+La migración conserva los proyectos, evidencias, historial y bibliotecas incluidos en el respaldo integral. No copia `.venv`, salidas de entregas ni borradores del navegador. Descarga un borrador pendiente antes de cambiar de instalación u origen del navegador. Abre tus proyectos, verifica las imágenes y el historial y conserva también las entregas que necesites antes de retirar la carpeta anterior.
+
+Como alternativa, crea **Respaldo integral** con la versión anterior y restáuralo en la instalación nueva vacía. Si un proyecto antiguo solo conserva su revisión previa en `engagement.yaml.bak`, sin historial, el exportador de 0.21.2 omite esa copia. Conserva el directorio original y usa el traslado de 0.26.0 para incorporar esa recuperación heredada. Un ZIP antiguo que ya omitió la copia no permite reconstruirla.
 
 Los proyectos anteriores siguen siendo legibles. Los respaldos que contengan el directorio de anexos requieren 0.21.0 o posterior; una versión anterior puede rechazarlos. Los registros de anexos con el campo `required` necesitan 0.21.1 o posterior, aunque su valor sea falso. Desde 0.21.2, el contador `finding_sequence` impide reutilizar números eliminados; no modifica los IDs existentes. Versiones anteriores no conservan esta garantía. Si una edición antigua ya cambió el significado de una referencia, esta versión no puede inferir el destino original: revisa las referencias heredadas.
 

@@ -183,9 +183,11 @@ async function axeGuide(page, label) {
     await createOwnProject(page, 'guide-read-only-editors');
     const original = await snapshot(page);
     await page.locator('#navReport').click();
+    await page.locator('#workspaceResearch > summary').click();
     await page.locator('[data-workflow="coverage"]').click();
     await page.getByRole('textbox', {name: 'Limitaciones del trabajo', exact: true}).waitFor();
     await page.locator('#sectionList .finding-nav').filter({hasText: /Alcance|Scope/}).first().click();
+    await page.locator('#workspaceFollowup > summary').click();
     await page.locator('[data-workflow="retest"]').click();
     await page.waitForFunction(() => S.sel.type === 'workflow' && S.sel.idx === 'retest');
     const afterReading = await snapshot(page);

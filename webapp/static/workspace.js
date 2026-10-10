@@ -60,15 +60,16 @@ const WorkspaceUI = (() => {
         h('h1',{},S.data?(meta.report_title||S.slug):w('De la evidencia al informe.','From evidence to report.')),
         h('p',{class:'workspace-intro'},S.data?[meta.client||w('Cliente por completar','Client not set'),meta.lang==='en'?'English':'Español',meta.design?.name||meta.theme].filter(Boolean).join(' / '):
           w('Documenta el trabajo, conecta las evidencias y prepara una entrega que puedas defender.','Document your work, connect the evidence and prepare a defensible delivery.')),
-        h('div',{class:'workspace-hero-actions'},S.data?button(w('Continuar informe','Continue report'),()=>WorkbenchUI.resume(),true):button(w('Crear proyecto','Create project'),()=>$('#newProjectBtn').click(),true),
-          button(S.data?w('Revisar entrega','Review delivery'):w('Explorar plantillas','Explore designs'),b=>S.data?go('workflow','review'):DesignLibraryUI.gallery(b)))),
+        h('div',{class:'workspace-hero-actions'},...(S.data?
+          [button(w('Continuar donde lo dejé','Continue where I left off'),()=>WorkbenchUI.resume(),typeof GuideUI==='undefined'),
+            ...(typeof GuideUI==='undefined'?[button(w('Revisar entrega','Review delivery'),()=>go('workflow','review'))]:[])]:
+          [button(w('Probar demo Nimbus','Try Nimbus demo'),()=>$('#demoBtn').click(),true),button(w('Crear mi proyecto','Create my project'),()=>$('#newProjectBtn').click())]))),
       h('figure',{class:'workspace-mascots'},h('img',{src:'/static/brand-mark.webp',width:300,height:200,alt:w('Prometeo y Evaristo, los dos perros de report-gen, sobre una consola.','Prometeo and Evaristo, the two report-gen dogs, above a console.')}),h('figcaption',{},'Prometeo & Evaristo')));
     shell.append(hero);
     if(typeof GuideUI!=='undefined')shell.append(GuideUI.entry());
-    if(typeof InsightsUI!=='undefined')shell.append(InsightsUI.entry());
     if(!S.data) {
       shell.append(h('div',{class:'workspace-empty-actions'},
-        h('div',{},h('h2',{},w('Empieza con un caso completo','Start with a complete case')),h('p',{},w('La demo Nimbus contiene hallazgos y evidencias ficticios. Puedes editarla y exportarla.','The Nimbus demo contains fictional findings and evidence. You can edit and export it.')),button(w('Probar demo Nimbus','Try Nimbus demo'),()=>$('#demoBtn').click())),
+        h('div',{},h('h2',{},w('Primero el contenido, después el diseño','Content first, then appearance')),h('p',{},w('Empieza con el diseño general recomendado. Puedes cambiar la presentación más adelante sin sustituir los hallazgos. Nimbus incluye datos y evidencias ficticios para practicar.','Start with the recommended general design. You can change its appearance later without replacing findings. Nimbus includes fictional data and evidence for practice.')),button(w('Ver diseños de informe','View report designs'),b=>DesignLibraryUI.gallery(b))),
         h('div',{},h('h2',{},w('Continúa tu trabajo','Continue your work')),h('p',{},w('Abre el respaldo de un proyecto o recupera tu espacio de trabajo en una instalación vacía.','Open a project backup or recover your workspace on an empty installation.')),button(w('Abrir respaldo de proyecto','Open project backup'),()=>$('#importProjectBtn').click()),button(w('Respaldo integral','Workspace backup'),backup))));
     } else {
       const findings=S.data.findings||[], coverage=S.data.coverage||[], done=coverage.filter(x=>x.status==='done').length;
@@ -83,7 +84,10 @@ const WorkspaceUI = (() => {
       if(findings.length>6)recent.append(button(w('Ver todos los hallazgos','View all findings'),()=>go('findings')));
       const steps=h('section',{class:'workspace-next'});WorkbenchUI.attention(steps);
       shell.append(h('div',{class:'workspace-columns'},recent,steps));
-      if(typeof ExperienceUI!=='undefined')ExperienceUI.guide(shell);
+      const more=h('details',{class:'workspace-extra'},h('summary',{},w('Más herramientas del proyecto','More project tools'))),body=h('div',{class:'workspace-extra-body'});
+      if(typeof InsightsUI!=='undefined')body.append(InsightsUI.entry());
+      if(typeof ExperienceUI!=='undefined')ExperienceUI.guide(body);
+      if(body.childElementCount){more.append(body);shell.append(more);}
     }
     if(S.projects.length>1){const projects=h('section',{class:'workspace-projects'},h('h2',{},w('Tus proyectos','Your projects')));
       S.projects.forEach(p=>{const b=button('',()=>loadProject(p.slug));b.className='workspace-project';b.append(h('strong',{},p.title||p.slug),h('span',{},p.slug),h('span',{},p.slug===S.slug?w('Abierto','Open'):(p.lang||'').toUpperCase()));projects.append(b);});shell.append(projects);}

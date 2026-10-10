@@ -70,6 +70,14 @@
 .guide-entry h2 { margin:0 0 8px; font-size:1.0625rem; }
 .guide-entry p:not(.guide-eyebrow) { margin:0; max-width:62ch; font-size:.8125rem; color:var(--muted); }
 .guide-entry .btn { flex-shrink:0; }
+.guide-project-state { display:grid; grid-template-columns:minmax(0,1fr) minmax(180px,auto); gap:16px 24px; border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:8px; background:var(--panel); padding:20px; margin:0 0 28px; overflow-wrap:anywhere; }
+.guide-project-state>div { min-width:0; }
+.guide-project-state h2 { margin:0 0 8px; font-size:1.0625rem; line-height:1.35; }
+.guide-project-state p:not(.guide-eyebrow) { margin:0; max-width:70ch; font-size:.8125rem; color:var(--muted); }
+.guide-project-state .guide-actions { flex-direction:column; justify-content:center; align-items:stretch; max-width:300px; }
+.guide-project-state .btn { min-height:44px; white-space:normal; line-height:1.4; font-size:.8125rem; }
+.guide-project-state .guide-state-note { grid-column:1/-1; border-top:1px solid var(--line); padding-top:12px; font-size:.75rem; }
+.guide-project-state.compact { margin-bottom:24px; }
 #guideBtn { min-height:44px; }
 #guideBtn.active { color:var(--fg); border-color:var(--line); box-shadow:inset 3px 0 var(--accent); }
 @keyframes guide-enter { from { transform:translateY(4px); } to { transform:translateY(0); } }
@@ -77,3 +85,4 @@
 @media(max-width:760px) { .layout.workspace-guide{display:block;}.guide-intro{padding-bottom:20px}.guide-intro h1{font-size:1.75rem;max-width:none}.guide-layout{gap:16px}.guide-navigation ol{grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr))}.guide-stage{padding:16px}.editor .guide-stage h2{font-size:1.4375rem}.guide-choice-grid{grid-template-columns:minmax(0,1fr)}.guide-entry{align-items:flex-start;flex-direction:column;gap:16px}.guide-entry .btn{width:100%}.guide-footer .btn:last-child{margin-left:0;} }
 @media(max-width:420px) { .guide-example-rows>div{grid-template-columns:minmax(0,1fr);gap:4px}.guide-review-grid,.guide-delivery-grid,.guide-evidence-preview{grid-template-columns:minmax(0,1fr)}.guide-evidence-link{flex-direction:row;gap:8px}.guide-actions .btn,.guide-footer .btn{width:100%}.guide-navigation button{padding:9px 8px;gap:6px;} }
 @media(prefers-reduced-motion:reduce) { .guide-stage{animation:none}.guide-shell button{transition:none} }
+@media(max-width:760px) { .guide-project-state { grid-template-columns:minmax(0,1fr); padding:16px; gap:16px; }.guide-project-state .guide-actions { max-width:none; }.guide-project-state .btn { width:100%; } }

@@ -3,12 +3,15 @@ const DesignLibraryUI=(()=>{
   const w=(es,en)=>S.uiLang==='en'?en:es;
   const local=v=>typeof v==='object'?(v[S.uiLang]||v.es||''):v;
   const layouts={rail:['Banda lateral','Side rail'],split:['Dos zonas','Split cover'],frame:['Marco','Frame'],band:['Franja central','Center band'],timeline:['Cronología','Timeline']};
+  const generalNames={serio:['Serio','Serious'],corporativo:['Corporativo','Corporate'],offsec:['OffSec (general)','OffSec (general)'],htb:['HTB (general)','HTB (general)'],ejecutivo:['Ejecutivo','Executive'],laboratorio:['Laboratorio','Laboratory']};
+  const generalNotes={serio:['Lectura sobria y estructura general. Recomendado para empezar.','Restrained presentation and a general structure. Recommended starting point.'],corporativo:['Presentación para clientes con identidad corporativa.','Client reports with corporate branding.'],offsec:['Estética técnica inspirada en laboratorios.','Technical appearance inspired by labs.'],htb:['Estética de laboratorio con acento verde.','Lab appearance with a green accent.'],ejecutivo:['Presentación orientada a la lectura de resultados.','Presentation focused on reading results.'],laboratorio:['Presentación técnica para documentar ejercicios.','Technical presentation for documenting exercises.']};
+  const generalItem=id=>({id,name:generalNames[id]?w(...generalNames[id]):id,provider:'General'});
   let catalog=null,etag=null,trigger=null;
   function btn(label,fn,primary=false){const b=h('button',{type:'button',class:'btn'+(primary?' primary':'')},label);b.addEventListener('click',async()=>{trigger=b;b.disabled=true;try{await fn(b);}catch(e){toast(e.message,'err');}finally{b.disabled=false;}});return b;}
   function modal(title,wide=false,opener=null){const focus=opener||(document.activeElement===document.body?trigger:document.activeElement);
     const d=h('dialog',{class:'experience-dialog'+(wide?' design-dialog':''),'aria-label':title});const body=h('div',{class:'experience-body'});
     d.append(h('div',{class:'experience-heading'},h('h2',{},title),btn(w('Cerrar','Close'),()=>d.close())),body);
-    d.addEventListener('close',()=>{d.remove();requestAnimationFrame(()=>{const open=[...document.querySelectorAll('dialog[open]')].at(-1);if(focus?.isConnected&&(!open||open.contains(focus)))focus.focus();else if(open)open.querySelector('button')?.focus();else $('#designLibraryBtn')?.focus();});});document.body.append(d);d.showModal();return {d,body};}
+    d.addEventListener('close',()=>{d.remove();requestAnimationFrame(()=>{const open=[...document.querySelectorAll('dialog[open]')].at(-1),target=focus?.closest('details:not([open])')?.querySelector('summary')||focus;if(target?.isConnected&&!target.disabled&&(!open||open.contains(target)))target.focus();else if(open)open.querySelector('button')?.focus();else $('#designLibraryBtn')?.focus();});});document.body.append(d);d.showModal();return {d,body};}
   function livePage(html,page='cover') {
     const box=h('div',{class:'design-live-page'});
     const target={cover:'.cover',summary:'#sample-summary',technical:'#sample-technical'}[page]||'.cover';
@@ -24,7 +27,9 @@ const DesignLibraryUI=(()=>{
   async function write(url,body,method='POST'){const r=await requireOk(await appFetch(url,{method,headers:{'Content-Type':'application/json','If-Match':etag},...(body?{body:JSON.stringify(body)}:{})}));etag=r.headers.get('ETag');return r.json();}
   function guideBox(g){return h('div',{class:'design-guidance'},h('p',{},g.note),h('a',{href:g.source,target:'_blank',rel:'noopener noreferrer'},w('Consultar guía','Open guide')),h('p',{class:'wf-hint'},w('Referencia consultada: ','Reference checked: ')+g.checked));}
   async function gallery(opener=null){opener=opener||(document.activeElement!==document.body?document.activeElement:trigger);await refresh();const {d,body}=modal(w('Biblioteca de informes','Report design library'),true,opener);
-    let family='OffSec',query='',selected=null,variant='brand',sample='cover',sampleLang=S.uiLang,serial=0;
+    const currentDesign=S.data?.meta?.design,currentId=currentDesign?.id||S.data?.meta?.theme;
+    const current=(catalog.personal||[]).find(p=>p.id===currentId)||(catalog.profiles||[]).find(p=>p.id===currentId)||(catalog.general.includes(currentId)?generalItem(currentId):null);
+    let family=current?.provider||'General',query='',selected=current||generalItem('serio'),variant=currentDesign?.variant||'brand',sample='cover',sampleLang=S.uiLang,serial=0;
     const sampleLanguage=h('select',{'data-design-sample-language':'','aria-label':w('Idioma de las muestras','Sample language')},h('option',{value:'es'},'Español'),h('option',{value:'en'},'English'));sampleLanguage.value=sampleLang;
     sampleLanguage.addEventListener('change',()=>{sampleLang=sampleLanguage.value;renderList();renderDetail();});
     const samplePath=(id,v,page)=>'/static/design-previews/'+id+'/'+(sampleLang==='en'?'en/':'')+v+'-'+page+'.webp';
@@ -35,23 +40,28 @@ const DesignLibraryUI=(()=>{
     const familyName=x=>({General:w('Generales','General'),Personal:w('Mis plantillas','My designs'),'Históricas':w('Históricas','Historical')})[x]||x;
     for(const f of allFamilies){const b=btn(familyName(f),()=>{family=f;selected=null;renderList();renderDetail();});b.dataset.family=f;filters.append(b);}
     search.addEventListener('input',()=>{query=search.value.trim().toLowerCase();renderList();});
-    body.append(h('p',{},w('22 perfiles de certificación y seis diseños generales. Portada, resumen y página técnica generados con report-gen.','22 certification profiles and six general designs. Cover, summary and technical page generated by report-gen.')),
-      filters,h('div',{class:'grid2'},h('label',{},w('Idioma de las muestras','Sample language'),sampleLanguage),h('label',{},w('Buscar plantillas','Search designs'),search)),count,h('div',{class:'design-layout'},listing,detail));
-    function items(){return family==='General'?catalog.general.map(id=>({id,name:id,provider:'General'})):family==='Personal'?catalog.personal:family==='Históricas'?catalog.historical:catalog.profiles.filter(p=>p.provider===family);}
+    const comparison=h('select',{'data-design-compare-page':'','aria-label':w('Comparar la misma página','Compare the same page')},[['cover','Portada','Cover'],['summary','Resumen','Summary'],['technical','Técnica','Technical']].map(([value,es,en])=>h('option',{value},w(es,en))));
+    comparison.addEventListener('change',()=>{sample=comparison.value;renderList();renderDetail();});
+    const advanced=h('details',{class:'design-catalog-options','data-design-catalog':'',open:family!=='General'?'':null},h('summary',{},w('Catálogo completo: perfiles y plantillas personales','Full catalog: profiles and personal designs')),filters,h('label',{},w('Buscar en esta familia','Search this family'),search),h('p',{class:'wf-hint'},w('Los perfiles son puntos de partida editables; no acreditan cumplimiento de requisitos de certificación. Revisa las instrucciones vigentes.','Profiles are editable starting points; they do not certify compliance with certification requirements. Check the current instructions.')));
+    body.append(h('p',{},w('Serio es el punto de partida recomendado. Compara la misma página de una muestra ficticia en los seis diseños generales.','Serious is the recommended starting point. Compare the same page from a fictional sample in the six general designs.')),
+      h('p',{class:'design-current','data-design-current':''},currentId?w('Apariencia del proyecto: ','Project appearance: ')+(currentDesign?.name||generalItem(currentId).name):w('Todavía no hay un proyecto abierto.','No project is open yet.')),
+      advanced,h('div',{class:'grid2'},h('label',{},w('Idioma de las muestras','Sample language'),sampleLanguage),h('label',{},w('Comparar la misma página','Compare the same page'),comparison)),count,h('div',{class:'design-layout'},listing,detail));
+    function items(){const priority=id=>id==='serio'?0:id===currentId?1:2;return family==='General'?[...catalog.general].sort((a,b)=>priority(a)-priority(b)).map(generalItem):family==='Personal'?catalog.personal:family==='Históricas'?catalog.historical:catalog.profiles.filter(p=>p.provider===family);}
     function renderList(){filters.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.family===family)));listing.replaceChildren();const rows=items().filter(p=>[p.name,p.course||'',p.provider].join(' ').toLowerCase().includes(query));count.textContent=rows.length+' '+w('plantillas o referencias','designs or references');
       if(!rows.length)listing.append(h('p',{},family==='Personal'?w('Duplica un perfil para guardar tu primera plantilla.','Duplicate a profile to save your first design.'):w('No hay coincidencias.','No matches.')));
       rows.forEach(p=>{if(family==='Históricas'){listing.append(h('article',{class:'design-history'},h('h3',{},p.name),h('p',{},local(p.note)),h('a',{href:p.source,target:'_blank',rel:'noopener noreferrer'},w('Fuente','Source'))));return;}
-        const card=btn('',()=>{selected=p;if(p.provider==='Personal')variant=p.design.variant;sample='cover';renderList();renderDetail();});card.classList.add('design-card');card.dataset.design=p.id;card.setAttribute('aria-pressed',String(selected?.id===p.id));
-        if(p.provider!=='Personal')card.append(h('img',{src:samplePath(p.id,'brand','cover'),alt:'',loading:'lazy',width:210,height:297}));
+        const card=btn('',()=>{selected=p;if(p.provider==='Personal')variant=p.design.variant;renderList();renderDetail();listing.querySelector('[data-design="'+p.id+'"]')?.focus({preventScroll:true});});card.classList.add('design-card');card.dataset.design=p.id;card.setAttribute('aria-pressed',String(selected?.id===p.id));
+        if(p.provider!=='Personal')card.append(h('img',{src:samplePath(p.id,'brand',sample),alt:'',loading:'lazy',width:210,height:297}));
         else card.append(h('div',{class:'design-personal-swatch',style:'border-color:'+p.design.accent},p.design.certificate));
-        card.append(h('strong',{},p.name),h('span',{},p.course||familyName(p.provider)));listing.append(card);});}
+        card.append(h('strong',{},p.name),h('span',{},p.id==='serio'?w('Inicio recomendado','Recommended starting point'):p.course||familyName(p.provider)));if(p.id===currentId)card.append(h('span',{class:'design-current-badge'},w('Actual','Current')));listing.append(card);});}
     async function renderDetail(){const turn=++serial;detail.replaceChildren();if(!selected){detail.append(h('h3',{},w('Elige una plantilla','Choose a design')),h('p',{},w('Crear un proyecto incorpora la estructura. Aplicar apariencia conserva tus secciones, hallazgos y evidencias.','Creating a project adds the structure. Applying an appearance preserves your sections, findings and evidence.')));return;}
       const p=selected;detail.append(h('h3',{},p.name));
+      detail.append(h('p',{class:'wf-hint'},p.provider==='General'&&generalNotes[p.id]?w(...generalNotes[p.id]):w('Perfil especializado. Revisa su estructura y las instrucciones de referencia.','Specialized profile. Review its structure and reference instructions.')));
       if(p.provider!=='General'){
-        const v=h('select',{'aria-label':w('Variante de diseño','Design variant')},h('option',{value:'brand'},w('Marca','Brand')),h('option',{value:'quiet'},w('Sobria','Quiet')));v.value=variant;v.addEventListener('change',()=>{variant=v.value;renderDetail();});detail.append(h('label',{},w('Apariencia','Appearance'),v));
+        const v=h('select',{'data-design-variant':'','aria-label':w('Variante de diseño','Design variant')},h('option',{value:'brand'},w('Marca','Brand')),h('option',{value:'quiet'},w('Sobria','Quiet')));v.value=variant;v.addEventListener('change',()=>{variant=v.value;renderDetail();detail.querySelector('[data-design-variant]')?.focus();});detail.append(h('label',{},w('Apariencia','Appearance'),v));
       }
       const samples=h('div',{class:'design-filters'}),preview=h('div',{class:'design-preview'});
-      for(const [id,es,en] of [['cover','Portada','Cover'],['summary','Resumen','Summary'],['technical','Técnica','Technical']]){const b=btn(w(es,en),()=>{sample=id;renderDetail();});b.setAttribute('aria-pressed',String(sample===id));samples.append(b);}
+      for(const [id,es,en] of [['cover','Portada','Cover'],['summary','Resumen','Summary'],['technical','Técnica','Technical']]){const b=btn(w(es,en),()=>{sample=id;comparison.value=id;renderList();renderDetail();detail.querySelector('[data-design-sample="'+id+'"]')?.focus({preventScroll:true});});b.dataset.designSample=id;b.setAttribute('aria-pressed',String(sample===id));samples.append(b);}
       detail.append(samples,preview,h('p',{class:'wf-hint'},w('Muestra ficticia. Calibri en Word; Carlito en PDF. Código monoespaciado.','Fictional sample. Calibri in Word; Carlito in PDF. Monospaced code.')));
       if(p.provider==='Personal'){
         preview.append(h('p',{role:'status'},w('Generando vista previa real…','Rendering actual preview…')));
@@ -69,6 +79,7 @@ const DesignLibraryUI=(()=>{
         const {d:confirm,body:cb}=modal(w('Eliminar plantilla personal','Delete personal design'));cb.append(h('p',{},w('Los proyectos que ya la usan conservarán su apariencia.','Projects already using this design will keep their appearance.')),btn(w('Confirmar eliminación','Confirm deletion'),async()=>{await write('/api/design-library/personal/'+p.id,null,'DELETE');confirm.close();await refresh();selected=null;renderList();renderDetail();}));
       }));
       detail.insertBefore(actions,samples);
+      detail.insertBefore(h('p',{class:'wf-hint'},w('Crear incorpora la estructura en un proyecto nuevo. Aplicar apariencia conserva las secciones, hallazgos y evidencias del proyecto abierto.','Create adds the structure to a new project. Apply appearance preserves the sections, findings and evidence of the open project.')),actions);
       if(p.sections){const list=h('ol');p.sections.forEach(s=>list.append(h('li',{},(typeof s.title==='object'?s.title[sampleLang]:s.title)||w('Hallazgos','Findings'))));detail.append(h('details',{},h('summary',{},w('Estructura inicial','Starter structure')),list));}
       if(p.guidance)detail.append(guideBox({...p.guidance,note:local(p.guidance.note)}));
     }
@@ -108,8 +119,8 @@ const DesignLibraryUI=(()=>{
     if(S.data)body.append(btn(w('Usar títulos del proyecto abierto','Use open project headings'),()=>{sections=(S.data.report?.sections||[]).map((s,i)=>({key:s.key,title:s.title?{[S.data.meta.lang||'es']:s.title}:{es:S.catBy[s.key]?.title_es||s.key,en:S.catBy[s.key]?.title_en||''},body:{es:'TODO: Completa esta sección.',en:'TODO: Complete this section.'}}));renderRows();}));
     body.append(btn(w('Guardar plantilla','Save design'),async()=>{if(sections.some(s=>!s.title?.es?.trim()||!s.title?.en?.trim()||(s.body&&(!s.body.es?.trim()||!s.body.en?.trim()))))throw Error(w('Completa los títulos y textos iniciales en español e inglés.','Complete headings and starter text in Spanish and English.'));await write('/api/design-library/personal'+(editing?'/'+p.id:''),{name:name.value,design:read(),sections},editing?'PUT':'POST');d.close();await done();},true));renderRows();}
   function panel(){const design=S.data.meta.design;
-    return h('div',{class:'card'},h('h4',{},w('Diseño del informe','Report design')),h('p',{},design?design.name+' / '+(design.variant==='quiet'?w('Sobria','Quiet'):w('Marca','Brand')):w('Diseño general','General design')),btn(w('Abrir biblioteca de informes','Open report design library'),gallery));}
+    return h('div',{class:'card'},h('h4',{},w('Diseño del informe','Report design')),h('p',{},design?design.name+' / '+(design.variant==='quiet'?w('Sobria','Quiet'):w('Marca','Brand')):generalItem(S.data.meta.theme).name),btn(w('Abrir biblioteca de informes','Open report design library'),gallery));}
   function bind(){const b=btn(w('Biblioteca de informes','Report design library'),gallery);b.id='designLibraryBtn';$('.sidebar').prepend(b);
-    const newBox=$('#newModal .modal-box');if(newBox)newBox.prepend(btn(w('Elegir en la biblioteca de informes','Choose in report design library'),()=>{closeModal($('#newModal'));return gallery();}));}
+    const newBox=$('#newProjectLibrary');if(newBox){const library=btn(w('Elegir en la biblioteca de informes','Choose in report design library'),()=>{const opener=$('#newModal')._opener;closeModal($('#newModal'));return gallery(opener);});library.dataset.i18n='new_project_library';newBox.append(library);}}
   return {bind,gallery,panel,guideBox};
 })();

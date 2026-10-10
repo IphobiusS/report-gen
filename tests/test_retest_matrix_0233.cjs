@@ -35,6 +35,7 @@ let timer,browser,page;
    S.data.coverage=[{uid:WorkflowUI.uid(),test:'Synthetic blocked coverage',status:'blocked',notes:'Synthetic blocker'}];S.data.finding_sequence=5;
    scheduleSave();await doSave();select('findings');
  });
+ await page.locator('#workspaceFollowup > summary').click();
  await page.locator('[data-workflow="retest_matrix"]').click();
  check('Sidebar opens the retest matrix through a visible user control',await page.locator('[data-workflow-view="retest_matrix"]').count()===1&&await page.locator('[data-studio-nav="review"]').getAttribute('aria-current')==='page'&&await page.evaluate(()=>document.documentElement.dataset.studio==='review'));
  await page.locator('[data-retest-matrix]').waitFor();await page.waitForFunction(()=>!projectStore.loading&&!projectStore.dirty&&!projectBusyCount);

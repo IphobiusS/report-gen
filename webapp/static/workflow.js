@@ -140,6 +140,12 @@ const WorkflowUI = (() => {
     controls.querySelector('button').dataset.reviewNext='';head.append(controls);
   }
   function resetReview(){reviewSession=null;reviewGeneration++;}
+  // A view may describe these checks, but must never treat them as technical approval.
+  function reviewSnapshot(){
+    if(!reviewSession||reviewSession.slug!==S.slug)return null;
+    return {current:!projectStore.dirty&&!projectStore.loading&&reviewSession.revision===projectStore.revision&&reviewSession.etag===projectStore.etag,
+      issues:reviewSession.issues.length,errors:reviewSession.issues.filter(issue=>issue.level==='error').length};
+  }
   async function review(box,slug){
     const generation=++reviewGeneration;
     const status=h('p',{role:'status'},w('Comprobando la revisión guardada…','Checking the saved revision…'));box.append(status);
@@ -452,5 +458,5 @@ const WorkflowUI = (() => {
       if(S.slug!==slug)return;f.id=nextFid();S.data.findings.push(f);ensureFindingIds();scheduleSave();select('finding',S.data.findings.length-1);m.closeModal();
     },true));
   }
-  return {bind,updateNav,render,findingPanel,findingEvidence,saveTemplate,openLibrary:()=>go('library'),navigateIssue,reviewControls,resetReview,uid};
+  return {bind,updateNav,render,findingPanel,findingEvidence,saveTemplate,openLibrary:()=>go('library'),navigateIssue,reviewControls,resetReview,reviewSnapshot,uid};
 })();

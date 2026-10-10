@@ -71,7 +71,7 @@ const S = { designs: [], projects: [], slug: null, data: null, sel: { type: "rep
 // ---- i18n del sitio -------------------------------------------------------
 const I18N = {
   es: {
-    new_project:"Nuevo proyecto", delete:"Eliminar", delete_title:"Eliminar el proyecto actual",
+    new_project:"Nuevo proyecto", new_project_start:"Empieza con la estructura Base. Puedes ajustar el diseño y las secciones después.", new_project_options:"Otras estructuras y perfiles especializados", new_project_library:"Elegir en la biblioteca de informes", delete:"Eliminar", delete_title:"Eliminar el proyecto actual",
     hide_preview:"Ocultar vista previa", show_preview:"Mostrar vista previa", preview_toggle_title:"Mostrar u ocultar la vista previa",
     ui_lang_title:"Idioma del sitio", validate_title:"Validar informe", translating:"Actualizando\u2026", toast_created:"Proyecto creado", toast_exported:"Exportado", toast_copied:"Copiado", exporting:"Generando", validate_ok:"Sin avisos", validate_issues:"aviso(s)", dash_sort_sev:"Severidad", dash_sort_manual:"Manual", dash_incomplete:"CVSS o CWE sin registrar (opcionales). No impide exportar.", theme_light:"Tema claro", theme_dark:"Tema oscuro", update_preview:"Actualizar vista previa", export:"Exportar",
     rename:"Renombrar", rename_title:"Cambiar el nombre del proyecto (título del informe)", rename_prompt:"Nuevo nombre del proyecto:",
@@ -125,7 +125,7 @@ const I18N = {
     create_fail:"No se pudo crear", delete_confirm:"Eliminar el proyecto \"{n}\"?\nEsto borra su informe y sus imagenes de forma permanente."
   },
   en: {
-    new_project:"New project", delete:"Delete", delete_title:"Delete the current project",
+    new_project:"New project", new_project_start:"Start with the Base structure. You can adjust the design and sections later.", new_project_options:"Other structures and specialized profiles", new_project_library:"Choose in report design library", delete:"Delete", delete_title:"Delete the current project",
     hide_preview:"Hide preview", show_preview:"Show preview", preview_toggle_title:"Show or hide the preview",
     ui_lang_title:"Site language", validate_title:"Validate report", translating:"Updating\u2026", toast_created:"Project created", toast_exported:"Exported", toast_copied:"Copied", exporting:"Generating", validate_ok:"No warnings", validate_issues:"warning(s)", dash_sort_sev:"Severity", dash_sort_manual:"Manual", dash_incomplete:"CVSS or CWE not recorded (optional). Export remains available.", theme_light:"Light theme", theme_dark:"Dark theme", update_preview:"Refresh preview", export:"Export",
     rename:"Rename", rename_title:"Rename the project (report title)", rename_prompt:"New project name:",
@@ -1560,6 +1560,8 @@ function refreshPresetDesc() {
   const lg = S.uiLang || "es";
   const d = sel ? (sel["desc_" + lg] || sel.desc_es || "") : "";
   $("#mPresetDesc").textContent = d ? d + "  —  " + t("preset_note") : t("preset_note");
+  const label=sel?(sel["name_"+lg]||sel.name_es||sel.id):selectedPresetId();
+  $("#mPresetSelected").textContent=(lg==='en'?'Selected structure: ':'Estructura seleccionada: ')+label+(sel?.id==='base'?(lg==='en'?' · Recommended starting point':' · Inicio recomendado'):'');
 }
 function populatePresetSelector() {
   const pm = $("#mPreset"); if (!pm) return;
@@ -1616,7 +1618,7 @@ function bindUI() {
   $("#mPreset").addEventListener("change", () => { const v = $("#mPreset").value; if (v.startsWith("family:")) fillCertOptions(v.slice(7)); refreshPresetDesc(); });
   $("#mCert").addEventListener("change", refreshPresetDesc);
   populatePresetSelector();
-  $("#newProjectBtn").addEventListener("click", () => { populatePresetSelector(); $("#mLang").value='corporativo-'+S.uiLang; openModal($("#newModal")); });
+  $("#newProjectBtn").addEventListener("click", () => { populatePresetSelector(); $("#mPresetOptions").open=false; $("#mLang").value='corporativo-'+S.uiLang; openModal($("#newModal")); $("#mTitle").focus(); });
   $("#deleteProjectBtn").addEventListener("click", deleteProject);
   $("#renameProjectBtn").addEventListener("click", renameProject);
   $("#restoreProjectBtn").addEventListener("click", restoreProject);
@@ -1686,6 +1688,7 @@ async function createProject() {
   $("#newProjectError")?.remove();
   creatingProject=true;$("#mCreate").disabled=true;
   try {
+    if(S.slug&&!await doSave())throw Error(S.uiLang==='en'?'The open project could not be saved. Resolve its save warning before creating another project.':'No se pudo guardar el proyecto abierto. Resuelve su aviso de guardado antes de crear otro proyecto.');
     const body = { model: $("#mLang").value, preset: selectedPresetId(), title: $("#mTitle").value, client: $("#mClient").value, slug: $("#mSlug").value };
     const r = await requireOk(await api.post("/api/projects", body));
     const { slug } = await r.json();

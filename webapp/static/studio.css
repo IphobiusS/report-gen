@@ -9,3 +9,13 @@
 @media(max-width:760px){.workspace-topline>.brand{grid-column:1;grid-row:1;order:0}.workspace-topline>.project-switch{grid-column:2;grid-row:1;order:0}.workspace-topline>#studioMore{grid-column:3;grid-row:1;order:0}}
 
 .studio-more-body .search-wrap{display:block!important;width:100%;margin:0;max-width:none}.studio-more-body .search-results{position:static;width:100%;max-height:40vh}.studio-more-body .search-input{width:100%}
+
+/* Selection stays readable while the specialized catalog is optional. */
+.new-project-selection,.design-current{padding:10px 12px;border-left:3px solid var(--accent);background:var(--panel2);font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.design-catalog-options{margin:12px 0;border:1px solid var(--line);border-radius:6px;padding:0 12px;min-width:0}
+.design-catalog-options>summary{cursor:pointer;min-height:44px;padding:12px 0;line-height:1.5;overflow-wrap:anywhere}
+.design-catalog-options[open]{padding-bottom:12px}.design-catalog-options label{display:block;min-width:0}.design-catalog-options select,.design-catalog-options input{max-width:100%}
+#newProjectLibrary{margin:12px 0}#newProjectLibrary .btn{white-space:normal;max-width:100%;min-height:44px}
+.design-card .design-current-badge{color:var(--accent);font-weight:700}.design-detail .wf-hint{line-height:1.5}
+.design-dialog .grid2>label{min-width:0}.design-dialog .grid2 select{width:100%;max-width:100%}.design-catalog-options>summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(max-width:760px){.design-catalog-options{padding-inline:10px}.design-dialog .design-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.design-card{padding:8px}.design-dialog .design-layout{gap:18px}}

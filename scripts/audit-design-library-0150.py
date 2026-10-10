@@ -39,6 +39,9 @@ with tempfile.TemporaryDirectory(prefix='design-browser-') as temp:
         page.get_by_role('button',name='Probar Nimbus',exact=True).click();ready(page)
         baseline=page.evaluate('structuredClone(S.data)');demo=page.evaluate('S.slug')
         page.locator('#designLibraryBtn').click();gal=page.get_by_role('dialog',name='Biblioteca de informes',exact=True);gal.wait_for(state='visible')
+        if not gal.locator('[data-design-catalog]').evaluate('(e)=>e.open'):
+            gal.locator('[data-design-catalog]>summary').click()
+        gal.locator('[data-family="OffSec"]').click()
         check('14 OffSec profiles',gal.locator('[data-design]').count()==14)
         gal.locator('[data-design="offsec-oswe"]').click()
         gal.locator('.design-preview img').wait_for(state='visible')
@@ -97,6 +100,9 @@ with tempfile.TemporaryDirectory(prefix='design-browser-') as temp:
         gal.locator('[data-family="Históricas"]').click();check('Historical catalog separates non-current profiles',gal.locator('.design-history').count()==3)
         page.keyboard.press('Escape');gal.wait_for(state='detached');wait(page,"document.activeElement.id==='designLibraryBtn'");check('Escape returns focus',page.locator('#designLibraryBtn').evaluate('(e)=>e===document.activeElement'))
         page.set_viewport_size({'width':390,'height':844});page.locator('#designLibraryBtn').click();gal=page.get_by_role('dialog',name='Biblioteca de informes',exact=True);gal.wait_for(state='visible')
+        if not gal.locator('[data-design-catalog]').evaluate('(e)=>e.open'):
+            gal.locator('[data-design-catalog]>summary').click()
+        gal.locator('[data-family="OffSec"]').click()
         gal.locator('[data-design="offsec-oscp"]').click()
         check('Mobile dialog fits viewport',gal.evaluate('(e)=>e.getBoundingClientRect().right<=innerWidth&&e.scrollWidth<=e.clientWidth+1'))
         check('Mobile preview fits panel',gal.locator('.design-detail').evaluate('(e)=>e.scrollWidth<=e.clientWidth+1'))

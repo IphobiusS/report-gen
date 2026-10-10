@@ -1,20 +1,29 @@
-# report-gen 0.25.0 user guide
+# report-gen 0.26.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
-This guide collects the operational documentation previously held in the README. Unless stated otherwise, run commands from the project root containing `start.py`. Initial setup and optional downloads need a connection; ordinary editing and exports run locally.
+Unless stated otherwise, run commands from the project root containing `start.py`. Initial setup and optional downloads need a connection; ordinary editing and exports run locally.
 
 ## Install and launch
 
-Primary installation path: Linux/Kali with Python 3.10+. Native Windows and Microsoft Word require separate validation.
+Primary installation path: Linux/Kali with Python 3.10+. Windows compatibility tests do not replace document review in desktop Microsoft Word.
 
 ```bash
-python3 start.py --setup
-python3 start.py --diagnose --lang en
-python3 start.py
+python3 start.py --ready --lang en
 ```
 
-Setup creates `.venv` and installs dependencies constrained by `requirements-audited.txt`; it needs network access. Open **http://127.0.0.1:8080**. Use `--port 8081` for another local port. An existing prepared environment is also supported.
+`--ready` allows dependency installation when the local environment is missing or incomplete, runs diagnostics and starts the editor if its requirements are available. Setup creates `.venv`, updates pip and installs dependencies constrained by `requirements-audited.txt`. Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. Use `python3 start.py --ready --port 8081 --lang en` for another local port.
+
+Diagnostics distinguish the editor from each export engine. Editing can work while an optional engine is unavailable; opening the editor does not establish that every output format is available. If preparation stops, follow the reported correction before trying again.
+
+| Need | Command |
+| --- | --- |
+| Prepare, check and start | `python3 start.py --ready --lang en` |
+| Reinstall dependencies and stop | `python3 start.py --setup --lang en` |
+| Diagnose without installing or starting | `python3 start.py --diagnose --lang en` |
+| Start an already prepared environment without installing | `python3 start.py --lang en` |
+
+**Node.js is not required for ordinary use.**
 
 On Debian/Kali, missing native dependencies can be installed with:
 
@@ -33,7 +42,9 @@ Read each engine status in the diagnostic output; its exit code alone does not e
 
 ## First report
 
-On Overview, select **Open visual guide** in the **Your first report here?** card. You can also use **Guide: first report** in the sidebar or under **More** on mobile. Jump to any step and revisit the help while working.
+On Overview, choose **Try Nimbus demo** or **Create my project**. With a project open, **Suggested next action** proposes a step based on its title and client, scope objectives, findings, evidence associations and actual results of the last saved review. **View this step in the guide** opens the corresponding explanation. You can also open **Guide: first report** in the sidebar or under **More** on mobile and revisit any of its six steps.
+
+Suggestions support writing without requiring a fabricated finding or screenshot: go directly to review when a recommendation does not apply to your assessment. A review with no issues suggests preparing delivery, but does not approve its content. If you edit the draft after review, repeat the saved review before delivery.
 
 1. **Start.** Use **Create project** or **New project** to choose the design and report language. To learn with prepared content, **Try Nimbus demo** creates an editable fictional case with 12 findings. You can also open a backup of your work.
 2. **Define scope.** Complete the client, assessor, dates and report details. Document objectives, included assets, exclusions and limitations. Record **Assets** and **Coverage** when useful for your assessment.
@@ -44,7 +55,11 @@ On Overview, select **Open visual guide** in the **Your first report here?** car
 
 CVSS expresses technical severity, not business risk by itself. **Risk Posture and Business Impact** and **Strategic Recommendations** let you document the context, priorities and risk appetite agreed with the organization. Enable these sections under **Manage sections**. You author the conclusions; selecting a design does not calculate or approve them.
 
-**Library** includes 22 certification profiles, six general layouts, Brand/Sober variants and personal templates. Every profile supports English and Spanish. Applying an appearance preserves findings. Word uses Calibri; PDF and HTML use compatible Carlito. Commands retain their monospaced font.
+**Library** recommends Serious as a general starting point. Compare the six general designs using the same sample page: cover, summary or technical page. An expandable specialized catalog retains the 22 certification profiles, Brand/Quiet variants and personal templates. If your project already uses a specialized design, the library opens in that context; browsing does not change its appearance.
+
+Every profile supports English and Spanish. Applying an appearance preserves findings. Word uses Calibri; PDF and HTML use compatible Carlito. Commands retain their monospaced font.
+
+The sidebar groups capture/coverage and history/follow-up tools in expandable sections. Direct navigation to one of their pages expands the group to show your location. **More project tools** on Overview contains less frequent controls; existing functions and data remain available.
 
 ## Delivery checks and limits
 
@@ -74,9 +89,19 @@ Portable HTML contains the entire report. Executive view and filters are present
 
 ## Upgrade from an earlier version
 
-Install 0.25.0 into a new directory. Create a workspace backup in the previous version and restore it into the empty new installation. Keep the old directory until you have checked your projects. Do not copy another installation's `.venv` or overwrite data with demo files. Existing projects remain readable. Backups containing annexes require 0.21.0 or later.
+Extract or clone 0.26.0 into a new directory. Close both editors before transferring data, then run from the new directory:
 
-If an old project has its only preceding revision in `engagement.yaml.bak`, without snapshot history, the 0.21.2 exporter omits that copy. Keep a complete copy of `webapp/projects/` and `webapp/library/` as well. Copy those directories into a new 0.25.0 installation and create the backup there: this release includes the legacy recovery state without modifying its source when exporting. An older ZIP that already omitted the copy cannot reconstruct it.
+```bash
+python3 start.py --ready --upgrade-from /path/to/previous-report-gen --lang en
+```
+
+The launcher prepares its own environment, creates a workspace backup of the source, validates a temporary restoration and transfers data to the empty new installation. It prints the result, ZIP path and SHA-256, then checks the engines and starts the editor. If dependencies are already installed and you want to inspect the result before starting, omit `--ready`: migration stops after diagnostics.
+
+The private backup is kept at `~/report-gen-backups/upgrade-*/workspace.zip`, outside both installations, alongside `result.json` with its SHA-256 and counts. It includes originals and history. If destination activation fails, the backup already created is retained and the previous installation is not modified. Overlapping paths, symbolic links, pending recovery states and destinations containing projects or personal libraries are rejected to avoid merging or overwriting data. Address the reported cause and use an empty destination; do not delete your data to force migration.
+
+Migration retains projects, evidence, history and libraries covered by workspace backup. It does not copy `.venv`, delivery outputs or browser drafts. Download a pending draft before changing installation or browser origin. Open your projects, verify images and history and retain any delivery files you need before retiring the previous directory.
+
+Alternatively, create **Workspace backup** in the previous version and restore it into the empty new installation. If an old project has its only preceding revision in `engagement.yaml.bak`, without snapshot history, the 0.21.2 exporter omits that copy. Keep the original directory and use the 0.26.0 migration to include this legacy recovery state. An older ZIP that already omitted the copy cannot reconstruct it. Existing projects remain readable. Backups containing annexes require 0.21.0 or later.
 
 Existing IDs are retained. Since 0.21.2, the `finding_sequence` counter prevents deleted IDs from being reused; older versions do not preserve this guarantee. References already misdirected by older edits cannot be repaired automatically without knowing their original intent.
 

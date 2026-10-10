@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.25.0
+# report-gen 0.26.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -15,19 +15,17 @@ Primary path: **Linux/Kali and Python 3.10+**. The guide describes requirements 
 ```bash
 git clone https://github.com/IphobiusS/report-gen.git
 cd report-gen
-python3 start.py --setup
-python3 start.py --diagnose --lang en
-python3 start.py
+python3 start.py --ready --lang en
 ```
 
 Open **http://127.0.0.1:8080** in your browser. `Ctrl+C` stops the server; `--port 8081` selects another local port.
 
-`--setup` creates `.venv` and installs dependencies constrained by `requirements-audited.txt`; it needs an Internet connection. Read each engine's diagnostic result. See [detailed installation](docs/guide.en.md#install-and-launch) for native PDF libraries or the optional Chromium engine. **Node.js is not required to use the editor.**
+`--ready` prepares `.venv` when needed, checks the engines and starts the editor. Initial setup downloads dependencies constrained by `requirements-audited.txt`. Missing optional engines are reported separately. See [detailed installation](docs/guide.en.md#install-and-launch) for native PDF libraries. **Node.js is not required to use the editor.**
 
 ## First report
 
-1. On **Overview**, choose **Try Nimbus demo** to create an editable copy of a fictional case with 12 findings. Use **Create project** for your own assessment.
-2. Open **Guide: first report**. Its six steps cover scope, findings, evidence, review and delivery without filling in or validating data for you.
+1. On **Overview**, choose **Try Nimbus demo** to create an editable copy of a fictional case with 12 findings. Use **Create my project** for your own assessment.
+2. In the project, **Suggested next action** follows what you have written so far. **View this step in the guide** opens the relevant help. Guidance does not fill in or validate assessment data for you.
 3. Save, review the **Publication inspector**, and generate the formats you need from **Deliver**. Open the files before sharing them and keep a private project backup.
 
 [Complete walkthrough and recommendations](docs/guide.en.md#first-report).
@@ -37,7 +35,7 @@ Open **http://127.0.0.1:8080** in your browser. `Ctrl+C` stops the server; `--po
 - **Document an assessment:** scope, methodology, assets, coverage, findings and reproducible steps; CVSS 3.1 and 4.0 where appropriate.
 - **Work with evidence:** a gallery, captions, finding links, redacted copies and an inspector for published content.
 - **Retain follow-up:** stable identities, recoverable revisions, comparisons with a marked delivery, remediation and a retest matrix.
-- **Choose presentation:** designs and certification profiles, personal templates, and Spanish or English reports. Report language is independent of interface language.
+- **Choose presentation:** start with Serious, compare the six general designs and open the specialized catalog when needed. Report language is independent of interface language.
 - **Separate audiences:** technical, executive and public deliveries with explicit inclusion plans; public output requires approved prose and recorded consent.
 - **Connect evidence and decisions:** claims, limitations, business context, comments and actual PDF review. [Workflow and optional requirements](docs/evidence-decisions-0230.en.md).
 
@@ -48,11 +46,9 @@ Open **http://127.0.0.1:8080** in your browser. `Ctrl+C` stops the server; `--po
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
-## New in 0.25.0
+## New in 0.26.0
 
-The retest matrix keeps labels and counts together; delivery preparation shows statuses and links for resolving pending items. Preview fits the available width and supports manual zoom. Documented PDF routes group steps by phase and retain their complete text alternative.
-
-This release also improves YAML reading with libyaml and a bounded compatibility path, and adds public-key fingerprint lookup for optional signing. [Full changes](CHANGELOG.md).
+One-command preparation and launch, verified migration from an earlier installation, a more visible first-report journey, and design selection with a recommendation and comparable samples. Specialized options remain available. [Full changes](CHANGELOG.md).
 
 <a id="delivery-checks-and-limits"></a>
 
@@ -68,11 +64,17 @@ The editor runs on **`127.0.0.1` in one process**, without accounts or external 
 
 Projects live in `webapp/projects/`, personal libraries in `webapp/library/`. **Workspace backup** retains projects, originals and history; it is private material. The application does not encrypt stored data or drafts. [Recovery, backups and privacy](docs/guide.en.md#recovery-and-privacy).
 
-Portable HTML contains the complete report: filters are not access permissions. Possible-secret detectors do not replace human review. Native Windows and desktop Microsoft Word require specific validation; Word and LibreOffice can paginate differently. Certification profiles imply no affiliation or guarantee of compliance with exam rules.
+Portable HTML contains the complete report: filters are not access permissions. Possible-secret detectors do not replace human review. Windows compatibility tests do not replace review in desktop Microsoft Word; Word and LibreOffice can paginate differently. Certification profiles imply no affiliation or guarantee of compliance with exam rules.
 
 ## Upgrade from an earlier version
 
-Install **0.25.0 in a new directory**. Create a workspace backup with the previous version, restore it into the empty new installation, and check your projects before retiring the old one. Do not copy its `.venv` or overwrite data with demo files.
+Download **0.26.0 into a new directory**, stop the previous installation and run from the new directory:
+
+```bash
+python3 start.py --ready --upgrade-from /path/to/previous-report-gen --lang en
+```
+
+Migration requires a destination without projects or personal libraries. It preserves the source and creates a private backup. Check your projects before retiring the previous installation. You can also use **Workspace backup** to transfer them. Do not copy the old `.venv`.
 
 [Backup compatibility and recovery of older projects](docs/guide.en.md#upgrade-from-an-earlier-version).
 
@@ -106,4 +108,5 @@ npm test
 - [Usage guide: installation, publication, backups, CLI and development](docs/guide.en.md).
 - [Evidence and decisions; optional previews and Ollama](docs/evidence-decisions-0230.en.md).
 - [CVSS 4.0](docs/CVSS40.md) and [delivery signing](docs/delivery-signing.md#optional-signing-of-a-delivery).
-- [Changelog](CHANGELOG.md) and [Changelog](CHANGELOG.md).
+- [Design and template library (Spanish)](docs/design-library.md).
+- [Changelog](CHANGELOG.md).

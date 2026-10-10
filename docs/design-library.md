@@ -4,7 +4,11 @@ La biblioteca reúne 22 perfiles de certificación, dos variantes por perfil y l
 
 ## Uso
 
-Abre **Biblioteca de informes** desde el panel izquierdo, la pantalla inicial o **Nuevo proyecto**. Filtra por OffSec, HTB, generales o plantillas personales y busca por certificación o curso. Cada diseño del catálogo permite comparar una portada, un resumen y una página técnica exportados realmente por la herramienta. Las muestras se identifican como ficticias.
+Abre **Biblioteca de informes** desde el panel izquierdo, la pantalla inicial o **Nuevo proyecto**. Para empezar, **Serio** es la recomendación general y mantiene la apariencia del preset Base. La biblioteca abre el diseño de tu proyecto cuando ya hay uno seleccionado; no lo sustituye por la recomendación.
+
+Los seis diseños generales aparecen primero. Elige portada, resumen o página técnica para comparar la misma clase de página entre diseños. Las muestras se exportan realmente por la herramienta con datos ficticios. El catálogo completo de OffSec, HTB, plantillas personales y referencias históricas está en un apartado desplegable. Se abre automáticamente si el proyecto utiliza un diseño especializado. Dentro puedes filtrar y buscar por certificación o curso.
+
+**Nuevo proyecto** mantiene visible la estructura elegida y recomienda Base para comenzar. Los presets especializados siguen disponibles en sus opciones adicionales. Explorar una muestra o desplegar el catálogo no aplica cambios al proyecto.
 
 - **Crear proyecto** inicia un documento ES o EN con instrucciones `TODO`, sin hallazgos ni resultados inventados.
 - **Aplicar apariencia** cambia exclusivamente `meta.theme` y `meta.design`. Conserva título, cliente, secciones, hallazgos, imágenes, evidencias y el resto de los datos. Antes de aplicar, se guarda el trabajo y se comprueba la revisión del proyecto.

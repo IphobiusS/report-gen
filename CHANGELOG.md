@@ -1,3 +1,14 @@
+# Cambios 0.26.0 (2026-10-10)
+
+- Preparación, diagnóstico y arranque con `start.py --ready`; los motores opcionales ausentes se distinguen de los requisitos del editor. El arranque habitual y `--diagnose` no instalan dependencias.
+- Traslado con `--upgrade-from` hacia una instalación vacía: respaldo privado fuera de ambas carpetas, restauración temporal verificada y conservación del origen. No mezcla proyectos existentes ni copia entornos virtuales, entregas o borradores del navegador.
+- Inicio centrado en la demo Nimbus y la creación de un proyecto. Siguiente acción sugerida a partir de los datos y la revisión guardada, con acceso al paso correspondiente de la guía; no inventa hallazgos ni aprueba el contenido.
+- Registro, cobertura, historial y seguimiento agrupados en desplegables que conservan el contexto de navegación. Las herramientas menos frecuentes permanecen disponibles.
+- Selección de presentación con Serio como recomendación general, muestras comparables de los seis diseños y catálogo especializado desplegable. Navegar no cambia la apariencia de un proyecto existente.
+- Distribución identificada por commit, constructor reproducible desde objetos Git y enlace único de descarga para repositorio y sitio. Comprobaciones rápidas y recorridos independientes; Pytest repartido en cuatro grupos con control de cobertura exacta.
+- README y guías ES/EN centrados en el primer resultado y la actualización. Protocolo de cinco sesiones externas y tres tareas documentado en CONTRIBUTING, pendiente de ejecución; no se declara validación con usuarios externos.
+- La revisión nativa de Microsoft Word sigue siendo una comprobación específica pendiente: las pruebas de OOXML, LibreOffice y compatibilidad de Windows no la sustituyen.
+
 # Cambios 0.25.0 (2026-10-09)
 
 - Gráfico de retest con etiqueta, cantidad y barra en una misma fila; geometría responsiva y ampliación de texto verificables.

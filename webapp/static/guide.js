@@ -9,12 +9,59 @@ const GuideUI = (() => {
     ['Revisa lo que compartes', 'Review what you share'], ['Entrega y conserva', 'Deliver and retain']
   ];
 
+  // These are writing suggestions based on recorded fields, never a completion score.
+  // Keep the decision function pure so navigation, language and reading the guide cannot edit a report.
+  function nextAction(data = S.data, review = null) {
+    const text = value => typeof value === 'string' && value.trim().length > 0;
+    if (!data) return {key:'start', step:0, type:'start', title:['Empieza con un informe de ejemplo','Start with an example report'],
+      description:['Nimbus crea una copia editable con datos ficticios. También puedes crear tu propio proyecto.','Nimbus creates an editable copy with fictional data. You can also create your own project.'], action:['Probar demo Nimbus','Try Nimbus demo']};
+    const meta = data.meta || {}, findings = data.findings || [], evidence = data.evidence || [];
+    if (!text(meta.report_title) || !text(meta.client)) return {key:'metadata', step:1, type:'report', title:['Identifica el informe','Identify your report'],
+      description:['Falta el título o el cliente. Completa estos datos para reconocer el proyecto y su destinatario.','The title or client is missing. Fill them in to identify the project and its recipient.'], action:['Completar datos del informe','Complete report details']};
+    const scope = data.report?.sections?.find(section => section.key === 'scope');
+    if (scope && !text(scope.objectives)) return {key:'scope', step:1, type:'section', value:'scope', title:['Describe el alcance','Describe the scope'],
+      description:['La sección Alcance está activa y sus objetivos están vacíos. Registra qué evalúas y sus límites.','The Scope section is enabled and its objectives are empty. Record what you assess and its boundaries.'], action:['Abrir alcance','Open scope']};
+    if (!findings.length) return {key:'finding', step:2, type:'findings', title:['Documenta tu primer resultado','Document your first result'],
+      description:['Este proyecto aún no tiene hallazgos. Añade uno si tu evaluación lo justifica; también puedes revisar un informe sin hallazgos.','This project has no findings yet. Add one if your assessment warrants it; you can also review a report with no findings.'], action:['Abrir hallazgos','Open findings']};
+    const unfinished = findings.findIndex(f => !text(f.title) || !text(f.mode === 'machine' ? f.summary_md : f.description_md));
+    if (unfinished >= 0) return {key:'finding-content', step:2, type:'finding', value:unfinished, title:['Completa el contexto del hallazgo','Complete the finding context'],
+      description:['Hay una entrada sin título o descripción. Explica la observación antes de preparar la entrega.','An entry is missing its title or description. Explain the observation before preparing delivery.'], action:['Continuar el hallazgo','Continue the finding']};
+    const known = new Set(evidence.map(item => item.uid)), references = findings.flatMap(f => [...(f.evidence_uids || []), ...(f.retests || []).flatMap(item => item.evidence_uids || [])]);
+    const missing = references.some(uid => !known.has(uid)), unlinked = evidence.some(item => !references.includes(item.uid));
+    if (missing || unlinked) return {key:'evidence-links', step:3, type:'workflow', value:'evidence', title:['Revisa las asociaciones de evidencia','Review evidence links'],
+      description:missing ? ['Hay referencias a evidencias que no están en el registro. Revisa sus asociaciones.','Some evidence references are absent from the registry. Review their links.'] : ['Hay evidencias registradas sin asociación a un hallazgo o retest. Vincúlalas si corresponden.','Some registered evidence is not linked to a finding or retest. Link it where appropriate.'], action:['Abrir evidencias','Open evidence']};
+    if (review?.current && review.issues === 0) return {key:'delivery', step:5, type:'studio', value:'deliver', title:['Inspecciona y prepara los archivos','Inspect and prepare the files'],
+      description:['La última comprobación de esta revisión no detectó avisos. Revisa el texto, las imágenes y los archivos finales antes de entregarlos.','The latest check of this revision found no warnings. Inspect the text, images and final files before delivering them.'], action:['Preparar entrega','Prepare delivery']};
+    return {key:'review', step:4, type:'workflow', value:'review', title:[review?.current ? 'Resuelve los avisos de revisión' : 'Revisa lo que vas a compartir', review?.current ? 'Resolve review warnings' : 'Review what you will share'],
+      description:review?.current ? [review.issues+' avisos en la última comprobación de esta revisión. Ábrelos para decidir cómo resolverlos.', review.issues+' warnings in the latest check of this revision. Open them to decide how to address them.'] : ['Comprueba campos, referencias y omisiones de la revisión guardada. La validación técnica sigue a tu cargo.','Check fields, references and omissions in the saved revision. Technical validation remains your responsibility.'], action:['Abrir revisión de entrega','Open delivery review']};
+  }
+  function recommendation() {
+    return nextAction(S.data, typeof WorkflowUI !== 'undefined' ? WorkflowUI.reviewSnapshot?.() : null);
+  }
+  function act(next) {
+    if (next.type === 'start') activate('demoBtn');
+    else go(next.type, next.value ?? -1);
+  }
+  function projectState(compact = false) {
+    const next = recommendation();
+    const panel = h('section', {class:'guide-project-state'+(compact?' compact':''), 'data-first-use-state':next.key, 'aria-label':w('Siguiente acción sugerida','Suggested next action')},
+      h('div', {}, h('p', {class:'guide-eyebrow'}, w('SIGUIENTE ACCIÓN SUGERIDA','SUGGESTED NEXT ACTION')), h('h2', {}, w(...next.title)), h('p', {}, w(...next.description))));
+    const actions = h('div', {class:'guide-actions'}, button(w(...next.action), () => act(recommendation()), 'suggested-action', true));
+    if (!compact) actions.append(button(w('Ver este paso en la guía','View this step in the guide'), () => open(recommendation().step), 'suggested-guide'));
+    if (S.data && ['finding','finding-content','evidence-links'].includes(next.key)) actions.append(button(w('Ir a revisión','Go to review'), () => go('workflow','review'), 'review-anyway'));
+    panel.append(actions, h('p', {class:'guide-state-note'}, w('Sugerencia de redacción, no aprobación del informe. Puedes ir a cualquier sección.','Writing suggestion, not report approval. You can open any section.')));
+    return panel;
+  }
+
   function button(label, action, key, primary = false, project = false) {
     const b = h('button', {type: 'button', class: 'btn' + (primary ? ' primary' : ''), 'data-guide-action': key}, label);
+    if (project) b.dataset.guideProject = 'required';
     b.disabled = (project && !S.slug) || projectBusyCount > 0;
     b.addEventListener('click', async () => {
       if (b.disabled) return;
+      b.dataset.guideRunning = ''; b.disabled = true;
       try { await action(); } catch (error) { toast(error.message, 'err'); }
+      finally { delete b.dataset.guideRunning; update(); }
     });
     return b;
   }
@@ -214,6 +261,7 @@ const GuideUI = (() => {
         'An optional path from assessment work to a clear deliverable. You can revisit any step without changing the report.')),
       h('ol', {class: 'guide-flow', 'aria-label': w('De la evidencia a la entrega', 'From evidence to delivery')},
         ['Evidencia|Evidence', 'Hallazgo|Finding', 'Revisión|Review', 'Entrega|Delivery'].map(pair => h('li', {}, w(...pair.split('|')))))));
+    if (S.data) shell.append(projectState(true));
     const navigation = h('nav', {class: 'guide-navigation', 'aria-label': w('Pasos de la guía', 'Guide steps')},
       h('ol', {'data-guide-nav': ''}, names.map((pair, index) => {
         const b = h('button', {type: 'button', 'data-guide-step': index, 'aria-current': current === index ? 'step' : null},
@@ -234,6 +282,7 @@ const GuideUI = (() => {
     el.append(shell);
   }
   function entry() {
+    if (S.data) return projectState();
     return h('section', {class: 'guide-entry', 'aria-labelledby': 'guideEntryTitle'},
       h('div', {}, h('p', {class: 'guide-eyebrow'}, w('6 PASOS · A TU RITMO', '6 STEPS · AT YOUR PACE')),
         h('h2', {id: 'guideEntryTitle'}, w('¿Es tu primer informe aquí?', 'Your first report here?')),
@@ -264,9 +313,29 @@ const GuideUI = (() => {
     };
     place();
     mobile.addEventListener?.('change', place);
+    secondaryNavigation();
     update();
   }
+  function secondaryNavigation() {
+    const groups = [
+      ['workspaceResearch', ['Registro y cobertura','Capture and coverage'], ['#navCaptures','[data-workflow="assets"]','[data-workflow="coverage"]']],
+      ['workspaceFollowup', ['Historial y seguimiento','History and follow-up'], ['[data-workflow="history"]','[data-workflow="retest"]','[data-workflow="retest_diff"]','[data-workflow="retest_matrix"]']]
+    ];
+    for (const [id, title, selectors] of groups) {
+      const controls = selectors.map(selector => $(selector)).filter(Boolean);
+      if (!controls.length || $('#'+id)) continue;
+      const details = h('details', {id, class:'workspace-secondary'}, h('summary', {}, w(...title)));
+      controls[0].before(details);
+      details.append(...controls);
+    }
+  }
   function update() {
+    document.querySelectorAll('[data-guide-action]').forEach(control => {
+      const key = control.dataset.guideAction;
+      control.disabled = projectBusyCount > 0 || control.hasAttribute('data-guide-running') ||
+        (control.dataset.guideProject === 'required' && !S.slug) ||
+        (key === 'previous' && current === 0) || (key === 'next' && current === names.length - 1);
+    });
     const active = S.sel.type === 'guide';
     const b = $('#guideBtn');
     if (b) {
@@ -277,6 +346,13 @@ const GuideUI = (() => {
     }
     $('.layout')?.classList.toggle('workspace-guide', active);
     if (active && $('#workspaceContext')) $('#workspaceContext').textContent = w('Guía: primer informe', 'Guide: first report');
+    for (const [id, pair] of [['workspaceResearch',['Registro y cobertura','Capture and coverage']],['workspaceFollowup',['Historial y seguimiento','History and follow-up']]]) {
+      const details = $('#'+id);
+      if (details) details.querySelector('summary').textContent = w(...pair);
+    }
+    const selected = S.sel.type === 'workflow' ? $('[data-workflow="'+S.sel.idx+'"]') : S.sel.type === 'capture' ? $('#navCaptures') : null;
+    const group = selected?.closest('.workspace-secondary');
+    if (group) group.open = true;
   }
-  return {render, bind, update, entry};
+  return {render, bind, update, entry, nextAction};
 })();

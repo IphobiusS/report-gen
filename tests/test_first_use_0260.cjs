@@ -1,0 +1,93 @@
+/* First-use suggestions read actual fields, preserve edits and never certify a report. */
+'use strict';
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const {JSDOM} = require('jsdom');
+const root = path.resolve(__dirname, '..');
+const checks = [];
+function check(name, condition) { assert.ok(condition, name); checks.push(name); console.log('PASS '+name); }
+const pure = vm.createContext({S:{data:null, uiLang:'es'}});
+vm.runInContext(fs.readFileSync(path.join(root,'webapp/static/guide.js'),'utf8')+'\nthis.nextAction=GuideUI.nextAction;', pure);
+const suggest = (data,review) => pure.nextAction(data,review);
+const project = {meta:{report_title:'Synthetic report',client:'Synthetic client'}, report:{sections:[{key:'scope',objectives:''}]},findings:[],evidence:[]};
+check('No project suggests Nimbus without creating one', suggest(null).key === 'start');
+check('Missing metadata directs to report details', suggest({...project,meta:{}}).key === 'metadata');
+check('Only an enabled, empty scope requests objectives', suggest(project).key === 'scope' && suggest({...project,report:{sections:[]}}).key === 'finding');
+project.report.sections[0].objectives = 'Synthetic authorized scope';
+check('Recorded scope leads to findings without requiring a finding', suggest(project).key === 'finding' && suggest(project).description[1].includes('no findings'));
+project.findings.push({uid:'finding-1',title:'Synthetic observation',description_md:'',evidence_uids:[]});
+check('An incomplete finding directs to its own editor', suggest(project).key === 'finding-content' && suggest(project).value === 0);
+project.findings[0].description_md = 'Synthetic reproducible observation';
+check('Text evidence can proceed to review without forcing a screenshot', suggest(project).key === 'review');
+project.evidence.push({uid:'evidence-1'});
+check('Unlinked evidence is surfaced', suggest(project).key === 'evidence-links');
+project.findings[0].evidence_uids.push('evidence-1');
+check('Linked evidence leads to actual review', suggest(project).key === 'review');
+project.findings[0].evidence_uids.push('missing-evidence');
+check('A broken evidence reference is never treated as complete', suggest(project).key === 'evidence-links');
+project.findings[0].evidence_uids.pop();
+const original = JSON.stringify(project);
+check('A current clean check suggests manual inspection and delivery', suggest(project,{current:true,issues:0}).key === 'delivery' && suggest(project,{current:true,issues:0}).description[1].includes('Inspect'));
+check('A stale clean check never advances to delivery', suggest(project,{current:false,issues:0}).key === 'review');
+check('Actual review warnings remain actionable', suggest(project,{current:true,issues:2}).key === 'review' && suggest(project,{current:true,issues:2}).description[1].startsWith('2 warnings'));
+check('Recommendations preserve the exact project data', original === JSON.stringify(project));
+
+const transport = require('./flask_transport.cjs')();
+let dom;
+async function until(predicate) {
+  const deadline = Date.now()+20000;
+  while (Date.now()<deadline) { if(predicate()) return; await new Promise(resolve=>setTimeout(resolve,25)); }
+  throw Error('UI timeout: '+predicate);
+}
+(async()=>{
+  const markup = fs.readFileSync(path.join(root,'webapp/static/index.html'),'utf8');
+  dom = new JSDOM(markup,{url:'http://127.0.0.1/',runScripts:'outside-only',pretendToBeVisual:true});
+  const w=dom.window,doc=w.document;
+  w.fetch=transport.fetch;w.confirm=()=>true;w.alert=()=>{};w.structuredClone=structuredClone;
+  w.matchMedia=()=>({matches:false,addEventListener(){}});w.ResizeObserver=class{observe(){}disconnect(){}};
+  w.HTMLElement.prototype.scrollIntoView=()=>{};
+  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+  w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
+  w.URL.createObjectURL=()=> 'blob:first-use';w.URL.revokeObjectURL=()=>{};
+  w.localStorage.setItem('rg.previewVisible','0');
+  const sources=[...markup.matchAll(/<script src="\/static\/([^"/]+)"/g)].map(match=>fs.readFileSync(path.join(root,'webapp/static',match[1]),'utf8'));
+  w.eval(sources.join('\n')+'\nwindow.qa={S,projectStore,GuideUI,WorkflowUI,select,setUiLang,doSave,scheduleSave,api,requireOk,refreshProjects,loadProject};');
+  const q=w.qa;
+  await until(()=>doc.querySelector('.workspace-dashboard'));
+  check('Empty overview offers Nimbus as its primary action',doc.querySelector('.workspace-hero-actions .primary').textContent === 'Probar demo Nimbus');
+  check('Secondary sidebar groups start collapsed',!doc.querySelector('#workspaceResearch').open&&!doc.querySelector('#workspaceFollowup').open);
+  for (const selector of ['#navReport','#navFindings','[data-workflow="evidence"]','[data-workflow="review"]','[data-workflow="backup"]']) check('Core navigation remains outside secondary disclosure: '+selector,!doc.querySelector(selector).closest('.workspace-secondary'));
+  // Real project API and save manager: the navigation contract is not a mocked editor.
+  await q.requireOk(await q.api.post('/api/projects',{slug:'first-use-synthetic',title:'First-use synthetic',client:'Synthetic .example'}));
+  await q.refreshProjects();await q.loadProject('first-use-synthetic');
+  await until(()=>q.S.data&&!q.projectStore.loading&&!q.projectStore.saving);
+  q.S.data.report.sections=[{key:'findings'}];q.scheduleSave();await q.doSave();q.select('home');
+  await until(()=>!q.projectStore.dirty&&!q.projectStore.saving);
+  check('Actual empty project shows a first-finding suggestion',doc.querySelector('[data-first-use-state]').dataset.firstUseState==='finding');
+  const snapshot=()=>JSON.stringify({data:q.S.data,revision:q.projectStore.revision,etag:q.projectStore.etag,dirty:q.projectStore.dirty});
+  const before=snapshot();
+  doc.querySelector('[data-guide-action="suggested-action"]').click();
+  check('Suggested action opens the real findings screen',q.S.sel.type==='findings');
+  q.select('home');doc.querySelector('[data-guide-action="suggested-guide"]').click();
+  check('Suggested guide opens the matching step',q.S.sel.type==='guide'&&q.S.sel.idx===2);
+  doc.querySelector('#guideNext').click();doc.querySelector('#guidePrev').click();
+  check('Guide forward and backward navigation is reversible',q.S.sel.idx===2);
+  q.setUiLang('en');
+  check('Suggestion changes UI language without changing report language',doc.querySelector('[data-first-use-state] h2').textContent==='Document your first result'&&q.S.data.meta.lang==='es');
+  q.select('workflow','coverage');
+  check('Direct navigation reveals its collapsed group',doc.querySelector('#workspaceResearch').open);
+  q.select('home');
+  check('Navigation, guide reading and language preserve exact data and revision',before===snapshot());
+  q.select('workflow','review');
+  await until(()=>q.WorkflowUI.reviewSnapshot()?.current);
+  check('Review snapshot is derived from a real saved revision',Number.isInteger(q.WorkflowUI.reviewSnapshot().issues));
+  q.S.data.meta.report_subtitle='Synthetic unsaved edit';q.scheduleSave();
+  check('An edit immediately makes the prior check stale',q.WorkflowUI.reviewSnapshot().current===false);
+  await q.doSave();
+  check('Saving changed content does not relabel old checks as current',q.WorkflowUI.reviewSnapshot().current===false);
+  q.WorkflowUI.resetReview();
+  check('Resetting review removes the old suggestion evidence',q.WorkflowUI.reviewSnapshot()===null);
+  console.log(JSON.stringify({passed:checks.length,checks},null,2));
+})().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>{dom?.window.close();transport.close();});

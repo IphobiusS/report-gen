@@ -131,6 +131,10 @@
 <dialog class="modal" id="newModal" aria-labelledby="newModalTitle">
   <div class="modal-box">
     <h3 id="newModalTitle" data-i18n="new_project">Nuevo proyecto</h3>
+    <p class="modal-hint" data-i18n="new_project_start">Empieza con la estructura Base. Puedes ajustar el diseño y las secciones después.</p>
+    <p id="mPresetSelected" class="new-project-selection" role="status"></p>
+    <details id="mPresetOptions" class="design-catalog-options">
+    <summary data-i18n="new_project_options">Otras estructuras y perfiles especializados</summary>
     <label><span data-i18n="preset_label">Plantilla</span>
       <select id="mPreset"></select>
     </label>
@@ -138,6 +142,8 @@
       <select id="mCert"></select>
     </label>
     <p class="modal-hint" id="mPresetDesc"></p>
+    </details>
+    <div id="newProjectLibrary"></div>
     <label><span data-i18n="lang_label">Idioma</span>
       <select id="mLang">
         <option value="corporativo-es">Español</option>

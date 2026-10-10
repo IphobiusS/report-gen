@@ -40,6 +40,8 @@ let dom;
   let gal=doc.querySelector('dialog.design-dialog');
   check('Gallery defaults to English sample language',gal.querySelector('[data-design-sample-language]').value==='en');
   check('English thumbnails are distinct assets',[...gal.querySelectorAll('.design-card img')].every(i=>i.src.includes('/en/')));
+  gal.querySelector('[data-design-catalog]').open=true;
+  gal.querySelector('[data-family="OffSec"]').click();
   gal.querySelector('[data-design="offsec-oscp"]').click();await until(()=>gal.querySelector('.design-preview img'));
   check('English detail uses exported English cover',gal.querySelector('.design-preview img').src.includes('/en/brand-cover.webp'));
   const click=(text,el=doc)=>{const b=[...el.querySelectorAll('button')].find(x=>x.textContent===text);assert.ok(b,'button '+text);b.click();};

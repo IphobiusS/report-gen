@@ -3,37 +3,67 @@ name: tests
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  test:
+  quick:
+    name: Lint and JavaScript
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: "22"
+          cache: npm
       - uses: actions/setup-python@v7.0.0
         with:
           python-version: "3.12"
-      - name: Instalar dependencias del sistema (WeasyPrint)
-        run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0
-      - name: Instalar dependencias Python
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            requirements-audited.txt
+      - name: Install audited development dependencies
+        run: python -m pip install -e ".[dev]" -c requirements-audited.txt
+      - name: Dependency consistency and lint
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]" -c requirements-audited.txt
-      - name: Instalar dependencias de las pruebas del editor
-        run: npm ci --ignore-scripts
-      - name: Guardado JavaScript
+          python -m pip check
+          ruff check .
+      - run: npm ci --ignore-scripts
+      - name: JavaScript save contracts
         run: npm test
-      - name: Instalar Chromium para las pruebas reales del editor
+
+  editor_exports:
+    name: Editor journeys and four export formats
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      RG_PYTHON: python
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            requirements-audited.txt
+      - name: Install system libraries
+        run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0
+      - run: python -m pip install -e ".[dev]" -c requirements-audited.txt
+      - run: npm ci --ignore-scripts
+      - name: Install Chromium
         run: |
           npx playwright install --with-deps chromium
           node -e "process.stdout.write('REPORT_GEN_CHROMIUM=' + require('playwright').chromium.executablePath() + '\n')" >> "$GITHUB_ENV"
-      - name: Comprobar dependencias y colección de pruebas
-        run: |
-          python -m pip check
-          python -m pytest --collect-only -q
-      - name: Recorridos del editor y contratos del cliente
+      - name: Editor journeys and client contracts
         run: |
           npm run test:workspace
           npm run test:editor
@@ -44,16 +74,90 @@ jobs:
           npm run test:matrix
           npm run test:language
           npm run test:ui-geometry
-      - name: Ruff (lint)
-        run: ruff check .
-      - name: Comparar formatos con un caso ficticio completo
+          npm run test:first-use
+          npm run test:first-use-browser
+          npm run test:design-selection
+      - name: Compare all four formats with a complete synthetic case
         run: python scripts/audit-exports-0210.py --output out/export-acceptance
-      - name: Pytest
-        run: python -m pytest -q --junitxml=out/pytest.xml
-      - name: Conservar resultados de Pytest
+      - name: Export evidence
         if: always()
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: pytest-results
-          path: out/pytest.xml
+          name: export-acceptance
+          path: out/export-acceptance/
           if-no-files-found: ignore
+      - name: First-use and design-selection browser evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: first-use-design-selection
+          path: |
+            out/first-use-0260/
+            out/design-selection-0260/
+          if-no-files-found: ignore
+
+  pytest:
+    name: Pytest shard ${{ matrix.shard }} of 4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            requirements-audited.txt
+      - name: Install system libraries
+        run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0
+      - run: python -m pip install -e ".[dev]" -c requirements-audited.txt
+      - run: npm ci --ignore-scripts
+      - name: Install Chromium for real rendering tests
+        run: |
+          npx playwright install --with-deps chromium
+          node -e "process.stdout.write('REPORT_GEN_CHROMIUM=' + require('playwright').chromium.executablePath() + '\n')" >> "$GITHUB_ENV"
+      - name: Run complete assigned modules
+        run: python scripts/ci-pytest.py --count 4 --index ${{ matrix.shard }} --output out/pytest-${{ matrix.shard }}.json --junit out/pytest-${{ matrix.shard }}.xml
+      - name: Preserve results and exact coverage receipt
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: pytest-shard-${{ matrix.shard }}
+          path: |
+            out/pytest-${{ matrix.shard }}.json
+            out/pytest-${{ matrix.shard }}.xml
+          if-no-files-found: error
+
+  test:
+    name: test
+    if: always()
+    needs: [quick, editor_exports, pytest]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every independent gate
+        env:
+          QUICK: ${{ needs.quick.result }}
+          EDITOR: ${{ needs.editor_exports.result }}
+          PYTEST: ${{ needs.pytest.result }}
+        run: test "$QUICK" = success && test "$EDITOR" = success && test "$PYTEST" = success
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: pytest-shard-*
+          merge-multiple: true
+          path: out/shards
+      - name: Prove every collected test ran exactly once
+        run: python scripts/ci-pytest.py --verify out/shards/pytest-*.json

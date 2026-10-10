@@ -1,0 +1,31 @@
+name: Reproducible source package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Package the selected commit twice
+        run: |
+          python scripts/build-release.py --ref HEAD --output out/release-first
+          python scripts/build-release.py --ref HEAD --output out/release-second
+          diff -r out/release-first out/release-second
+      - name: Preserve verification archive, checksum and tree manifest
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: source-package-${{ github.sha }}
+          path: out/release-first/
+          if-no-files-found: error

@@ -90,6 +90,9 @@ with tempfile.TemporaryDirectory(prefix='workspace-browser-') as temp:
             page.locator('#designLibraryBtn').click()
             gal=page.get_by_role('dialog',name='Report design library',exact=True)
             gal.wait_for(state='visible')
+            if not gal.locator('[data-design-catalog]').evaluate('(e)=>e.open'):
+                gal.locator('[data-design-catalog]>summary').click()
+            gal.locator('[data-family="OffSec"]').click()
             check('English gallery has 14 OffSec profiles',gal.locator('[data-design]').count()==14)
             gal.locator('[data-design="offsec-oscp"]').click()
             wait(page,"[...document.querySelectorAll('.design-preview img')].every(i=>i.complete&&i.naturalWidth>0)")

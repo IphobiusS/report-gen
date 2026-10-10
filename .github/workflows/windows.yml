@@ -35,7 +35,7 @@ jobs:
       - name: Guardado, importación, entrega, historial y cancelación
         run: |
           npm test
-          python -m pytest tests/test_progress_0170.py tests/test_workflows.py tests/test_workspace_0160.py tests/test_workbench_0180.py tests/test_release_0200.py tests/test_release_0202.py tests/test_release_0210.py tests/test_release_0211.py --junitxml=windows-results.xml
+          python -m pytest tests/test_progress_0170.py tests/test_workflows.py tests/test_workspace_0160.py tests/test_workbench_0180.py tests/test_release_0200.py tests/test_release_0202.py tests/test_release_0210.py tests/test_release_0211.py tests/test_launcher_0260.py --junitxml=windows-results.xml
       - name: Real browser on Windows
         run: |
           node scripts/audit-browser-0210.cjs --output windows-evidence/base

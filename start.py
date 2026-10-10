@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Explicit install, diagnosis and local launch using the packaged sources."""
 import argparse
+import json
 import os
 from pathlib import Path
 import signal
@@ -8,6 +9,63 @@ import subprocess
 import sys
 import venv
 ROOT=Path(__file__).resolve().parent
+
+
+def _words(lang, es, en):
+    return en if lang == 'en' else es
+
+
+def _install(local, lang):
+    print(_words(lang, 'Preparando el entorno local; se descargarán dependencias.',
+                 'Preparing the local environment; dependencies will be downloaded.'), flush=True)
+    if not local.exists():
+        venv.EnvBuilder(with_pip=True).create(ROOT / '.venv')
+    # Upgrade the installer seeded by ensurepip before reading project metadata.
+    subprocess.run([str(local), '-m', 'pip', 'install', '--upgrade', 'pip>=26.2,<27'], check=True, cwd=ROOT)
+    subprocess.run([str(local), '-m', 'pip', 'install', '-e', str(ROOT),
+                    '-c', str(ROOT / 'requirements-audited.txt')], check=True, cwd=ROOT)
+
+
+def _dependencies(python):
+    return subprocess.run([str(python), '-c',
+                           'import flask, waitress, docx, yaml, PIL, lxml, jinja2, markdown, nh3, pypdf'],
+                          capture_output=True, timeout=30, cwd=ROOT).returncode == 0
+
+
+def _readiness(python, lang):
+    process = subprocess.run([str(python), str(ROOT / 'diagnostics.py'), '--lang', lang],
+                             capture_output=True, text=True, timeout=60, cwd=ROOT)
+    if process.returncode:
+        raise ValueError(_words(lang, 'No se pudo completar el diagnóstico. Ejecuta start.py --diagnose.',
+                                'Diagnostics could not finish. Run start.py --diagnose.'))
+    report = json.loads(process.stdout)
+    for check in report['checks']:
+        print(f"{'OK' if check['ready'] else '!'} {check['label']}: {check['detail']}", flush=True)
+    print(report['note'], flush=True)
+    return report.get('editor_ready', True)
+
+
+def _upgrade(python, source, lang):
+    process = subprocess.run([str(python), str(ROOT / 'launcher_upgrade.py'), '--source', source,
+                              '--destination', str(ROOT), '--lang', lang],
+                             capture_output=True, text=True, cwd=ROOT)
+    if process.returncode:
+        try:
+            error = json.loads(process.stderr)['error']
+        except (ValueError, KeyError):
+            error = _words(lang, 'No se pudo completar la migración; conserva ambas instalaciones.',
+                           'Migration could not finish; keep both installations.')
+        raise ValueError(error)
+    result = json.loads(process.stdout)
+    print(_words(lang, 'Migración verificada', 'Migration verified') + ': ' +
+          _words(lang, '{projects} proyectos, {findings} hallazgos reutilizables, {designs} diseños.',
+                 '{projects} projects, {findings} reusable findings, {designs} designs.').format(**result), flush=True)
+    print(_words(lang, 'Respaldo: ', 'Backup: ') + result['backup'], flush=True)
+    print(_words(lang, 'SHA-256: ', 'SHA-256: ') + result['sha256'], flush=True)
+    print(_words(lang, 'La instalación anterior se conserva. Guarda el respaldo fuera de las entregas.',
+                 'The previous installation is preserved. Keep the backup out of deliveries.'), flush=True)
+    for warning in result.get('warnings', []):
+        print(warning, flush=True)
 
 
 def _run_windows_server(command):
@@ -57,31 +115,76 @@ def _run_server(python, port):
     return _run_windows_server(command)
 
 
-def main():
-    parser=argparse.ArgumentParser(description='report-gen local launcher / lanzador local')
-    parser.add_argument('--setup',action='store_true',help='Create .venv and install pinned dependencies / instalar')
-    parser.add_argument('--diagnose',action='store_true',help='Test installed export engines / probar motores')
-    parser.add_argument('--lang',choices=['es','en'],default='es')
-    parser.add_argument('--port',type=int,default=8080)
-    args=parser.parse_args()
-    if not 1024<=args.port<=65535:parser.error('Port / Puerto: 1024–65535')
-    if sys.version_info<(3,10):parser.error('Python 3.10+ required / necesario; validated with 3.12')
-    local=ROOT/'.venv'/('Scripts/python.exe' if os.name=='nt' else 'bin/python')
-    if args.setup:
-        if not local.exists():venv.EnvBuilder(with_pip=True).create(ROOT/'.venv')
-        # ensurepip can seed an old installer even with a maintained Python.
-        # Upgrade before processing project dependencies, in this venv only.
-        subprocess.run([str(local),'-m','pip','install','--upgrade','pip>=26.2,<27'],check=True,cwd=ROOT)
-        subprocess.run([str(local),'-m','pip','install','-e',str(ROOT),'-c',str(ROOT/'requirements-audited.txt')],check=True,cwd=ROOT)
-        print('Instalado / Installed. Run: python3 start.py --diagnose; python3 start.py')
-        return 0
-    python=local if local.exists() else Path(sys.executable)
-    check=subprocess.run([str(python),'-c','import flask, waitress, docx, yaml, PIL, lxml'],capture_output=True)
-    if check.returncode:
-        print('Faltan dependencias / Missing dependencies. Run: python3 start.py --setup',file=sys.stderr);return 1
-    if args.diagnose:
-        return subprocess.run([str(python),str(ROOT/'diagnostics.py'),'--lang',args.lang],cwd=ROOT).returncode
-    print(f'report-gen -> http://127.0.0.1:{args.port}\nCtrl+C para salir / to stop',flush=True)
-    return _run_server(python, args.port)
+def main(argv=None):
+    parser = argparse.ArgumentParser(description='report-gen local launcher / lanzador local')
+    parser.add_argument('--setup', action='store_true', help='Install dependencies and stop / instalar y terminar')
+    parser.add_argument('--ready', action='store_true',
+                        help='Allow dependency installation, diagnose and start / permitir instalación, comprobar y abrir')
+    parser.add_argument('--diagnose', action='store_true', help='Test installed export engines / probar motores')
+    parser.add_argument('--upgrade-from', metavar='DIRECTORY',
+                        help='Back up and restore an old installation into this empty one / migrar desde instalación anterior')
+    parser.add_argument('--lang', choices=['es', 'en'], default='es')
+    parser.add_argument('--port', type=int, default=8080)
+    args = parser.parse_args(argv)
+    if not 1024 <= args.port <= 65535:
+        parser.error('Port / Puerto: 1024–65535')
+    if sys.version_info < (3, 10):
+        parser.error('Python 3.10+ required / necesario; validated with 3.12')
+    if args.setup and (args.ready or args.upgrade_from):
+        parser.error('--setup instala y termina / installs and stops; use --ready for the combined flow')
+    if args.diagnose and (args.ready or args.upgrade_from):
+        parser.error('--diagnose es independiente / is standalone')
+    lang = args.lang
+    local = ROOT / '.venv' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+    try:
+        if args.setup:
+            _install(local, lang)
+            print(_words(lang, 'Instalado. Ejecuta: python start.py --ready',
+                         'Installed. Run: python start.py --ready'))
+            return 0
+        python = local if local.exists() else Path(sys.executable)
+        if args.ready:
+            # --ready is explicit consent to install; ordinary launch and diagnosis
+            # never create a virtual environment or contact package servers.
+            if not local.exists() or not _dependencies(local):
+                _install(local, lang)
+            python = local
+        if not _dependencies(python):
+            print(_words(lang, 'Faltan dependencias del editor. Ejecuta: python start.py --ready',
+                         'Editor dependencies are missing. Run: python start.py --ready'), file=sys.stderr)
+            return 1
+        if args.diagnose:
+            return subprocess.run([str(python), str(ROOT / 'diagnostics.py'), '--lang', lang],
+                                  cwd=ROOT, timeout=60).returncode
+        if args.upgrade_from:
+            _upgrade(python, args.upgrade_from, lang)
+            if not args.ready:
+                ready = _readiness(python, lang)
+                print(_words(lang, 'Para abrir: python start.py', 'To start: python start.py'), flush=True)
+                return 0 if ready else 1
+        if args.ready and not _readiness(python, lang):
+            print(_words(lang, 'Repara las dependencias del editor: python start.py --setup',
+                         'Repair editor dependencies: python start.py --setup'), file=sys.stderr)
+            return 1
+        print(f'report-gen -> http://127.0.0.1:{args.port}\n' +
+              _words(lang, 'Ctrl+C para salir', 'Ctrl+C to stop'), flush=True)
+        return _run_server(python, args.port)
+    except subprocess.CalledProcessError:
+        print(_words(lang, 'La instalación no terminó. Revisa la conexión y el error anterior; '
+                     'vuelve a ejecutar python start.py --setup. En Linux, comprueba que python3-venv esté instalado.',
+                     'Installation did not finish. Check connectivity and the error above, then rerun '
+                     'python start.py --setup. On Linux, ensure python3-venv is installed.'), file=sys.stderr)
+        return 1
+    except subprocess.TimeoutExpired:
+        print(_words(lang, 'La comprobación excedió el tiempo disponible. Ejecuta python start.py --diagnose '
+                     'para revisar la instalación.',
+                     'The check timed out. Run python start.py --diagnose to inspect the installation.'), file=sys.stderr)
+        return 1
+    except (OSError, ValueError) as exc:
+        print(_words(lang, 'No se pudo completar la preparación: ', 'Preparation could not finish: ') +
+              str(exc), file=sys.stderr)
+        return 1
 
-if __name__=='__main__':raise SystemExit(main())
+
+if __name__ == '__main__':
+    raise SystemExit(main())

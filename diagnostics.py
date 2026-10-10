@@ -16,15 +16,21 @@ def run(lang="es"):
         ]:
             try:
                 action()
-                results.append({'id': name, 'label': label, 'ready': True, 'detail': w('Prueba de exportación correcta','Export test passed')})
+                results.append({'id': name, 'label': label, 'ready': True, 'required': name == 'docx',
+                                'detail': w('Prueba de exportación correcta','Export test passed')})
             except Exception as exc:
-                instructions = {'weasyprint': w('Revisa las bibliotecas de WeasyPrint indicadas en README.md.','Check the WeasyPrint libraries listed in README.en.md.'),
-                                'chromium': w('Instala playwright y ejecuta: python -m playwright install chromium','Install playwright and run: python -m playwright install chromium'),
-                                'docx': w('Reinstala las dependencias del proyecto con pip install -e .','Reinstall project dependencies with pip install -e .')}
-                results.append({'id': name, 'label': label, 'ready': False,
+                instructions = {'weasyprint': w('Motor PDF opcional para abrir el editor. Revisa las bibliotecas nativas de WeasyPrint en README.md.',
+                                               'PDF engine is optional for opening the editor. Check native WeasyPrint libraries in README.en.md.'),
+                                'chromium': w('Motor PDF alternativo opcional. En el entorno .venv, instala playwright y ejecuta: python -m playwright install chromium',
+                                              'Optional alternative PDF engine. In the .venv environment, install playwright and run: python -m playwright install chromium'),
+                                'docx': w('Dependencia necesaria. Ejecuta: python start.py --setup',
+                                          'Required dependency. Run: python start.py --setup')}
+                results.append({'id': name, 'label': label, 'ready': False, 'required': name == 'docx',
                                 'detail': type(exc).__name__+'. '+instructions[name]})
     return {'checks': results, 'pdf_ready': any(r['ready'] for r in results[:2]),
-            'note': w('Se prueban los motores instalados. Las fuentes de Word dependen del equipo que abra el DOCX.','Tests cover installed engines. Word fonts depend on the computer opening the DOCX.')}
+            'editor_ready': results[2]['ready'],
+            'note': w('PDF requiere al menos un motor disponible. Si ambos faltan, puedes editar y exportar Word, Markdown y HTML. Las fuentes de Word dependen del equipo que abra el DOCX.',
+                      'PDF requires at least one available engine. If both are missing, you can edit and export Word, Markdown and HTML. Word fonts depend on the computer opening the DOCX.')}
 
 
 def weasy(root):
