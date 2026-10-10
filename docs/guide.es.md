@@ -1,12 +1,12 @@
 # Guía de uso de report-gen 0.25.0
 
-[Bienvenida](../README.md) · [English](guide.en.md) · [Validación de 0.25.0](../VALIDACION-0.25.0.md)
+[Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
 Esta guía reúne la documentación operativa que antes estaba en el README. Todos los comandos se ejecutan desde la raíz del proyecto, donde está `start.py`, salvo indicación contraria. La primera instalación y las descargas opcionales requieren conexión; la edición normal y las exportaciones trabajan localmente.
 
 ## Instalar y abrir
 
-Ruta prioritaria: Linux/Kali con Python 3.10 o superior. Consulta el registro de validación para los entornos y comprobaciones de esta entrega. Windows y Microsoft Word de escritorio requieren su propia validación.
+Ruta prioritaria: Linux/Kali con Python 3.10 o superior. Windows y Microsoft Word de escritorio requieren su propia validación.
 
 ```bash
 # Desde la raíz del proyecto (donde está start.py)
@@ -126,6 +126,6 @@ node scripts/audit-browser-0212.cjs --project-zip /ruta/Grupo-Ladera-proyecto-ed
 
 El editor es de un solo proceso y está limitado a `127.0.0.1`. No lo expongas como servicio multiusuario. Las certificaciones son perfiles de ayuda; consulta las reglas vigentes del proveedor antes de entregar un examen. Los logos pertenecen a sus titulares y no implican afiliación.
 
-El paquete de uso conserva las fuentes, pruebas, demo, diseños y documentación vigente. Las capturas y muestras históricas se distribuyen aparte para reducir el tamaño. [README anterior](history/README-0.18.md).
+El repositorio incluye las fuentes, pruebas, demo, diseños y documentación de uso.
 
 El control nativo de Microsoft Word es optativo: `scripts/verify-microsoft-word.ps1` y el workflow manual `word-desktop.yml` requieren Windows con Word instalado. Trabajan sobre copias y no modifican los originales.

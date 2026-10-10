@@ -7,7 +7,7 @@ jobs:
     runs-on: [self-hosted, Windows, report-gen-word]
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - name: Generate the synthetic acceptance DOCX
         shell: pwsh
         run: |
@@ -16,7 +16,7 @@ jobs:
       - name: Update fields, save a copy and verify internal links
         shell: pwsh
         run: ./scripts/verify-microsoft-word.ps1 -InputDirectory out/word-input -OutputDirectory out/word-verified
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: word-native-acceptance

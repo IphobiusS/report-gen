@@ -12,11 +12,11 @@ jobs:
     env:
       RG_PYTHON: python
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: '22'
       - uses: msys2/setup-msys2@v2
@@ -42,7 +42,7 @@ jobs:
           node scripts/audit-browser-0211.cjs --output windows-evidence/recovery
       - name: Save evidence (Microsoft Word is not installed on this runner)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: windows-compatibility
           path: |

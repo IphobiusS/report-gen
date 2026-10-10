@@ -1,4 +1,4 @@
-# Evidencia y decisiones (0.23.0)
+# Evidencia y decisiones
 
 Abre el acceso del lateral o la tarjeta de Inicio. Puedes trabajar como antes; este modelo es opcional. Las pantallas usan relaciones existentes y no completan datos al leer. Afirmaciones, comentarios y revisión son información de trabajo privada, excluida del informe técnico y de la exportación estándar. Las decisiones de negocio se incorporan únicamente al perfil ejecutivo; no cambian automáticamente el PDF técnico.
 

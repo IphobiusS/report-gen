@@ -6,13 +6,13 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: "22"
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: "3.12"
       - name: Instalar dependencias del sistema (WeasyPrint)
@@ -29,6 +29,10 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           node -e "process.stdout.write('REPORT_GEN_CHROMIUM=' + require('playwright').chromium.executablePath() + '\n')" >> "$GITHUB_ENV"
+      - name: Comprobar dependencias y colección de pruebas
+        run: |
+          python -m pip check
+          python -m pytest --collect-only -q
       - name: Recorridos del editor y contratos del cliente
         run: |
           npm run test:workspace
@@ -45,4 +49,11 @@ jobs:
       - name: Comparar formatos con un caso ficticio completo
         run: python scripts/audit-exports-0210.py --output out/export-acceptance
       - name: Pytest
-        run: pytest -q
+        run: python -m pytest -q --junitxml=out/pytest.xml
+      - name: Conservar resultados de Pytest
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: pytest-results
+          path: out/pytest.xml
+          if-no-files-found: ignore

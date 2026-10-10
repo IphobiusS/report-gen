@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "cryptography>=46,<52"]
+dev = ["pytest", "ruff", "cryptography>=46,<52", "pymupdf>=1.26.7,<2"]
 previews = ["pymupdf>=1.26.7,<2", "playwright>=1.56,<2"]
 signing = ["cryptography>=46,<52"]
 

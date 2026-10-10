@@ -6,6 +6,6 @@ Client exports use a publication copy, exclude the capture inbox and original ev
 
 For suspected data loss, stop editing, preserve the project directory and download any recoverable browser draft. Include the version, operating system, browser, expected behavior and minimal reproduction in a report. Use synthetic data; never attach a client's project, credentials or original evidence to a public issue.
 
-For security bugs, use the repository's private vulnerability-reporting channel if enabled. If unavailable, contact the maintainer privately through the contact linked in the application to arrange a secure report. No response-time guarantee is claimed. Security and data-loss fixes remain in scope after the 0.20 feature freeze.
+For security bugs, use the repository's private vulnerability-reporting channel if enabled. If unavailable, contact the maintainer privately through the contact linked in the application to arrange a secure report. No response-time guarantee is claimed. Security and data-loss fixes are priorities.
 
 En español: trata respaldos, originales, historial y borradores como datos privados. Ante pérdida de datos, detén la edición, conserva el proyecto y descarga el borrador si está disponible. Comunica fallos con datos ficticios. Usa un canal privado para vulnerabilidades y no adjuntes material de clientes a incidencias públicas.

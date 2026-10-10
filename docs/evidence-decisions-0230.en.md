@@ -1,4 +1,4 @@
-# Evidence and decisions (0.23.0)
+# Evidence and decisions
 
 Open the sidebar entry or Overview card. This is optional; reading screens does not add fields. Claims, comments and review are private working records, excluded from technical and standard exports. Structured business decisions appear only in the executive profile, not automatically in the technical PDF.
 

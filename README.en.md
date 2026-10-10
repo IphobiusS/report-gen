@@ -6,11 +6,11 @@
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
-[Español](README.md) · [Full guide](docs/guide.en.md) · [0.25.0 validation](VALIDACION-0.25.0.md) · [Security](SECURITY.md)
+[Español](README.md) · [Full guide](docs/guide.en.md) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md)
 
 ## Install and launch
 
-Primary path: **Linux/Kali and Python 3.10+**. This release's validation records Linux with Python 3.12; consult it for the tested scope.
+Primary path: **Linux/Kali and Python 3.10+**. The guide describes requirements and installation options.
 
 ```bash
 git clone https://github.com/IphobiusS/report-gen.git
@@ -52,7 +52,7 @@ Open **http://127.0.0.1:8080** in your browser. `Ctrl+C` stops the server; `--po
 
 The retest matrix keeps labels and counts together; delivery preparation shows statuses and links for resolving pending items. Preview fits the available width and supports manual zoom. Documented PDF routes group steps by phase and retain their complete text alternative.
 
-This release also improves YAML reading with libyaml and a bounded compatibility path, and adds public-key fingerprint lookup for optional signing. [Full changes](CHANGELOG.md) · [Tests, measurements and limitations](VALIDACION-0.25.0.md).
+This release also improves YAML reading with libyaml and a bounded compatibility path, and adds public-key fingerprint lookup for optional signing. [Full changes](CHANGELOG.md).
 
 <a id="delivery-checks-and-limits"></a>
 
@@ -106,19 +106,4 @@ npm test
 - [Usage guide: installation, publication, backups, CLI and development](docs/guide.en.md).
 - [Evidence and decisions; optional previews and Ollama](docs/evidence-decisions-0230.en.md).
 - [CVSS 4.0](docs/CVSS40.md) and [delivery signing](docs/delivery-signing.md#optional-signing-of-a-delivery).
-- [Changelog](CHANGELOG.md) and [0.25.0 validation](VALIDACION-0.25.0.md).
-
-## Retained history
-
-<details>
-<summary>Earlier release notes</summary>
-
-The guide above contains current instructions. These documents preserve earlier release context.
-
-<a id="new-in-0240"></a><a id="new-in-0234"></a><a id="new-in-0233"></a><a id="new-in-0232"></a><a id="new-in-0231"></a><a id="new-in-0230"></a><a id="new-in-0221"></a><a id="new-in-0220"></a>
-
-- [Detailed notes originally shipped with 0.25.0](docs/history/README-0.25.0-original.en.md).
-- [Historical GitHub welcome for 0.13.0 (Spanish)](docs/history/README-github-0.13.0.md).
-- [Earlier 0.18 README (Spanish)](docs/history/README-0.18.md).
-
-</details>
+- [Changelog](CHANGELOG.md) and [Changelog](CHANGELOG.md).

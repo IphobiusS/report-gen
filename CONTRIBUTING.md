@@ -1,6 +1,6 @@
 # Contributing / Contribuir
 
-0.20 freezes feature scope while prioritizing security, data preservation and usability fixes. Start an issue with the user problem and a small reproducible case before proposing a large feature. Use synthetic projects and evidence.
+Prioritize security, data preservation and usability fixes. Start an issue with the user problem and a small reproducible case before proposing a large feature. Use synthetic projects and evidence.
 
 For a fix, include a regression that fails on the affected version and passes with the change. Preserve existing tests unless the public contract intentionally changes; explain that change. Run Python tests, JS save/merge tests and the applicable real-browser flow. Report exactly which OS, browser and document renderer were used. A LibreOffice render is not a Microsoft Word test.
 

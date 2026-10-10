@@ -1,4 +1,4 @@
-# Biblioteca de informes 0.15.0
+# Biblioteca de diseños y plantillas
 
 La biblioteca reúne 22 perfiles de certificación, dos variantes por perfil y los seis diseños generales existentes. Los perfiles combinan una composición de portada con una estructura inicial de trabajo y una referencia de entrega. Son diseños independientes de report-gen, no plantillas oficiales ni una garantía de aceptación de un examen.
 
@@ -16,7 +16,7 @@ Las plantillas personales se guardan en `webapp/library/designs.json`. Se compru
 
 ## Composición y fuentes
 
-Hay cinco composiciones nuevas: banda lateral, dos zonas, marco, franja central y cronología. La biblioteca no presenta 22 recoloraciones como si fueran 22 composiciones diferentes: cada perfil aporta su especialidad, estructura, motivo geométrico y orientación de entrega. Los motivos son originales y no contienen logotipos ni insignias oficiales.
+Hay cinco composiciones para los perfiles: banda lateral, dos zonas, marco, franja central y cronología. La biblioteca no presenta 22 recoloraciones como si fueran 22 composiciones diferentes: cada perfil aporta su especialidad, estructura, motivo geométrico y orientación de entrega. Los motivos son originales y no contienen logotipos ni insignias oficiales.
 
 El título queda centrado en la zona central y los datos del cliente en el tercio inferior. Se han comprobado títulos largos, nombres de organización extensos, los seis campos de portada y los tres recursos opcionales: logotipo propio, logotipo de cliente e ilustración.
 
@@ -55,7 +55,7 @@ Consulta de referencias: **3 de octubre de 2026**. Los colores OffSec proceden d
 
 Las estructuras de defensa incluyen cronología, fuentes, consultas y respuesta. Las de explotación priorizan entorno, causa raíz y reproducción. CAPE incluye dominios e identidades; los perfiles web, peticiones y trazado; los de IA, límites de confianza y casos de prueba. SEC-100, SJD-100 y KLCP se ofrecen como cuadernos de práctica sin presuponer que soliciten un informe de examen.
 
-Los seis diseños generales conservados son Serio, Corporativo, OffSec, HTB, Ejecutivo y Laboratorio. Los presets anteriores permanecen disponibles para compatibilidad.
+Los seis diseños generales son Serio, Corporativo, OffSec, HTB, Ejecutivo y Laboratorio. Los presets anteriores permanecen disponibles para compatibilidad.
 
 La sección **Históricas** contiene referencias, no nuevos requisitos: CBBH remite a CWES, OSMR señala la pausa de emisión y OSCE³ se describe como reconocimiento conjunto de OSEP, OSWE y OSED. OSCP/OSCP+ y OSAI/OSAI+ comparten perfil.
 
@@ -82,7 +82,7 @@ El paquete de report-gen incluye documentos y archivos de verificación. No debe
 Desde la carpeta del programa, con sus dependencias instaladas:
 
 ```sh
-python -m pip install -e ".[dev,previews]"
+python -m pip install -e '.[dev,previews]' -c requirements-audited.txt
 python -m playwright install chromium
 python scripts/build-design-previews.py --output muestras-biblioteca
 python scripts/audit-design-library-0150.py --output comprobacion-biblioteca
@@ -91,4 +91,4 @@ pytest -q
 
 El constructor genera 50 PDF, 50 Word y las 150 vistas WebP de la galería desde datos ficticios mediante la interfaz normal de exportación. Para limitar la generación, añade `--only offsec-oscp htb-cpts`. Esa opción también limita el registro de generación a la selección ejecutada.
 
-Los estilos nativos de Word conservan el contenido y la jerarquía, aunque su paginación y algunos detalles de líneas no son idénticos al PDF. Las muestras Word se renderizaron con LibreOffice; no se ejecutó Microsoft Word en Windows o macOS.
+Los estilos nativos de Word conservan el contenido y la jerarquía, aunque su paginación y algunos detalles de líneas pueden diferir del PDF. Revisa el resultado en el editor o visor que utilizará el destinatario.

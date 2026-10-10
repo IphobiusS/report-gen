@@ -10,13 +10,13 @@
 
 **Un editor local para convertir tus evaluaciones de seguridad en informes claros.** Organiza hallazgos, conecta evidencias, registra remediación y retest, y prepara **PDF, Word, Markdown con imágenes y HTML portátil** desde una revisión guardada.
 
-[English](README.en.md) · [Guía completa](docs/guide.es.md) · [Validación de 0.25.0](VALIDACION-0.25.0.md) · [Seguridad](SECURITY.md)
+[English](README.en.md) · [Guía completa](docs/guide.es.md) · [Cambios](CHANGELOG.md) · [Seguridad](SECURITY.md)
 
 <a id="inicio-rápido"></a>
 
 ## Instalar y abrir
 
-Ruta principal: **Linux/Kali y Python 3.10+**. La validación de esta entrega documenta Linux con Python 3.12; consulta allí el alcance de las pruebas.
+Ruta principal: **Linux/Kali y Python 3.10+**. La guía detalla los requisitos y las opciones de instalación.
 
 ```bash
 git clone https://github.com/IphobiusS/report-gen.git
@@ -62,7 +62,7 @@ Abre **http://127.0.0.1:8080** en tu navegador. `Ctrl+C` detiene el servidor; `-
 
 La matriz de retest mantiene juntas las etiquetas y sus cifras; la preparación de entrega muestra estados y accesos para resolver pendientes. La vista previa se ajusta al ancho disponible y admite zoom manual. El recorrido documentado del PDF agrupa los pasos por fase y conserva su alternativa textual completa.
 
-También se mejora la lectura YAML con libyaml y una ruta de compatibilidad acotada, y se añade la consulta de huella de claves públicas para la firma opcional. [Cambios completos](CHANGELOG.md) · [Pruebas, medidas y límites](VALIDACION-0.25.0.md).
+También se mejora la lectura YAML con libyaml y una ruta de compatibilidad acotada, y se añade la consulta de huella de claves públicas para la firma opcional. [Cambios completos](CHANGELOG.md).
 
 ## Qué comprueba cada entrega
 
@@ -121,22 +121,5 @@ npm test
 - [Guía de uso: instalación, publicación, respaldo, CLI y desarrollo](docs/guide.es.md).
 - [Evidencia y decisiones; vistas previas y Ollama opcionales](docs/evidence-decisions-0230.md).
 - [CVSS 4.0](docs/CVSS40.md) y [firma de entregas](docs/delivery-signing.md).
-- [Registro de cambios](CHANGELOG.md) y [validación de 0.25.0](VALIDACION-0.25.0.md).
-
-## Historial conservado
-
-<details>
-<summary>Notas anteriores y enlaces de la bienvenida previa</summary>
-
-Las instrucciones vigentes están en la guía de arriba. Estos documentos conservan el contexto de versiones anteriores.
-
-<a id="novedades-de-0240"></a><a id="novedades-de-0234"></a><a id="novedades-de-0233"></a><a id="novedades-de-0232"></a><a id="novedades-de-0231"></a><a id="novedades-de-0230"></a><a id="novedades-de-0221"></a><a id="novedades-de-0220"></a>
-
-- [Notas detalladas que acompañaban a 0.25.0](docs/history/README-0.25.0-original.md).
-
-<a id="nuevas-funciones-de-0130"></a><a id="corrección-de-cvss"></a><a id="arquitectura"></a><a id="paginación-de-hallazgos"></a><a id="markdown-e-imágenes"></a><a id="api-local"></a><a id="inspiración"></a><a id="licencia"></a>
-
-- [Bienvenida histórica de GitHub 0.13.0](docs/history/README-github-0.13.0.md).
-- [README anterior de 0.18](docs/history/README-0.18.md).
-
-</details>
+- [Biblioteca de diseños y plantillas](docs/design-library.md).
+- [Registro de cambios](CHANGELOG.md).

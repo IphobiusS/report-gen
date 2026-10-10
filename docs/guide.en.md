@@ -1,12 +1,12 @@
 # report-gen 0.25.0 user guide
 
-[Welcome](../README.en.md) · [Español](guide.es.md) · [0.25.0 validation](../VALIDACION-0.25.0.md)
+[Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
 This guide collects the operational documentation previously held in the README. Unless stated otherwise, run commands from the project root containing `start.py`. Initial setup and optional downloads need a connection; ordinary editing and exports run locally.
 
 ## Install and launch
 
-Primary installation path: Linux/Kali with Python 3.10+. Consult the validation record for the environments and checks of this release. Native Windows and Microsoft Word require separate validation.
+Primary installation path: Linux/Kali with Python 3.10+. Native Windows and Microsoft Word require separate validation.
 
 ```bash
 python3 start.py --setup
@@ -104,6 +104,6 @@ Other export formats: `pdf`, `docx`, `md` (ZIP with images).
 
 The included `examples/pending-severity/engagement.yaml` fixture contains two fictional findings with confirmed technical verification and no assigned severity. Its report text is in Spanish. In Word, table-of-contents titles are available immediately; page numbers are calculated when fields are updated in the editor. If they are missing or the content changes, use **Ctrl+A**, then **F9**. Word pagination is not copied from the PDF. Microsoft Word and LibreOffice may distribute content differently; desktop Microsoft Word remains a separate validation target.
 
- The editor runs in one process on `127.0.0.1`; it is not a multiuser service. Certification profiles are starting points; check current provider requirements before an exam submission. Logos remain their owners' property and imply no affiliation.
+The editor runs in one process on `127.0.0.1`; it is not a multiuser service. Certification profiles are starting points; check current provider requirements before an exam submission. Logos remain their owners' property and imply no affiliation.
 
-The application package retains source, tests, demo, designs and current documentation. Historical screenshots and generated samples are distributed separately.
+The repository includes source, tests, demo, designs and usage documentation.
