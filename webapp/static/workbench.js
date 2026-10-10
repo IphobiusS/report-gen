@@ -32,13 +32,17 @@ const UndoUI = (() => {
     if(a.slug!==S.slug||!contains(S.data,a.array)){clear();toast(S.uiLang==='en'?'The project was reloaded. Use Versions to recover older changes.':'El proyecto se recargó. Usa Versiones para recuperar cambios anteriores.','err');return;}
     stack.pop();
     if(a.kind==='move'){const i=a.array.indexOf(a.value);if(i<0){update();return;}a.array.splice(i,1);}
+    // A removed finding can outlive its group's deletion in the undo stack.
+    // Restore its evidence and retests, but never resurrect a dangling group.
+    const lostRootCause=a.kind==='remove'&&a.array===S.data.findings&&a.value?.root_cause_uid&&!(S.data.root_cause_groups||[]).some(group=>group.uid===a.value.root_cause_uid);
+    if(lostRootCause)delete a.value.root_cause_uid;
     const next=a.array.indexOf(a.after),prev=a.array.indexOf(a.before);
     a.array.splice(next>=0?next:prev>=0?prev+1:Math.min(a.index,a.array.length),0,a.value);
     const selected=S.sel.type==='finding'?S.data.findings[S.sel.idx]?.uid:null;
     ensureFindingIds();
     if(a.array===S.data.findings){const idx=S.data.findings.findIndex(f=>f.uid===(a.value?.uid||selected));S.sel={type:idx>=0?'finding':'report',idx};}
     scheduleSave();renderSidebar();renderMain();update();document.querySelector('#editor').focus({preventScroll:true});
-    toast(S.uiLang==='en'?'Action undone. Other edits are preserved.':'Acción deshecha. Se conservan las demás ediciones.','ok');
+    toast(lostRootCause?(S.uiLang==='en'?'Finding restored without the deleted group. Evidence and retests are retained.':'Hallazgo recuperado sin el grupo eliminado. Se conservan evidencias y retests.'):(S.uiLang==='en'?'Action undone. Other edits are preserved.':'Acción deshecha. Se conservan las demás ediciones.'),'ok');
   }
   return {remove,move,undo,clear,update};
 })();
@@ -368,7 +372,7 @@ const WorkbenchUI = (() => {
     const work=h('section',{class:'navigation-group'},h('h2',{id:'navWork',class:'side-head'}));
     [...sidebar.children].filter(x=>x.classList.contains('side-sec')&&x.id!=='workflowNav').forEach(x=>work.append(x));
     [nav,...['evidence','assets','coverage'].map(k=>$('[data-workflow="'+k+'"]'))].forEach(x=>work.append(x));
-    const review=h('section',{class:'navigation-group'},h('h2',{id:'navReview',class:'side-head'}));['review','history','retest','retest_diff','retest_matrix'].forEach(k=>review.append($('[data-workflow="'+k+'"]')));
+    const review=h('section',{class:'navigation-group'},h('h2',{id:'navReview',class:'side-head'}));['review','history','retest','retest_diff','retest_matrix','root_causes','remediation_tasks'].forEach(k=>review.append($('[data-workflow="'+k+'"]')));
     const util=$('.workspace-utilities');util.querySelector('.side-head').id='navTools';util.querySelector('.side-head').removeAttribute('data-workspace-text');util.prepend($('[data-workflow="backup"]'));sidebar.prepend(work,review);$('#workflowNav').remove();
     const fresh=h('span',{id:'previewFreshness',role:'status'});$('.preview-head').append(fresh);
     const range=h('input',{type:'range',id:'previewWidth',min:25,max:55,value:read('previewWidth',36)});range.addEventListener('input',()=>{document.documentElement.style.setProperty('--preview-width',range.value+'%');write('previewWidth',Number(range.value));});$('.preview-head').append(range);document.documentElement.style.setProperty('--preview-width',range.value+'%');

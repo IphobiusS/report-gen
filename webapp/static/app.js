@@ -259,6 +259,7 @@ function scheduleSave() {
   projectStore.data = S.data;
   projectStore.changed();
   if(typeof RetestMatrixUI!=="undefined")RetestMatrixUI.invalidate();
+  if(typeof RemediationUI!=="undefined")RemediationUI.invalidate();
   if(typeof RetestDiffUI!=="undefined")RetestDiffUI.invalidate();
 }
 async function doSave() {
@@ -1409,6 +1410,9 @@ function saveToLibrary(f) { WorkflowUI.saveTemplate(f).catch(error => toast(erro
 function openLibrary() { WorkflowUI.openLibrary(); }
 function exportFindings() {
   if (!S.data) return;
+  if ((S.data.findings || []).some(f => f.root_cause_uid) && !confirm(S.uiLang === "en"
+    ? "This JSON contains individual findings, without their root-cause groups or shared actions. Finding-specific remediation stays unchanged. Use a full project backup to preserve those relationships, or Remediation tasks to export resolved actions. Continue?"
+    : "Este JSON contiene los hallazgos individuales, sin sus grupos de causa raíz ni acciones comunes. La remediación específica se conserva sin cambios. Usa un respaldo completo del proyecto para conservar los vínculos, o Tareas de remediación para exportar las acciones resueltas. ¿Continuar?")) return;
   const blob = new Blob([JSON.stringify(S.data.findings || [], null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = h("a", { href: url, download: (S.slug || "hallazgos") + "-findings.json" }); a.click(); URL.revokeObjectURL(url);
@@ -1423,10 +1427,13 @@ async function importFindings(ev) {
     const parsed=JSON.parse(text), arr=Array.isArray(parsed)?parsed:parsed && typeof parsed==='object' && Array.isArray(parsed.findings)?parsed.findings:null;
     if (!arr || arr.some(f=>!f || typeof f!=='object' || Array.isArray(f) || (f.mode!==undefined && !['vuln','machine'].includes(f.mode)))) throw Error(S.uiLang === "en" ? "Use an array of findings or an object with a findings array. Each finding must be an object with type vuln or machine." : "Usa una lista de hallazgos o un objeto con la lista findings. Cada hallazgo debe ser un objeto de tipo vuln o machine.");
     if (!arr.length) { toast("0 "+t("findings_imported"),"ok"); return; }
+    if (arr.some(f=>f.root_cause_uid) && !confirm(S.uiLang === "en"
+      ? "These findings reference root-cause groups from their original project. This import removes those links and does not transfer groups or shared actions. Finding-specific remediation stays unchanged. To preserve everything, import a full project backup. Continue?"
+      : "Estos hallazgos contienen vínculos a grupos de causa raíz del proyecto de origen. Esta importación retira esos vínculos y no incorpora grupos ni acciones comunes. La remediación específica se conserva sin cambios. Para conservar todo, importa un respaldo completo del proyecto. ¿Continuar?")) return;
     const candidate=JSON.parse(snapshot);
     for (const f of arr) {
       const g=JSON.parse(JSON.stringify(f));g.id='F'+nextFid(candidate).slice(1).padStart(2,'0');g.uid=WorkflowUI.uid();g.mode ??= 'vuln';
-      delete g.__name;delete g.asset_uids;delete g.evidence_uids;delete g.retests;candidate.findings.push(g);
+      delete g.__name;delete g.asset_uids;delete g.evidence_uids;delete g.retests;delete g.root_cause_uid;candidate.findings.push(g);
     }
     if (!unchanged()) throw Error(S.uiLang === "en" ? "The project changed. Import the file again." : "El proyecto cambió. Importa el archivo otra vez.");
     const response=await requireOk(await appFetch('/api/projects/'+encodeURIComponent(slug)+'/draft-check',{method:'POST',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(candidate)}));

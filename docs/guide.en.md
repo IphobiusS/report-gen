@@ -1,4 +1,4 @@
-# report-gen 0.27.0 user guide
+# report-gen 0.28.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -89,7 +89,7 @@ Portable HTML contains the entire report. Executive view and filters are present
 
 ## Upgrade from an earlier version
 
-Extract or clone 0.27.0 into a new directory. Close both editors before transferring data, then run from the new directory:
+Extract or clone 0.28.0 into a new directory. Close both editors before transferring data, then run from the new directory:
 
 ```bash
 python3 start.py --ready --upgrade-from /path/to/previous-report-gen --lang en
@@ -101,7 +101,7 @@ The private backup is kept at `~/report-gen-backups/upgrade-*/workspace.zip`, ou
 
 Migration retains projects, evidence, history and libraries covered by workspace backup. It does not copy `.venv`, delivery outputs or browser drafts. Download a pending draft before changing installation or browser origin. Open your projects, verify images and history and retain any delivery files you need before retiring the previous directory.
 
-Alternatively, create **Workspace backup** in the previous version and restore it into the empty new installation. If an old project has its only preceding revision in `engagement.yaml.bak`, without snapshot history, the 0.21.2 exporter omits that copy. Keep the original directory and use the 0.27.0 migration to include this legacy recovery state. An older ZIP that already omitted the copy cannot reconstruct it. Existing projects remain readable. Backups containing annexes require 0.21.0 or later.
+Alternatively, create **Workspace backup** in the previous version and restore it into the empty new installation. If an old project has its only preceding revision in `engagement.yaml.bak`, without snapshot history, the 0.21.2 exporter omits that copy. Keep the original directory and use the 0.28.0 migration to include this legacy recovery state. An older ZIP that already omitted the copy cannot reconstruct it. Existing projects remain readable. Backups containing annexes require 0.21.0 or later.
 
 Existing IDs are retained. Since 0.21.2, the `finding_sequence` counter prevents deleted IDs from being reused; older versions do not preserve this guarantee. References already misdirected by older edits cannot be repaired automatically without knowing their original intent.
 
@@ -153,6 +153,18 @@ In **Workspace backup**, enter and confirm a 12–256-character password, then c
 
 Restore the file with its password into an empty installation. Authentication precedes validation and activation by the existing restorer. Wrong passwords, modified files or occupied destinations do not authorize partial restoration or merging.
 
+## Root causes and remediation tasks
+
+Under **History and follow-up > Root causes**, create a group with a name, cause and shared action. Assign related findings; each retains its permanent identity, severity, evidence, owner and retests. Removing a group unlinks its members after confirmation without deleting findings. Each finding can also have a verifiable **Closure criteria** field.
+
+A finding-specific action takes precedence over the shared action. The report's root-cause section is off by default: enable it explicitly and inspect the result. Partial deliveries retain only groups with included findings; public and executive audiences do not automatically include this private content.
+
+In **Remediation tasks**, select the fields to share. Permanent references preserve correspondence with original findings. Authored fields require review acknowledgement because they may contain client data. Save the project, generate a preview and download CSV or HTML cards in a ZIP. Changing the fields or project invalidates the preview and requires another review. No task is sent to an external service.
+
+CSV cells that might be interpreted as formulas are neutralized. Cards display content as text without executing HTML. Missing fields remain empty; exporting a task or writing closure criteria does not establish that a fix has been completed.
+
 ## External acceptance materials
 
 `python scripts/prepare-external-acceptance.py --output out/external-acceptance` prepares four synthetic DOCX files and a blank five-participant, three-task CSV. Its manifest records native Word and human sessions as `not_run`. The manual Word workflow requires Windows with desktop Word installed. See CONTRIBUTING.md for the observation protocol and native review command. Material preparation and automated checks are not human observations or native Word acceptance.
+
+The kit includes `word-review.csv` for visual inspection and `INSTRUCTIONS.txt`. After conducting the checks, run `python scripts/prepare-external-acceptance.py --summarize out/external-acceptance` to validate hashes and records without changing them. Native Word automation, visual review and human sessions retain separate states; prepared materials or completed rows do not establish general usability.

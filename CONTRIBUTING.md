@@ -69,3 +69,9 @@ Record one row per participant and task outside the public repository. Measure f
 Al cerrar las cinco sesiones, resume resultados por tarea, errores repetidos y puntos donde se pidió ayuda. Prioriza pérdida de datos y bloqueos antes que preferencias visuales. Vuelve a comprobar las correcciones con las tareas afectadas. Cinco sesiones sirven para descubrir dificultades concretas; no acreditan por sí solas que el producto sea fácil para toda su audiencia.
 
 After five sessions, summarize outcomes by task, recurring errors and requests for help. Prioritize data loss and blockers, then repeat affected tasks after fixes. Five sessions help discover specific obstacles; they do not establish usability for the entire audience.
+
+### Registrar la evidencia / Record evidence
+
+El kit incluye `word-review.csv` e `INSTRUCTIONS.txt`. Ejecuta Word con salida `<kit>/word-verified`; inspecciona todas sus páginas y registra pass/fail, revisor, fecha y SHA-256 del PDF. Completa las quince tareas P1–P5 con observador, fecha, tiempos, ayudas y resultado `independent`, `assisted` o `blocked`. `python scripts/prepare-external-acceptance.py --summarize <kit>` valida consistencia y muestra avance sin alterar los registros. La automatización Word, la inspección visual y las sesiones conservan estados separados; quince filas registradas no equivalen a aceptación general de usabilidad. El manifiesto distingue el commit de las modificaciones locales.
+
+The kit provides separate evidence for native Word automation, visual inspection and participant sessions. Run the summary command to validate document hashes and observation completeness without changing records. It does not authenticate participant identities or replace human assessment of usability. Keep completed participant records outside the public repository.

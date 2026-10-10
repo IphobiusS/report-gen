@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.27.0
+# report-gen 0.28.0
 
 <a id="qué-es"></a>
 
@@ -56,9 +56,9 @@ Abre **http://127.0.0.1:8080** en tu navegador. `Ctrl+C` detiene el servidor; `-
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.27.0
+## Novedades de 0.28.0
 
-Recuperación explícita de capturas y formularios pendientes, importación de Nuclei y Nmap, revisión OCR local opcional y respaldos privados cifrados. La revisión nativa en Word y las cinco sesiones con participantes siguen pendientes; se incluyen materiales ficticios para realizarlas. [Cambios completos](CHANGELOG.md).
+Agrupa hallazgos por causa raíz y corrección común sin perder sus identidades, evidencias o retests. Prepara tareas de remediación en CSV o fichas descargables, revisando primero qué campos compartir. La revisión nativa en Word y las cinco sesiones con participantes siguen pendientes; el kit permite registrar y verificar su evidencia por separado. [Cambios completos](CHANGELOG.md).
 
 ## Qué comprueba cada entrega
 
@@ -81,7 +81,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 ## Actualizar desde una versión anterior
 
-Descarga **0.27.0 en una carpeta nueva**, detén la instalación anterior y ejecuta desde la nueva:
+Descarga **0.28.0 en una carpeta nueva**, detén la instalación anterior y ejecuta desde la nueva:
 
 ```bash
 python3 start.py --ready --upgrade-from /ruta/report-gen-anterior

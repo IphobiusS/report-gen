@@ -47,7 +47,7 @@ function saveHelp(banner){
 function update(){
   if(!bound)return;
   ExperienceUI.updateDeliveryChecklist();
-  mode=['guide','insights'].includes(S.sel.type)?S.sel.type:S.sel.type==='studio'?S.sel.idx:S.sel.type==='workflow'&&['review','history','retest','retest_diff','retest_matrix'].includes(S.sel.idx)?'review':'work';
+  mode=['guide','insights'].includes(S.sel.type)?S.sel.type:S.sel.type==='studio'?S.sel.idx:S.sel.type==='workflow'&&['review','history','retest','retest_diff','retest_matrix','root_causes','remediation_tasks'].includes(S.sel.idx)?'review':'work';
   document.documentElement.dataset.studio=mode;
   const names={work:['Trabajar','Work'],review:['Revisar','Review'],deliver:['Entregar','Deliver'],library:['Biblioteca','Library']};
   Object.entries(names).forEach(([key,pair])=>{const b=$('[data-studio-nav="'+key+'"]');b.textContent=w(...pair);b.setAttribute('aria-current',key===mode?'page':'false');b.disabled=!S.slug&&['review','deliver'].includes(key);});

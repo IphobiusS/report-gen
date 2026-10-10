@@ -15,11 +15,15 @@ jobs:
           python scripts/prepare-external-acceptance.py --output out/external-acceptance
       - name: Update fields, save a copy and verify internal links
         shell: pwsh
-        run: ./scripts/verify-microsoft-word.ps1 -InputDirectory out/external-acceptance/word-input -OutputDirectory out/word-verified
+        run: ./scripts/verify-microsoft-word.ps1 -InputDirectory out/external-acceptance/word-input -OutputDirectory out/external-acceptance/word-verified
+      - name: Validate native evidence; keep human and visual review pending
+        shell: pwsh
+        run: |
+          python scripts/prepare-external-acceptance.py --summarize out/external-acceptance | Out-File -Encoding utf8 out/external-acceptance/acceptance-summary.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: word-native-acceptance
           path: |
-            out/word-verified/
-            out/external-acceptance/acceptance-preparation.json
+            out/external-acceptance/

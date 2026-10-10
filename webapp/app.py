@@ -586,6 +586,8 @@ def render_snapshot(slug, fmt, attachment=True):
 
 from workflow_api import register as register_workflows  # noqa: E402
 register_workflows(sys.modules[__name__])
+from remediation_api import register as register_remediation  # noqa: E402
+register_remediation(sys.modules[__name__])
 from retest_api import register as register_retest_views  # noqa: E402
 register_retest_views(sys.modules[__name__])
 from experience_api import register as register_experience  # noqa: E402

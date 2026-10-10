@@ -9,8 +9,6 @@ venv/
 out/
 *.pdf
 !reports/**/img/*.pdf
-!examples/designs-en/htb-cpts/muestra.pdf
-!examples/designs-en/offsec-oscp/muestra.pdf
 report.pdf
 
 # Proyectos locales del editor (datos del usuario)
@@ -27,6 +25,8 @@ tests/_cvss_harness.js
 
 # Dependencias y caches de desarrollo
 node_modules/
+/node_modules
+/.venv
 .pytest_cache/
 .ruff_cache/
 

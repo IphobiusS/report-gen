@@ -80,6 +80,9 @@ jobs:
           npm run test:pending-recovery
           npm run test:scanner-imports
           npm run test:private-tools
+          npm run test:root-causes
+          npm run test:remediation-tasks
+          npm run test:grouped-transfer
       - name: Compare all four formats with a complete synthetic case
         run: python scripts/audit-exports-0210.py --output out/export-acceptance
       - name: Export evidence
@@ -100,6 +103,9 @@ jobs:
             out/pending-recovery-0270/
             out/scanner-imports-0270/
             out/private-tools-0270/
+            out/root-cause-0280/
+            out/remediation-tasks-0280/
+            out/grouped-findings-transfer-0280/
           if-no-files-found: ignore
 
   pytest:

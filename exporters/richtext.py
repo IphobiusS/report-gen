@@ -128,7 +128,10 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
                     cells[i].width = widths[i]; inline(cell, cells[i].paragraphs[0], bold=cell.tag == "th")
                 if any(cell.tag == "th" for cell in row):
                     repeat = OxmlElement("w:tblHeader"); table.rows[-1]._tr.get_or_add_trPr().append(repeat)
-            keep_table_together(table, whole=keep_tables)
+            # As in the summary/inventory exporter, long tables must flow into
+            # the remaining page space. Chaining 80+ rows with keepNext forces
+            # a mostly empty preceding page before Word/Writer finally splits.
+            keep_table_together(table, whole=keep_tables and len(table.rows) <= 24)
             document.add_paragraph()
         elif tag == "figure":
             if retest and document.paragraphs:

@@ -137,7 +137,7 @@ def structure_errors(data):
             fields = {'assets': ('name', 'target', 'kind', 'notes'),
                       'evidence': ('title', 'src', 'original', 'caption'),
                       'coverage': ('test', 'status', 'notes', 'asset_uid'),
-                      'findings': ('owner', 'due_date', 'status')}[group]
+                      'findings': ('owner', 'due_date', 'status', 'closure_criteria_md')}[group]
             for key in fields: text(row, key, path)
             if group == 'evidence':
                 if not row.get('src'): err(path + '.src', backend_message('ruta de imagen obligatoria'))
@@ -188,6 +188,8 @@ def structure_errors(data):
                     for key in ('tested_on', 'assessor', 'notes_md', 'result'): text(retest, key, rp)
                     dt(retest, 'tested_on', rp); refs(retest, 'evidence_uids', rp)
                     if not isinstance(retest.get('result'), str) or retest.get('result') not in RESULTS: err(rp, backend_message('resultado de retest inválido'))
+    from root_cause import structure_errors as root_cause_errors
+    errors.extend(root_cause_errors(data, seen))
     from capture_inbox import validate_rows
     try: validate_rows(data.get('capture_inbox', []))
     except ValueError as exc: err('capture_inbox', str(exc))
@@ -196,7 +198,7 @@ def structure_errors(data):
         cfg = report['workflow']
         if not isinstance(cfg, dict): err('report.workflow', backend_message('debe ser un objeto'))
         else:
-            for key in ('include_assets', 'include_coverage', 'include_retest'):
+            for key in ('include_assets', 'include_coverage', 'include_retest', 'include_root_causes'):
                 if key in cfg and not isinstance(cfg[key], bool): err('report.workflow.' + key, backend_message('debe ser booleano'))
     if 'limitations_md' in data and not isinstance(data['limitations_md'], str): err('limitations_md', backend_message('debe ser texto'))
     return errors
@@ -252,6 +254,12 @@ def review(data, directory, lang="es"):
             add('warning', backend_message('{p0}: figura corregido sin un último retest que lo verifique', language=lang, p0=name), p + '.status', uid)
         if f.get('due_date') and f['due_date'] < date.today().isoformat() and f.get('status', 'open') not in ('verified_fixed', 'accepted'):
             add('warning', backend_message('{p0}: fecha de corrección vencida', language=lang, p0=name), p + '.due_date', uid)
+    from root_cause import selected_groups
+    for group, members in selected_groups(data):
+        index = data['root_cause_groups'].index(group)
+        for field in ('name', 'cause_md', 'remediation_md'):
+            if not group.get(field, '').strip():
+                add('warning', backend_message('Grupo de causa raíz: falta {field}', en='Root cause group: missing {field}', language=lang, field=field), f'root_cause_groups[{index}].{field}')
     live={f.get('uid') for f in data.get('findings',[])}
     for i,capture in enumerate(data.get('capture_inbox',[])):
         if capture.get('finding_uid') and capture['finding_uid'] not in live:
@@ -392,6 +400,18 @@ def report_sections(data):
                       for c in data.get('coverage', [])]) if data.get('coverage') else ''
         if data.get('limitations_md'): body += '\n\n### ' + ('Limitaciones' if es else 'Limitations') + '\n\n' + data['limitations_md']
         add('rg_coverage', 'Cobertura y limitaciones' if es else 'Coverage and limitations', body)
+    if cfg.get('include_root_causes', False):
+        from root_cause import selected_groups
+        groups = selected_groups(data)
+        if groups:
+            blocks = []
+            for group, members in groups:
+                block = '### ' + md_text(group.get('name') or ('Grupo sin nombre' if es else 'Unnamed group'))
+                block += '\n\n' + ('Hallazgos: ' if es else 'Findings: ') + ', '.join(md_text(f.get('id', '')) for f in members)
+                block += '\n\n**' + ('Causa raíz' if es else 'Root cause') + '**\n\n' + group.get('cause_md', '')
+                block += '\n\n**' + ('Acción común' if es else 'Shared action') + '**\n\n' + group.get('remediation_md', '')
+                blocks.append(block)
+            add('rg_root_causes', 'Causas raíz y acciones comunes' if es else 'Root causes and shared actions', '\n\n'.join(blocks))
     fs = data.get('findings', [])
     if cfg.get('include_retest', True) and any(f.get('retests') or f.get('owner') or f.get('due_date') or f.get('status', 'open') != 'open' or f.get('verification') for f in fs):
         counts = {key: sum(f.get('status', 'open') == key for f in fs) for key in STATUSES}

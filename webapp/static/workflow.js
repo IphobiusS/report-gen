@@ -4,7 +4,7 @@ const WorkflowUI = (() => {
   const w = (es, en) => S.uiLang === 'en' ? en : es;
   const uid = () => crypto.randomUUID();
   const clone = x => JSON.parse(JSON.stringify(x));
-  const names = {review:['Revisión de entrega','Delivery review'], history:['Versiones','Versions'], evidence:['Evidencias','Evidence'], assets:['Activos','Assets'], coverage:['Cobertura','Coverage'], retest:['Correcciones y retest','Remediation and retest'], retest_diff:['Cambios desde la entrega','Changes since delivery'], retest_matrix:['Matriz de retest','Retest matrix'], backup:['Respaldo del proyecto','Project backup'], library:['Biblioteca de hallazgos','Finding library']};
+  const names = {review:['Revisión de entrega','Delivery review'], history:['Versiones','Versions'], evidence:['Evidencias','Evidence'], assets:['Activos','Assets'], coverage:['Cobertura','Coverage'], root_causes:['Causas raíz','Root causes'], remediation_tasks:['Tareas de remediación','Remediation tasks'], retest:['Correcciones y retest','Remediation and retest'], retest_diff:['Cambios desde la entrega','Changes since delivery'], retest_matrix:['Matriz de retest','Retest matrix'], backup:['Respaldo del proyecto','Project backup'], library:['Biblioteca de hallazgos','Finding library']};
   const statuses = [['open','Abierto','Open'],['in_progress','En corrección','In progress'],['reported_fixed','Corrección comunicada','Reported fixed'],['verified_fixed','Corregido y verificado','Verified fixed'],['accepted','Riesgo aceptado','Risk accepted'],['not_verified','No verificable','Not verifiable']];
   const results = [['fixed','Corregido','Fixed'],['open','Sigue abierto','Still open'],['partial','Corrección parcial','Partially fixed'],['not_verified','No verificable','Not verifiable']];
   const cover = [['pending','Pendiente','Pending'],['done','Realizada','Performed'],['blocked','Bloqueada','Blocked'],['not_applicable','No aplica','Not applicable']];
@@ -70,13 +70,14 @@ const WorkflowUI = (() => {
   function render(kind,el){
     el.append(h('h2',{},title(kind)));const box=h('div',{'data-workflow-view':kind});el.append(box);
     const slug=S.slug;
-    Promise.resolve().then(()=>({review,history,evidence,assets,coverage,retest,retest_diff:()=>RetestDiffUI.render(box),retest_matrix:()=>RetestMatrixUI.render(box),backup,library}[kind])(box,slug)).catch(e=>{if(box.isConnected)box.append(card(h('p',{role:'alert'},e.message),button(w('Reintentar','Retry'),()=>renderMain())));});
+    Promise.resolve().then(()=>({review,history,evidence,assets,coverage,root_causes:rootCauses,remediation_tasks:()=>RemediationUI.render(box),retest,retest_diff:()=>RetestDiffUI.render(box),retest_matrix:()=>RetestMatrixUI.render(box),backup,library}[kind])(box,slug)).catch(e=>{if(box.isConnected)box.append(card(h('p',{role:'alert'},e.message),button(w('Reintentar','Retry'),()=>renderMain())));});
   }
   function findingPanel(f){
     const box=card(h('h3',{},w('Seguimiento y vínculos','Tracking and links')));
     box.append(selectField(w('Verificación técnica','Technical verification'),f,'verification',WorkbenchUI.verification));
     if(f.status==='not_verified'&&!f.verification)box.append(hint('Este proyecto conserva el estado anterior «No verificable». La verificación técnica está sin registrar; revísala antes de asignar un valor.','This project retains the legacy “Not verifiable” status. Technical verification has not been recorded; review it before assigning a value.'));
     box.append(row(field(w('Responsable','Owner'),f,'owner'),field(w('Fecha objetivo','Due date'),f,'due_date',{type:'date'}),selectField(w('Estado','Status'),f,'status',statuses)));
+    box.append(rootCauseSelector(f),field(w('Criterio de cierre','Closure criteria'),f,'closure_criteria_md',{area:true,ph:w('Qué comprobar para aceptar la corrección.','What to verify before accepting the fix.')}));
     box.append(links(w('Activos afectados','Affected assets'),f,'asset_uids',S.data.assets||[]),links(w('Evidencias vinculadas','Linked evidence'),f,'evidence_uids',S.data.evidence||[]));
     box.append(button(w('Registrar / ver retest','Record / view retest'),()=>{S.retestFinding=f.uid;go('retest');}));
     box.append(h('details',{},h('summary',{},w('Referencia permanente','Permanent reference')),h('code',{},f.uid||'')));
@@ -86,14 +87,14 @@ const WorkflowUI = (() => {
   function reviewKey(issue){
     let path=issue.path||'report';
     if(issue.finding_uid)path=path.replace(/^findings\[\d+\]/,'findings.'+issue.finding_uid);
-    else path=path.replace(/^(assets|evidence|coverage|capture_inbox)\[(\d+)\]/,(_,group,index)=>group+'.'+(S.data[group]?.[Number(index)]?.uid||index));
+    else path=path.replace(/^(assets|evidence|coverage|capture_inbox|root_cause_groups)\[(\d+)\]/,(_,group,index)=>group+'.'+(S.data[group]?.[Number(index)]?.uid||index));
     return JSON.stringify([issue.level,path,issue.message]);
   }
   function reviewCategory(issue){
     if(issue.level==='error')return 'blockers';
     if(/^(publication|attachments|capture_inbox)/.test(issue.path))return 'publication';
     if(/evidence|asset_uids/.test(issue.path))return 'links';
-    if(issue.finding_uid||issue.path.startsWith('findings'))return 'findings';
+    if(issue.finding_uid||issue.path.startsWith('findings')||issue.path.startsWith('root_cause_groups'))return 'findings';
     if(issue.path.startsWith('coverage')||issue.path==='limitations_md')return 'coverage';
     return 'report';
   }
@@ -167,6 +168,7 @@ const WorkflowUI = (() => {
     if(issue.finding_uid){const i=S.data.findings.findIndex(f=>f.uid===issue.finding_uid);if(i>=0)select('finding',i);}
     else if(issue.path.startsWith('attachments')){AnnexUI.open();return;}
     else if(issue.path.startsWith('capture_inbox'))select('capture');
+    else if(issue.path.startsWith('root_cause_groups'))go('root_causes');
     else if(issue.path.startsWith('coverage'))go('coverage');
     else if(issue.path.startsWith('evidence'))go('evidence');
     else if(issue.path.startsWith('assets'))go('assets');
@@ -174,7 +176,7 @@ const WorkflowUI = (() => {
     else select('report',-1);
     let attempts=0;
     function focus(){
-      const scope=$('#editor');const group=issue.path.match(/^(assets|coverage|evidence)\[(\d+)\]/);
+      const scope=$('#editor');const group=issue.path.match(/^(assets|coverage|evidence|root_cause_groups)\[(\d+)\]/);
       const step=issue.path.match(/(?:walkthrough|steps)\[(\d+)\]/);
       if(group?.[1]==='evidence'&&!scope.querySelector(`[data-workflow-index="${group[2]}"]`))scope.querySelector('[data-workflow-view="evidence"]')?.dispatchEvent(new CustomEvent('report-gen:evidence-page',{detail:{index:Number(group[2])}}));
       const container=(group?scope.querySelector(`[data-workflow-index="${group[2]}"]`):step?scope.querySelector(`[data-step-index="${step[1]}"]`):scope)||scope;
@@ -219,6 +221,62 @@ const WorkflowUI = (() => {
     box.querySelectorAll(':scope > .wf-card').forEach((c,i)=>{c.dataset.workflowIndex=i;});
     box.append(button(w('Añadir prueba','Add test'),()=>{rows.push({uid:uid(),test:'',asset_uid:'',status:'pending',notes:''});scheduleSave();renderMain();},true),card(mdEditor(w('Limitaciones del trabajo','Engagement limitations'),S.data,'limitations_md')));reportOptions(box,['include_coverage']);
   }
+  function rootCauseSelector(f,onChange){
+    const groups=S.data.root_cause_groups||[];
+    const control=selectField(w('Grupo de causa raíz','Root cause group'),f,'root_cause_uid',[
+      ['',w('Sin grupo','No group')],...groups.map(g=>[g.uid,g.name||w('Grupo sin nombre','Unnamed group')])]);
+    control.querySelector('select').dataset.rootCauseFinding=f.uid;
+    if(onChange)control.querySelector('select').addEventListener('change',onChange);
+    return control;
+  }
+  function rootCauses(box){
+    const groups=S.data.root_cause_groups||[];
+    box.append(hint('Relaciona hallazgos con una misma causa y acción común. Cada hallazgo conserva su ID, severidad, evidencias, responsable y retests. La acción común no sustituye las correcciones específicas.','Relate findings with a shared cause and action. Each finding keeps its ID, severity, evidence, owner and retests. The shared action does not replace finding-specific fixes.'));
+    const draft={name:''},create=button(w('Crear grupo','Create group'),()=>{
+      const name=draft.name.trim();if(!name||name.length>200)throw Error(w('Escribe un nombre de 1 a 200 caracteres.','Enter a name of 1 to 200 characters.'));
+      if(groups.length>=1000)throw Error(w('Máximo 1000 grupos.','Maximum 1000 groups.'));
+      const group={uid:uid(),name,cause_md:'',remediation_md:''};S.data.root_cause_groups=groups;groups.push(group);scheduleSave();renderMain();
+      requestAnimationFrame(()=>document.querySelector('[data-root-cause-group="'+group.uid+'"] [data-field="cause_md"]')?.focus());
+    },true);create.dataset.rootCauseCreate='';
+    const name=localField(w('Nombre del nuevo grupo','New group name'),draft,'name');name.querySelector('input').maxLength=200;
+    box.append(card(row(name,create)));
+    const memberBoxes=new Map();
+    function updateMembers(){
+      for(const group of groups){
+        const list=memberBoxes.get(group.uid);if(!list)continue;
+        const members=(S.data.findings||[]).filter(f=>f.root_cause_uid===group.uid);
+        list.replaceChildren(h('p',{},w('Hallazgos vinculados: ','Linked findings: ')+members.length));
+        if(!members.length)list.append(hint('Asigna hallazgos abajo o desde la ficha de cada hallazgo.','Assign findings below or from each finding’s tracking panel.'));
+        else list.append(h('ul',{},...members.map(f=>h('li',{},button(f.id+' · '+(f.title||''),()=>select('finding',S.data.findings.indexOf(f)))))));
+      }
+    }
+    groups.forEach((group,index)=>{
+      const members=h('div',{'data-root-cause-members':group.uid});memberBoxes.set(group.uid,members);
+      const remove=button(w('Eliminar grupo','Delete group'),()=>{
+        if(!confirm(w('¿Eliminar este grupo y quitar sus vínculos? Los hallazgos, evidencias y retests se conservan.','Delete this group and remove its links? Findings, evidence and retests are retained.')))return;
+        (S.data.findings||[]).forEach(f=>{if(f.root_cause_uid===group.uid)delete f.root_cause_uid;});
+        groups.splice(groups.indexOf(group),1);scheduleSave();renderMain();
+      });remove.dataset.rootCauseDelete=group.uid;
+      const item=card(field(w('Nombre del grupo','Group name'),group,'name',{onChange:()=>{for(const option of box.querySelectorAll('select[data-root-cause-finding] option'))if(option.value===group.uid)option.textContent=group.name||w('Grupo sin nombre','Unnamed group');}}),field(w('Causa raíz','Root cause'),group,'cause_md',{area:true}),field(w('Acción común','Shared action'),group,'remediation_md',{area:true}),members,
+        h('details',{},h('summary',{},w('Referencia permanente del grupo','Permanent group reference')),h('code',{},group.uid)),remove);
+      item.dataset.workflowIndex=index;item.dataset.rootCauseGroup=group.uid;item.querySelector('[data-field="name"]').maxLength=200;
+      for(const key of ['cause_md','remediation_md'])item.querySelector('[data-field="'+key+'"]').maxLength=16000;
+      box.append(item);
+    });
+    updateMembers();
+    if(groups.length){
+      const assignment=card(h('h3',{},w('Asignar hallazgos','Assign findings'))),search=h('input',{type:'search','aria-label':w('Filtrar hallazgos para agrupar','Filter findings to group'),placeholder:w('Buscar por ID o título','Search by ID or title'),'data-root-cause-search':''}),list=h('div',{'data-root-cause-assignments':''}),pager=h('div',{});
+      let page=0;function draw(){
+        const query=search.value.trim().toLocaleLowerCase(),findings=(S.data.findings||[]).filter(f=>(f.id+' '+(f.title||'')).toLocaleLowerCase().includes(query)),size=20;
+        page=Math.min(page,Math.max(0,Math.ceil(findings.length/size)-1));list.replaceChildren();pager.replaceChildren();
+        for(const f of findings.slice(page*size,(page+1)*size))list.append(row(h('span',{},f.id+' · '+(f.title||'')),rootCauseSelector(f,updateMembers)));
+        if(!findings.length)list.append(hint('No hay hallazgos que coincidan.','No matching findings.'));
+        if(findings.length>size)pager.append(workspacePageBar('root-cause-assignments',findings.length,page,size,next=>{page=next;draw();}));
+      }
+      search.addEventListener('input',()=>{page=0;draw();});assignment.append(search,list,pager);box.append(assignment);draw();
+      reportOptions(box,['include_root_causes']);
+    }
+  }
   function retest(box){
     const findings=S.data.findings||[];
     box.append(hint('Una corrección comunicada por el cliente no equivale a una corrección verificada. Registra la comprobación y su evidencia.','A client-reported fix is distinct from a verified fix. Record the verification and its evidence.'));
@@ -234,8 +292,8 @@ const WorkflowUI = (() => {
     box.append(button(w('Exportar informe con retest','Export report with retest'),async()=>{S.data.report.workflow=S.data.report.workflow||{};S.data.report.workflow.include_retest=true;scheduleSave();await exportFile($('#exportFormat').value);},true));
   }
   function reportOptions(box,keys){
-    const cfg=S.data.report.workflow||{};const labels={include_assets:['Incluir activos en el informe','Include assets in report'],include_coverage:['Incluir cobertura y limitaciones','Include coverage and limitations'],include_retest:['Incluir seguimiento y retest','Include tracking and retest']};
-    box.append(card(...keys.map(k=>check(w(...labels[k]),cfg[k]!==false,v=>{S.data.report.workflow=S.data.report.workflow||cfg;cfg[k]=v;scheduleSave();}))));
+    const cfg=S.data.report.workflow||{};const labels={include_assets:['Incluir activos en el informe','Include assets in report'],include_coverage:['Incluir cobertura y limitaciones','Include coverage and limitations'],include_retest:['Incluir seguimiento y retest','Include tracking and retest'],include_root_causes:['Incluir causas raíz y acciones comunes en el informe','Include root causes and shared actions in report']};
+    box.append(card(...keys.map(k=>check(w(...labels[k]),k==='include_root_causes'?cfg[k]===true:cfg[k]!==false,v=>{S.data.report.workflow=S.data.report.workflow||cfg;cfg[k]=v;scheduleSave();}))));
   }
   function evidenceCard(e,slug,editable=false){
     const c=card(h('img',{class:'wf-thumb',src:url('/'+e.src,slug),alt:e.caption||e.title||w('Evidencia vinculada','Linked evidence'),loading:'lazy'}),...(editable?[field(w('Título','Title'),e,'title'),field(w('Pie de imagen','Caption'),e,'caption')]:[h('h4',{},e.title||w('Sin título','Untitled')),h('p',{},e.caption||'')]));

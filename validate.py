@@ -133,6 +133,10 @@ def report_anchor_issues(data, language):
             f.get('retests') or f.get('owner') or f.get('due_date')
             or f.get('status', 'open') != 'open' or f.get('verification') for f in findings):
         anchors.append('rg_retest')
+    if config.get('include_root_causes', False):
+        from root_cause import selected_groups
+        if selected_groups(data):
+            anchors.append('rg_root_causes')
     duplicates = sorted(key for key, count in Counter(anchors).items() if count > 1)
     return [('error', _m('dup_anchors', language, ids=', '.join(duplicates)))] if duplicates else []
 

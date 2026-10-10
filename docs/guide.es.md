@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.27.0
+# Guía de uso de report-gen 0.28.0
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -90,7 +90,7 @@ El HTML portátil contiene todo el informe; los filtros y la vista ejecutiva son
 
 ## Actualizar desde una versión anterior
 
-Descomprime o clona 0.27.0 en una carpeta nueva. Cierra ambos editores antes de trasladar los datos y ejecuta desde la carpeta nueva:
+Descomprime o clona 0.28.0 en una carpeta nueva. Cierra ambos editores antes de trasladar los datos y ejecuta desde la carpeta nueva:
 
 ```bash
 python3 start.py --ready --upgrade-from /ruta/report-gen-anterior
@@ -102,7 +102,7 @@ El respaldo se conserva en `~/report-gen-backups/upgrade-*/workspace.zip`, fuera
 
 La migración conserva los proyectos, evidencias, historial y bibliotecas incluidos en el respaldo integral. No copia `.venv`, salidas de entregas ni borradores del navegador. Descarga un borrador pendiente antes de cambiar de instalación u origen del navegador. Abre tus proyectos, verifica las imágenes y el historial y conserva también las entregas que necesites antes de retirar la carpeta anterior.
 
-Como alternativa, crea **Respaldo integral** con la versión anterior y restáuralo en la instalación nueva vacía. Si un proyecto antiguo solo conserva su revisión previa en `engagement.yaml.bak`, sin historial, el exportador de 0.21.2 omite esa copia. Conserva el directorio original y usa el traslado de 0.27.0 para incorporar esa recuperación heredada. Un ZIP antiguo que ya omitió la copia no permite reconstruirla.
+Como alternativa, crea **Respaldo integral** con la versión anterior y restáuralo en la instalación nueva vacía. Si un proyecto antiguo solo conserva su revisión previa en `engagement.yaml.bak`, sin historial, el exportador de 0.21.2 omite esa copia. Conserva el directorio original y usa el traslado de 0.28.0 para incorporar esa recuperación heredada. Un ZIP antiguo que ya omitió la copia no permite reconstruirla.
 
 Los proyectos anteriores siguen siendo legibles. Los respaldos que contengan el directorio de anexos requieren 0.21.0 o posterior; una versión anterior puede rechazarlos. Los registros de anexos con el campo `required` necesitan 0.21.1 o posterior, aunque su valor sea falso. Desde 0.21.2, el contador `finding_sequence` impide reutilizar números eliminados; no modifica los IDs existentes. Versiones anteriores no conservan esta garantía. Si una edición antigua ya cambió el significado de una referencia, esta versión no puede inferir el destino original: revisa las referencias heredadas.
 
@@ -175,6 +175,18 @@ En **Respaldo integral**, indica y confirma una contraseña de 12 a 256 caracter
 
 Para restaurar, selecciona el `.rgbackup` y su contraseña en una instalación vacía. Se autentica antes de validar y activar su contenido mediante el restaurador existente. Contraseña incorrecta, archivo alterado o destino ocupado no autorizan una mezcla de proyectos ni una restauración parcial.
 
+## Causas raíz y tareas de remediación
+
+En **Historial y seguimiento > Causas raíz**, crea un grupo con nombre, causa y acción común. Asigna los hallazgos relacionados; cada uno conserva su identificador permanente, severidad, evidencias, responsable y retests. Quitar un grupo desvincula sus miembros después de confirmar, pero no elimina los hallazgos. En cada hallazgo puedes definir además un **Criterio de cierre** comprobable.
+
+La acción específica de un hallazgo tiene prioridad sobre la acción común. La sección de causas raíz del informe está desactivada por defecto: actívala expresamente y revisa el resultado. Las entregas parciales conservan solo grupos con hallazgos incluidos; las vistas pública y ejecutiva no incorporan este contenido privado automáticamente.
+
+En **Tareas de remediación**, selecciona los campos que necesitas compartir. Las referencias permanentes mantienen la correspondencia con los hallazgos originales. El contenido redactado por ti requiere una confirmación de revisión: puede contener datos de clientes. Guarda el proyecto, genera la vista previa y descarga CSV o fichas HTML dentro de un ZIP. Cambiar los campos o el proyecto invalida la vista previa y exige revisarla de nuevo. Ninguna tarea se envía a un servicio externo.
+
+El CSV protege las celdas que podrían interpretarse como fórmulas. Las fichas muestran el contenido como texto, sin ejecutar HTML. Los campos vacíos permanecen vacíos; ni la exportación ni el criterio escrito acreditan que la corrección se haya realizado.
+
 ## Materiales para las comprobaciones externas
 
 `python scripts/prepare-external-acceptance.py --output out/external-acceptance` prepara cuatro DOCX ficticios y un CSV vacío de cinco participantes y tres tareas. El manifiesto declara Word y las sesiones humanas como `not_run`. El workflow manual de Word usa ese corpus y necesita un equipo Windows con Word de escritorio instalado. Consulta el protocolo y el comando de revisión en CONTRIBUTING.md. Generar estos materiales o ejecutar pruebas automáticas no equivale a haber observado personas ni a validar Word nativo.
+
+El kit incluye `word-review.csv` para revisión visual y `INSTRUCTIONS.txt`. Tras realizar las comprobaciones, ejecuta `python scripts/prepare-external-acceptance.py --summarize out/external-acceptance`: valida hashes y registros sin alterarlos. Los estados de Word automático, inspección visual y sesiones humanas permanecen separados; preparar materiales o completar filas no acredita usabilidad general.

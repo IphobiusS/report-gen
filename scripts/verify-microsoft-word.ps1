@@ -11,6 +11,9 @@ $target = [System.IO.Path]::GetFullPath($OutputDirectory)
 if ([string]::Equals($source, $target, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw "Use a separate output directory; source documents are preserved."
 }
+if ((Test-Path -LiteralPath $target) -and @(Get-ChildItem -LiteralPath $target -Force).Count -gt 0) {
+    throw "Use an empty output directory; existing evidence is preserved."
+}
 New-Item -ItemType Directory -Force -Path $target | Out-Null
 $files = @(Get-ChildItem -LiteralPath $source -Filter *.docx -File)
 if ($files.Count -eq 0) { throw "No DOCX documents found." }
@@ -73,7 +76,7 @@ try {
             $pdf = Join-Path $target ($file.BaseName + '-word.pdf')
             $document.ExportAsFixedFormat($pdf, 17) # wdExportFormatPDF
             if ($pages -lt 1 -or -not (Test-Path -LiteralPath $pdf)) { throw "Empty Word rendering." }
-            $results += @{file=$file.Name;word_version=$word.Version;pages=$pages;pdf=$pdf;status="fields_updated_and_rendered";updated_docx=$copy;index_count=$document.TablesOfContents.Count;source_sha256=$beforeHash;updated_sha256=(Get-FileHash -LiteralPath $copy -Algorithm SHA256).Hash}
+            $results += @{file=$file.Name;word_version=$word.Version;pages=$pages;pdf=[System.IO.Path]::GetFileName($pdf);pdf_sha256=(Get-FileHash -LiteralPath $pdf -Algorithm SHA256).Hash;status="fields_updated_and_rendered";updated_docx=[System.IO.Path]::GetFileName($copy);index_count=$document.TablesOfContents.Count;source_sha256=$beforeHash;updated_sha256=(Get-FileHash -LiteralPath $copy -Algorithm SHA256).Hash}
         } finally {
             if ($null -ne $document) {
                 $document.Close(0)
@@ -84,7 +87,7 @@ try {
             throw "A source DOCX changed: $($file.Name)"
         }
     }
-    $record = @{platform=[Environment]::OSVersion.VersionString;results=$results;visual_acceptance="pending"}
+    $record = @{schema=2;platform=[Environment]::OSVersion.VersionString;results=$results;recorded_at=[DateTime]::UtcNow.ToString("o");visual_acceptance="pending"}
     $record | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $target 'word-validation.json') -Encoding UTF8
 } finally {
     if ($null -ne $word) {

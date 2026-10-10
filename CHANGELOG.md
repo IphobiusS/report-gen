@@ -1,3 +1,14 @@
+# Cambios 0.28.0 (2026-10-10)
+
+- Agrupación explícita por causa raíz y remediación común con identidades estables; los hallazgos conservan su evidencia, valoración y retest individuales.
+- Exportación local de tareas en CSV y fichas HTML, con selección de campos, vista previa ligada a la revisión guardada y protección frente a fórmulas en hojas de cálculo.
+- Criterio de cierre por hallazgo y navegación integrada en el seguimiento del proyecto.
+- Registro verificable de la aceptación externa: materiales, hashes, resultados de Word, inspección visual y sesiones humanas se conservan como estados distintos. Preparar el kit no acredita haber realizado las pruebas pendientes.
+
+- Corrección de un hueco de paginación en tablas Markdown largas del DOCX; se conservan filas completas y cabecera repetida.
+- Importación de hallazgos y Deshacer conservan los datos sin restaurar vínculos a grupos inexistentes; avisos explícitos sobre el alcance del JSON individual.
+- Retiradas cuatro muestras binarias regenerables sin referencias; se mantienen fuentes, diseños y documentación útil.
+
 # Cambios 0.27.0 (2026-10-10)
 
 - Recuperación explícita de capturas y formularios de Evidencia y decisiones todavía no incorporados, con registro privado separado por proyecto, límites, caducidad y controles de conflicto. No adjunta archivos ni recupera consentimientos de publicación automáticamente.

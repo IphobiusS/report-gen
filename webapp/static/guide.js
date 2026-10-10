@@ -319,7 +319,7 @@ const GuideUI = (() => {
   function secondaryNavigation() {
     const groups = [
       ['workspaceResearch', ['Registro y cobertura','Capture and coverage'], ['#navCaptures','[data-workflow="assets"]','[data-workflow="coverage"]']],
-      ['workspaceFollowup', ['Historial y seguimiento','History and follow-up'], ['[data-workflow="history"]','[data-workflow="retest"]','[data-workflow="retest_diff"]','[data-workflow="retest_matrix"]']]
+      ['workspaceFollowup', ['Historial y seguimiento','History and follow-up'], ['[data-workflow="history"]','[data-workflow="retest"]','[data-workflow="retest_diff"]','[data-workflow="retest_matrix"]','[data-workflow="root_causes"]','[data-workflow="remediation_tasks"]']]
     ];
     for (const [id, title, selectors] of groups) {
       const controls = selectors.map(selector => $(selector)).filter(Boolean);

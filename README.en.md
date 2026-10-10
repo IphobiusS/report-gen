@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.27.0
+# report-gen 0.28.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -46,9 +46,9 @@ Open **http://127.0.0.1:8080** in your browser. `Ctrl+C` stops the server; `--po
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
-## New in 0.27.0
+## New in 0.28.0
 
-Explicit recovery of pending captures and auxiliary forms, Nuclei and Nmap imports, optional local screenshot OCR, and password-encrypted private backups. Native desktop Word review and five human sessions remain pending; reproducible synthetic materials are provided. [Full changes](CHANGELOG.md).
+Group findings by root cause and shared remediation while preserving individual identities, evidence and retests. Prepare CSV remediation tasks or downloadable task cards after previewing the fields to share. Native desktop Word review and five human sessions remain pending; the acceptance kit records and verifies their evidence separately. [Full changes](CHANGELOG.md).
 
 ## What delivery checks establish
 
@@ -66,7 +66,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 ## Upgrade from an earlier version
 
-Download **0.27.0 into a new directory**, stop the previous installation and run from the new directory:
+Download **0.28.0 into a new directory**, stop the previous installation and run from the new directory:
 
 ```bash
 python3 start.py --ready --upgrade-from /path/to/previous-report-gen --lang en

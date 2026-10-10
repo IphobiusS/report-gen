@@ -135,6 +135,9 @@ def project(source, options):
     if profile == 'technical':
         data = deepcopy(source)
         data['findings'] = deepcopy(selected_rows)
+        linked_groups = {row.get('root_cause_uid') for row in selected_rows}
+        if 'root_cause_groups' in data:
+            data['root_cause_groups'] = [group for group in data['root_cause_groups'] if group.get('uid') in linked_groups]
         sections = list((source.get('report') or {}).get('sections') or [])
         automatic = workflows.report_sections(source)
         available = {row['key']: row for row in sections + automatic}
@@ -150,7 +153,7 @@ def project(source, options):
             data.setdefault('report', {})['sections'] = kept
             config = data['report'].setdefault('workflow', {})
             for key, section_key in [('include_assets', 'rg_assets'), ('include_coverage', 'rg_coverage'),
-                                     ('include_retest', 'rg_retest')]:
+                                     ('include_retest', 'rg_retest'), ('include_root_causes', 'rg_root_causes')]:
                 config[key] = section_key in keys
         else:
             keys = list(available)
@@ -195,7 +198,7 @@ def project(source, options):
         meta[key] = redact(meta[key])
     data = {'meta': meta, 'report': {'sections': []}, 'findings': []}
     excluded += ['commands', 'raw_targets_paths', 'images', 'attachments', 'contacts', 'assets', 'coverage',
-                 'retests', 'raw_evidence', 'unselected_findings', 'source_sections', 'custom_metadata']
+                 'retests', 'root_cause_groups', 'raw_evidence', 'unselected_findings', 'source_sections', 'custom_metadata']
     prefix = 'Executive summary' if en else 'Resumen de dirección'
     if profile == 'public':
         if any(type(options.get(key)) is not bool or options.get(key) is not True
