@@ -1,5 +1,6 @@
 /* First design selection, same-page comparison and preservation of saved/draft content. */
 'use strict';
+const {apiResponseHeaders}=require('./browser-api-headers.cjs');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),args=process.argv.slice(2),outputIndex=args.indexOf('--output'),out=path.resolve(outputIndex>=0?args[outputIndex+1]:'out/design-selection-0260');
 const {chromium}=require('playwright');fs.mkdirSync(out,{recursive:true});
@@ -15,6 +16,7 @@ async function gallery(){await page.evaluate(()=>DesignLibraryUI.gallery(documen
  base=(await new Promise((resolve,reject)=>{let text='';const timer=setTimeout(()=>reject(Error('Server timeout')),30000);server.stdout.on('data',chunk=>{text+=chunk;for(const line of text.split('\n'))try{const data=JSON.parse(line);if(data.url){clearTimeout(timer);resolve(data);}}catch{}});server.once('exit',code=>reject(Error('Server exited '+code)));})).url;
  browser=await chromium.launch({headless:true,executablePath:process.env.REPORT_GEN_CHROMIUM||process.env.RG_CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox']});
  const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'});await context.route('**/*',route=>{const url=route.request().url();if(/^https?:/.test(url)&&!url.startsWith(base+'/')){result.external.push(url);return route.abort();}return route.continue();});
+ const apiHeaders=await apiResponseHeaders(context,base);
  page=await context.newPage();page.on('pageerror',error=>result.errors.push(String(error)));await page.goto(base);await page.locator('#splash').waitFor({state:'hidden'});
  let gal=await gallery();
  check('No-project gallery recommends Serious first without creating a project',await gal.locator('[data-design="serio"]').getAttribute('aria-pressed')==='true'&&await gal.locator('.design-card').first().getAttribute('data-design')==='serio'&&await page.evaluate(()=>!S.slug));
@@ -48,7 +50,7 @@ async function gallery(){await page.evaluate(()=>DesignLibraryUI.gallery(documen
  gal=await gallery();check('Existing specialized design opens its family and selected variant',await gal.locator('[data-design-catalog]').evaluate(e=>e.open)&&await gal.locator('[data-design="offsec-oscp"]').getAttribute('aria-pressed')==='true'&&await gal.locator('[data-design-variant]').inputValue()==='quiet');await page.keyboard.press('Escape');
  // A rejected pending save must not create a new project or discard the local draft.
  let created=0;const countCreate=request=>{if(request.url()===base+'/api/projects'&&request.method()==='POST')created++;};page.on('request',countCreate);
- await context.route(base+'/api/projects/design-selection',route=>route.request().method()==='PUT'?route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Synthetic pending save failure'})}):route.continue());
+ await context.route(base+'/api/projects/design-selection',route=>route.request().method()==='PUT'?route.fulfill({headers:apiHeaders,status:503,contentType:'application/json',body:JSON.stringify({error:'Synthetic pending save failure'})}):route.continue());
  await page.evaluate(()=>{S.data.meta.report_title='Pending draft remains';scheduleSave();});await newProject();await page.locator('#mTitle').fill('Must not create while save fails');await page.locator('#mCreate').click();await page.waitForFunction(()=>!creatingProject);
  check('Creation waits for a successful save, preserves the draft and explains failure inside the modal',created===0&&await page.evaluate(()=>S.slug==='design-selection'&&S.data.meta.report_title==='Pending draft remains'&&projectStore.dirty)&&await page.locator('#newModal').evaluate(e=>e.open)&&await page.locator('#newModal [role="alert"]').isVisible());
  await page.locator('#mCancel').click();await context.unroute(base+'/api/projects/design-selection');page.off('request',countCreate);await page.evaluate(()=>doSave());await saved();

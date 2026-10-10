@@ -1,5 +1,6 @@
 /* Real browser: explicit OCR and authenticated private backup/restore. */
 'use strict';
+const {apiResponseHeaders}=require('./browser-api-headers.cjs');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn,execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),out=path.resolve(process.env.RG_PRIVATE_QA_OUT||'out/private-tools-0270');
 const {chromium}=require('playwright');fs.mkdirSync(out,{recursive:true});
@@ -13,6 +14,7 @@ const python=process.env.RG_PYTHON||path.join(root,'.venv/bin/python'),server=sp
  browser=await chromium.launch({headless:true,executablePath:process.env.REPORT_GEN_CHROMIUM||undefined,args:['--no-sandbox']});results.browser=browser.version();
  const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce',acceptDownloads:true});
  await context.route('**/*',r=>{if(/^https?:/.test(r.request().url())&&!r.request().url().startsWith(base+'/')){results.externalRequests.push(r.request().url());return r.abort();}return r.continue();});
+ const apiHeaders=await apiResponseHeaders(context,base);
  page=await context.newPage();page.on('pageerror',e=>results.pageErrors.push(String(e)));let ocrRequests=0;page.on('request',r=>{if(r.url().endsWith('/privacy/ocr'))ocrRequests++;});
  await page.goto(base);await page.waitForFunction(()=>typeof PrivacyUI!=='undefined'&&!document.getElementById('splash'));
  await page.evaluate(async()=>{await requireOk(await api.post('/api/projects',{slug:'privacy-fixture',title:'Synthetic privacy fixture'}));await refreshProjects();await loadProject('privacy-fixture');});
@@ -25,7 +27,7 @@ const python=process.env.RG_PYTHON||path.join(root,'.venv/bin/python'),server=sp
  check('Explicit OCR reports a possible credential without returning its contents',ocrRequests===1&&(await page.locator('[data-ocr-result]').textContent()).includes('Posible credencial')&&!(await page.locator('[data-ocr-result]').textContent()).includes('TESTONLYSECRET'));
  await page.screenshot({path:out+'/ocr-local-desktop.png',fullPage:true});
  for(const [state,text] of [['unavailable','OCR no disponible'],['image_limit','12 megapíxeles'],['animation_unsupported','no revisa animaciones'],['timeout','límite de tiempo'],['engine_error','no pudo revisar'],['output_limit','incompleta']]){
-  await context.route(base+'/api/projects/privacy-fixture/privacy/ocr',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({status:state,image_sha256:'raw-header-only-hash',alerts:[],complete:false,manual_review_required:true})}));
+  await context.route(base+'/api/projects/privacy-fixture/privacy/ocr',route=>route.fulfill({headers:apiHeaders,status:200,contentType:'application/json',body:JSON.stringify({status:state,image_sha256:'raw-header-only-hash',alerts:[],complete:false,manual_review_required:true})}));
   await page.locator('[data-ocr-image]').click();await page.waitForFunction(expected=>document.querySelector('[data-ocr-result]')?.textContent.includes(expected),text);
   check('OCR '+state+' is incomplete with an honest manual-review result',!(await page.locator('[data-ocr-result]').textContent()).includes('cambió'));
   await context.unroute(base+'/api/projects/privacy-fixture/privacy/ocr');

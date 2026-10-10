@@ -114,8 +114,15 @@ def test_encrypted_api_restore_and_plain_zip_compatibility(tmp_path, monkeypatch
     assert client.post('/api/workspace/backup/encrypted', json={}).status_code == 422
     target = paths(tmp_path/'target')
     client = configure(monkeypatch, target)
+    # Opening the local session establishes a browser identity before a restore.
+    # A bad password must not alter that state or activate any archive content.
+    before = {path.relative_to(target[0].parent): path.read_bytes() if path.is_file() else None
+              for path in target[0].parent.rglob('*')}
     bad = client.post('/api/workspace/restore', data={'file': (BytesIO(response.data), 'private.rgbackup'), 'password': PASSWORD+'no'})
-    assert bad.status_code == 422 and not target[0].parent.exists()
+    after = {path.relative_to(target[0].parent): path.read_bytes() if path.is_file() else None
+             for path in target[0].parent.rglob('*')}
+    assert bad.status_code == 422 and after == before
+    assert not any(path.exists() for path in target)
     ok = client.post('/api/workspace/restore', data={'file': (BytesIO(response.data), 'private.rgbackup'), 'password': PASSWORD})
     assert ok.status_code == 200 and ok.get_json()['authenticated'] is True
     target2 = paths(tmp_path/'plain')

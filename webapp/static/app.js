@@ -25,6 +25,16 @@ function changedWorkspaceError(){
   if(!notice){notice=h('p',{'data-workspace-changed':'',class:'wf-error',role:'alert'});document.querySelector('.workspace-toolbar')?.append(notice);}
   notice.textContent=message;const error=new Error(message);error.status=409;return error;
 }
+function checkResponseWorkspace(response,uiLanguage){
+  if(!browserWorkspaceId)return;
+  const identity=response.headers.get('X-Report-Gen-Workspace');
+  if(identity===browserWorkspaceId)return;
+  if(identity!==null||response.ok)throw changedWorkspaceError();
+  // An intermediary can fail without the app's headers. Reject its unverified
+  // body, but retain the original scope and allow a deliberate retry.
+  const error=new Error(uiLanguage==='en'?'The server returned an unverified error. Your changes are still pending; try again.':'El servidor devolvió un error sin verificar. Tus cambios siguen pendientes; vuelve a intentarlo.');
+  error.status=response.status;throw error;
+}
 async function appFetch(url, options = {}) {
   if(BrowserWorkspace.blocked())throw changedWorkspaceError();
   const uiLanguage = S.uiLang === "en" ? "en" : "es";
@@ -34,14 +44,14 @@ async function appFetch(url, options = {}) {
   if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
     csrfPromise ||= fetch("/api/session", { headers: { "X-UI-Language": uiLanguage,
       ...(browserWorkspaceId?{'X-Report-Gen-Workspace':browserWorkspaceId}:{}) } }).then(async r => {
-      if(browserWorkspaceId&&r.headers.get('X-Report-Gen-Workspace')!==browserWorkspaceId)throw changedWorkspaceError();
+      checkResponseWorkspace(r,uiLanguage);
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || (uiLanguage === "en" ? "Could not start the local session" : "No se pudo iniciar la sesión local"));
       return (await r.json()).csrf;
     }).catch(error => { csrfPromise = null; throw error; });
     options = { ...options, headers: { ...options.headers, "X-CSRF-Token": await csrfPromise } };
   }
   const response=await fetch(url, options);
-  if(browserWorkspaceId&&response.headers.get('X-Report-Gen-Workspace')!==browserWorkspaceId)throw changedWorkspaceError();
+  checkResponseWorkspace(response,uiLanguage);
   return response;
 }
 async function requireOk(response) {

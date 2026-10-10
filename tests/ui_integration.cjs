@@ -42,15 +42,16 @@ async function until(predicate, attempts=150) {
   // An older PDF response must not replace a more recent live preview.
   let releasePdf;const pendingPdf=new Promise(resolve=>{releasePdf=resolve;});
   const realFetch=w.fetch;let pdfRequested=false;
+  const pdfResponse=()=>new Response(new Blob(['pdf'],{type:'application/pdf'}),{headers:{'X-Report-Gen-Workspace':q.S.workspace_id}});
   w.fetch=(url,options)=>url.endsWith('/render')?(pdfRequested=true,pendingPdf):realFetch(url,options);
   q.S.previewMode='pdf';const oldPdf=q.renderPdf(false);await until(()=>pdfRequested);
   q.setPreviewMode('live');await until(()=>w.document.querySelector('#pdfPreview').hasAttribute('srcdoc'));
-  releasePdf({ok:true,blob:async()=>new Blob(['pdf'])});await oldPdf;
+  releasePdf(pdfResponse());await oldPdf;
   assert.ok(w.document.querySelector('#pdfPreview').hasAttribute('srcdoc'));
   assert.equal(w.document.querySelector('#pdfPreview').getAttribute('src'),null);
   // Replacing a real PDF preview releases its object URL.
   let released=0;w.URL.revokeObjectURL=()=>{released++;};
-  w.fetch=(url,options)=>url.endsWith('/render')?Promise.resolve({ok:true,blob:async()=>new Blob(['pdf'])}):realFetch(url,options);
+  w.fetch=(url,options)=>url.endsWith('/render')?Promise.resolve(pdfResponse()):realFetch(url,options);
   q.S.previewMode='pdf';await q.renderPdf(false);assert.equal(w.document.querySelector('#pdfPreview').getAttribute('src'),'blob:report-test');
   q.S.previewMode='live';await q.refreshLivePreview();assert.ok(released>0);
   w.fetch=realFetch;

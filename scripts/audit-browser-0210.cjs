@@ -42,10 +42,12 @@ async function api(method,uri,body){return page.evaluate(async ({method,uri,body
  await page.locator('[data-field="remediation_md"]').fill('Remediación simulada.');
  await saved();
  const saveEndpoint=base+'/api/projects/aurora';
+ // An intermediary failure deliberately has no workspace header. Its body is
+ // unverified: preserve the draft and allow retry without displaying that body.
  await page.route(saveEndpoint,route=>route.request().method()==='PUT'?route.fulfill({status:503,contentType:'application/json',body:'{"error":"Fallo sintético de escritura"}'}):route.continue());
  await page.locator('[data-field="impact_md"]').fill('Impacto conservado después de un fallo sintético de guardado.');
  await page.getByRole('button',{name:'Reintentar guardado',exact:true}).waitFor();
- check('Fallo de guardado conserva cambios y muestra error',await page.evaluate(()=>projectStore.dirty&&!!projectStore.lastError&&S.data.findings[0].impact_md.includes('conservado')));
+ check('Fallo sin identidad conserva cambios, permite reintento y oculta el cuerpo sin verificar',await page.evaluate(()=>projectStore.dirty&&!!projectStore.lastError&&!BrowserWorkspace.blocked()&&!$('#saveError').textContent.includes('Fallo sintético de escritura')&&S.data.findings[0].impact_md.includes('conservado')));
  await screenshot('11-recuperacion-guardado');await page.unroute(saveEndpoint);
  await page.getByRole('button',{name:'Reintentar guardado',exact:true}).click();await saved();
  check('Reintento persiste el contenido recuperado',(await api('GET','/api/projects/aurora')).data.findings[0].impact_md.includes('conservado'));

@@ -1,6 +1,7 @@
 /* Real Chromium + isolated Flask contract for finding evidence/decision tabs.
    Reading preserves report data; rejected writes preserve UID-scoped drafts. */
 'use strict';
+const {apiResponseHeaders}=require('./browser-api-headers.cjs');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
 const args=process.argv.slice(2),option=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
 const root=path.resolve(option('--tool',process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..'))),out=path.resolve(option('--output','out/finding-workspace-0233'));
@@ -13,6 +14,7 @@ const server=spawn(process.env.RG_PYTHON||'python',[root+'/scripts/browser-serve
  const base=await new Promise((resolve,reject)=>{let text='';timer=setTimeout(()=>reject(Error('Server timeout')),20000);server.stdout.on('data',b=>{text+=b;for(const line of text.split('\n'))try{const value=JSON.parse(line);if(value.url){clearTimeout(timer);resolve(value.url);}}catch{}});server.on('exit',code=>reject(Error('Server exited '+code)));});
  browser=await chromium.launch({headless:true,executablePath:process.env.REPORT_GEN_CHROMIUM||process.env.RG_CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox']});results.browser=browser.version();
  const context=await browser.newContext({viewport:{width:1366,height:1000},reducedMotion:'reduce'});await context.route('**/*',r=>{const u=r.request().url();if(/^https?:/.test(u)&&!u.startsWith(base+'/')){results.externalRequests.push(u);return r.abort();}return r.continue();});
+ const apiHeaders=await apiResponseHeaders(context,base);
  page=await context.newPage();page.on('pageerror',error=>{results.pageErrors.push(String(error));save();});page.on('dialog',dialog=>dialog.dismiss());let writes=0;
  page.on('request',request=>{if(request.method()==='PUT'&&/\/api\/projects\/[^/]+$/.test(request.url()))writes++;});
  await page.addInitScript(()=>localStorage.setItem('rg.previewVisible','0'));await page.goto(base);await page.waitForFunction(()=>typeof WorkbenchUI!=='undefined'&&!document.getElementById('splash'));
@@ -57,7 +59,7 @@ const server=spawn(process.env.RG_PYTHON||'python',[root+'/scripts/browser-serve
  await page.locator('[data-field="title"]').first().fill('Report draft preserved while tabs switch');await page.evaluate(()=>{projectStore.timers.clearTimeout(projectStore.timer);projectStore.timer=null;});
  await page.getByRole('tab',{name:'Evidencias',exact:true}).click();await page.getByRole('tab',{name:'Decisiones',exact:true}).click();check('Ordinary finding editor draft survives tab changes without flush',await page.locator('[data-field="title"]').first().inputValue()==='Report draft preserved while tabs switch'&&await page.evaluate(()=>projectStore.dirty)&&writes===initialWrites);
  await page.evaluate(async()=>{await doSave();});
- const postUrl=base+'/api/projects/finding-workspace/insights';await context.route(postUrl,route=>route.request().method()==='POST'?route.fulfill({status:412,contentType:'application/json',body:JSON.stringify({error:'Synthetic rejected review'})}):route.continue());
+ const postUrl=base+'/api/projects/finding-workspace/insights';await context.route(postUrl,route=>route.request().method()==='POST'?route.fulfill({headers:apiHeaders,status:412,contentType:'application/json',body:JSON.stringify({error:'Synthetic rejected review'})}):route.continue());
  await page.locator('[data-finding-panel="decisions"] [data-insights-action="save-claim"]').click();await page.waitForFunction(()=>!projectBusyCount);await page.waitForFunction(()=>[...document.querySelectorAll('[role="alert"]')].some(el=>el.textContent.includes('Synthetic rejected')));
  check('Rejected revision guarded decision write retains exact form draft and finding UID',await claim.inputValue()==='Draft A belongs to finding UID'&&await page.evaluate(expected=>WorkbenchUI.renderedFindingUid()===expected&&!S.data.insights,pristine.uid));await context.unroute(postUrl);
  let reloadRelease,reloadReceived=false;const reloadPending=new Promise(resolve=>reloadRelease=resolve);
