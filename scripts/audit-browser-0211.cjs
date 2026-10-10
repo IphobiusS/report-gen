@@ -27,7 +27,7 @@ async function fault(mode){check('Inyección controlada '+(mode||'desactivada'),
  browser=await playwright[engine].launch({headless:true,timeout:30000,...(engine==='chromium'&&process.env.RG_CHROMIUM_EXECUTABLE?{executablePath:process.env.RG_CHROMIUM_EXECUTABLE}:{})});
  const context=await browser.newContext({viewport:{width:1440,height:1050},acceptDownloads:true,reducedMotion:'reduce'});
  context.on('page',p=>p.on('pageerror',e=>errors.push(String(e))));
- page=await newPage(context);await page.goto(base);await page.getByRole('button',{name:'Crear proyecto',exact:true}).click();
+ page=await newPage(context);await page.goto(base);await page.getByRole('button',{name:'Crear mi proyecto',exact:true}).click();
  await page.locator('#mTitle').fill('Aurora: recuperación y privacidad [FICTICIO]');await page.locator('#mClient').fill('Cooperativa Aurora [FICTICIA]');await page.locator('#mSlug').fill('audit-0211');await page.locator('#mCreate').click();await ready();
  await page.getByRole('button',{name:'Añadir hallazgo',exact:true}).click();await page.locator('[data-field="title"]').fill('Hallazgo sintético 0.21.1');
  await page.locator('[data-field="description_md"]').fill('Caso ficticio para comprobar recuperación.');await page.locator('[data-field="impact_md"]').fill('Impacto inicial');await page.locator('[data-field="remediation_md"]').fill('Remediación inicial');await saved();
