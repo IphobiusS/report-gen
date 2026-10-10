@@ -13,3 +13,10 @@
 .rt-card dt{font-weight:650;margin:12px 0 3px}
 .rt-card dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:600px){.rt-actions{align-items:stretch;flex-direction:column}.rt-actions .btn{width:100%}.rt-fields,.rt-card{padding:12px}}
+
+.rt-return{border-top:1px solid var(--line);margin-top:28px;padding-top:20px;min-width:0}
+.rt-return>details{margin:16px 0;padding:14px;border:1px solid var(--line)}
+.rt-return summary{font-weight:650;cursor:pointer;line-height:1.5}
+.rt-return .rt-private{margin-top:12px}
+.rt-return input[type=file]{display:block;width:100%;max-width:100%;margin-top:8px}
+.rt-return-change .rt-check{font-weight:650}

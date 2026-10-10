@@ -1,0 +1,69 @@
+name: Publish verified release
+
+on:
+  workflow_run:
+    workflows: [tests, Browser acceptance, Windows compatibility, Reproducible source package]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: report-gen-release
+  cancel-in-progress: false
+
+jobs:
+  trusted_commit:
+    if: >-
+      github.repository == 'IphobiusS/report-gen' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    outputs:
+      commit: ${{ steps.trust.outputs.commit }}
+    steps:
+      - name: Verify the triggering SHA against current main before checkout
+        id: trust
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, urllib.request
+          sha = os.environ['EXPECTED_SHA']
+          if not re.fullmatch(r'[0-9a-f]{40}', sha):
+              raise SystemExit('Invalid triggering SHA')
+          request = urllib.request.Request(
+              'https://api.github.com/repos/IphobiusS/report-gen/git/ref/heads/main',
+              headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                       'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2026-03-10'})
+          with urllib.request.urlopen(request, timeout=30) as response:
+              current = json.load(response)['object']['sha']
+          if current == sha:
+              with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+                  output.write('commit=' + sha + '\n')
+          else:
+              print('Superseded push: no checkout and no publication.')
+          PY
+
+  publish:
+    needs: trusted_commit
+    if: needs.trusted_commit.outputs.commit != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ needs.trusted_commit.outputs.commit }}
+          persist-credentials: false
+      - name: Rebuild, verify all gates, upload and verify assets, then publish
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/publish-release.py

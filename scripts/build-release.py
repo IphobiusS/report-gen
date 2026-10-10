@@ -2,8 +2,9 @@
 """Build an auditable source ZIP from a Git commit, never from working files.
 
 This verification package contains exactly the tracked files in the selected
-commit. Public downloads use GitHub's immutable /archive/<commit>.zip URL; its ZIP
-container can differ, while the repository paths and file bytes are identical.
+commit. The release_download URL names this exact ZIP; canonical_download is
+GitHub's alternate commit archive, whose container bytes can differ while the
+repository paths and file bytes remain identical.
 """
 
 import argparse
@@ -26,7 +27,7 @@ def forbidden(path):
         return False
     return (path.startswith(("webapp/projects/", "webapp/library/", "out/"))
             or any(p in {".git", "node_modules", "__pycache__", ".venv", "venv",
-                         ".pytest_cache", ".ruff_cache"} or p.endswith(".egg-info") for p in parts))
+                         ".pytest_cache", ".ruff_cache", ".report-gen-browser-id"} or p.endswith(".egg-info") for p in parts))
 
 
 def build_release(repo, ref, output):
@@ -72,6 +73,7 @@ def build_release(repo, ref, output):
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     metadata = {"schema": 1, "version": version, "commit": commit, "tree": tree,
                 "canonical_download": f"https://github.com/IphobiusS/report-gen/archive/{commit}.zip",
+                "release_download": f"https://github.com/IphobiusS/report-gen/releases/download/v{version}/{archive.name}",
                 "archive": archive.name, "sha256": digest, "files": manifest}
     (output / f"{stem}.sha256").write_text(f"{digest}  {archive.name}\n", encoding="utf-8")
     (output / f"{stem}.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")

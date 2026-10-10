@@ -18,7 +18,7 @@ const PrivacyUI=(()=>{
    if(group.can_prune&&group.count){const input=h('input',{type:'checkbox','data-prune':group.key});checks.push(input);section.append(h('label',{class:'wf-check'},input,w('Seleccionar para limpiar','Select for cleanup')));}
    body.append(section);
   }
-  body.append(h('h3',{},w('Borradores en este navegador','Drafts in this browser')),h('p',{},w('Se guardan sin cifrado de la aplicación durante 30 días, para este perfil, host y puerto. Otras pestañas abiertas pueden volver a guardar sus borradores.','Stored without application encryption for 30 days, in this browser profile, host and port. Other open tabs can save their drafts again.')));
+  body.append(h('h3',{},w('Borradores en este navegador','Drafts in this browser')),h('p',{},w('Se guardan sin cifrado de la aplicación durante 30 días, separados por espacio de trabajo, perfil del navegador, host y puerto. Otras pestañas del mismo espacio pueden volver a guardarlos. Las copias anteriores sin identidad se conservan en Más → Copias anteriores sin asignación.','Stored without application encryption for 30 days, separated by workspace, browser profile, host and port. Other tabs of the same workspace may save them again. Earlier unidentified copies are retained under More → Unassigned legacy copies.')));
   const draftBox=h('div',{class:'privacy-drafts'});body.append(draftBox);
   try{const rows=await projectStore.journal?.list(slug)||[];
    if(!rows.length)draftBox.append(h('p',{},w('No hay borradores recuperables para este proyecto en este origen.','No recoverable drafts for this project at this origin.')));

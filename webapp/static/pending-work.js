@@ -38,6 +38,7 @@ function missingReference(row){
 }
 async function list(slug){return journal.list(slug);}
 function recoverySection(row,onRemoved){
+ if(row.workspace_id!==BrowserWorkspace.current())throw Error(w('La copia pertenece a otro espacio o no tiene asignación.','The copy belongs to another workspace or has no assignment.'));
  const section=h('section',{class:'card','data-pending-record':row.id}),details=h('details',{},h('summary',{},w('Revisar contenido pendiente','Review pending content')));
  details.append(h('pre',{class:'publication-text',tabindex:0},JSON.stringify(row.data,null,2)));
  if(row.file){details.append(h('p',{},(row.file.name||'image')+' · '+row.file.size+' bytes'));let url=null;details.addEventListener('toggle',()=>{if(details.open&&!url){url=URL.createObjectURL(row.file);details.append(h('img',{class:'imgprev',src:url,alt:w('Imagen pendiente, todavía sin incorporar','Pending image, not yet incorporated')}));}else if(!details.open&&url){URL.revokeObjectURL(url);url=null;details.querySelector('img')?.remove();}});section.release=()=>{if(url)URL.revokeObjectURL(url);};}

@@ -31,3 +31,4 @@ node_modules/
 .ruff_cache/
 
 webapp/library/
+webapp/.report-gen-browser-id

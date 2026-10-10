@@ -7,9 +7,10 @@ import subprocess
 import sys
 import tempfile
 import uuid
-from flask import jsonify, abort, send_file
+from flask import jsonify, abort, send_file, Response
 
 import delivery
+import support_report
 import project_history
 from storage import revision
 
@@ -48,7 +49,18 @@ def register(api):
                 writable = False
         report['checks'].append({'id':'storage', 'label':'Project directory' if lang=='en' else 'Carpeta de proyectos', 'ready':writable,
                                  'detail':('Writable' if writable else 'Check project directory permissions') if lang=='en' else ('Escritura disponible' if writable else 'Revisa los permisos de la carpeta de proyectos')})
+        report['support_report'] = support_report.project(report)
+        report['support_token'] = support_report.token(report['support_report'], api.app.secret_key)
         return jsonify(report)
+
+    @app.post('/api/diagnostics/download')
+    def download_diagnostics():
+        body = api._json_dict()
+        if set(body) != {'report', 'preview_token'} or not support_report.verified(body.get('report'), body.get('preview_token'), api.app.secret_key):
+            abort(409, backend_message('Vuelve a previsualizar el diagnóstico antes de descargar', en='Preview the diagnostic report again before downloading'))
+        response = Response(support_report.encode(body['report']), mimetype='application/json')
+        response.headers['Content-Disposition'] = 'attachment; filename="report-gen-support.json"'
+        return response
 
     @app.post('/api/projects/<slug>/delivery')
     def prepare_delivery(slug):

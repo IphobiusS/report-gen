@@ -1,4 +1,4 @@
-# report-gen 0.28.0 user guide
+# report-gen 0.29.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -8,16 +8,25 @@ Unless stated otherwise, run commands from the project root containing `start.py
 
 Primary installation path: Linux/Kali with Python 3.10+. Windows compatibility tests do not replace document review in desktop Microsoft Word.
 
+Download and extract the ZIP from the [latest Release](https://github.com/IphobiusS/report-gen/releases/latest). From that directory:
+
 ```bash
-python3 start.py --ready --lang en
+python3 scripts/install.py --desktop --lang en
+~/.local/bin/report-gen
 ```
 
-`--ready` allows dependency installation when the local environment is missing or incomplete, runs diagnostics and starts the editor if its requirements are available. Setup creates `.venv`, updates pip and installs dependencies constrained by `requirements-audited.txt`. Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. Use `python3 start.py --ready --port 8081 --lang en` for another local port.
+The first command installs dependencies into `.venv` using the audited constraints and creates `~/.local/bin/report-gen`. `--desktop` also adds an application-menu shortcut that opens a terminal. Installation needs connectivity, Python 3.10+ and venv support; it does not use `sudo` or install system packages. This is not a standalone executable: retain the extracted application directory and `.venv`. The shortcut points to that location and the chosen workspace; subsequent launches do not reinstall or download dependencies. If you move the application, rerun the installer from its new location.
+
+Workspace selection is `--workspace`, then `REPORT_GEN_WORKSPACE`, then `$XDG_DATA_HOME/report-gen` or `~/.local/share/report-gen`. For example, `python3 scripts/install.py --desktop --workspace /path/to/data --lang en` selects a specific external directory. Existing data is not migrated automatically: read the migration instructions before interpreting an empty list as lost projects.
+
+The existing `python3 start.py --ready --lang en` route remains available. Without `--workspace` or the environment variable, this launch retains the traditional `webapp/` location. `--ready` allows dependency installation when the local environment is missing or incomplete, runs diagnostics and starts the editor if its requirements are available. Setup creates `.venv`, updates pip and installs dependencies constrained by `requirements-audited.txt`. Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. Use `python3 start.py --ready --port 8081 --lang en` for another local port.
 
 Diagnostics distinguish the editor from each export engine. Editing can work while an optional engine is unavailable; opening the editor does not establish that every output format is available. If preparation stops, follow the reported correction before trying again.
 
 | Need | Command |
 | --- | --- |
+| Install with application-menu shortcut, without starting | `python3 scripts/install.py --desktop --lang en` |
+| Open the prepared installation | `~/.local/bin/report-gen` |
 | Prepare, check and start | `python3 start.py --ready --lang en` |
 | Reinstall dependencies and stop | `python3 start.py --setup --lang en` |
 | Diagnose without installing or starting | `python3 start.py --diagnose --lang en` |
@@ -61,6 +70,22 @@ Every profile supports English and Spanish. Applying an appearance preserves fin
 
 The sidebar groups capture/coverage and history/follow-up tools in expandable sections. Direct navigation to one of their pages expands the group to show your location. **More project tools** on Overview contains less frequent controls; existing functions and data remain available.
 
+## Organize multiple projects
+
+Under **Overview → Your projects**, search titles, clients or identifiers; accented text can be searched without accents. Filter active, archived, all or pending-retest projects. Sort by last modification, client, nearest due date or pending retest count. Eight projects appear per page.
+
+**Planned delivery → Save date** records a date independently from the report date. **Next due date** is the earliest delivery or finding deadline, excluding findings already verified fixed or with accepted risk; overdue dates remain included. **Pending retests** counts findings with **Reported fixed** status, not every update received through CSV.
+
+**Archive** retains content, allows opening and editing, and can be reversed with **Reactivate**. It neither deletes files nor makes the project read-only. Automatic startup selects an active project; archived projects remain reachable through their filter and the project selector. Dates and archive state travel with backups and history, and are excluded from report publication.
+
+## Share diagnostics
+
+Open **Check installation**. The checks generate temporary synthetic PDF and DOCX files and probe workspace write access; they do not export real projects. An unavailable engine is reported separately as failed.
+
+Under **Shareable diagnostics**, review the JSON, check **I have reviewed the diagnostic fields**, then select **Download reviewed diagnostics**. It contains only report-gen version, generic operating system, Python version and synthetic-export/write statuses. It excludes project, client and user names, paths, hostname, environment variables and exception details. Nothing is sent automatically. Changing preview content invalidates its download; run diagnostics again to refresh results.
+
+The DOCX check creates and rereads a document. It does not establish pagination or opening in native Microsoft Word.
+
 ## Delivery checks and limits
 
 **View checks** shows the saved revision, SHA-256, file sizes and checks for each download. All formats still require visual review.
@@ -77,9 +102,13 @@ Native Microsoft Word validation requires a licensed Windows desktop installatio
 
 ## Recovery and privacy
 
-Projects live in `webapp/projects/`, personal libraries in `webapp/library/`. **Workspace backup** includes all projects, originals and libraries. Treat it as private data.
+The external workspace contains `projects/` and `library/`; originals, history and annexes stay inside each project. The launcher resolves `--workspace` before `REPORT_GEN_WORKSPACE`. Without either selection it retains `webapp/projects/` and `webapp/library/`; it does not search for or move data automatically. **Workspace backup** includes all projects, originals and libraries. Treat it as private data.
 
-Pending drafts are stored in this browser profile's IndexedDB for 30 days on the same origin (host and port). The interface only says recoverable after the write completes. Drafts are not encrypted by the application. They recover project data. A separate journal protects pending captures and Evidence and decisions forms, with explicit form recovery: it does not attach evidence or approve publication automatically. Limits are 16 MiB per image, 1 MiB per form, 64 MiB in total and 30 days. Storage failures are shown as tab-only work. Publication consent must be given again after recovery. This protects Quick capture and Evidence and decisions forms, not every auxiliary dialog. Pending copies are excluded from workspace backups and emergency project JSON: incorporate and save them before moving installation or browser origin. Private browsing, clearing browser storage or switching profile/port can make drafts inaccessible. **More → Download private draft** creates an emergency copy. Recovery requires the matching project and explicit conflict resolution.
+Pending drafts are stored in IndexedDB for 30 days, separated by workspace identity, browser profile and origin (host and port). The interface only says recoverable after the write completes. Drafts are not encrypted by the application. They recover project data. A separate journal protects pending captures and Evidence and decisions forms, with explicit form recovery: it does not attach evidence or approve publication automatically. Limits are 16 MiB per image, 1 MiB per form, 64 MiB in total and 30 days. Storage failures are shown as tab-only work. Publication consent must be given again after recovery. This protects Quick capture and Evidence and decisions forms, not every auxiliary dialog. Pending copies are excluded from workspace backups and emergency project JSON: incorporate and save them before moving installation or browser origin. Private browsing, clearing browser storage or switching profile/port can make drafts inaccessible. **More → Download private draft** creates an emergency copy. Recovery requires the matching project and explicit conflict resolution.
+
+The identity stays stable across restarts and application upgrades while the external data location remains unchanged. Moving that directory or restoring a backup into a new workspace creates a different scope: matching project identifiers do not authorize draft adoption. Workspace backups retain saved projects but exclude the local identity and browser journals. Download pending work before moving. If a tab detects that the server changed workspace, it blocks requests and lets you download the draft before reloading.
+
+Earlier versions did not identify the workspace of browser copies. **More → Unassigned legacy copies** retains them without automatic adoption or deletion. Choose **I understand the uncertain origin; review copies**, inspect the private content and use **Download private copy**; a pending capture offers its original image separately. For a downloaded draft, open the correct project and choose **Recover draft file**: a missing or different identity requires confirmation before comparing and resolving changes. Legacy copies are deleted only when explicitly selected.
 
 **Stored private data** inventories current files, originals, history and removed annexes. Cleanup requires category selection and the exact project ID. Current data is retained; cleaning history creates one new recovery snapshot. Browser drafts have separate download/delete controls. External backups and downloads cannot be deleted here.
 
@@ -89,19 +118,23 @@ Portable HTML contains the entire report. Executive view and filters are present
 
 ## Upgrade from an earlier version
 
-Extract or clone 0.28.0 into a new directory. Close both editors before transferring data, then run from the new directory:
+If your data already lives outside the application, stop the editor, extract or clone 0.29.0 into a new directory and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en`. This prepares the new `.venv` and updates the shortcut to reuse your data; no import or `--upgrade-from` is needed. Do not run two processes against the same workspace. Once the new installation is checked, you can retire the previous application directory while retaining the external data.
+
+To separate data still held inside an old installation, stop both editors and run from the new directory:
 
 ```bash
-python3 start.py --ready --upgrade-from /path/to/previous-report-gen --lang en
+python3 start.py --ready --workspace /path/to/new-data --upgrade-from /path/to/previous-report-gen --lang en
 ```
 
-The launcher prepares its own environment, creates a workspace backup of the source, validates a temporary restoration and transfers data to the empty new installation. It prints the result, ZIP path and SHA-256, then checks the engines and starts the editor. If dependencies are already installed and you want to inspect the result before starting, omit `--ready`: migration stops after diagnostics.
+The external destination must be empty and outside both installations. If you updated the code inside the directory holding legacy data, `python3 start.py --ready --workspace /path/to/new-data --upgrade-from . --lang en` transfers it from there. Omitting `--workspace` retains the previous migration between two distinct installations; do not manually merge or delete data directories.
 
-The private backup is kept at `~/report-gen-backups/upgrade-*/workspace.zip`, outside both installations, alongside `result.json` with its SHA-256 and counts. It includes originals and history. If destination activation fails, the backup already created is retained and the previous installation is not modified. Overlapping paths, symbolic links, pending recovery states and destinations containing projects or personal libraries are rejected to avoid merging or overwriting data. Address the reported cause and use an empty destination; do not delete your data to force migration.
+The launcher prepares its own environment, creates a workspace backup of the source, validates a temporary restoration and transfers data to the selected empty destination. It prints the result, ZIP path and SHA-256, then checks the engines and starts the editor. If dependencies are already installed and you want to inspect the result before starting, omit `--ready`: migration stops after diagnostics.
+
+The private backup is kept at `~/report-gen-backups/upgrade-*/workspace.zip`, outside the installations and external destination, alongside `result.json` with its SHA-256 and counts. It includes originals and history. If destination activation fails, the backup already created is retained and the previous installation is not modified. Overlapping paths, symbolic links, pending recovery states and destinations containing projects or personal libraries are rejected to avoid merging or overwriting data. Address the reported cause and use an empty destination; do not delete your data to force migration.
 
 Migration retains projects, evidence, history and libraries covered by workspace backup. It does not copy `.venv`, delivery outputs or browser drafts. Download a pending draft before changing installation or browser origin. Open your projects, verify images and history and retain any delivery files you need before retiring the previous directory.
 
-Alternatively, create **Workspace backup** in the previous version and restore it into the empty new installation. If an old project has its only preceding revision in `engagement.yaml.bak`, without snapshot history, the 0.21.2 exporter omits that copy. Keep the original directory and use the 0.28.0 migration to include this legacy recovery state. An older ZIP that already omitted the copy cannot reconstruct it. Existing projects remain readable. Backups containing annexes require 0.21.0 or later.
+Alternatively, create **Workspace backup** in the previous version and restore it into the empty new installation. If an old project has its only preceding revision in `engagement.yaml.bak`, without snapshot history, the 0.21.2 exporter omits that copy. Keep the original directory and use the 0.29.0 migration to include this legacy recovery state. An older ZIP that already omitted the copy cannot reconstruct it. Existing projects remain readable. Backups containing annexes require 0.21.0 or later.
 
 Existing IDs are retained. Since 0.21.2, the `finding_sequence` counter prevents deleted IDs from being reused; older versions do not preserve this guarantee. References already misdirected by older edits cannot be repaired automatically without knowing their original intent.
 
@@ -112,7 +145,7 @@ Development and interface tests require Node.js 22+ and an installed Python envi
 API clients select error language with `X-UI-Language: es` or `en`. An absent or unsupported header keeps the historical Spanish default. URLs opened directly use that default; external library and tool diagnostics remain verbatim. This does not change report language or authored content.
 
 ```bash
-.venv/bin/python export.py webapp/projects/my-project/engagement.yaml -f html -o report.html
+.venv/bin/python export.py /path/to/data/projects/my-project/engagement.yaml -f html -o report.html
 .venv/bin/python -m pip install -e '.[dev]' -c requirements-audited.txt
 npm ci
 .venv/bin/python -m pytest
@@ -125,7 +158,7 @@ export REPORT_GEN_CHROMIUM="$(node -p "require('playwright').chromium.executable
 node tests/test_editor_browser_0213.cjs --output out/editor-chromium
 ```
 
-Other export formats: `pdf`, `docx`, `md` (ZIP with images).
+Replace `/path/to/data` with the selected workspace; legacy installations use `webapp/projects/`. Other export formats: `pdf`, `docx`, `md` (ZIP with images).
 
 The included `examples/pending-severity/engagement.yaml` fixture contains two fictional findings with confirmed technical verification and no assigned severity. Its report text is in Spanish. In Word, table-of-contents titles are available immediately; page numbers are calculated when fields are updated in the editor. If they are missing or the content changes, use **Ctrl+A**, then **F9**. Word pagination is not copied from the PDF. Microsoft Word and LibreOffice may distribute content differently; desktop Microsoft Word remains a separate validation target.
 
@@ -162,6 +195,20 @@ A finding-specific action takes precedence over the shared action. The report's 
 In **Remediation tasks**, select the fields to share. Permanent references preserve correspondence with original findings. Authored fields require review acknowledgement because they may contain client data. Save the project, generate a preview and download CSV or HTML cards in a ZIP. Changing the fields or project invalidates the preview and requires another review. No task is sent to an external service.
 
 CSV cells that might be interpreted as formulas are neutralized. Cards display content as text without executing HTML. Missing fields remain empty; exporting a task or writing closure criteria does not establish that a fix has been completed.
+
+## Receive remediation updates
+
+In **Remediation tasks → Receive owner updates**, open **1. Issue a template**. Select findings with an assigned owner, review the outgoing data and acknowledge retention before choosing **Issue return CSV template**. Issuance saves an assignment in the project and its history; it is not a download without changes. Up to 20 batches or 4 MiB are retained; issuing new batches expires the oldest ones. Backups and restarts preserve current batches.
+
+Provide `remediation-return.csv` and request edits only to `owner`, `due_date` and `reported_remediation`. Preserve references, headers and leading apostrophes on text fields, including `project_slug`; these belong to the reversible format that neutralizes formulas. Owner cannot be empty. Dates use `YYYY-MM-DD`; an empty date proposes clearing the deadline. Save comma-separated UTF-8 CSV, limited to 2 MiB and 500 rows. A subset of rows can be returned, but batches cannot be mixed. The informational task CSV is not a return template.
+
+Upload the file and choose **Compare return**. Current and proposed values are shown, with the issued value when it has changed since issuance. No field is accepted by default. Select each change, acknowledge its review and choose **Save selected changes**. Concurrent changes require a fresh comparison.
+
+The communication is stored separately as **Remediation reported through return (unverified)**. Importing never changes status, technical verification, retests, description or evidence: record actual checks in **Remediation and retest**. The template identifies a project and batch but does not authenticate the sender; verify provenance before accepting updates.
+
+## Downloadable releases
+
+The [latest Release](https://github.com/IphobiusS/report-gen/releases/latest) provides the source ZIP, its SHA-256 file and a JSON manifest. Automatic publication requires all four workflows on the same commit: **tests**, **Browser acceptance**, **Windows compatibility** and **Reproducible source package**. The publisher rebuilds from Git, verifies all three uploaded assets and only then publishes the Release. Passing automation does not replace document review or human sessions.
 
 ## External acceptance materials
 

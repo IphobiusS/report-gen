@@ -5,14 +5,23 @@ import json
 import os
 from pathlib import Path
 import signal
+import shlex
 import subprocess
 import sys
 import venv
+from workspace_paths import select_workspace, workspace_environment, ENVIRONMENT_KEY
 ROOT=Path(__file__).resolve().parent
 
 
 def _words(lang, es, en):
     return en if lang == 'en' else es
+
+
+def _launch_hint(selection):
+    command = ['python', 'start.py']
+    if selection.external:
+        command.extend(['--workspace', str(selection.root)])
+    return subprocess.list2cmdline(command) if os.name == 'nt' else shlex.join(command)
 
 
 def _install(local, lang):
@@ -46,8 +55,11 @@ def _readiness(python, lang):
 
 
 def _upgrade(python, source, lang):
-    process = subprocess.run([str(python), str(ROOT / 'launcher_upgrade.py'), '--source', source,
-                              '--destination', str(ROOT), '--lang', lang],
+    command = [str(python), str(ROOT / 'launcher_upgrade.py'), '--source', source,
+               '--destination', str(ROOT), '--lang', lang]
+    if ENVIRONMENT_KEY in os.environ:
+        command.extend(['--workspace', os.environ[ENVIRONMENT_KEY]])
+    process = subprocess.run(command,
                              capture_output=True, text=True, cwd=ROOT)
     if process.returncode:
         try:
@@ -123,6 +135,8 @@ def main(argv=None):
     parser.add_argument('--diagnose', action='store_true', help='Test installed export engines / probar motores')
     parser.add_argument('--upgrade-from', metavar='DIRECTORY',
                         help='Back up and restore an old installation into this empty one / migrar desde instalación anterior')
+    parser.add_argument('--workspace', metavar='DIRECTORY',
+                        help='External data directory (or REPORT_GEN_WORKSPACE) / carpeta externa de datos')
     parser.add_argument('--lang', choices=['es', 'en'], default='es')
     parser.add_argument('--port', type=int, default=8080)
     args = parser.parse_args(argv)
@@ -137,38 +151,40 @@ def main(argv=None):
     lang = args.lang
     local = ROOT / '.venv' / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
     try:
-        if args.setup:
-            _install(local, lang)
-            print(_words(lang, 'Instalado. Ejecuta: python start.py --ready',
-                         'Installed. Run: python start.py --ready'))
-            return 0
-        python = local if local.exists() else Path(sys.executable)
-        if args.ready:
-            # --ready is explicit consent to install; ordinary launch and diagnosis
-            # never create a virtual environment or contact package servers.
-            if not local.exists() or not _dependencies(local):
+        selection = select_workspace(ROOT, args.workspace)
+        with workspace_environment(selection):
+            if args.setup:
                 _install(local, lang)
-            python = local
-        if not _dependencies(python):
-            print(_words(lang, 'Faltan dependencias del editor. Ejecuta: python start.py --ready',
-                         'Editor dependencies are missing. Run: python start.py --ready'), file=sys.stderr)
-            return 1
-        if args.diagnose:
-            return subprocess.run([str(python), str(ROOT / 'diagnostics.py'), '--lang', lang],
-                                  cwd=ROOT, timeout=60).returncode
-        if args.upgrade_from:
-            _upgrade(python, args.upgrade_from, lang)
-            if not args.ready:
-                ready = _readiness(python, lang)
-                print(_words(lang, 'Para abrir: python start.py', 'To start: python start.py'), flush=True)
-                return 0 if ready else 1
-        if args.ready and not _readiness(python, lang):
-            print(_words(lang, 'Repara las dependencias del editor: python start.py --setup',
-                         'Repair editor dependencies: python start.py --setup'), file=sys.stderr)
-            return 1
-        print(f'report-gen -> http://127.0.0.1:{args.port}\n' +
-              _words(lang, 'Ctrl+C para salir', 'Ctrl+C to stop'), flush=True)
-        return _run_server(python, args.port)
+                print(_words(lang, 'Instalado. Ejecuta: ', 'Installed. Run: ') + _launch_hint(selection) + ' --ready')
+                return 0
+            python = local if local.exists() else Path(sys.executable)
+            if args.ready:
+                # --ready is explicit consent to install; ordinary launch and diagnosis
+                # never create a virtual environment or contact package servers.
+                if not local.exists() or not _dependencies(local):
+                    _install(local, lang)
+                python = local
+            if not _dependencies(python):
+                print(_words(lang, 'Faltan dependencias del editor. Ejecuta: python start.py --ready',
+                             'Editor dependencies are missing. Run: python start.py --ready'), file=sys.stderr)
+                return 1
+            if args.diagnose:
+                return subprocess.run([str(python), str(ROOT / 'diagnostics.py'), '--lang', lang],
+                                      cwd=ROOT, timeout=60).returncode
+            if args.upgrade_from:
+                _upgrade(python, args.upgrade_from, lang)
+                if not args.ready:
+                    ready = _readiness(python, lang)
+                    print(_words(lang, 'Para abrir: ', 'To start: ') + _launch_hint(selection), flush=True)
+                    return 0 if ready else 1
+            if args.ready and not _readiness(python, lang):
+                print(_words(lang, 'Repara las dependencias del editor: python start.py --setup',
+                             'Repair editor dependencies: python start.py --setup'), file=sys.stderr)
+                return 1
+            print(_words(lang, 'Datos: ', 'Data: ') + str(selection.root), flush=True)
+            print(f'report-gen -> http://127.0.0.1:{args.port}\n' +
+                  _words(lang, 'Ctrl+C para salir', 'Ctrl+C to stop'), flush=True)
+            return _run_server(python, args.port)
     except subprocess.CalledProcessError:
         print(_words(lang, 'La instalación no terminó. Revisa la conexión y el error anterior; '
                      'vuelve a ejecutar python start.py --setup. En Linux, comprueba que python3-venv esté instalado.',

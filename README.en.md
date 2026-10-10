@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.28.0
+# report-gen 0.29.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -10,17 +10,20 @@
 
 ## Install and launch
 
-Primary path: **Linux/Kali and Python 3.10+**. The guide describes requirements and installation options.
+Primary path: **Linux/Kali and Python 3.10+**. Download and extract the [latest published release](https://github.com/IphobiusS/report-gen/releases/latest), or clone the repository:
 
 ```bash
 git clone https://github.com/IphobiusS/report-gen.git
 cd report-gen
-python3 start.py --ready --lang en
+python3 scripts/install.py --desktop --lang en
+~/.local/bin/report-gen
 ```
 
-Open **http://127.0.0.1:8080** in your browser. `Ctrl+C` stops the server; `--port 8081` selects another local port.
+The installer prepares `.venv`, downloads dependencies constrained by `requirements-audited.txt` and adds an application-menu shortcut. It does not use `sudo` or install system packages. **Keep the application directory and its `.venv`: the shortcut depends on them; this is not a standalone executable.** Opening the shortcut later does not reinstall dependencies.
 
-`--ready` prepares `.venv` when needed, checks the engines and starts the editor. Initial setup downloads dependencies constrained by `requirements-audited.txt`. Missing optional engines are reported separately. See [detailed installation](docs/guide.en.md#install-and-launch) for native PDF libraries. **Node.js is not required to use the editor.**
+Data stays outside the application at `$XDG_DATA_HOME/report-gen`, or `~/.local/share/report-gen` by default. Choose another directory with `--workspace /path/to/data`; when omitted, `REPORT_GEN_WORKSPACE` is respected. The installer does not migrate old projects automatically.
+
+Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts `--port 8081`. The existing `python3 start.py --ready --lang en` path remains available and retains `webapp/` when no external workspace is selected. **Node.js is not required to use the editor.** See [PDF requirements, migration and other options](docs/guide.en.md#install-and-launch).
 
 ## First report
 
@@ -46,9 +49,15 @@ Open **http://127.0.0.1:8080** in your browser. `Ctrl+C` stops the server; `--po
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
-## New in 0.28.0
+## New in 0.29.0
 
-Group findings by root cause and shared remediation while preserving individual identities, evidence and retests. Prepare CSV remediation tasks or downloadable task cards after previewing the fields to share. Native desktop Word review and five human sessions remain pending; the acceptance kit records and verifies their evidence separately. [Full changes](CHANGELOG.md).
+- **Linux installation with a local shortcut and separate data:** update the application while reusing the same workspace.
+- **Project dashboard:** search by title or client, sort by modification, due date or pending retests, and archive/reactivate without deleting data.
+- **Remediation returns:** issue a CSV template, compare the response and accept changes field by field. An owner's update never automatically becomes a verified fix.
+- **Shareable diagnostics:** review a JSON containing version, generic system and synthetic checks before downloading; it excludes projects, paths and usernames.
+- **Verified releases:** publishing requires tests, browser acceptance, Windows and reproducible rebuilding to pass on the same commit. The ZIP comes with SHA-256 and a JSON manifest.
+
+Root causes and remediation tasks introduced in 0.28.0 remain available. Native desktop Word review and five human sessions remain pending. [Full changes](CHANGELOG.md).
 
 ## What delivery checks establish
 
@@ -60,21 +69,23 @@ Group findings by root cause and shared remediation while preserving individual 
 
 The editor runs on **`127.0.0.1` in one process**, without accounts or external services for normal editing. After dependency installation, everyday work stays local. Ollama assistance is **optional and explicitly requested**; read which fields it sends and its limitations before enabling it.
 
-Projects live in `webapp/projects/`, personal libraries in `webapp/library/`. **Workspace backup** retains projects, originals and history; it is private material. Projects on disk and browser drafts are not encrypted by the application. Install the optional `privacy` extra to download a password-encrypted private backup; it encrypts that file only. [Recovery, backups and privacy](docs/guide.en.md#recovery-and-privacy).
+The external workspace contains `projects/` and `library/`. Traditional startup without `--workspace` or `REPORT_GEN_WORKSPACE` retains `webapp/projects/` and `webapp/library/`. **Workspace backup** retains projects, originals and history; it is private material. Projects on disk and browser drafts are not encrypted by the application. Install the optional `privacy` extra to download a password-encrypted private backup; it encrypts that file only. [Recovery, backups and privacy](docs/guide.en.md#recovery-and-privacy).
+
+Browser drafts are separated by workspace, profile, host and port. Updating the application while retaining the same external workspace preserves that scope; moving it or restoring into another workspace creates a different scope. Download pending drafts before transferring it: workspace backups do not carry them. Earlier copies without an identity remain under **More → Unassigned legacy copies** for explicit review and download.
 
 Portable HTML contains the complete report: filters are not access permissions. Possible-secret detectors do not replace human review. Windows compatibility tests do not replace review in desktop Microsoft Word; Word and LibreOffice can paginate differently. Certification profiles imply no affiliation or guarantee of compliance with exam rules.
 
 ## Upgrade from an earlier version
 
-Download **0.28.0 into a new directory**, stop the previous installation and run from the new directory:
+If you already use an external workspace, stop the editor, download **0.29.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+
+To transfer projects from an installation still using `webapp/`, run from the new directory:
 
 ```bash
-python3 start.py --ready --upgrade-from /path/to/previous-report-gen --lang en
+python3 start.py --ready --workspace /path/to/new-data --upgrade-from /path/to/previous-report-gen --lang en
 ```
 
-Migration requires a destination without projects or personal libraries. It preserves the source and creates a private backup. Check your projects before retiring the previous installation. You can also use **Workspace backup** to transfer them. Do not copy the old `.venv`.
-
-[Backup compatibility and recovery of older projects](docs/guide.en.md#upgrade-from-an-earlier-version).
+The destination must be empty. Migration preserves the source and creates a private backup. To separate data from the current application directory itself, use `--upgrade-from .` with an empty external destination. Check projects, images and history before retiring any installation. **Workspace backup** is another transfer option. [Details and compatibility](docs/guide.en.md#upgrade-from-an-earlier-version).
 
 ## Export from the terminal
 

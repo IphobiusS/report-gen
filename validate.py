@@ -304,6 +304,10 @@ def structure_issues(data, lang=None):
         if "references" in value and (not isinstance(value["references"], list) or not all(isinstance(x, str) for x in value["references"])):
             error(path+".references", backend_message('list of text'))
     if not obj(data, "engagement"): return issues
+    if 'project_management' in data:
+        from project_catalog import validate_metadata
+        try: validate_metadata(data['project_management'])
+        except ValueError as exc: issues.append(('error', str(exc)))
     from workflows import structure_errors
     issues.extend(structure_errors(data))
     from insights import validate_structure

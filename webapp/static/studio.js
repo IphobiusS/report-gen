@@ -7,6 +7,7 @@ function dialog(title){const previous=document.activeElement===document.body?ope
 function downloadDraft(record=projectStore.draftFile()){const url=URL.createObjectURL(new Blob([JSON.stringify(record,null,2)],{type:'application/json'}));h('a',{href:url,download:(record.slug||'project')+'.report-gen-draft.json'}).click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function valueText(v){return v===undefined?w('(eliminado)','(deleted)'):typeof v==='string'?v:JSON.stringify(v,null,2);}
 async function resolveDraft(candidate){
+  if(candidate&&candidate.workspace_id!==BrowserWorkspace.current()&&!confirm(w('Este archivo no identifica el espacio actual. Puede pertenecer a otro cliente o instalación. ¿Confirmas que quieres compararlo con este proyecto? Todavía no se guardará nada.','This file does not identify the current workspace. It may belong to another client or installation. Confirm that you want to compare it with this project. Nothing will be saved yet.')))return;
   const remote=await projectStore.remote(),local=candidate?.data||projectStore.data,base=candidate?.base||projectStore.base,slug=S.slug,rev=projectStore.revision;
   if(!base||!local||typeof local!=='object'||Array.isArray(local))throw Error(w('Borrador incompatible. Conserva su archivo y revisa los datos.','Incompatible draft. Keep its file and review the data.'));
   const choices={},initial=mergeDraft(base,local,remote.data),{d,body}=dialog(w('Recuperar y resolver cambios','Recover and resolve changes'));
@@ -29,6 +30,32 @@ async function resolveDraft(candidate){
   }
   if(!initial.conflicts.length)body.append(h('p',{},w('No hay campos en conflicto.','There are no conflicting fields.')));
   body.append(apply);
+}
+function legacyCopies(){
+ const {body}=dialog(w('Copias anteriores sin asignación','Unassigned legacy copies'));
+ body.append(h('p',{},w('Las versiones anteriores guardaban borradores y capturas sin identificar el espacio de trabajo. No podemos determinar a qué instalación pertenecen. Se conservan sin incorporarlos ni eliminarlos automáticamente.','Earlier versions stored drafts and captures without a workspace identity. Their installation cannot be determined. They are retained without automatic adoption or deletion.')),
+  h('p',{},w('Revisar mostrará contenido privado que puede pertenecer a otro espacio. Puedes descargarlo y eliminar únicamente las copias que elijas. Para recuperar un borrador descargado, abre primero el proyecto correcto y usa Recuperar archivo de borrador.','Reviewing shows private content that may belong to another workspace. You can download it and delete only the copies you choose. To recover a downloaded draft, first open the correct project and use Recover draft file.')));
+ const review=button(w('Entiendo el origen incierto; revisar copias','I understand the uncertain origin; review copies'),async()=>{
+  const rows=await LegacyBrowserCopies.list();review.remove();
+  if(!rows.length)body.append(h('p',{},w('No hay copias anteriores sin asignación en este navegador.','There are no unassigned legacy copies in this browser.')));
+  for(const {kind,row} of rows){
+   const section=h('section',{class:'card','data-legacy-record':row.id},h('h3',{},String(row.label||row.slug||w('Copia privada','Private copy'))),
+    h('p',{},w('Sin espacio identificado · ','Workspace unknown · ')+new Date(row.updated||0).toLocaleString(S.uiLang==='en'?'en':'es-CL')),
+    h('details',{},h('summary',{},w('Ver contenido privado','Show private content')),h('pre',{class:'publication-text',tabindex:0},JSON.stringify(row.data,null,2))));
+   const actions=h('div',{class:'studio-actions'});section.append(actions);
+   function download(blob,name){const url=URL.createObjectURL(blob);h('a',{href:url,download:name}).click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+   actions.append(button(w('Descargar copia privada','Download private copy'),()=>{
+    if(kind==='drafts')downloadDraft(row);
+    else {const record={...row,file:row.file?{name:row.file.name||'pending-image',type:row.file.type,size:row.file.size}:null};download(new Blob([JSON.stringify(record,null,2)],{type:'application/json'}),(row.slug||'project')+'.report-gen-pending.json');}
+   }));
+   if(kind==='pending'&&row.file)actions.append(button(w('Descargar imagen original pendiente','Download original pending image'),()=>download(row.file,row.file.name||'pending-image')));
+   actions.append(button(w('Eliminar esta copia anterior','Delete this legacy copy'),async()=>{
+    if(!confirm(w('¿Eliminar únicamente esta copia anterior del navegador? Guarda antes una descarga si necesitas conservarla.','Delete only this legacy browser copy? Download it first if you need to keep it.')))return;
+    if(!await LegacyBrowserCopies.remove(kind,row))throw Error(w('La copia cambió; vuelve a abrir esta vista.','The copy changed; reopen this view.'));
+    section.remove();
+   }));body.append(section);
+  }
+ });review.dataset.legacyReview='';body.append(review);
 }
 async function recovery(){
   const generation=++recoveryGeneration,slug=S.slug,data=S.data,etag=projectStore.etag,lang=S.uiLang,rows=projectStore.recovery||[];
@@ -66,6 +93,7 @@ function update(){
   const names={work:['Trabajar','Work'],review:['Revisar','Review'],deliver:['Entregar','Deliver'],library:['Biblioteca','Library']};
   Object.entries(names).forEach(([key,pair])=>{const b=$('[data-studio-nav="'+key+'"]');b.textContent=w(...pair);b.setAttribute('aria-current',key===mode?'page':'false');b.disabled=!S.slug&&['review','deliver'].includes(key);});
   $('#studioMore summary').textContent=w('Más','More');$('#studioPreferences summary').textContent=w('Preferencias','Preferences');$('#draftExportBtn').textContent=w('Descargar borrador privado','Download private draft');$('#draftExportBtn').disabled=!S.slug;$('#draftImportLabel').textContent=w('Recuperar archivo de borrador','Recover draft file');
+  $('[data-legacy-copies]').textContent=w('Copias anteriores sin asignación','Unassigned legacy copies');
   const indicator=$('#draftStatus');if(projectStore.dirty){indicator.textContent=projectStore.recoverableRevision===projectStore.revision?w('Borrador recuperable en este navegador','Draft recoverable in this browser'):projectStore.draftError?w('Borrador solo en esta pestaña','Draft only in this tab'):w('Protegiendo borrador…','Protecting draft…');}else indicator.textContent='';
   saveHelp($('#saveError'));
 }
@@ -115,10 +143,11 @@ function bind(){
   for(const key of ['work','review','deliver','library']){const b=button('',()=>{more.open=false;if(key==='work')select('home');else if(key==='review')select('workflow','review');else select('studio',key);$('#editor').focus({preventScroll:true});});b.dataset.studioNav=key;nav.append(b);}
   toolbar.replaceChildren($('#sidebarToggle'),nav,$('#saveState'));$('#saveState').after(h('span',{id:'draftStatus',role:'status'}));
   const emergency=button('',()=>downloadDraft());emergency.id='draftExportBtn';panel.append(emergency);
+  const legacy=button('',legacyCopies);legacy.dataset.legacyCopies='';panel.append(legacy);
   const file=h('input',{type:'file',accept:'.json','aria-label':w('Archivo de borrador','Draft file')});file.addEventListener('change',async()=>{try{const f=file.files[0];if(!f)return;if(f.size>24*1024*1024)throw Error(w('Borrador demasiado grande.','Draft too large.'));const record=JSON.parse(await f.text());if(record.format!=='report-gen-draft'||record.version!==1||record.slug!==S.slug)throw Error(w('Abre el proyecto correspondiente; el borrador debe ser de formato 1.','Open the matching project; draft format must be 1.'));await resolveDraft(record);}catch(e){toast(e.message,'err');}finally{file.value='';}});panel.append(h('label',{},h('span',{id:'draftImportLabel'}),file));
   const inspectButton=button(w('Inspector de publicación','Publication inspector'),inspector);inspectButton.id='publicationBtn';$('#exportMenu .action-menu-body').append(inspectButton);
   more.addEventListener('toggle',()=>{if(!more.open)return;});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySelector('dialog[open]')){more.open=false;}});
   bound=true;update();
 }
-return{bind,update,render,recovery,resolveDraft,saveHelp,inspector,downloadDraft};
+return{bind,update,render,recovery,resolveDraft,saveHelp,inspector,downloadDraft,legacyCopies};
 })();

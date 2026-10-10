@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.28.0
+# Guía de uso de report-gen 0.29.0
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -8,17 +8,25 @@ Todos los comandos se ejecutan desde la raíz del proyecto, donde está `start.p
 
 Ruta prioritaria: Linux/Kali con Python 3.10 o superior. Las pruebas de compatibilidad de Windows no sustituyen la revisión de documentos en Microsoft Word de escritorio.
 
+Descarga y descomprime el ZIP de la [última Release](https://github.com/IphobiusS/report-gen/releases/latest). Desde su carpeta:
+
 ```bash
-# Desde la raíz del proyecto (donde está start.py)
-python3 start.py --ready
+python3 scripts/install.py --desktop
+~/.local/bin/report-gen
 ```
 
-`--ready` autoriza la instalación de dependencias si el entorno local falta o está incompleto, ejecuta el diagnóstico y arranca el editor si sus requisitos están disponibles. La instalación crea `.venv`, actualiza pip y usa `requirements-audited.txt` como restricciones. Abre **http://127.0.0.1:8080** en el navegador; `Ctrl+C` detiene el servidor. Otro puerto: `python3 start.py --ready --port 8081`.
+El primer comando instala las dependencias en `.venv` con las restricciones auditadas y crea `~/.local/bin/report-gen`. `--desktop` añade también un acceso al menú de aplicaciones que abre una terminal. La instalación necesita conexión, Python 3.10+ y soporte para venv; no usa `sudo` ni instala paquetes del sistema. No es un ejecutable autónomo: conserva la carpeta descomprimida y `.venv`. El acceso apunta a esa ubicación y al espacio de trabajo elegido; abrirlo después no reinstala ni descarga dependencias. Si mueves la aplicación, vuelve a ejecutar el instalador desde su nueva ubicación.
+
+El instalador elige `--workspace` si lo proporcionas, después `REPORT_GEN_WORKSPACE`, y por último `$XDG_DATA_HOME/report-gen` o `~/.local/share/report-gen`. Por ejemplo, `python3 scripts/install.py --desktop --workspace /ruta/datos` prepara una carpeta externa concreta. No mueve datos heredados automáticamente: consulta la migración antes de interpretar una lista vacía como pérdida de proyectos.
+
+También sigue disponible `python3 start.py --ready`. Sin `--workspace` ni variable de entorno, este arranque conserva la ubicación tradicional `webapp/`. `--ready` autoriza la instalación de dependencias si el entorno local falta o está incompleto, ejecuta el diagnóstico y arranca el editor si sus requisitos están disponibles. La instalación crea `.venv`, actualiza pip y usa `requirements-audited.txt` como restricciones. Abre **http://127.0.0.1:8080** en el navegador; `Ctrl+C` detiene el servidor. Otro puerto: `python3 start.py --ready --port 8081`.
 
 El diagnóstico distingue el editor de cada motor de exportación. Puedes editar aunque falte un motor opcional; no presupongas que todos los formatos están disponibles por haber abierto el editor. Si se detiene la preparación, sigue el mensaje y corrige la dependencia indicada antes de repetirla.
 
 | Necesidad | Comando |
 | --- | --- |
+| Instalar con acceso al menú, sin arrancar | `python3 scripts/install.py --desktop` |
+| Abrir la instalación preparada | `~/.local/bin/report-gen` |
 | Preparar, comprobar y abrir | `python3 start.py --ready` |
 | Reinstalar dependencias y terminar | `python3 start.py --setup` |
 | Consultar el diagnóstico sin instalar ni arrancar | `python3 start.py --diagnose` |
@@ -60,6 +68,22 @@ Todos los perfiles permiten español e inglés. Cambiar apariencia no reemplaza 
 
 El lateral agrupa **Registro y cobertura** y **Historial y seguimiento** en desplegables. Al abrir directamente una de sus secciones, el grupo se expande para mostrar dónde estás. En Inicio, **Más herramientas del proyecto** reúne controles menos frecuentes; las funciones y los datos existentes se conservan.
 
+## Organizar varios proyectos
+
+En **Inicio → Tus proyectos**, busca por título, cliente o identificador; la búsqueda admite texto sin acentos. Filtra por activos, archivados, todos o retest pendiente. Ordena por última modificación, cliente, fecha más próxima o cantidad de retests pendientes. La lista muestra ocho proyectos por página.
+
+**Entrega prevista → Guardar fecha** registra una fecha independiente de la fecha del informe. **Próxima fecha** muestra la menor entre esa entrega y los plazos de hallazgos que no estén corregidos y verificados ni tengan el riesgo aceptado; incluye vencimientos pasados. **Retests pendientes** cuenta hallazgos con estado **Corrección comunicada**, no todas las comunicaciones recibidas por CSV.
+
+**Archivar** conserva el contenido y permite abrirlo, editarlo y **Reactivar** después. No elimina archivos ni convierte el proyecto en solo lectura. El inicio automático elige un proyecto activo; los archivados siguen accesibles desde su filtro y el selector. Fechas y estado de archivo viajan en respaldos e historial, y no se publican como contenido del informe.
+
+## Compartir un diagnóstico
+
+Abre **Comprobar instalación**. Las pruebas generan archivos sintéticos temporales para los motores PDF y DOCX y comprueban la escritura del espacio de trabajo; no exportan proyectos reales. Un motor ausente aparece como fallo, separado de los demás.
+
+En **Diagnóstico para compartir**, revisa el JSON, marca **He revisado los campos del diagnóstico** y usa **Descargar diagnóstico revisado**. El archivo contiene únicamente versión de report-gen, sistema operativo genérico, versión de Python y estados de exportaciones sintéticas y escritura. Excluye nombres de proyectos, clientes y usuarios, rutas, hostname, variables de entorno y detalles de excepciones. No se envía automáticamente. Cambiar el contenido de la vista previa invalida su descarga; vuelve a generar el diagnóstico si necesitas actualizar los resultados.
+
+La comprobación DOCX genera y vuelve a leer un documento: no acredita la paginación ni la apertura en Microsoft Word nativo.
+
 ## Qué comprueba cada entrega
 
 **Ver comprobaciones** muestra revisión, SHA-256, tamaño y controles de cada descarga. HTML, Markdown y Word comparan párrafos, código literal, metadatos, destinos de enlaces y colocaciones de evidencia dentro de su hallazgo, además de tablas y listas. La imagen se compara por su huella pública, pie y contexto precedente. Para código solo se normalizan los finales de línea CRLF/CR a LF; se conservan espacios, tabulaciones, comillas y líneas vacías. Markdown omite el gráfico de severidad y su leyenda de alcance; se registra esa diferencia.
@@ -78,9 +102,13 @@ Los anexos van exclusivamente en el paquete ZIP bajo `anexos/`, con su hash en `
 
 ## Datos y recuperación
 
-Los proyectos viven en `webapp/projects/`; las bibliotecas personales, en `webapp/library/`. Usa **Respaldo integral** para trasladar proyectos, originales y bibliotecas juntos. Es información privada.
+La carpeta externa contiene `projects/` y `library/`; originales, historial y anexos permanecen dentro de cada proyecto. El lanzador resuelve `--workspace` antes que `REPORT_GEN_WORKSPACE`. Sin ninguna selección, conserva `webapp/projects/` y `webapp/library/`; no busca ni traslada datos automáticamente. Usa **Respaldo integral** para trasladar proyectos, originales y bibliotecas juntos. Es información privada.
 
-Los borradores pendientes se conservan en IndexedDB, en el perfil del navegador y el mismo origen (host y puerto), durante 30 días. Solo se anuncian como recuperables cuando la escritura termina. No están cifrados por la aplicación. Recuperan los datos del proyecto. Un registro separado protege las capturas y los formularios de Evidencia y decisiones aún sin incorporar: se recuperan explícitamente como formularios, no se adjuntan ni aprueban solos. El registro admite hasta 16 MiB por imagen, 1 MiB por formulario y 64 MiB en total. Si falla la escritura o se supera el límite, se indica que el trabajo permanece sólo en la pestaña. Los consentimientos de publicación se vuelven a pedir al recuperar. Esta protección cubre Captura rápida y los formularios de Evidencia y decisiones; no todos los diálogos auxiliares. Estas copias pendientes no se incluyen en el respaldo integral ni en el JSON de emergencia: incorpóralas y guarda antes de cambiar de instalación u origen del navegador. El modo privado, borrar los datos del navegador o cambiar de perfil/puerto puede hacerlos inaccesibles. **Más → Descargar borrador privado** permite guardar una copia de emergencia. Recuperarla exige abrir el mismo proyecto y resolver conflictos; nunca sustituye una revisión concurrente sin elegirlo.
+Los borradores pendientes se conservan en IndexedDB durante 30 días, separados por identidad del espacio de trabajo, perfil del navegador y origen (host y puerto). Solo se anuncian como recuperables cuando la escritura termina. No están cifrados por la aplicación. Recuperan los datos del proyecto. Un registro separado protege las capturas y los formularios de Evidencia y decisiones aún sin incorporar: se recuperan explícitamente como formularios, no se adjuntan ni aprueban solos. El registro admite hasta 16 MiB por imagen, 1 MiB por formulario y 64 MiB en total. Si falla la escritura o se supera el límite, se indica que el trabajo permanece sólo en la pestaña. Los consentimientos de publicación se vuelven a pedir al recuperar. Esta protección cubre Captura rápida y los formularios de Evidencia y decisiones; no todos los diálogos auxiliares. Estas copias pendientes no se incluyen en el respaldo integral ni en el JSON de emergencia: incorpóralas y guarda antes de cambiar de instalación u origen del navegador. El modo privado, borrar los datos del navegador o cambiar de perfil/puerto puede hacerlos inaccesibles. **Más → Descargar borrador privado** permite guardar una copia de emergencia. Recuperarla exige abrir el mismo proyecto y resolver conflictos; nunca sustituye una revisión concurrente sin elegirlo.
+
+La identidad permanece estable al reiniciar o actualizar la aplicación si conservas la misma ubicación externa de datos. Mover la carpeta o restaurar un respaldo en un espacio nuevo crea un ámbito distinto: no adopta borradores porque coincida el identificador del proyecto. El respaldo integral conserva proyectos guardados, pero excluye la identidad local y los diarios del navegador. Descarga los pendientes antes de trasladarte. Si una pestaña detecta que el servidor cambió de espacio, bloquea las peticiones y permite descargar el borrador antes de recargar.
+
+Las versiones anteriores no identificaban el espacio de sus copias. **Más → Copias anteriores sin asignación** las conserva sin incorporarlas ni borrarlas automáticamente. Elige **Entiendo el origen incierto; revisar copias**, revisa el contenido privado y usa **Descargar copia privada**; una captura pendiente ofrece por separado su imagen original. Para un borrador descargado, abre el proyecto correcto y elige **Recuperar archivo de borrador**: si la identidad no coincide o falta, se requiere confirmar la comparación antes de resolver cambios. Las copias antiguas solo se eliminan al elegirlo expresamente.
 
 **Datos privados guardados** inventaría archivos actuales, originales, historial y anexos retirados. Puedes descargar o eliminar borradores del navegador y limpiar categorías concretas del disco. La limpieza requiere selección y escribir el identificador del proyecto. Conserva los datos actuales y, al limpiar historial, un punto nuevo de recuperación. Las descargas y respaldos externos no se borran desde esta vista.
 
@@ -90,29 +118,33 @@ El HTML portátil contiene todo el informe; los filtros y la vista ejecutiva son
 
 ## Actualizar desde una versión anterior
 
-Descomprime o clona 0.28.0 en una carpeta nueva. Cierra ambos editores antes de trasladar los datos y ejecuta desde la carpeta nueva:
+Si ya tienes datos externos, detén el editor, descomprime o clona 0.29.0 en una carpeta nueva y ejecuta `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Así preparas la nueva `.venv` y actualizas el acceso para reutilizar esos datos; no necesitas importarlos ni `--upgrade-from`. No abras dos procesos sobre el mismo espacio de trabajo. Una vez comprobada la nueva instalación, puedes retirar la carpeta de la aplicación anterior conservando los datos externos.
+
+Para separar datos que aún están dentro de una instalación antigua, detén ambos editores y ejecuta desde la nueva carpeta:
 
 ```bash
-python3 start.py --ready --upgrade-from /ruta/report-gen-anterior
+python3 start.py --ready --workspace /ruta/datos-nuevos --upgrade-from /ruta/report-gen-anterior
 ```
 
-El lanzador prepara su propio entorno, crea un respaldo integral del origen, valida una restauración temporal y traslada los datos a la instalación nueva vacía. Muestra el resultado, la ruta del ZIP y su SHA-256; luego comprueba los motores y abre el editor. Si ya instalaste las dependencias y prefieres revisar el resultado antes de arrancar, omite `--ready`: la migración termina después del diagnóstico.
+El destino externo debe estar vacío y fuera de ambas instalaciones. Si actualizaste el código en la propia carpeta que contiene los datos heredados, `python3 start.py --ready --workspace /ruta/datos-nuevos --upgrade-from .` permite trasladarlos desde allí. El mismo comando sin `--workspace` conserva la migración anterior entre dos instalaciones distintas; no borres ni mezcles carpetas manualmente.
 
-El respaldo se conserva en `~/report-gen-backups/upgrade-*/workspace.zip`, fuera de ambas instalaciones, junto a `result.json` con su SHA-256 y contadores. Es privado: incluye los originales y el historial. Si falla la activación en el destino, el respaldo ya creado se conserva y la instalación anterior no se modifica. Las rutas solapadas, enlaces simbólicos, estados de recuperación pendientes y destinos con proyectos o bibliotecas personales se rechazan para evitar una mezcla o sobrescritura. Corrige la causa indicada y utiliza un destino vacío; no borres tus datos para forzar la operación.
+El lanzador prepara su propio entorno, crea un respaldo integral del origen, valida una restauración temporal y traslada los datos al destino vacío seleccionado. Muestra el resultado, la ruta del ZIP y su SHA-256; luego comprueba los motores y abre el editor. Si ya instalaste las dependencias y prefieres revisar el resultado antes de arrancar, omite `--ready`: la migración termina después del diagnóstico.
+
+El respaldo se conserva en `~/report-gen-backups/upgrade-*/workspace.zip`, fuera de las instalaciones y del destino externo, junto a `result.json` con su SHA-256 y contadores. Es privado: incluye los originales y el historial. Si falla la activación en el destino, el respaldo ya creado se conserva y la instalación anterior no se modifica. Las rutas solapadas, enlaces simbólicos, estados de recuperación pendientes y destinos con proyectos o bibliotecas personales se rechazan para evitar una mezcla o sobrescritura. Corrige la causa indicada y utiliza un destino vacío; no borres tus datos para forzar la operación.
 
 La migración conserva los proyectos, evidencias, historial y bibliotecas incluidos en el respaldo integral. No copia `.venv`, salidas de entregas ni borradores del navegador. Descarga un borrador pendiente antes de cambiar de instalación u origen del navegador. Abre tus proyectos, verifica las imágenes y el historial y conserva también las entregas que necesites antes de retirar la carpeta anterior.
 
-Como alternativa, crea **Respaldo integral** con la versión anterior y restáuralo en la instalación nueva vacía. Si un proyecto antiguo solo conserva su revisión previa en `engagement.yaml.bak`, sin historial, el exportador de 0.21.2 omite esa copia. Conserva el directorio original y usa el traslado de 0.28.0 para incorporar esa recuperación heredada. Un ZIP antiguo que ya omitió la copia no permite reconstruirla.
+Como alternativa, crea **Respaldo integral** con la versión anterior y restáuralo en la instalación nueva vacía. Si un proyecto antiguo solo conserva su revisión previa en `engagement.yaml.bak`, sin historial, el exportador de 0.21.2 omite esa copia. Conserva el directorio original y usa el traslado de 0.29.0 para incorporar esa recuperación heredada. Un ZIP antiguo que ya omitió la copia no permite reconstruirla.
 
 Los proyectos anteriores siguen siendo legibles. Los respaldos que contengan el directorio de anexos requieren 0.21.0 o posterior; una versión anterior puede rechazarlos. Los registros de anexos con el campo `required` necesitan 0.21.1 o posterior, aunque su valor sea falso. Desde 0.21.2, el contador `finding_sequence` impide reutilizar números eliminados; no modifica los IDs existentes. Versiones anteriores no conservan esta garantía. Si una edición antigua ya cambió el significado de una referencia, esta versión no puede inferir el destino original: revisa las referencias heredadas.
 
 ## Exportar por terminal
 
 ```bash
-.venv/bin/python export.py webapp/projects/mi-proyecto/engagement.yaml -f html -o informe.html
+.venv/bin/python export.py /ruta/datos/projects/mi-proyecto/engagement.yaml -f html -o informe.html
 ```
 
-Otros formatos: `pdf`, `docx`, `md` (ZIP con imágenes). Los recursos se procesan localmente.
+Sustituye `/ruta/datos` por el espacio de trabajo elegido; en una instalación heredada, el proyecto está bajo `webapp/projects/`. Otros formatos: `pdf`, `docx`, `md` (ZIP con imágenes). Los recursos se procesan localmente.
 
 El ejemplo `examples/pending-severity/engagement.yaml` permite comprobar el resumen con dos hallazgos ficticios confirmados y sin severidad. En Word, las entradas del índice están disponibles desde la exportación; sus números de página se calculan al actualizar los campos en el editor. Si no aparecen o cambias el contenido, selecciona todo con **Ctrl+A** y actualiza con **F9**. El exportador no inventa números a partir de la paginación PDF. LibreOffice y Microsoft Word pueden distribuir el contenido de forma distinta.
 
@@ -184,6 +216,20 @@ La acción específica de un hallazgo tiene prioridad sobre la acción común. L
 En **Tareas de remediación**, selecciona los campos que necesitas compartir. Las referencias permanentes mantienen la correspondencia con los hallazgos originales. El contenido redactado por ti requiere una confirmación de revisión: puede contener datos de clientes. Guarda el proyecto, genera la vista previa y descarga CSV o fichas HTML dentro de un ZIP. Cambiar los campos o el proyecto invalida la vista previa y exige revisarla de nuevo. Ninguna tarea se envía a un servicio externo.
 
 El CSV protege las celdas que podrían interpretarse como fórmulas. Las fichas muestran el contenido como texto, sin ejecutar HTML. Los campos vacíos permanecen vacíos; ni la exportación ni el criterio escrito acreditan que la corrección se haya realizado.
+
+## Recibir avances de remediación
+
+En **Tareas de remediación → Recibir avances del responsable**, abre **1. Emitir una plantilla**. Selecciona hallazgos con responsable asignado, revisa los datos que saldrán y confirma la retención antes de **Emitir plantilla de retorno CSV**. Emitir guarda una asignación dentro del proyecto y su historial; no es una descarga sin cambios. Se conservan hasta 20 lotes o 4 MiB: los más antiguos dejan de admitirse al emitir nuevos lotes. Respaldos y reinicios conservan los lotes vigentes.
+
+Entrega `remediation-return.csv` y pide editar solo `owner`, `due_date` y `reported_remediation`. Conserva referencias, cabeceras y apóstrofos iniciales en los campos de texto, incluido `project_slug`; son parte del formato reversible que neutraliza fórmulas. El responsable no puede quedar vacío. La fecha usa `AAAA-MM-DD`; dejarla vacía propone borrar el plazo. Guarda CSV UTF-8 separado por comas, hasta 2 MiB y 500 filas. Se pueden devolver algunas filas, pero no combinar lotes. El CSV informativo de tareas no sirve como plantilla de retorno.
+
+Sube el archivo y elige **Comparar retorno**. Se muestran valor actual y propuesta; si cambió desde la emisión, también el valor emitido. Ningún campo queda aceptado por defecto. Selecciona cada cambio, confirma su revisión y pulsa **Guardar cambios seleccionados**. Un cambio concurrente exige repetir la comparación.
+
+La comunicación se conserva separada como **Corrección comunicada por retorno (sin verificar)**. Importar no cambia estado, verificación técnica, retests, descripción ni evidencias: registra cualquier comprobación real en **Correcciones y retest**. La plantilla identifica el lote y proyecto, pero no autentica a quien la devuelve; revisa la procedencia antes de aceptar cambios.
+
+## Publicaciones descargables
+
+La [última Release](https://github.com/IphobiusS/report-gen/releases/latest) reúne el ZIP de fuentes, su archivo SHA-256 y el manifiesto JSON. Su publicación automática exige los cuatro procesos del mismo commit: **tests**, **Browser acceptance**, **Windows compatibility** y **Reproducible source package**. El publicador reconstruye los archivos desde Git, verifica los tres adjuntos tras subirlos y solo entonces publica la Release. Que una comprobación automática pase no sustituye la revisión de documentos ni las sesiones humanas.
 
 ## Materiales para las comprobaciones externas
 

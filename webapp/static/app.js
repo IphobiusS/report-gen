@@ -6,24 +6,43 @@ function h(tag, attrs, ...kids) {
     if (k === "class") e.className = attrs[k];
     else if (k === "html") e.innerHTML = attrs[k];
     else if (k.startsWith("on")) e.addEventListener(k.slice(2), attrs[k]);
-    else if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+    else if (attrs[k] != null) e.setAttribute(k, (k==='src'||k==='href')?scopedResourceURL(attrs[k]):attrs[k]);
   }
   for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
   return e;
 }
 let csrfPromise;
+let browserWorkspaceId=null;
+function scopedResourceURL(value){
+  if(typeof value!=='string'||!value.startsWith('/api/'))return value;
+  if(!browserWorkspaceId)throw Error('Espacio de trabajo todavía no preparado / Workspace is not ready');
+  const url=new URL(value,location.href);url.searchParams.set('workspace_id',browserWorkspaceId);return url.pathname+url.search+url.hash;
+}
+function changedWorkspaceError(){
+  BrowserWorkspace.block();
+  const message=S.uiLang==='en'?'The server changed workspace. This tab will not send changes. Download your draft before reloading.':'El servidor cambió de espacio. Esta pestaña no enviará cambios. Descarga tu borrador antes de recargar.';
+  let notice=document.querySelector('[data-workspace-changed]');
+  if(!notice){notice=h('p',{'data-workspace-changed':'',class:'wf-error',role:'alert'});document.querySelector('.workspace-toolbar')?.append(notice);}
+  notice.textContent=message;const error=new Error(message);error.status=409;return error;
+}
 async function appFetch(url, options = {}) {
+  if(BrowserWorkspace.blocked())throw changedWorkspaceError();
   const uiLanguage = S.uiLang === "en" ? "en" : "es";
-  options = { ...options, headers: { ...options.headers, "X-UI-Language": uiLanguage } };
+  options = { ...options, headers: { ...options.headers, "X-UI-Language": uiLanguage,
+    ...(browserWorkspaceId?{'X-Report-Gen-Workspace':browserWorkspaceId}:{}) } };
   const method = (options.method || "GET").toUpperCase();
   if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
-    csrfPromise ||= fetch("/api/session", { headers: { "X-UI-Language": uiLanguage } }).then(async r => {
+    csrfPromise ||= fetch("/api/session", { headers: { "X-UI-Language": uiLanguage,
+      ...(browserWorkspaceId?{'X-Report-Gen-Workspace':browserWorkspaceId}:{}) } }).then(async r => {
+      if(browserWorkspaceId&&r.headers.get('X-Report-Gen-Workspace')!==browserWorkspaceId)throw changedWorkspaceError();
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || (uiLanguage === "en" ? "Could not start the local session" : "No se pudo iniciar la sesión local"));
       return (await r.json()).csrf;
     }).catch(error => { csrfPromise = null; throw error; });
     options = { ...options, headers: { ...options.headers, "X-CSRF-Token": await csrfPromise } };
   }
-  return fetch(url, options);
+  const response=await fetch(url, options);
+  if(browserWorkspaceId&&response.headers.get('X-Report-Gen-Workspace')!==browserWorkspaceId)throw changedWorkspaceError();
+  return response;
 }
 async function requireOk(response) {
   if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `HTTP ${response.status}`);
@@ -186,6 +205,7 @@ function applyStaticI18n() {
   document.querySelectorAll("[data-i18n-title]").forEach(el => { el.title = t(el.getAttribute("data-i18n-title")); });
   document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.getAttribute("data-i18n-ph")); });
   document.documentElement.lang = S.uiLang || "es";
+  renderProjectSelect();
   if (S.formats) {
     const format = $("#exportFormat"), selected = format.value;
     format.replaceChildren(...S.formats.map(spec => h("option", {value:spec.key}, spec["label_"+(S.uiLang === "en" ? "en" : "es")])));
@@ -438,6 +458,9 @@ function setPreviewMode(m) {
 
 async function init() {
   const sessionInfo = await api.get("/api/session");
+  browserWorkspaceId=BrowserWorkspace.bind(sessionInfo.workspace_id);
+  csrfPromise=Promise.resolve(sessionInfo.csrf);
+  S.workspace_id=browserWorkspaceId;
   S.version=sessionInfo.version;
   $(".brand-caption").textContent="Pentest reporting / v"+S.version;
   S.formats = await api.get("/api/export-formats");
@@ -462,7 +485,8 @@ async function init() {
   updateLangBtn(); applyStaticI18n();
   if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.update();
   if(typeof ProgressUI!=="undefined")ProgressUI.update();
-  if (S.projects.length) loadProject(S.projects[0].slug);
+  const firstActiveProject = S.projects.find(project => !project.archived);
+  if (firstActiveProject) loadProject(firstActiveProject.slug);
   else renderMain();
   hideSplash();
 }
@@ -474,9 +498,15 @@ function hideSplash() {
 }
 async function refreshProjects() {
   S.projects = await api.get("/api/projects");
+  renderProjectSelect();
+}
+function renderProjectSelect() {
   const sel = $("#projectSelect");
+  if (!sel) return;
+  const selected = S.slug || sel.value;
   sel.innerHTML = "";
-  S.projects.forEach(p => sel.append(h("option", { value: p.slug }, p.title || p.slug)));
+  S.projects.forEach(p => sel.append(h("option", { value: p.slug }, (p.title || p.slug)+(p.archived?" ["+(S.uiLang==='en'?'Archived':'Archivado')+"]":""))));
+  if (S.projects.some(project => project.slug === selected)) sel.value = selected;
 }
 async function loadProject(slug) {
   if (projectStore.loading) return;

@@ -34,6 +34,18 @@ const ExperienceUI = (() => {
       body.replaceChildren(h('p',{},w('PDF disponible: ','PDF available: ')+(result.pdf_ready?w('sí','yes'):w('no','no'))));
       result.checks.forEach(c=>body.append(h('div',{class:'card'},h('strong',{},(c.ready?'✓ ':'! ')+c.label),h('p',{},c.detail))));
       body.append(h('p',{class:'wf-hint'},result.note));
+      const share=h('section',{'data-support-preview':''},h('h3',{},w('Diagnóstico para compartir','Shareable diagnostics')),
+        h('p',{},w('Revisa exactamente el JSON que descargarás. Contiene versión, sistema genérico y resultados de pruebas sintéticas. No incluye proyectos, rutas, nombres de usuario ni detalles de excepciones.','Review the exact JSON you will download. It contains version, generic operating system and synthetic test results. It excludes projects, paths, usernames and exception details.')));
+      // The server is authoritative for byte order; show every nested field.
+      share.append(h('pre',{'data-support-json':''},JSON.stringify(result.support_report,null,2)));
+      const acknowledged=h('input',{type:'checkbox','data-support-reviewed':''});
+      const download=button(w('Descargar diagnóstico revisado','Download reviewed diagnostics'),async()=>{
+        if(!acknowledged.checked)return;
+        const response=await requireOk(await api.post('/api/diagnostics/download',{report:result.support_report,preview_token:result.support_token}));
+        const url=URL.createObjectURL(await response.blob());h('a',{href:url,download:'report-gen-support.json'}).click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      });download.disabled=true;acknowledged.addEventListener('change',()=>{download.disabled=!acknowledged.checked;});
+      share.append(h('label',{class:'support-review-label'},acknowledged,w('He revisado los campos del diagnóstico.','I have reviewed the diagnostic fields.')),download);body.append(share);
+
     } catch(e){body.replaceChildren(h('p',{role:'alert'},e.message));}
   }
   function welcome(el) {

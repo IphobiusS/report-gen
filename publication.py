@@ -12,7 +12,8 @@ from lxml import html
 from PIL import Image, ImageOps
 
 # Literal substitutions are opt-in and operate on content, never file names or IDs.
-PRIVATE = {'attachments', 'capture_inbox', 'publication', 'import_source', 'original', 'provenance', 'insights'}
+PRIVATE = {'attachments', 'capture_inbox', 'publication', 'import_source', 'original', 'provenance', 'insights',
+           'remediation_exchanges', 'project_management'}
 STRUCTURAL = {'src','uid','id','key','mode','theme','lang','severity','status','verification','type','kind','layout','family','provider','profile','variant','sha256','capture_uid','asset_uid','logo','client_logo','cover_image','cvss_vector','cvss_version','report_density','accent','background','foreground'}
 
 def validate_config(config):

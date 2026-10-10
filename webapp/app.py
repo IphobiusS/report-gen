@@ -11,8 +11,8 @@ import threading
 import tempfile
 from functools import wraps
 from io import BytesIO
-from urllib.parse import urlsplit
-from html import escape
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+from html import escape, unescape
 import sys
 from pathlib import Path
 
@@ -21,9 +21,11 @@ from flask import Flask, jsonify, request, send_file, send_from_directory, abort
 
 HERE = Path(__file__).resolve().parent
 REPORT_ROOT = HERE.parent
-PROJECTS = HERE / "projects"
-PROJECTS.mkdir(exist_ok=True)
 sys.path.insert(0, str(REPORT_ROOT))
+
+from workspace_paths import select_workspace, browser_namespace  # noqa: E402
+WORKSPACE = select_workspace(REPORT_ROOT, create=True)
+PROJECTS = WORKSPACE.projects
 
 from wizard import MODELS, dump_yaml  # noqa: E402
 import cvss  # noqa: E402
@@ -53,7 +55,19 @@ app = Flask(__name__, static_folder=str(HERE / "static"), static_url_path="/stat
 
 app.secret_key = secrets.token_hex(32)
 app.config.update(TRUSTED_HOSTS=["127.0.0.1", "localhost", "[::1]"], SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Strict")
+app.config.update(LIBRARY_PATH=str(WORKSPACE.findings), DESIGN_LIBRARY_PATH=str(WORKSPACE.designs),
+                  WORKSPACE_ROOT=str(WORKSPACE.root), WORKSPACE_EXTERNAL=WORKSPACE.external)
 _PROJECT_LOCK = threading.RLock()
+_BROWSER_WORKSPACES = {}
+
+
+def browser_workspace_id():
+    paths = (PROJECTS, Path(app.config['LIBRARY_PATH']), Path(app.config['DESIGN_LIBRARY_PATH']))
+    key = tuple(str(path.absolute()) for path in paths)
+    with _PROJECT_LOCK:
+        if key not in _BROWSER_WORKSPACES:
+            _BROWSER_WORKSPACES[key] = browser_namespace(*paths)
+        return _BROWSER_WORKSPACES[key]
 
 
 def project_lock(fn):
@@ -82,6 +96,13 @@ def release_error_language(_error):
 def protect_local_api():
     if not request.path.startswith("/api/"):
         return
+    g.browser_workspace_id = browser_workspace_id()
+    supplied_workspace = request.headers.get('X-Report-Gen-Workspace')
+    resource_workspace = request.args.getlist('workspace_id')
+    if ((supplied_workspace is not None and supplied_workspace != g.browser_workspace_id)
+            or (resource_workspace and resource_workspace != [g.browser_workspace_id])):
+        abort(409, backend_message('El servidor cambió de espacio de trabajo. Conserva tus borradores y recarga la página.',
+                                   en='The server changed workspace. Keep your drafts and reload the page.'))
     if request.path in ("/api/projects/import", "/api/workspace/restore"):
         request.max_content_length = project_history.MAX_ARCHIVE + 1024 * 1024
     if request.path.endswith("/attachments/upload"):
@@ -116,6 +137,8 @@ def security_headers(response):
         response.headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; frame-ancestors 'self'"
     if request.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-store"
+        if getattr(g, 'browser_workspace_id', None):
+            response.headers['X-Report-Gen-Workspace'] = g.browser_workspace_id
         if response.status_code >= 400:
             response.headers['Content-Language'] = normalized_language(request.headers.get('X-UI-Language', 'es'))
     return response
@@ -152,7 +175,18 @@ def local_session():
     if "csrf" not in session:
         session["csrf"] = secrets.token_urlsafe(32)
     from version import __version__
-    return jsonify({"csrf": session["csrf"], "version": __version__})
+    return jsonify({"csrf": session["csrf"], "version": __version__, "workspace_id": g.browser_workspace_id})
+
+
+def scope_api_markup(markup):
+    """Bind native preview images/links that cannot send the fetch header."""
+    def scoped(match):
+        parsed = urlsplit(unescape(match[2]))
+        query = [(key, value) for key, value in parse_qsl(parsed.query, keep_blank_values=True) if key != 'workspace_id']
+        query.append(('workspace_id', g.browser_workspace_id))
+        value = urlunsplit(('', '', parsed.path, urlencode(query), parsed.fragment))
+        return match[1] + escape(value, quote=True) + match[3]
+    return re.sub(r'''(\b(?:src|href)=["'])(/api/[^"']+)(["'])''', scoped, str(markup))
 
 
 def checked_data(data, final=False):
@@ -237,7 +271,7 @@ def md_preview():
     slug = body.get("slug", "")
     if not isinstance(body.get("text", ""), str) or not isinstance(slug, str):
         abort(400, backend_message('Texto o proyecto inválido'))
-    return jsonify({"html": str(engine.md(body.get("text", ""), img_base=f"/api/projects/{slugify(slug)}/resource/" if slug else ""))})
+    return jsonify({"html": scope_api_markup(engine.md(body.get("text", ""), img_base=f"/api/projects/{slugify(slug)}/resource/" if slug else ""))})
 
 
 @app.route("/api/validate", methods=["POST"])
@@ -314,22 +348,8 @@ def api_cvss():
 @app.route("/api/projects")
 @project_lock
 def list_projects():
-    out = []
-    for d in sorted(PROJECTS.iterdir()):
-        if not d.is_dir() or d.is_symlink() or d.name.startswith("."):
-            continue
-        y = d / "engagement.yaml"
-        if y.exists():
-            try:
-                from input_guard import load_yaml_file
-                meta = (load_yaml_file(y) or {}).get("meta", {})
-            except Exception:
-                meta = {}
-            if not isinstance(meta, dict):
-                meta = {}
-            out.append({"slug": d.name, "title": meta.get("report_title", d.name),
-                        "theme": meta.get("theme", ""), "lang": meta.get("lang", "")})
-    return jsonify(out)
+    from project_catalog import list_projects as project_catalog
+    return jsonify(project_catalog(PROJECTS))
 
 
 @app.route("/api/projects", methods=["POST"])
@@ -524,7 +544,7 @@ def preview_html(slug):
     except (ValueError, TypeError) as exc:
         abort(422, str(exc))
     html = html.replace("<head>", f'<head><base href="{escape(request.host_url, quote=True)}">', 1)
-    return Response(html, mimetype="text/html")
+    return Response(scope_api_markup(html), mimetype="text/html")
 
 
 @app.route("/api/projects/<slug>/render", methods=["POST"])
@@ -586,6 +606,8 @@ def render_snapshot(slug, fmt, attachment=True):
 
 from workflow_api import register as register_workflows  # noqa: E402
 register_workflows(sys.modules[__name__])
+from dashboard_api import register as register_dashboard  # noqa: E402
+register_dashboard(sys.modules[__name__])
 from remediation_api import register as register_remediation  # noqa: E402
 register_remediation(sys.modules[__name__])
 from retest_api import register as register_retest_views  # noqa: E402

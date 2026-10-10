@@ -12,7 +12,7 @@ permissions:
 jobs:
   source:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7.0.0
@@ -23,6 +23,16 @@ jobs:
           python scripts/build-release.py --ref HEAD --output out/release-first
           python scripts/build-release.py --ref HEAD --output out/release-second
           diff -r out/release-first out/release-second
+      - name: Install native PDF libraries for the clean installation check
+        run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf-2.0-0
+      - name: Install the ZIP in a clean environment and use the packaged launcher
+        run: python scripts/verify-installed-package.py --archive out/release-first/*.zip --output out/installed-package.json
+      - name: Preserve clean installation evidence
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: installed-package-${{ github.sha }}
+          path: out/installed-package.json
+          if-no-files-found: error
       - name: Preserve verification archive, checksum and tree manifest
         uses: actions/upload-artifact@v7.0.2
         with:

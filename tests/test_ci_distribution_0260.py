@@ -133,7 +133,8 @@ def test_package_reproduces_committed_bytes_and_never_reads_working_data(tmp_pat
 
 
 @pytest.mark.parametrize("path", ["webapp/projects/client.yaml", "webapp/library/private.json", "out/result.pdf",
-                                  "cache/__pycache__/compiled.pyc", "node_modules/example/index.js"])
+                                  "cache/__pycache__/compiled.pyc", "node_modules/example/index.js",
+                                  "webapp/.report-gen-browser-id"])
 def test_package_refuses_tracked_private_or_generated_files(tmp_path, path):
     repo = make_repo(tmp_path)
     file = repo / path

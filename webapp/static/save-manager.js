@@ -19,7 +19,7 @@
       const record={slug:this.slug,base:this.base,etag:this.etag,data:JSON.parse(JSON.stringify(this.data)),revision:this.revision};
       return this.journal.put(record).then(()=>{this.recoverableRevision=record.revision;this.draftError=null;this.notify(this.lastError?'error':'pending',this.lastError);}).catch(error=>{this.draftError=error;this.recoverableRevision=0;this.notify(this.lastError?'error':'pending',this.lastError);});
     }
-    draftFile(){return {format:'report-gen-draft',version:1,slug:this.slug,base:this.base,etag:this.etag,data:this.data,updated:Date.now()};}
+    draftFile(){return {format:'report-gen-draft',version:1,workspace_id:this.journal?.workspace||null,slug:this.slug,base:this.base,etag:this.etag,data:this.data,updated:Date.now()};}
     async remote(){
       const response=await this.request(`/api/projects/${encodeURIComponent(this.slug)}`);
       if(!response.ok)throw Error(`HTTP ${response.status}`);

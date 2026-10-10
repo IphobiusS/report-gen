@@ -13,6 +13,7 @@ import tempfile
 
 from error_messages import language_scope, message
 import workspace_backup as backup
+from workspace_paths import select_workspace
 
 
 def _no_links(path):
@@ -30,8 +31,9 @@ def _no_links(path):
     return path
 
 
-def _locations(root):
-    return root / 'webapp/projects', root / 'webapp/library/findings.json', root / 'webapp/library/designs.json'
+def _locations(root, external=False):
+    base = root if external else root / 'webapp'
+    return base / 'projects', base / 'library/findings.json', base / 'library/designs.json'
 
 
 def _installation(value):
@@ -44,8 +46,8 @@ def _installation(value):
     return root.resolve()
 
 
-def _pending(root):
-    web = root / 'webapp'
+def _pending(root, external=False):
+    web = root if external else root / 'webapp'
     paths = [web / '.workspace-restore.json', *web.glob('.workspace-stage-*')]
     projects = web / 'projects'
     if projects.is_dir():
@@ -55,9 +57,9 @@ def _pending(root):
             en='Recovery is pending. Open and close the corresponding installation before migrating.'))
 
 
-def _empty_destination(root):
-    _pending(root)
-    projects, findings, designs = _locations(root)
+def _empty_destination(root, external=False):
+    _pending(root, external)
+    projects, findings, designs = _locations(root, external)
     if projects.exists():
         if not projects.is_dir():
             raise ValueError(message('El destino debe tener una carpeta de proyectos vacía.',
@@ -232,18 +234,23 @@ def _without_empty_marker(projects, warnings):
                         en='Migration completed; the empty .gitkeep file could not be recreated. Projects are restored.'))
 
 
-def upgrade(source, destination, *, backup_directory=None, lang='es'):
-    """Validate a private backup, then restore into an empty new installation.
+def upgrade(source, destination, *, backup_directory=None, lang='es', workspace=None):
+    """Validate a private backup, then restore into empty selected data locations.
 
     A failed activation retains workspace_backup's journal/recovery contract.
     The saved ZIP survives failure; the original installation is never written.
     """
     with language_scope(lang):
-        source, target = _installation(source), _installation(destination)
+        source, installation = _installation(source), _installation(destination)
+        # CLI/launcher passes the selected external root explicitly. An ambient
+        # environment must never redirect this low-level migration function.
+        selection = select_workspace(installation, workspace, environ={})
+        external = selection.external
+        target = selection.root if external else installation
         if source == target or source in target.parents or target in source.parents:
             raise ValueError(message('Las instalaciones deben estar en carpetas separadas, sin solaparse.',
                 en='Installations must be separate directories without overlap.'))
-        _empty_destination(target)
+        _empty_destination(target, external)
         before = _inventory(source)
         base = Path(backup_directory) if backup_directory is not None else Path.home() / 'report-gen-backups'
         warnings = []
@@ -258,11 +265,18 @@ def upgrade(source, destination, *, backup_directory=None, lang='es'):
             if _inventory(source) != before:
                 raise ValueError(message('El origen cambió. Cierra ambos editores y repite la migración.',
                     en='The source changed. Close both editors and repeat migration.'))
-            _empty_destination(target)
+            _empty_destination(target, external)
+            if external:
+                base_resolved = _no_links(base).resolve()
+                if base_resolved == installation or installation in base_resolved.parents:
+                    raise ValueError(message('El respaldo debe guardarse fuera de la instalación.',
+                                            en='The backup must be stored outside the installation.'))
             path = _save_backup(payload, source, target, base)
             try:
-                with _without_empty_marker(_locations(target)[0], warnings):
-                    result = backup.restore_workspace(payload, *_locations(target))
+                if external:
+                    select_workspace(installation, target, environ={}, create=True)
+                with _without_empty_marker(_locations(target, external)[0], warnings):
+                    result = backup.restore_workspace(payload, *_locations(target, external))
             except (OSError, ValueError) as exc:
                 raise ValueError(message('No se completó la restauración. Conserva ambas instalaciones y el respaldo: {path}',
                     en='Restoration did not complete. Keep both installations and the backup: {path}', path=str(path))) from exc
@@ -290,10 +304,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', required=True)
     parser.add_argument('--destination', required=True)
+    parser.add_argument('--workspace', help='External destination for data / destino externo de datos')
     parser.add_argument('--lang', choices=['es', 'en'], default='es')
     args = parser.parse_args(argv)
     try:
-        result = upgrade(args.source, args.destination, lang=args.lang)
+        result = upgrade(args.source, args.destination, lang=args.lang, workspace=args.workspace)
         print(json.dumps(result, ensure_ascii=False))
         return 0
     except (OSError, ValueError) as exc:

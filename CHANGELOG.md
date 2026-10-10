@@ -1,3 +1,15 @@
+# Cambios 0.29.0 (2026-10-10)
+
+- Carpeta de datos externa seleccionable con `--workspace` o `REPORT_GEN_WORKSPACE`: proyectos, bibliotecas, historial, originales y anexos se conservan al cambiar la instalación. El arranque sin selección mantiene las rutas anteriores; la migración explícita crea un respaldo y revierte activaciones incompletas.
+- Borradores y capturas pendientes separados por espacio de trabajo en el navegador, con identidad estable y protección de pestañas antiguas al cambiar de carpeta. Las copias anteriores sin identidad conservan una ruta de revisión explícita y no se asignan por coincidencia de nombre.
+- Instalador Linux/Kali con entorno Python y acceso directo opcional, sin privilegios ni instalación automática de bibliotecas del sistema. La apertura habitual no instala dependencias. El paquete se comprueba desde una extracción limpia, con guardado externo y cuatro formatos de exportación.
+- Releases automáticas vinculadas a un commit de `main`, tras aprobar las cuatro baterías independientes. ZIP, SHA-256 y manifiesto se reconstruyen, suben y verifican antes de publicar. Las etiquetas y los archivos existentes no se sobrescriben.
+- Inicio multiproyecto con búsqueda por cliente, título o identificador, filtros, orden, paginación, fechas y retests pendientes. Archivo y reactivación conservan el proyecto completo; el selector mantiene el proyecto activo al actualizar otro.
+- Retorno de tareas mediante una plantilla CSV específica: lote persistente, comparación con los valores actuales y emitidos, selección por campo y guardas de revisión. Solo admite responsable, plazo y corrección comunicada; no altera verificación técnica ni retests.
+- Diagnóstico compartible con revisión previa, datos permitidos y descarga ligada a la vista revisada. Incluye versión, entorno general y pruebas sintéticas, sin proyectos, rutas personales ni mensajes de excepción arbitrarios.
+- Los bloques internos de gestión y lotes se conservan en respaldos y se excluyen de la publicación antes de aplicar la censura. Evita que reglas destinadas al informe alteren metadatos internos y bloqueen las exportaciones.
+- Microsoft Word nativo y las cinco sesiones con participantes siguen pendientes; la automatización no sustituye esas comprobaciones.
+
 # Cambios 0.28.0 (2026-10-10)
 
 - Recuperación de borradores sin diálogos duplicados: las lecturas concurrentes o antiguas no muestran registros de otro proyecto ni reinician una revisión abierta.

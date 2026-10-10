@@ -137,7 +137,7 @@ def structure_errors(data):
             fields = {'assets': ('name', 'target', 'kind', 'notes'),
                       'evidence': ('title', 'src', 'original', 'caption'),
                       'coverage': ('test', 'status', 'notes', 'asset_uid'),
-                      'findings': ('owner', 'due_date', 'status', 'closure_criteria_md')}[group]
+                      'findings': ('owner', 'due_date', 'status', 'closure_criteria_md', 'reported_remediation')}[group]
             for key in fields: text(row, key, path)
             if group == 'evidence':
                 if not row.get('src'): err(path + '.src', backend_message('ruta de imagen obligatoria'))
@@ -188,6 +188,9 @@ def structure_errors(data):
                     for key in ('tested_on', 'assessor', 'notes_md', 'result'): text(retest, key, rp)
                     dt(retest, 'tested_on', rp); refs(retest, 'evidence_uids', rp)
                     if not isinstance(retest.get('result'), str) or retest.get('result') not in RESULTS: err(rp, backend_message('resultado de retest inválido'))
+    from remediation_return import validate_batches
+    try: validate_batches(data)
+    except ValueError as exc: err('remediation_exchanges', str(exc))
     from root_cause import structure_errors as root_cause_errors
     errors.extend(root_cause_errors(data, seen))
     from capture_inbox import validate_rows

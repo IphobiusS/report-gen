@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.28.0
+# report-gen 0.29.0
 
 <a id="qué-es"></a>
 
@@ -16,17 +16,20 @@
 
 ## Instalar y abrir
 
-Ruta principal: **Linux/Kali y Python 3.10+**. La guía detalla los requisitos y las opciones de instalación.
+Ruta principal: **Linux/Kali y Python 3.10+**. Descarga y descomprime la [última versión publicada](https://github.com/IphobiusS/report-gen/releases/latest), o clona el repositorio:
 
 ```bash
 git clone https://github.com/IphobiusS/report-gen.git
 cd report-gen
-python3 start.py --ready
+python3 scripts/install.py --desktop
+~/.local/bin/report-gen
 ```
 
-Abre **http://127.0.0.1:8080** en tu navegador. `Ctrl+C` detiene el servidor; `--port 8081` permite elegir otro puerto local.
+El instalador prepara `.venv`, descarga las dependencias con `requirements-audited.txt` y añade un acceso al menú de aplicaciones. No utiliza `sudo` ni instala paquetes del sistema. **Conserva la carpeta de la aplicación y su `.venv`: el acceso las necesita; no es un ejecutable autónomo.** Abrir el acceso después no reinstala dependencias.
 
-`--ready` prepara `.venv` si hace falta, comprueba los motores y abre el editor. La instalación inicial descarga dependencias con las restricciones de `requirements-audited.txt`. Los motores opcionales ausentes se indican por separado. Para bibliotecas nativas de PDF, consulta [la instalación detallada](docs/guide.es.md#instalar-y-abrir). **Node.js no es necesario para usar el editor.**
+Los datos quedan fuera de la aplicación, en `$XDG_DATA_HOME/report-gen` o `~/.local/share/report-gen` por defecto. Puedes elegir otra carpeta con `--workspace /ruta/datos`; si omites esa opción, se respeta `REPORT_GEN_WORKSPACE`. El instalador no mueve proyectos antiguos automáticamente.
+
+Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El acceso admite `--port 8081`. La ruta anterior `python3 start.py --ready` sigue disponible y conserva `webapp/` cuando no seleccionas una carpeta externa. **Node.js no es necesario para usar el editor.** Consulta [requisitos de PDF, migración y otras opciones](docs/guide.es.md#instalar-y-abrir).
 
 <a id="demo"></a>
 
@@ -56,9 +59,15 @@ Abre **http://127.0.0.1:8080** en tu navegador. `Ctrl+C` detiene el servidor; `-
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.28.0
+## Novedades de 0.29.0
 
-Agrupa hallazgos por causa raíz y corrección común sin perder sus identidades, evidencias o retests. Prepara tareas de remediación en CSV o fichas descargables, revisando primero qué campos compartir. La revisión nativa en Word y las cinco sesiones con participantes siguen pendientes; el kit permite registrar y verificar su evidencia por separado. [Cambios completos](CHANGELOG.md).
+- **Instalación Linux con acceso local y datos separados:** actualiza la aplicación conservando el mismo espacio de trabajo.
+- **Panel multiproyecto:** busca por título o cliente, ordena por modificación, fecha o retests pendientes y archiva/reactiva sin borrar datos.
+- **Retorno de remediación:** emite una plantilla CSV, compara la respuesta y acepta cambios por campo. Lo comunicado por el responsable nunca se convierte automáticamente en una corrección verificada.
+- **Diagnóstico compartible:** revisa un JSON con versión, sistema y comprobaciones sintéticas antes de descargarlo; no incluye proyectos, rutas ni usuarios.
+- **Releases verificadas:** la publicación exige que pruebas, navegadores, Windows y reconstrucción reproducible aprueben el mismo commit. El ZIP se acompaña de SHA-256 y manifiesto JSON.
+
+Se mantienen las causas raíz y tareas introducidas en 0.28.0. La revisión nativa en Word y las cinco sesiones con participantes siguen pendientes. [Cambios completos](CHANGELOG.md).
 
 ## Qué comprueba cada entrega
 
@@ -73,7 +82,9 @@ Agrupa hallazgos por causa raíz y corrección común sin perder sus identidades
 
 El editor trabaja en **`127.0.0.1` y un solo proceso**, sin cuentas ni servicios externos para la edición normal. Después de instalar sus dependencias, el trabajo habitual es local. La asistencia con Ollama es **opcional y explícita**; consulta qué campos envía y sus límites antes de activarla.
 
-Los proyectos están en `webapp/projects/` y las bibliotecas personales en `webapp/library/`. **Respaldo integral** conserva proyectos, originales e historial; es material privado. Los proyectos en disco y borradores del navegador no están cifrados por la aplicación. El respaldo descargado puede cifrarse con contraseña instalando la opción `privacy`; no cifra la instalación ni sustituye conservar la contraseña. [Recuperación, copias y privacidad](docs/guide.es.md#datos-y-recuperación).
+La carpeta externa contiene `projects/` y `library/`. El arranque tradicional sin `--workspace` ni `REPORT_GEN_WORKSPACE` conserva `webapp/projects/` y `webapp/library/`. **Respaldo integral** conserva proyectos, originales e historial; es material privado. Los proyectos en disco y borradores del navegador no están cifrados por la aplicación. El respaldo descargado puede cifrarse con contraseña instalando la opción `privacy`; no cifra la instalación ni sustituye conservar la contraseña. [Recuperación, copias y privacidad](docs/guide.es.md#datos-y-recuperación).
+
+Los borradores del navegador se separan por espacio de trabajo, perfil, host y puerto. Actualizar la aplicación manteniendo la misma carpeta externa conserva esa separación; moverlo o restaurar en otro espacio crea un ámbito distinto. Descarga los borradores pendientes antes de trasladarlo: no viajan en el respaldo integral. Las copias antiguas sin identidad se conservan en **Más → Copias anteriores sin asignación** para revisarlas y descargarlas expresamente.
 
 El HTML portátil contiene el informe completo: sus filtros no son permisos de acceso. Los detectores de posibles secretos no sustituyen la revisión humana. Las pruebas de compatibilidad de Windows no sustituyen la revisión en Microsoft Word de escritorio; Word y LibreOffice pueden paginar de forma distinta. Los perfiles de certificación no implican afiliación ni garantizan cumplir las reglas de un examen.
 
@@ -81,15 +92,15 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 ## Actualizar desde una versión anterior
 
-Descarga **0.28.0 en una carpeta nueva**, detén la instalación anterior y ejecuta desde la nueva:
+Si ya usas una carpeta externa, detén el editor, descarga **0.29.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+
+Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 
 ```bash
-python3 start.py --ready --upgrade-from /ruta/report-gen-anterior
+python3 start.py --ready --workspace /ruta/datos-nuevos --upgrade-from /ruta/report-gen-anterior
 ```
 
-El traslado exige un destino sin proyectos ni bibliotecas personales; conserva el origen y genera un respaldo privado. Comprueba tus proyectos antes de retirar la instalación anterior. También puedes trasladarlos mediante **Respaldo integral**. No copies la `.venv` antigua.
-
-[Compatibilidad de respaldos y recuperación de proyectos antiguos](docs/guide.es.md#actualizar-desde-una-versión-anterior).
+El destino debe estar vacío. Se conserva el origen y se genera un respaldo privado. Para separar los datos de la propia carpeta actual, usa `--upgrade-from .` con un destino externo vacío. Comprueba proyectos, imágenes e historial antes de retirar cualquier instalación. También puedes usar **Respaldo integral**. [Detalles y compatibilidad](docs/guide.es.md#actualizar-desde-una-versión-anterior).
 
 <a id="cli--uso-avanzado"></a>
 

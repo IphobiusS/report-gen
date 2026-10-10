@@ -53,6 +53,70 @@ const WorkspaceUI = (() => {
     const b=button('',()=>go('workflow',kind)); b.className='workspace-stat';
     b.append(h('strong',{},String(value)),h('span',{},label),h('span',{class:'stat-action'},w('Abrir','Open')));return b;
   }
+  const catalogState={query:'',status:'active',order:'modified',page:0};
+  function projectCatalog(shell) {
+    const section=h('section',{class:'workspace-projects','data-project-catalog':''},h('h2',{},w('Tus proyectos','Your projects')));
+    const search=h('input',{type:'search',value:catalogState.query,'data-catalog-search':'',placeholder:w('Título, cliente o identificador','Title, client or identifier')});
+    const filter=h('select',{'data-catalog-status':''}),order=h('select',{'data-catalog-order':''});
+    for(const [key,label] of [['active',w('Activos','Active')],['archived',w('Archivados','Archived')],['all',w('Todos','All')],['retest',w('Retest pendiente','Pending retest')]])filter.append(h('option',{value:key},label));
+    for(const [key,label] of [['modified',w('Última modificación','Last modified')],['client',w('Cliente','Client')],['deadline',w('Fecha más próxima','Nearest due date')],['retest',w('Retests pendientes','Pending retests')]])order.append(h('option',{value:key},label));
+    filter.value=catalogState.status;order.value=catalogState.order;
+    const controls=h('div',{class:'catalog-controls'},h('label',{},w('Buscar proyectos','Search projects'),search),h('label',{},w('Mostrar','Show'),filter),h('label',{},w('Ordenar','Sort'),order));
+    const status=h('p',{role:'status',tabindex:-1,'data-catalog-count':''}),list=h('div',{class:'catalog-list'}),pager=h('div',{class:'catalog-pager'});
+    section.append(controls,status,list,pager);shell.append(section);
+    let rows=[],generation=0;
+    const fold=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase();
+    async function reload(){
+      const current=++generation;
+      try{const values=await api.get('/api/projects');if(!section.isConnected||current!==generation)return;rows=values;paint();}
+      catch(error){if(section.isConnected){status.textContent=error.message;status.setAttribute('role','alert');}}
+    }
+    async function change(project,patch){
+      if(S.slug&&!await doSave())return;
+      busyProject(true);
+      try{
+        // Saving the open project may advance its revision. Other project cards
+        // keep their original revision so concurrent changes remain a conflict.
+        const tag=project.slug===S.slug?projectStore.etag:'"'+project.revision+'"';
+        await requireOk(await appFetch('/api/projects/'+encodeURIComponent(project.slug)+'/management',{method:'POST',headers:{'Content-Type':'application/json','If-Match':tag},body:JSON.stringify(patch)}));
+        await refreshProjects();
+        if(S.slug===project.slug)await loadProject(project.slug);else await reload();
+        toast(w('Organización del proyecto guardada.','Project organization saved.'),'ok');
+      }finally{busyProject(false);}
+    }
+    function paint(){
+      const query=fold(catalogState.query),locale=S.uiLang==='en'?'en':'es';
+      const matches=rows.filter(project=>((catalogState.status==='all')||(catalogState.status==='archived'?project.archived:!project.archived))&&(catalogState.status!=='retest'||project.pending_retests>0)&&fold([project.title,project.client,project.slug].join(' ')).includes(query));
+      matches.sort((a,b)=>{
+        if(catalogState.order==='client')return String(a.client||'').localeCompare(String(b.client||''),locale)||String(a.title).localeCompare(String(b.title),locale);
+        if(catalogState.order==='deadline')return (a.next_due_date||'9999').localeCompare(b.next_due_date||'9999')||a.slug.localeCompare(b.slug);
+        if(catalogState.order==='retest')return b.pending_retests-a.pending_retests||a.slug.localeCompare(b.slug);
+        return String(b.modified_at).localeCompare(String(a.modified_at))||a.slug.localeCompare(b.slug);
+      });
+      const size=8,pages=Math.max(1,Math.ceil(matches.length/size));catalogState.page=Math.min(catalogState.page,pages-1);
+      status.textContent=matches.length+' '+w('proyectos encontrados','projects found');status.setAttribute('role','status');list.replaceChildren();pager.replaceChildren();
+      if(!matches.length)list.append(h('p',{},w('No hay proyectos con estos filtros.','No projects match these filters.')));
+      for(const project of matches.slice(catalogState.page*size,(catalogState.page+1)*size)){
+        const card=h('article',{class:'catalog-project','data-project-slug':project.slug});
+        const name=button(project.title||project.slug,()=>loadProject(project.slug));name.classList.add('catalog-open');
+        const description=h('div',{},h('h3',{},name),h('p',{},project.client||w('Cliente por completar','Client not set')),h('p',{class:'wf-hint'},project.slug+' · '+(project.archived?w('Archivado','Archived'):w('Activo','Active'))));
+        card.append(description);
+        if(project.available){
+          const details=h('dl',{class:'catalog-metrics'});
+          for(const [label,value] of [[w('Modificado','Modified'),new Date(project.modified_at).toLocaleString(locale)],[w('Próxima fecha','Next due date'),project.next_due_date||w('Sin fecha','No date')],[w('Retests pendientes','Pending retests'),String(project.pending_retests)]])details.append(h('div',{},h('dt',{},label),h('dd',{},value)));
+          const delivery=h('input',{type:'date',value:project.delivery_date,'data-project-delivery':project.slug});
+          const actions=h('div',{class:'catalog-actions'},h('label',{},w('Entrega prevista','Planned delivery'),delivery),button(w('Guardar fecha','Save date'),()=>{if(!delivery.checkValidity()){delivery.reportValidity();return;}return change(project,{delivery_date:delivery.value});}),button(project.archived?w('Reactivar','Reactivate'):w('Archivar','Archive'),()=>change(project,{archived:!project.archived})));
+          card.append(details,actions);
+        }else card.append(h('p',{role:'status'},w('No se pudo leer el proyecto. Abre el informe para revisar el error o recupera un respaldo.','The project could not be read. Open the report to inspect the error or recover a backup.')));
+        list.append(card);
+      }
+      const previous=button(w('Anterior','Previous'),()=>{catalogState.page--;paint();status.focus();}),next=button(w('Siguiente','Next'),()=>{catalogState.page++;paint();status.focus();});previous.disabled=catalogState.page===0;next.disabled=catalogState.page===pages-1;
+      if(pages>1)pager.append(previous,h('span',{},(catalogState.page+1)+' / '+pages),next);
+    }
+    for(const [control,key] of [[search,'query'],[filter,'status'],[order,'order']])control.addEventListener(key==='query'?'input':'change',()=>{catalogState[key]=control.value;catalogState.page=0;paint();});
+    section.append(h('p',{class:'wf-hint'},w('Archivar conserva el contenido y permite reactivarlo. Retest pendiente cuenta las correcciones comunicadas que aún requieren verificación. La próxima fecha incluye la entrega y los plazos de hallazgos abiertos, incluso vencidos.','Archiving preserves content and can be reversed. Pending retests count reported fixes still requiring verification. The next date includes delivery and open finding deadlines, including overdue dates.')));
+    status.textContent=w('Cargando proyectos…','Loading projects…');reload();
+  }
   function render(el) {
     const shell=h('div',{class:'workspace-dashboard'}), meta=S.data?.meta||{};
     const hero=h('div',{class:'workspace-hero'},
@@ -89,8 +153,7 @@ const WorkspaceUI = (() => {
       if(typeof ExperienceUI!=='undefined')ExperienceUI.guide(body);
       if(body.childElementCount){more.append(body);shell.append(more);}
     }
-    if(S.projects.length>1){const projects=h('section',{class:'workspace-projects'},h('h2',{},w('Tus proyectos','Your projects')));
-      S.projects.forEach(p=>{const b=button('',()=>loadProject(p.slug));b.className='workspace-project';b.append(h('strong',{},p.title||p.slug),h('span',{},p.slug),h('span',{},p.slug===S.slug?w('Abierto','Open'):(p.lang||'').toUpperCase()));projects.append(b);});shell.append(projects);}
+    projectCatalog(shell);
     shell.append(h('div',{class:'workspace-footnote'},h('span',{},w('Trabajo local. Sin cuenta ni servicios externos para editar.','Local workspace. No account or external service needed to edit.')),button(w('Comprobar instalación','Check installation'),()=>$('#diagnosticsBtn').click())));
     el.append(shell);
   }
