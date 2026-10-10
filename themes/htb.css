@@ -5,6 +5,7 @@
 @import "_common.css";
 
 :root {
+  --sev-chip-ink: #0d1621;
   --ink: #e8eef4; --ink-soft: #b9c6d3; --muted: #7f8ca0; --rule: #223041;
   --panel: #16212f; --paper: #0d1621;
   --accent: #9fef00; --accent-ink: #9fef00; --cyan: #37d3b8; --cyan-ink: #37d3b8;
@@ -33,20 +34,13 @@ html { background: #0d1621; }
 .sumlink, .toc-list a { color: var(--ink); }
 pre.cmd { color: #d7f7c2; }
 
-/* portada: disposición centrada (logo propio arriba, logo cliente debajo,
-   título centrado, meta abajo-dcha, pie de confidencialidad). Diseño propio. */
-.cover { text-align: center; padding: 20mm 22mm; }
-.cover-top { display: none; }
-.cv-logos { display: block; text-align: center; margin-top: 8mm; }
-.cv-logo { display: block; height: 22mm; width: auto; max-width: 120mm; margin: 0 auto; }
-.cv-logo-client { display: inline-block; height: 30mm; width: auto; max-width: 130mm; background: #2c333d; padding: 6mm 12mm; border-radius: 3px; margin-top: 40mm; }
-.cover-main { margin-top: 48mm; }
-.cv-rule { display: none; }
-.cv-title { font-size: 25pt; }
-.cv-subtitle::before { content: ""; }
-.cover-meta { margin-top: auto; margin-left: auto; margin-right: 0; width: auto; text-align: right; }
-.cover-meta th { text-align: right; border: none; color: var(--cover-muted); padding: 2px 0; background: none; }
-.cover-meta td { border: none; padding: 2px 0 2px 10px; font-size: 10.5pt; }
-.cover-meta tr:first-child td { color: var(--accent); font-weight: 700; font-size: 12pt; }
-.cover-foot { display: block; margin-top: 7mm; border-top: 1px dotted var(--cover-meta-border);
-  padding-top: 4mm; font-family: var(--font-mono); font-size: 7.5pt; letter-spacing: 1px; color: var(--cover-muted); }
+
+/* Digital lab: centered type, dark panel and a lower right-hand register. */
+.cover { border-top:5mm solid #9fef00; }
+.cover-center { top:77mm; height:116mm; border-top:1px solid #304328; border-bottom:1px solid #304328; }
+.cover-content { padding:8mm 5mm; }
+.cv-title { font-size:32pt; }
+.cover-bottom { left:47mm; right:24mm; }
+.cover-ledger th { width:34mm; }
+.cover-ledger td { text-align:right; }
+.cover-foot { text-align:right; }

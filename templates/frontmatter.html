@@ -2,7 +2,7 @@
 {% set clientname = (meta.client or L.labels.client).rstrip('.') %}
 
 <section class="frontsec" id="sec-conf">
-  {{ pm('conf') }}
+  {{ pm('sec-conf') }}
   <h2 class="sec-title"><span class="sec-num">1</span> {{ L.labels.confidentiality }}</h2>
   {% if meta.confidentiality_md %}
     {{ meta.confidentiality_md|md }}
@@ -14,22 +14,22 @@
 <section class="frontsec toc" id="sec-toc">
   <h2 class="sec-title"><span class="sec-num">2</span> {{ L.labels.toc }}</h2>
   <ul class="toc-list">
-    <li><a href="#sec-conf"><span class="t">{{ L.labels.confidentiality }}</span><span class="leader"></span><span class="pg">{{ page_map.get('conf','') }}</span></a></li>
-    <li><a href="#sec-contacts"><span class="t">{{ L.labels.contacts }}</span><span class="leader"></span><span class="pg">{{ page_map.get('contacts','') }}</span></a></li>
-    <li><a href="#sec-overview"><span class="t">{{ L.labels.overview }}</span><span class="leader"></span><span class="pg">{{ page_map.get('overview','') }}</span></a></li>
-    <li><a href="#sec-summary"><span class="t">{{ L.labels.summary }}</span><span class="leader"></span><span class="pg">{{ page_map.get('summary','') }}</span></a></li>
+    <li><a href="#sec-conf"><span class="t">{{ L.labels.confidentiality }}</span><span class="leader"></span><span class="pg">{{ page_map.get('sec-conf','') }}</span></a></li>
+    <li><a href="#sec-contacts"><span class="t">{{ L.labels.contacts }}</span><span class="leader"></span><span class="pg">{{ page_map.get('sec-contacts','') }}</span></a></li>
+    <li><a href="#sec-overview"><span class="t">{{ L.labels.overview }}</span><span class="leader"></span><span class="pg">{{ page_map.get('sec-overview','') }}</span></a></li>
+    <li><a href="#sec-summary"><span class="t">{{ L.labels.summary }}</span><span class="leader"></span><span class="pg">{{ page_map.get('sec-summary','') }}</span></a></li>
     <li class="toc-group"><span class="t">{{ L.labels.findings }}</span></li>
     {% for f in findings %}
-    <li class="toc-sub"><a href="#{{ f.id }}"><span class="t">{{ f.id }} &nbsp; {{ f.host.name if f.mode=='machine' and f.host and f.host.name else f.title }}</span><span class="leader"></span><span class="pg">{{ page_map.get(f.id,'') }}</span></a></li>
+    <li class="toc-sub"><a href="#{{ f.id|fragment }}"><span class="t">{{ f.id }} &nbsp; {{ f.host.name if f.mode=='machine' and f.host and f.host.name else f.title }}</span><span class="leader"></span><span class="pg">{{ page_map.get(f.id,'') }}</span></a></li>
     {% endfor %}
     {% if appendix %}
-    <li><a href="#sec-appendix"><span class="t">{{ L.labels.appendix }}</span><span class="leader"></span><span class="pg">{{ page_map.get('appendix','') }}</span></a></li>
+    <li><a href="#sec-appendix"><span class="t">{{ L.labels.appendix }}</span><span class="leader"></span><span class="pg">{{ page_map.get('sec-appendix','') }}</span></a></li>
     {% endif %}
   </ul>
 </section>
 
 <section class="frontsec" id="sec-contacts">
-  {{ pm('contacts') }}
+  {{ pm('sec-contacts') }}
   <h2 class="sec-title"><span class="sec-num">3</span> {{ L.labels.contacts }}</h2>
   {% set c = meta.contacts or {} %}
   {% if c.client %}
@@ -49,7 +49,7 @@
 </section>
 
 <section class="frontsec" id="sec-overview">
-  {{ pm('overview') }}
+  {{ pm('sec-overview') }}
   <h2 class="sec-title"><span class="sec-num">4</span> {{ L.labels.overview }}</h2>
   <h3>{{ L.labels.approach }}</h3>
   {% if meta.overview and meta.overview.approach_md %}

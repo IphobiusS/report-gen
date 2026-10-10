@@ -18,21 +18,37 @@
 
 html { font-size: 10pt; }
 body { margin: 0; font-family: var(--font-body); color: var(--ink); background: var(--paper); line-height: 1.45; }
+a { color:var(--cyan-ink); overflow-wrap:anywhere; }
 .frontsec, .finding { position: relative; }
 .pm { position: absolute; top: 0; left: 0; font-size: 1px; color: #ffffff; opacity: 0.01; }
 
-/* Portada (layout unico, colores por tokens) */
-.cover { page: cover; break-after: page; box-sizing: border-box; height: 297mm; padding: 26mm 22mm; background: var(--cover-bg); color: var(--cover-fg); display: flex; flex-direction: column; }
-.cover-top { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid var(--cover-rule); padding-bottom: 10px; }
-.cv-wordmark { font-family: var(--font-display); font-weight: 700; font-size: 16pt; color: var(--cover-wordmark); letter-spacing: 1px; }
-.cv-tag { font-family: var(--font-mono); font-size: 8pt; color: var(--cover-tag-fg); border: 1px solid var(--cover-tag-border); padding: 3px 9px; letter-spacing: 2px; }
-.cover-main { margin-top: 60mm; }
-.cv-rule { height: 2px; background: var(--cover-rule); width: 46mm; opacity: .9; }
-.cv-title { font-family: var(--font-display); font-weight: 700; font-size: 27pt; line-height: 1.18; margin: 12px 0; color: var(--cover-title); }
-.cv-subtitle { font-family: var(--font-display); font-size: 11pt; color: var(--cover-subtitle); margin: 0 0 12px; letter-spacing: 1px; }
-.cover-meta { margin-top: auto; width: 100%; border-collapse: collapse; }
-.cover-meta th { text-align: left; width: 34mm; font-family: var(--font-mono); font-weight: 400; font-size: 8.5pt; color: var(--cover-muted); padding: 5px 0; vertical-align: top; }
-.cover-meta td { font-size: 10pt; color: var(--cover-fg); padding: 5px 0; border-bottom: 1px solid var(--cover-meta-border); }
+@font-face { font-family:"Report Cover"; src:url("fonts/Carlito-Regular.ttf"); font-weight:400; }
+@font-face { font-family:"Report Cover"; src:url("fonts/Carlito-Bold.ttf"); font-weight:700; }
+/* Cover zones are anchored independently in both paged engines. */
+.cover { page:cover; break-after:page; position:relative; box-sizing:border-box; height:297mm; width:210mm; background:var(--cover-bg); color:var(--cover-fg); }
+.cover-header { position:absolute; top:20mm; left:24mm; right:24mm; }
+.cover-top { display:flex; justify-content:space-between; align-items:baseline; gap:8mm; }
+.cv-wordmark { font-family:"Report Cover","Calibri","Carlito","DejaVu Sans",sans-serif; font-weight:700; font-size:15pt; color:var(--cover-wordmark); }
+.cv-tag { font-family:var(--font-mono); font-size:8pt; color:var(--cover-tag-fg); letter-spacing:1px; }
+.cv-logos { display:flex; align-items:center; justify-content:space-between; gap:12mm; margin-top:8mm; }
+.cv-logo { max-height:20mm; max-width:62mm; object-fit:contain; }
+.cover-center { position:absolute; top:70mm; left:24mm; width:162mm; height:130mm; }
+.cover-content { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); box-sizing:border-box; }
+.cover-main { text-align:center; }
+.cv-title { font-family:"Report Cover","Calibri","Carlito","DejaVu Sans",sans-serif; font-size:32pt; line-height:1.14; font-weight:700; margin:0; color:var(--cover-title); overflow-wrap:anywhere; }
+.cv-subtitle { font-family:"Report Cover","Calibri","Carlito","DejaVu Sans",sans-serif; font-size:12pt; line-height:1.45; margin:6mm 0 0; color:var(--cover-subtitle); }
+.cv-image { margin:8mm auto 0; text-align:center; }
+.cv-image img { display:inline-block; max-width:145mm; max-height:52mm; object-fit:contain; }
+.cover.has-illustration .cv-title { font-size:28pt; }
+.cover-bottom { position:absolute; left:24mm; right:24mm; bottom:18mm; }
+.cover-meta { width:100%; border-collapse:collapse; table-layout:fixed; margin:0; font-family:"Report Cover","Calibri","Carlito","DejaVu Sans",sans-serif; }
+.cover-meta td,.cover-meta th { overflow-wrap:anywhere; vertical-align:top; text-align:left; padding:3mm 0; }
+.cover-ledger th { width:34mm; color:var(--cover-muted); font-weight:400; font-size:9pt; }
+.cover-ledger td { color:var(--cover-fg); font-size:10pt; border-bottom:1px solid var(--cover-meta-border); }
+.cover-grid td { width:50%; padding:3mm 5mm 3mm 0; }
+.cv-field-label { display:block; font-size:9pt; color:var(--cover-muted); margin-bottom:1mm; }
+.cv-field-value { display:block; font-size:10.5pt; color:var(--cover-fg); line-height:1.35; }
+.cover-foot { margin-top:5mm; font-size:7.5pt; color:var(--cover-muted); text-align:center; letter-spacing:1px; }
 
 /* Secciones */
 #sec-conf, #sec-toc, #sec-summary, #sec-appendix { break-before: page; }
@@ -44,10 +60,10 @@ body { margin: 0; font-family: var(--font-body); color: var(--ink); background: 
 /* TOC */
 .toc-list { list-style: none; margin: 0; padding: 0; }
 .toc-list > li { margin: 4px 0; }
-.toc-list a { display: flex; align-items: baseline; text-decoration: none; color: var(--ink); }
-.toc-list .t { font-size: 10pt; }
-.toc-list .leader { flex: 1; margin: 0 6px; border-bottom: 1px dotted var(--rule); transform: translateY(-2px); }
-.toc-list .pg { font-family: var(--font-mono); font-size: 9pt; color: var(--muted); }
+.toc-list a { display: flex; align-items: center; text-decoration: none; color: var(--ink); }
+.toc-list .t { font-size: 10pt; min-width: 0; flex: 0 1 auto; }
+.toc-list .leader { flex: 1 0 3mm; align-self: center; margin: 0 6px; border-bottom: 1px dotted var(--rule); }
+.toc-list .pg { flex: none; font-family: var(--font-mono); font-size: 9pt; color: var(--muted); }
 .toc-group { margin-top: 8px; font-weight: 700; }
 .toc-group .t { font-family: var(--font-heading); font-size: 9.5pt; color: var(--ink-soft); }
 .toc-sub { margin-left: 10mm; }
@@ -97,14 +113,14 @@ body { margin: 0; font-family: var(--font-body); color: var(--ink); background: 
 .finding.sev-info .f-head { border-left-color: var(--sev-info); }
 .f-id { font-family: var(--font-mono); font-size: 9pt; color: var(--muted); }
 .f-title { margin: 0; font-family: var(--font-display); font-size: 12.5pt; font-weight: 700; line-height: 1.25; flex: 1; }
-.sev-chip, .host-chip { font-family: var(--font-mono); font-size: 8pt; padding: 3px 8px; border-radius: 2px; white-space: nowrap; text-transform: capitalize; color: #fff; background: var(--ink); }
+.sev-chip, .host-chip { font-family: var(--font-mono); font-size: 8pt; padding: 3px 8px; border-radius: 2px; white-space: nowrap; text-transform: capitalize; color: var(--sev-chip-ink, #ffffff); background: var(--ink); }
 .sev-chip b { font-weight: 700; margin-left: 3px; }
 .sev-chip.sev-critical { background: var(--sev-critical); }
 .sev-chip.sev-high { background: var(--sev-high); }
 .sev-chip.sev-medium { background: var(--sev-medium); }
 .sev-chip.sev-low { background: var(--sev-low); }
 .sev-chip.sev-info { background: var(--sev-info); }
-.host-chip { color: var(--cyan); text-transform: none; }
+.host-chip { color: #e9e9f2; background: var(--code-bg); text-transform: none; }
 
 table { border-collapse: collapse; width: 100%; }
 .meta, .hostbox { margin: 0 0 12px; font-size: 9.5pt; }
@@ -123,9 +139,15 @@ h3 { font-family: var(--font-heading); font-size: 9.5pt; font-weight: 700; color
 .step { margin-bottom: 8px; }
 .step p { margin: 0 0 6px; }
 .lead { color: var(--ink); }
+/* Bind a step's heading to its first block, not its entire procedure. Long
+   commands still split through the existing bounded code flow and oversized
+   protected tables still fail the PDF guard instead of being clipped. */
+.step-heading { margin: 0 0 4px; break-after: avoid; page-break-after: avoid; }
 code { font-family: var(--font-mono); font-size: 0.9em; background: var(--code-inline-bg); color: var(--code-inline-fg); border: 1px solid var(--code-inline-border); border-radius: 2px; padding: 0 3px; }
-pre.cmd { font-family: var(--font-mono); font-size: 8.5pt; line-height: 1.4; color: #e9e9f2; background: var(--code-bg); border-left: 3px solid var(--accent); padding: 7px 10px; margin: 6px 0 8px; white-space: pre-wrap; word-break: break-all; page-break-inside: avoid; }
-pre.cmd::before { content: "$ "; color: var(--accent); }
+pre, pre.cmd { font-family: var(--font-mono); font-size: 8.5pt; line-height: 1.4; color: #e9e9f2; background: var(--code-bg); border-left: 3px solid var(--accent); padding: 7px 10px; margin: 6px 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; tab-size: 4; break-inside: avoid; page-break-inside: avoid; }
+pre code { font: inherit; color: inherit; background: transparent; border: 0; border-radius: 0; padding: 0; white-space: inherit; }
+.rg-code-label { break-after: avoid; page-break-after: avoid; }
+/* Commands and HTTP evidence are verbatim; never invent a shell prompt. */
 figure { margin: 6px 0 10px; page-break-inside: avoid; }
 figure img { display: block; width: 100%; max-height: 62mm; object-fit: contain; border: 1px solid var(--rule); }
 figcaption { font-size: 8.5pt; color: var(--muted); margin-top: 4px; }
@@ -144,15 +166,31 @@ figcaption b { color: var(--ink-soft); font-family: var(--font-mono); font-weigh
 
 /* imagenes markdown con epigrafe */
 figure.mdfig { margin: 10px 0; text-align: center; }
-figure.mdfig img { display: inline-block; width: auto; max-width: 100%; max-height: none; object-fit: initial; border: 1px solid var(--rule, #ddd); border-radius: 3px; }
+figure.mdfig img { display: inline-block; width: auto; max-width: 100%; max-height: 215mm; object-fit: contain; border: 1px solid var(--rule, #ddd); border-radius: 3px; }
 figure.mdfig figcaption { font-size: 8.5pt; color: var(--muted, #666); margin-top: 4px; font-style: italic; }
-.sev-chip.sev-machine { background: var(--panel2, #eef); color: var(--muted, #555); border: 1px solid var(--rule, #ccc); }
+.sev-chip.sev-machine { background: var(--panel); color: var(--ink-soft); border: 1px solid var(--rule); }
 
-/* imagenes de portada (logos + imagen representativa) */
-.cv-logos { display: flex; gap: 10mm; align-items: center; margin-top: 8mm; }
-.cv-logo { max-height: 22mm; max-width: 62mm; object-fit: contain; }
-.cv-image { margin-top: 10mm; }
-.cv-image img { display: block; max-width: 100%; max-height: 92mm; object-fit: contain; }
+/* Markdown tables occur in findings and in the generated workflow sections. */
+.md-table { margin: 8px 0 14px; font-size: 9pt; }
+.rg-content-table { table-layout: fixed; }
+.rg-content-table th, .rg-content-table td { overflow-wrap: anywhere; }
+.rg-content-table .rg-compact-cell { white-space: nowrap; }
+.sev-chip.sev-pending { display: inline-block; white-space: normal; text-transform: none; background: var(--panel); color: var(--ink-soft); border: 1px solid var(--rule); }
+.chart-scope { color: var(--muted); font-size: 9pt; }
+.md-table th, .md-table td { padding: 5px 7px; vertical-align: top; border-bottom: 1px solid var(--rule); overflow-wrap: anywhere; }
+.md-table th { background: var(--panel); text-align: left; font-weight: 700; border-bottom: 1.2px solid var(--ink-soft); }
+.md-table thead { display: table-header-group; }
+.md-table tr, .scope tr, .contacts tr, .sumtable tr { break-inside: avoid; }
+.sect-rg_retest > .md-table td:nth-child(4),
+.sect-rg_retest > .md-table td:nth-child(5) { white-space: nowrap; }
+.retest-entry { break-inside: avoid; }
+.retest-entry h3, .retest-entry h3 + p { break-after: avoid; }
+.sevchart .bar-val { fill: var(--ink); }
+.sevchart .bar-lab { fill: var(--muted); }
 
-/* pie de portada (confidencialidad) — oculto salvo temas que lo activan */
-.cover-foot { display: none; }
+/* Optional compact spacing never hides assessment content or shrinks code. */
+.density-compact p { margin-top:4px; margin-bottom:5px; }
+.density-compact .finding { margin-top:10px; margin-bottom:14px; }
+.density-compact h3 { margin-top:9px; margin-bottom:4px; }
+.density-compact .meta td, .density-compact .meta th { padding-top:5px; padding-bottom:5px; }
+.f-head { break-after:avoid; page-break-after:avoid; }

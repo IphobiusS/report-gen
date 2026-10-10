@@ -5,56 +5,69 @@ from docx.shared import Cm, Pt
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
-from resources import local_image
-from safe_markup import md
+from safe_markup import md, ordered_list_start
 from .pagination import keep_table_together
+from .images import word_image, fit_width
+from report_layout import table_layout
 
 
-def write_markdown(document, text, root, code_block):
+def write_markdown(document, text, root, code_block, keep_tables=True, retest=False, column_weights=None):
     tree = html.fragment_fromstring(str(md(text, img_base="")), create_parent="div")
     available = document.sections[-1].page_width - document.sections[-1].left_margin - document.sections[-1].right_margin
 
-    def picture(node, paragraph=None):
+    def picture(node, paragraph=None, parent=None):
         if not node.get("src"):
             return
-        path = local_image(node.get("src"), root)
+        source, size = word_image(node.get("src"), root)
         paragraph = paragraph or document.add_paragraph()
         width = min(available, Cm(15))
         requested = re.search(r"width:\s*([\d.]+)(%|cm|mm|in|px|pt)", node.get("style", ""))
         if requested:
             value, unit = float(requested[1]), requested[2]
             width = min(available, int(available * value / 100) if unit == "%" else int(Cm(value * {"cm": 1, "mm": .1, "in": 2.54, "px": 2.54/96, "pt": 2.54/72}[unit])))
-        from PIL import Image
-        with Image.open(path) as im:
-            # Fit portrait screenshots on a page while preserving aspect ratio.
-            max_height = document.sections[-1].page_height - document.sections[-1].top_margin - document.sections[-1].bottom_margin - Cm(2)
-            width = min(width, int(max_height * im.width / im.height))
-        shape = paragraph.add_run().add_picture(str(path), width=max(Cm(.1), width))
+        width = fit_width(document, size, width, Cm(2))
+        run = paragraph.add_run()
+        shape = run.add_picture(source, width=max(Cm(.1), width))
+        if parent is not None: parent.append(run._r)
         shape._inline.docPr.set("descr", node.get("alt", ""))
         paragraph.paragraph_format.keep_with_next = True
 
-    def inline(node, paragraph, bold=False, italic=False, code=False):
-        def add(value, parent=None):
+    def inline(node, paragraph, bold=False, italic=False, code=False, parent=None):
+        def add(value):
             if not value: return
             run = paragraph.add_run(value)
             run.bold = bold; run.italic = italic
             if code:
-                run.font.name = "Consolas"; run.font.size = Pt(9)
+                run.font.name = "DejaVu Sans Mono"; run.font.size = Pt(9)
             if parent is not None:
+                if parent.tag == qn('w:hyperlink'):
+                    style = OxmlElement('w:rStyle'); style.set(qn('w:val'), 'Hyperlink')
+                    run._r.get_or_add_rPr().append(style)
                 parent.append(run._r)
+        def linebreak():
+            run = paragraph.add_run(); run.add_break()
+            if parent is not None: parent.append(run._r)
         add(node.text)
         for child in node:
             tag = child.tag
-            if tag == "br": paragraph.add_run().add_break()
-            elif tag == "img": picture(child, paragraph)
+            if tag == "br": linebreak()
+            elif tag == "img": picture(child, paragraph, parent)
             elif tag == "a" and child.get("href"):
                 link = OxmlElement("w:hyperlink")
-                link.set(qn("r:id"), paragraph.part.relate_to(child.get("href"), RT.HYPERLINK, is_external=True))
-                run = OxmlElement("w:r"); props = OxmlElement("w:rPr")
-                style = OxmlElement("w:rStyle"); style.set(qn("w:val"), "Hyperlink"); props.append(style); run.append(props)
-                text_node = OxmlElement("w:t"); text_node.text = child.text_content(); run.append(text_node); link.append(run); paragraph._p.append(link)
+                href = child.get('href')
+                if href.startswith('#'):
+                    from urllib.parse import unquote
+                    from .navigation import reference_name
+                    link.set(qn('w:anchor'), reference_name(unquote(href[1:])))
+                else:
+                    link.set(qn("r:id"), paragraph.part.relate_to(href, RT.HYPERLINK, is_external=True))
+                paragraph._p.append(link)
+                inline(child, paragraph, bold, italic, code, parent=link)
+            elif tag == "figcaption":
+                linebreak()
+                inline(child, paragraph, bold, italic, code, parent=parent)
             else:
-                inline(child, paragraph, bold or tag in {"b", "strong"}, italic or tag in {"i", "em"}, code or tag == "code")
+                inline(child, paragraph, bold or tag in {"b", "strong"}, italic or tag in {"i", "em"}, code or tag == "code", parent=parent)
             add(child.tail)
 
     def list_numbering(ordered, start=1):
@@ -71,29 +84,42 @@ def write_markdown(document, text, root, code_block):
     def block(node, depth=0):
         tag = node.tag
         if tag in {"ul", "ol"}:
-            number_id = list_numbering(tag == "ol", int(node.get("start", "1")))
+            number_id = list_numbering(tag == "ol", ordered_list_start(node) if tag == 'ol' else 1)
             for item in node:
                 p = document.add_paragraph()
                 p.paragraph_format.left_indent = Cm(.65 * (depth+1)); p.paragraph_format.first_line_indent = Cm(-.4)
                 pr = p._p.get_or_add_pPr().get_or_add_numPr(); pr.get_or_add_ilvl().val = 0; pr.get_or_add_numId().val = number_id
-                p.add_run(item.text or "")
-                first = True
+                started = bool((item.text or '').strip())
+                if started: p.add_run(item.text)
+                current = p
+                def continuation():
+                    paragraph = document.add_paragraph()
+                    paragraph.paragraph_format.left_indent = Cm(.65 * (depth+1))
+                    return paragraph
                 for child in item:
-                    if child.tag in {"ul", "ol"}: block(child, depth+1)
+                    if child.tag in {"ul", "ol"}:
+                        block(child, depth+1); current = None; started = True
                     elif child.tag == "p":
-                        target = p if first else document.add_paragraph()
-                        inline(child, target); first = False
+                        target = p if not started else continuation()
+                        inline(child, target); started = True; current = None
+                    elif child.tag in {'pre', 'table', 'blockquote', 'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'}:
+                        block(child, depth+1); current = None; started = True
                     else:
+                        if current is None: current = continuation()
                         wrapper = html.Element("span"); wrapper.append(html.fromstring(html.tostring(child, with_tail=False)))
-                        inline(wrapper, p)
-                    if child.tail: p.add_run(child.tail)
+                        inline(wrapper, current); started = True
+                    if child.tail and (child.tail.strip() or current is not None):
+                        if current is None: current = continuation()
+                        current.add_run(child.tail); started = True
         elif tag == "pre":
-            code_block(node.text_content().removesuffix("\n"))
+            p = code_block(node.text_content().removesuffix("\n"))
+            if depth: p.paragraph_format.left_indent = Cm(.65 * depth)
         elif tag == "table":
             rows = node.xpath("./tr|./thead/tr|./tbody/tr|./tfoot/tr")
             cols = max([len(row) for row in rows]+[1])
             table = document.add_table(rows=0, cols=cols); table.style = "Table Grid"; table.autofit = False
-            widths = [int(available / cols)] * cols
+            shares, _ = table_layout([[cell.text_content() for cell in row] for row in rows], column_weights)
+            widths = [int(available * share / 100) for share in shares]
             for col, width in zip(table.columns, widths): col.width = width
             width_el = table._tbl.tblPr.find(qn("w:tblW")); width_el.set(qn("w:type"), "dxa"); width_el.set(qn("w:w"), str(int(available/635)))
             for row in rows:
@@ -102,9 +128,11 @@ def write_markdown(document, text, root, code_block):
                     cells[i].width = widths[i]; inline(cell, cells[i].paragraphs[0], bold=cell.tag == "th")
                 if any(cell.tag == "th" for cell in row):
                     repeat = OxmlElement("w:tblHeader"); table.rows[-1]._tr.get_or_add_trPr().append(repeat)
-            keep_table_together(table)
+            keep_table_together(table, whole=keep_tables)
             document.add_paragraph()
         elif tag == "figure":
+            if retest and document.paragraphs:
+                document.paragraphs[-1].paragraph_format.keep_with_next = True
             for child in node:
                 if child.tag == "img": picture(child)
                 elif child.tag == "figcaption":
@@ -115,6 +143,18 @@ def write_markdown(document, text, root, code_block):
         elif tag == "hr": document.add_paragraph(" ")
         elif tag in {"p", "h1", "h2", "h3", "h4", "h5", "h6"}:
             p = document.add_paragraph(style=f"Heading {min(int(tag[1]), 4)}" if tag.startswith("h") else None)
+            if depth: p.paragraph_format.left_indent = Cm(.65 * depth)
+            # A bold list label (e.g. generated affected assets) belongs with
+            # the first item; otherwise it can be orphaned at the page bottom.
+            if (tag == 'p' and not (node.text or '').strip() and len(node) == 1
+                    and node[0].tag in {'strong', 'b'} and not (node[0].tail or '').strip()
+                    and node.getnext() is not None and node.getnext().tag in {'ul', 'ol'}):
+                p.paragraph_format.keep_with_next = True
+            if retest and node.getprevious() is not None and node.getprevious().tag == 'h3':
+                p.paragraph_format.keep_with_next = True
+            if (tag == 'p' and node.getnext() is not None and node.getnext().tag == 'pre'
+                    and len(node.text_content()) <= 160 and node.xpath('.//strong|.//b')):
+                p.paragraph_format.keep_with_next = True
             inline(node, p)
         else:
             p = document.add_paragraph(); inline(node, p)

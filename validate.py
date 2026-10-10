@@ -7,8 +7,12 @@ unicos y presentes, hallazgo 'machine' sin host, vector CVSS mal formado,
 inconsistencia severidad declarada vs CVSS, y secciones inexistentes en el
 catalogo canonico.
 """
+from error_messages import message as backend_message
+from error_messages import language_argument
 import re
 import math
+from collections import Counter
+from report_designs import THEMES
 from datetime import date, datetime
 
 try:
@@ -19,9 +23,10 @@ except Exception:  # pragma: no cover - catalogo opcional en validacion aislada
 SEVERITIES = {"critical", "high", "medium", "low", "info"}
 MODES = {"vuln", "machine"}
 LANGS = {"es", "en"}
-CVSS_VECTOR_RE = re.compile(
-    r"^CVSS:3\.[01]/AV:[NALP]/AC:[LH]/PR:[NLH]/UI:[NR]/S:[UC]/C:[HLN]/I:[HLN]/A:[HLN]$"
-)
+# The portable shell owns these destinations. A contract checks them against
+# the generated shell so a new control cannot silently steal a report anchor.
+PORTABLE_CONTROL_IDS = {'view', 'kind', 'query', 'severity', 'clear-filters',
+                        'results', 'print', 'empty-results'}
 
 
 _MSG = {
@@ -43,6 +48,8 @@ _MSG = {
                    "en": "sections not validated: catalog unavailable"},
     "unknown_section": {"es": "seccion desconocida en el catalogo: {key!r}", "en": "unknown section in catalog: {key!r}"},
     "fid_no_id": {"es": "(hallazgo #{n} sin id)", "en": "(finding #{n} without id)"},
+    "dup_anchors": {"es": "Anclas de informe duplicadas o reservadas: {ids}. Cambia el id del hallazgo o la clave de sección en conflicto.",
+                    "en": "Duplicate or reserved report anchors: {ids}. Change the conflicting finding id or section key."},
 }
 
 
@@ -53,8 +60,7 @@ def _m(code, language, **kw):
 
 
 def _cvss_vector_ok(vec):
-    """Valida un vector CVSS. 3.0/3.1 por formato clasico; 4.0 con el motor CVSS
-    (autoritativo). Evita falsos positivos con vectores 4.0 validos."""
+    """Valida CVSS 3.1 y 4.0 con sus motores; 3.0 no está soportado."""
     if vec.startswith("CVSS:3.1/") or vec.startswith("CVSS:4.0/"):
         try:
             import cvss
@@ -71,7 +77,7 @@ def severity_from_score(score):
     """Banda de severidad CVSS a partir del score numerico (mismas bandas 3.1/4.0)."""
     try:
         s = float(score)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
     if not math.isfinite(s) or not 0 <= s <= 10 or isinstance(score, bool):
         return None
@@ -86,7 +92,53 @@ def severity_from_score(score):
     return "critical"
 
 
-def validate(data, known_section_keys=None, lang="es"):
+def report_anchor_issues(data, language):
+    """Validate the destinations the renderer actually emits, without rewriting IDs.
+
+    Custom keys remain available when the corresponding automatic/legacy block
+    is absent. Incomplete drafts keep their own identities until final review.
+    """
+    findings = data.get('findings') or []
+    report = data.get('report') or {}
+    active = report.get('sections') or []
+    anchors = list(PORTABLE_CONTROL_IDS)
+    catalog = catalog_by_key() if catalog_by_key is not None else {}
+    if active:
+        anchors.append('sec-toc')
+        for section in active:
+            key = section.get('key')
+            if catalog.get(key, {}).get('special') == 'appendix':
+                from sections import is_empty_appendix
+                if is_empty_appendix(section, data, catalog[key]):
+                    continue
+            if key in catalog or section.get('title') or section.get('body'):
+                anchors.append(key or 'sec')
+        include_findings = any(catalog.get(section.get('key'), {}).get('special') == 'findings'
+                               for section in active)
+    else:
+        anchors.extend(('sec-conf', 'sec-toc', 'sec-contacts', 'sec-overview', 'sec-summary'))
+        if any(f.get('proof') or f.get('flags') for f in findings):
+            anchors.append('sec-appendix')
+        include_findings = True
+    if include_findings:
+        anchors.extend(f['id'] for f in findings if f.get('id'))
+    # Mirror only the presence predicates of workflows.report_sections. Avoid
+    # building its Markdown bodies just to validate an unfinished document.
+    config = report.get('workflow') or {}
+    if config.get('include_assets', True) and data.get('assets'):
+        anchors.append('rg_assets')
+    if config.get('include_coverage', True) and (data.get('coverage') or data.get('limitations_md')):
+        anchors.append('rg_coverage')
+    if config.get('include_retest', True) and any(
+            f.get('retests') or f.get('owner') or f.get('due_date')
+            or f.get('status', 'open') != 'open' or f.get('verification') for f in findings):
+        anchors.append('rg_retest')
+    duplicates = sorted(key for key, count in Counter(anchors).items() if count > 1)
+    return [('error', _m('dup_anchors', language, ids=', '.join(duplicates)))] if duplicates else []
+
+
+@language_argument
+def validate(data, known_section_keys=None, lang=None):
     """Valida un dict de engagement. known_section_keys permite inyectar el
     catalogo en tests; si es None se intenta cargar el catalogo real.
     lang controla el idioma de los mensajes (es/en)."""
@@ -99,8 +151,8 @@ def validate(data, known_section_keys=None, lang="es"):
 
     if not str(meta.get("report_title") or "").strip():
         issues.append(("warning", _m("title_empty", lang)))
-    if meta.get("theme") not in (None, "serio", "corporativo", "offsec", "htb"):
-        issues.append(("error", "meta.theme no soportado"))
+    if "theme" in meta and meta["theme"] not in THEMES:
+        issues.append(("error", backend_message('meta.theme no soportado')))
     if meta.get("lang") not in (None, *LANGS):
         issues.append(("error", _m("lang_invalid", lang, lang=meta.get("lang"))))
 
@@ -123,28 +175,39 @@ def validate(data, known_section_keys=None, lang="es"):
             if f.get("cvss") is None or str(f.get("cvss")).strip() == "":
                 issues.append(("warning", _m("no_cvss", lang, fid=fid)))
         vec = f.get("cvss_vector")
-        if vec and not _cvss_vector_ok(vec):
+        version = f.get("cvss_version")
+        if version not in (None, "", "3.1", "4.0"):
+            issues.append(("error", backend_message('{p0}: cvss_version debe ser 3.1 o 4.0', p0=fid)))
+        elif vec and version and not vec.startswith(f"CVSS:{version}/"):
+            issues.append(("error", backend_message('{p0}: cvss_version no coincide con el vector', p0=fid)))
+        vector_valid = bool(vec) and _cvss_vector_ok(vec)
+        if vec and not vector_valid:
             issues.append(("error", _m("bad_vector", lang, fid=fid, vec=vec)))
         supplied = f.get("cvss") is not None and str(f.get("cvss")).strip() != ""
         if supplied and severity_from_score(f["cvss"]) is None:
             issues.append(("error", f"{fid}: CVSS debe ser un número finito entre 0 y 10" if lang == "es" else f"{fid}: CVSS must be a finite number between 0 and 10"))
-        if vec and _cvss_vector_ok(vec) and not vec.startswith("CVSS:3.0/"):
+        vector_score = None
+        if vector_valid:
             import cvss
-            actual = cvss.score(vec)["score"]
-            if supplied and severity_from_score(f["cvss"]) is not None and not math.isclose(float(f["cvss"]), actual, abs_tol=1e-8):
-                issues.append(("error", f"{fid}: CVSS {f['cvss']} no coincide con el vector ({actual})" if lang == "es" else f"{fid}: CVSS {f['cvss']} does not match vector ({actual})"))
+            vector_score = cvss.score(vec)["score"]
+            if supplied and severity_from_score(f["cvss"]) is not None and not math.isclose(float(f["cvss"]), vector_score, abs_tol=1e-8):
+                issues.append(("error", f"{fid}: CVSS {f['cvss']} no coincide con el vector ({vector_score})" if lang == "es" else f"{fid}: CVSS {f['cvss']} does not match vector ({vector_score})"))
         elif vec and vec.startswith("CVSS:3.0/"):
-            issues.append(("error", f"{fid}: CVSS 3.0 no soportado; utiliza 3.1 o 4.0"))
-        band = severity_from_score(f.get("cvss"))
+            issues.append(("error", backend_message('{p0}: CVSS 3.0 no soportado; utiliza 3.1 o 4.0', p0=fid)))
+        # Vector-only reports retain their absent/nullable score in every
+        # export. The calculated value is used only to validate classification.
+        band_score = f.get("cvss") if supplied else vector_score
+        band = severity_from_score(band_score)
         if band and sev and band != sev:
-            issues.append(("error", _m("sev_mismatch", lang, fid=fid, sev=sev, cvss=f.get("cvss"), band=band)))
+            issues.append(("error", _m("sev_mismatch", lang, fid=fid, sev=sev, cvss=band_score, band=band)))
 
     present = [x for x in ids if x]
-    dups = sorted({x for x in present if present.count(x) > 1})
+    dups = sorted(x for x, count in Counter(present).items() if count > 1)
     if dups:
         issues.append(("error", _m("dup_ids", lang, ids=", ".join(dups))))
     if any(not x for x in ids):
-        issues.append(("warning", _m("no_id", lang)))
+        issues.append(("error", _m("no_id", lang)))
+    issues.extend(report_anchor_issues(data, lang))
 
     sections_list = (data.get("report") or {}).get("sections") or []
     if sections_list:
@@ -165,6 +228,11 @@ def validate(data, known_section_keys=None, lang="es"):
                 if s.get("key") not in keys and not s.get("title"):
                     issues.append(("error", _m("unknown_section", lang, key=s.get("key"))))
 
+    from resources import image_references, relative_image
+    for path, source in image_references(data):
+        try: relative_image(source)
+        except ValueError as exc: issues.append(('error', f'{path}: {exc}'))
+
     return issues
 
 
@@ -177,29 +245,35 @@ def format_issues(issues):
 # A draft may omit content; containers and typed fields must still be valid.
 _TEXT = (str, int, float, date, datetime)
 
-def structure_issues(data, lang="es"):
+@language_argument
+def structure_issues(data, lang=None):
+    from input_guard import ensure_data_tree
+    try:
+        ensure_data_tree(data)
+    except ValueError as exc:
+        return [('error', str(exc))]
     issues = []
     def error(path, expected):
         issues.append(("error", f"{path}: se esperaba {expected}" if lang == "es" else f"{path}: expected {expected}"))
     def obj(value, path):
         if not isinstance(value, dict):
-            error(path, "object"); return False
+            error(path, backend_message('object')); return False
         return True
     def rows(value, path, check):
         if not isinstance(value, list):
-            error(path, "list"); return
+            error(path, backend_message('list')); return
         if len(value) > 10000:
-            error(path, "at most 10000 entries"); return
+            error(path, backend_message('at most 10000 entries')); return
         for i, item in enumerate(value):
             if obj(item, f"{path}[{i}]"): check(item, f"{path}[{i}]")
     def strings(value, path):
         for key, item in value.items():
             if item is not None and (not isinstance(item, _TEXT) or isinstance(item, bool)):
-                error(f"{path}.{key}", "text or number")
+                error(f"{path}.{key}", backend_message('text or number'))
     def text_fields(value, path, keys):
         for key in keys:
             if key in value and value[key] is not None and not isinstance(value[key], str):
-                error(f"{path}.{key}", "text")
+                error(f"{path}.{key}", backend_message('text'))
     def step(value, path):
         text_fields(value, path, ("lead", "text_md", "command"))
         if "figure" in value:
@@ -211,25 +285,45 @@ def structure_issues(data, lang="es"):
     def finding(value, path):
         text_fields(value, path, ("id", "mode", "title", "severity", "cvss_vector", "cwe", "affected", "open_ports", "description_md", "summary_md", "impact_md", "remediation_md"))
         if "cvss" in value and value["cvss"] is not None and (not isinstance(value["cvss"], (str, int, float)) or isinstance(value["cvss"], bool)):
-            error(path+".cvss", "number")
+            error(path+".cvss", backend_message('number'))
+        elif isinstance(value.get("cvss"), (int, float)):
+            # An arbitrary-size Python integer can become Infinity in the
+            # browser, then silently turn into null on its next JSON save.
+            # Finite out-of-range draft scores remain semantic review issues.
+            try: finite = math.isfinite(float(value['cvss']))
+            except OverflowError: finite = False
+            if not finite: error(path+".cvss", backend_message('finite portable number'))
         for key in ("host", "remediation_summary"):
             if key in value and obj(value[key], path+"."+key): strings(value[key], path+"."+key)
         for key, fn in (("proof", strings), ("flags", strings), ("walkthrough", step), ("phases", phase)):
             if key in value: rows(value[key], path+"."+key, fn)
         if "references" in value and (not isinstance(value["references"], list) or not all(isinstance(x, str) for x in value["references"])):
-            error(path+".references", "list of text")
+            error(path+".references", backend_message('list of text'))
     if not obj(data, "engagement"): return issues
     from workflows import structure_errors
     issues.extend(structure_errors(data))
+    from insights import validate_structure
+    issues.extend(validate_structure(data))
     if "meta" in data and obj(data["meta"], "meta"):
         meta = data["meta"]
-        text_fields(meta, "meta", ("lang", "theme", "report_title", "report_subtitle", "client", "assessor", "assessor_title"))
+        if meta.get("report_density", "comfortable") not in ("comfortable", "compact"):
+            error("meta.report_density", backend_message('comfortable or compact'))
+        if "design" in meta:
+            from design_library import validate_design
+            try: validate_design(meta["design"])
+            except (ValueError, TypeError) as exc: issues.append(("error", str(exc)))
+        text_fields(meta, "meta", ("lang", "theme", "report_title", "report_subtitle", "client", "assessor", "assessor_title", "confidentiality_md"))
+        for key in ("date", "version", "email", "osid"):
+            if key in meta: strings({key: meta[key]}, 'meta')
+        if 'overview' in meta and obj(meta['overview'], 'meta.overview'):
+            text_fields(meta['overview'], 'meta.overview', ('approach_md',))
         for key in ("branding",):
             if key in meta and obj(meta[key], "meta."+key):
                 strings(meta[key], "meta."+key)
+                text_fields(meta[key], 'meta.'+key, ('logo', 'client_logo', 'cover_image'))
                 accent = meta[key].get("accent")
                 if accent and (not isinstance(accent, str) or not re.fullmatch(r"#[0-9a-fA-F]{6}", accent)):
-                    error("meta.branding.accent", "#RRGGBB")
+                    error("meta.branding.accent", backend_message('#RRGGBB'))
         if "scope" in meta: rows(meta["scope"], "meta.scope", strings)
         if "contacts" in meta and obj(meta["contacts"], "meta.contacts"):
             for key, value in meta["contacts"].items(): rows(value, "meta.contacts."+key, strings)
@@ -245,7 +339,7 @@ def structure_issues(data, lang="es"):
                 if k not in value: continue
                 if field["type"] == "table": rows(value[k], path+"."+k, strings)
                 elif field["type"] == "list":
-                    if not isinstance(value[k], list) or not all(isinstance(x, str) for x in value[k]): error(path+"."+k, "list of text")
+                    if not isinstance(value[k], list) or not all(isinstance(x, str) for x in value[k]): error(path+"."+k, backend_message('list of text'))
                 else: text_fields(value, path, (k,))
         rows(data["report"]["sections"], "report.sections", section)
     return issues

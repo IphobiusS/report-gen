@@ -43,7 +43,7 @@ def page_of(pages, text):
     return matches[0]
 
 
-@pytest.mark.parametrize("theme", ["serio", "corporativo", "offsec", "htb"])
+@pytest.mark.parametrize("theme", ["serio", "corporativo", "offsec", "htb", "ejecutivo", "laboratorio"])
 @pytest.mark.parametrize("sections", [True, False])
 def test_short_findings_share_page_without_splitting_tables(tmp_path, theme, sections):
     _, pages = render(example(theme, sections), tmp_path)
@@ -102,13 +102,18 @@ def test_word_flows_findings_and_keeps_all_table_rows_together(tmp_path, section
     end = next(i for i, p in enumerate(paragraphs) if p.text.startswith("F3 PAGINATION"))
     assert not any(p._p.xpath('.//w:br[@w:type="page"]') for p in paragraphs[start:end])
     finding_tables = [t for t in doc.tables if t.cell(0, 0).text in {"CWE", "A"}]
-    assert len(finding_tables) == 4
+    assert len(finding_tables) == 1
+    intro = [p for p in paragraphs if p.style.name == "ReportGenMeta"]
+    assert len([p for p in intro if p.text.startswith("CWE\t")]) == 3
+    assert all(p.paragraph_format.keep_with_next for p in intro)
     for table in finding_tables:
         for i, row in enumerate(table.rows):
             assert row._tr.get_or_add_trPr().find(qn("w:cantSplit")) is not None
             for cell in row.cells:
                 assert all(p.paragraph_format.keep_together for p in cell.paragraphs)
-                assert cell.paragraphs[-1].paragraph_format.keep_with_next is (i < len(table.rows)-1)
+                # Finding metadata stays attached to its first body paragraph;
+                # Markdown tables still end their keep chain at their last row.
+                assert cell.paragraphs[-1].paragraph_format.keep_with_next is (i < len(table.rows)-1 or table.cell(0,0).text == "CWE")
 
 
 def test_pdf_boundary_preflight_accepts_whole_tables_and_rejects_split_tables(tmp_path):

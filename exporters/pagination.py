@@ -3,7 +3,7 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
 
-def keep_table_together(table):
+def keep_table_together(table, whole=True):
     # cantSplit alone only protects individual rows. keepNext chains every
     # row to the next one, ending at the table boundary (not the next finding).
     rows = table.rows
@@ -14,4 +14,6 @@ def keep_table_together(table):
         for cell in row.cells:
             for i, paragraph in enumerate(cell.paragraphs):
                 paragraph.paragraph_format.keep_together = True
-                paragraph.paragraph_format.keep_with_next = row_index < len(rows)-1 or i < len(cell.paragraphs)-1
+                header = row_index == 0 and props.find(qn("w:tblHeader")) is not None
+                paragraph.paragraph_format.keep_with_next = ((whole and row_index < len(rows)-1)
+                    or (header and len(rows) > 1) or i < len(cell.paragraphs)-1)

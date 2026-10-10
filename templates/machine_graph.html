@@ -1,0 +1,27 @@
+{# PDF only: diagram and visible native text describe recorded phase order. #}
+<div class="machine-route{% if machine_graph.compact %} machine-route-compact{% endif %}">
+  <h3>{{ machine_graph.words.title }}</h3>
+  <p class="machine-route-scope">{{ machine_graph.words.scope }}</p>
+  {% if not machine_graph.nodes %}<p>{{ machine_graph.words.no_phases }}</p>{% endif %}
+  {% for chunk in machine_graph.chunks %}
+  <div class="machine-route-panel">
+    {% if chunk.parts > 1 %}<h4>{{ machine_graph.words.part }} {{ chunk.part }} {{ machine_graph.words.of }} {{ chunk.parts }}</h4>{% endif %}
+    {{ chunk.svg }}
+  </div>
+  <div class="machine-route-text">
+    <h4>{{ machine_graph.words.alternative }}{% if chunk.parts > 1 %} - {{ machine_graph.words.part }} {{ chunk.part }}{% endif %}</h4>
+    {% for row in chunk.rows %}
+    <p><b>{{ machine_graph.words.phase }} {{ row.phase.number }}: {{ row.phase.name }}</b>
+      ({{ machine_graph.words.steps }}: {{ row.phase.step_count }}).<br>
+      {% for node in row.steps %}
+      <span><b>{{ machine_graph.words.step }} {{ node.number }}:</b> {{ node.heading }}{% if node.figure is not none %} ({{ machine_graph.words.figures }}: {{ node.figure }}){% elif machine_graph.has_figures %} ({{ machine_graph.words.no_figures }}){% endif %}</span>{% if not loop.last %}; {% else %}.{% endif %}
+      {% endfor %}
+    </p>
+    {% endfor %}
+  </div>
+  {% endfor %}
+  {% if machine_graph.linked_figures %}
+  <h4>{{ machine_graph.words.evidence }}</h4>
+  <p>{{ machine_graph.words.evidence_scope }} {{ machine_graph.words.figures }}: {{ machine_graph.linked_figures|join(', ') }}.</p>
+  {% endif %}
+</div>

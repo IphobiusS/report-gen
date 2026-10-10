@@ -9,6 +9,8 @@ venv/
 out/
 *.pdf
 !reports/**/img/*.pdf
+!examples/designs-en/htb-cpts/muestra.pdf
+!examples/designs-en/offsec-oscp/muestra.pdf
 report.pdf
 
 # Proyectos locales del editor (datos del usuario)

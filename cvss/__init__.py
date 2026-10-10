@@ -1,7 +1,7 @@
 """Paquete CVSS con frontera de version explicita.
 
-- `v31`  : CVSS 3.1 (formula cerrada, validada). Motor por defecto hoy.
-- `v40`  : CVSS 4.0 (MacroVector + tabla oficial). Frontera lista; calculo pendiente.
+- `v31`  : CVSS 3.1 (formula cerrada). Conserva la API de compatibilidad.
+- `v40`  : CVSS 4.0 (MacroVector + tabla oficial). Calculo implementado.
 
 Se re-exportan las funciones 3.1 para compatibilidad: los consumidores actuales
 (`webapp`, tests) siguen usando `cvss.compute`, `cvss.parse_vector`,

@@ -1,12 +1,22 @@
 {
   "name": "report-gen-ui-tests",
-  "version": "0.13.0",
+  "version": "0.25.0",
   "private": true,
   "scripts": {
-    "test": "node --test tests/test_save_manager.cjs"
+    "test": "node --test tests/test_save_manager.cjs tests/test_drafts_0200.cjs",
+    "test:workspace": "node tests/test_workspace_dom.cjs",
+    "test:editor": "node tests/test_editor_navigation_0231.cjs",
+    "test:daily": "node tests/test_daily_workflow_0232.cjs",
+    "test:delivery": "node tests/test_delivery_readiness_0232.cjs",
+    "test:finding": "node tests/test_finding_workspace_0233.cjs",
+    "test:diff": "node tests/test_retest_compare_0233.cjs",
+    "test:matrix": "node tests/test_retest_matrix_0233.cjs",
+    "test:language": "node --test tests/test_backend_language_0234.cjs",
+    "test:ui-geometry": "node tests/test_ui_geometry_0250.cjs"
   },
   "devDependencies": {
-    "jsdom": "26.1.0"
+    "jsdom": "26.1.0",
+    "playwright": "1.62.1"
   },
   "engines": {
     "node": ">=22"

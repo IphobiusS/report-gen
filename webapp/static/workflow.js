@@ -4,21 +4,23 @@ const WorkflowUI = (() => {
   const w = (es, en) => S.uiLang === 'en' ? en : es;
   const uid = () => crypto.randomUUID();
   const clone = x => JSON.parse(JSON.stringify(x));
-  const names = {review:['Revisión de entrega','Delivery review'], history:['Versiones','Versions'], evidence:['Evidencias','Evidence'], assets:['Activos','Assets'], coverage:['Cobertura','Coverage'], retest:['Correcciones y retest','Remediation and retest'], backup:['Respaldo del proyecto','Project backup'], library:['Biblioteca de hallazgos','Finding library']};
+  const names = {review:['Revisión de entrega','Delivery review'], history:['Versiones','Versions'], evidence:['Evidencias','Evidence'], assets:['Activos','Assets'], coverage:['Cobertura','Coverage'], retest:['Correcciones y retest','Remediation and retest'], retest_diff:['Cambios desde la entrega','Changes since delivery'], retest_matrix:['Matriz de retest','Retest matrix'], backup:['Respaldo del proyecto','Project backup'], library:['Biblioteca de hallazgos','Finding library']};
   const statuses = [['open','Abierto','Open'],['in_progress','En corrección','In progress'],['reported_fixed','Corrección comunicada','Reported fixed'],['verified_fixed','Corregido y verificado','Verified fixed'],['accepted','Riesgo aceptado','Risk accepted'],['not_verified','No verificable','Not verifiable']];
   const results = [['fixed','Corregido','Fixed'],['open','Sigue abierto','Still open'],['partial','Corrección parcial','Partially fixed'],['not_verified','No verificable','Not verifiable']];
   const cover = [['pending','Pendiente','Pending'],['done','Realizada','Performed'],['blocked','Bloqueada','Blocked'],['not_applicable','No aplica','Not applicable']];
-  const stageNames = [['draft','Borrador','Draft'],['delivered','Entregado al cliente','Delivered to client'],['retest','Retest','Retest']];
+  const stageNames = [['draft','Borrador','Draft'],['delivered','Entrega registrada localmente','Delivery recorded locally'],['retest','Retest','Retest']];
   let libraryTag = null;
+  let modalTrigger = null;
+  let reviewSession=null,reviewGeneration=0,reviewChecking=false;
   function title(kind) { return w(...names[kind]); }
   function safe(fn) { return async event => { try { await fn(event); } catch (e) { toast(e.message, 'err'); } }; }
-  function button(text, fn, primary=false) { const b=h('button', {class:'btn sm' + (primary?' primary':''), type:'button'}, text); b.addEventListener('click',safe(async event=>{b.disabled=true;try{await fn(event);}finally{b.disabled=false;}}));return b; }
+  function button(text, fn, primary=false) { const b=h('button', {class:'btn sm' + (primary?' primary':''), type:'button'}, text); b.addEventListener('click',safe(async event=>{modalTrigger=b;b.disabled=true;try{await fn(event);}finally{b.disabled=false;}}));return b; }
   function hint(es,en) { return h('p',{class:'wf-hint'},w(es,en)); }
   function card(...children) { return h('div',{class:'card wf-card'},...children); }
   function row(...children) { return h('div',{class:'wf-row'},...children); }
   function localField(label,obj,key,type='text') {
     const input = h(type === 'textarea' ? 'textarea':'input', {type:type === 'textarea' ? null:type, rows:type==='textarea'?5:null, 'data-field':key, oninput:e=>{obj[key]=e.target.value;}});
-    input.value=obj[key]||'';
+    input.value=obj[key]??'';
     return h('label',{},label,input);
   }
   function selectField(label,obj,key,items,persist=true) {
@@ -44,7 +46,7 @@ const WorkflowUI = (() => {
       if(!await doSave())throw Error(w('No se pudo guardar el proyecto.','Could not save project.'));
       const r=await requestJson(url(path,slug),{method:'POST',headers:{'Content-Type':'application/json','If-Match':projectStore.etag},body:JSON.stringify(body)});
       if(S.slug===slug){
-        if(r.body.data){S.data=r.body.data;projectStore.data=S.data;}
+        if(r.body.data){S.data=r.body.data;projectStore.data=S.data;projectStore.base=JSON.parse(JSON.stringify(S.data));}
         if(r.etag)projectStore.etag=r.etag;
         renderSidebar();renderMain();if(S.previewMode==='live')refreshLivePreview();
       }
@@ -68,28 +70,97 @@ const WorkflowUI = (() => {
   function render(kind,el){
     el.append(h('h2',{},title(kind)));const box=h('div',{'data-workflow-view':kind});el.append(box);
     const slug=S.slug;
-    Promise.resolve().then(()=>({review,history,evidence,assets,coverage,retest,backup,library}[kind])(box,slug)).catch(e=>{if(box.isConnected)box.append(card(h('p',{role:'alert'},e.message),button(w('Reintentar','Retry'),()=>renderMain())));});
+    Promise.resolve().then(()=>({review,history,evidence,assets,coverage,retest,retest_diff:()=>RetestDiffUI.render(box),retest_matrix:()=>RetestMatrixUI.render(box),backup,library}[kind])(box,slug)).catch(e=>{if(box.isConnected)box.append(card(h('p',{role:'alert'},e.message),button(w('Reintentar','Retry'),()=>renderMain())));});
   }
   function findingPanel(f){
     const box=card(h('h3',{},w('Seguimiento y vínculos','Tracking and links')));
+    box.append(selectField(w('Verificación técnica','Technical verification'),f,'verification',WorkbenchUI.verification));
+    if(f.status==='not_verified'&&!f.verification)box.append(hint('Este proyecto conserva el estado anterior «No verificable». La verificación técnica está sin registrar; revísala antes de asignar un valor.','This project retains the legacy “Not verifiable” status. Technical verification has not been recorded; review it before assigning a value.'));
     box.append(row(field(w('Responsable','Owner'),f,'owner'),field(w('Fecha objetivo','Due date'),f,'due_date',{type:'date'}),selectField(w('Estado','Status'),f,'status',statuses)));
     box.append(links(w('Activos afectados','Affected assets'),f,'asset_uids',S.data.assets||[]),links(w('Evidencias vinculadas','Linked evidence'),f,'evidence_uids',S.data.evidence||[]));
     box.append(button(w('Registrar / ver retest','Record / view retest'),()=>{S.retestFinding=f.uid;go('retest');}));
     box.append(h('details',{},h('summary',{},w('Referencia permanente','Permanent reference')),h('code',{},f.uid||'')));
+    if(typeof ProgressUI!=='undefined')ProgressUI.importReview(box,f);
     return box;
   }
+  function reviewKey(issue){
+    let path=issue.path||'report';
+    if(issue.finding_uid)path=path.replace(/^findings\[\d+\]/,'findings.'+issue.finding_uid);
+    else path=path.replace(/^(assets|evidence|coverage|capture_inbox)\[(\d+)\]/,(_,group,index)=>group+'.'+(S.data[group]?.[Number(index)]?.uid||index));
+    return JSON.stringify([issue.level,path,issue.message]);
+  }
+  function reviewCategory(issue){
+    if(issue.level==='error')return 'blockers';
+    if(/^(publication|attachments|capture_inbox)/.test(issue.path))return 'publication';
+    if(/evidence|asset_uids/.test(issue.path))return 'links';
+    if(issue.finding_uid||issue.path.startsWith('findings'))return 'findings';
+    if(issue.path.startsWith('coverage')||issue.path==='limitations_md')return 'coverage';
+    return 'report';
+  }
+  const reviewGroups=[['blockers','Bloqueos de entrega','Delivery blockers'],['publication','Publicación y anexos','Publication and attachments'],['links','Evidencia y asociaciones','Evidence and links'],['findings','Contenido de hallazgos','Finding content'],['coverage','Cobertura y límites','Coverage and limitations'],['report','Contenido del informe','Report content']];
+  function orderedIssues(issues){return [...issues].sort((a,b)=>reviewGroups.findIndex(g=>g[0]===reviewCategory(a))-reviewGroups.findIndex(g=>g[0]===reviewCategory(b)));}
+  function reviewProgress(){
+    if(!reviewSession||reviewSession.slug!==S.slug)return null;
+    const current=new Set(reviewSession.issues.map(reviewKey)),total=reviewSession.initial.size,absent=[...reviewSession.initial].filter(key=>!current.has(key)).length,newCount=[...current].filter(key=>!reviewSession.initial.has(key)).length;
+    return {total,absent,newCount,pending:reviewSession.issues.length};
+  }
+  function progressNode(){
+    const progress=reviewProgress();if(!progress)return h('span',{});
+    return h('div',{class:'review-progress','data-review-progress':'',role:'status'},
+      h('p',{},w('Avisos iniciales que ya no aparecen: ','Initial items no longer detected: ')+progress.absent+' / '+progress.total+' · '+w('Pendientes actuales: ','Currently pending: ')+progress.pending+(progress.newCount?' · '+w('Nuevos: ','New: ')+progress.newCount:'')),
+      ...(progress.total?[h('progress',{value:progress.absent,max:progress.total,'aria-label':w('Avisos iniciales que ya no aparecen','Initial items no longer detected')})]:[]));
+  }
+  async function checkReview(slug){
+    const lang=S.uiLang;
+    if(!await doSave())throw Error(w('No se pudo guardar. Conserva el borrador y resuelve el aviso de guardado antes de continuar.','Could not save. Keep the draft and resolve the save warning before continuing.'));
+    if(S.slug!==slug||projectStore.loading)throw Error(w('El proyecto cambió. Vuelve a abrir la revisión.','The project changed. Reopen review.'));
+    const etag=projectStore.etag,revision=projectStore.revision;
+    const {body,etag:responseTag}=await requestJson(url('/review?lang='+lang,slug));
+    if(S.slug!==slug||projectStore.revision!==revision||projectStore.etag!==etag||projectStore.dirty||S.uiLang!==lang||(responseTag&&responseTag!==etag))throw Error(w('El contenido cambió durante la comprobación. Vuelve a revisar la revisión actual.','Content changed during the check. Review the current revision again.'));
+    const issues=orderedIssues(body.issues||[]);
+    if(!reviewSession||reviewSession.slug!==slug||reviewSession.lang!==lang)reviewSession={slug,lang,initial:new Set(issues.map(reviewKey))};
+    Object.assign(reviewSession,{issues,etag,revision});
+    return body;
+  }
+  async function resolveNext(){
+    if(reviewChecking||!S.slug||projectBusyCount>0||projectStore.loading)return;
+    const slug=S.slug,selection=JSON.stringify(S.sel),generation=++reviewGeneration;
+    reviewChecking=true;
+    try{
+      await checkReview(slug);
+      if(generation!==reviewGeneration||S.slug!==slug||selection!==JSON.stringify(S.sel))return;
+      const issue=reviewSession.issues[0];
+      if(issue)navigateIssue(issue);else{go('review');toast(w('Estas comprobaciones ya no detectan avisos. La verificación técnica sigue a tu cargo.','These checks no longer detect review items. Technical verification remains your responsibility.'),'ok');}
+    }finally{reviewChecking=false;}
+  }
+  function reviewControls(head){
+    if(!reviewSession||reviewSession.slug!==S.slug)return;
+    const controls=h('div',{class:'review-session-controls'},h('span',{},w('Última comprobación: ','Last check: ')+reviewSession.issues.length+' '+w('pendientes','pending items')),
+      button(w('Guardar y comprobar siguiente','Save and check next'),resolveNext),button(w('Volver a la revisión','Back to review'),()=>go('review')));
+    controls.querySelector('button').dataset.reviewNext='';head.append(controls);
+  }
+  function resetReview(){reviewSession=null;reviewGeneration++;}
   async function review(box,slug){
-    if(!await doSave())return;
-    const {body}=await requestJson(url('/review',slug));if(!box.isConnected||S.slug!==slug)return;
-    const errors=body.issues.filter(x=>x.level==='error').length;
-    box.append(card(h('h3',{},errors+' '+w('errores','errors')+' · '+(body.issues.length-errors)+' '+w('avisos','warnings')),hint('La revisión detecta omisiones; la validación técnica de los hallazgos corresponde al evaluador.','This review detects omissions; technical validation remains the assessor’s responsibility.'),button(w('Volver a revisar','Review again'),()=>renderMain())));
-    if(!body.issues.length)box.append(card(w('No se detectaron omisiones en estas comprobaciones.','No omissions detected by these checks.')));
-    body.issues.forEach(issue=>box.append(card(h('strong',{class:'wf-'+issue.level},issue.message),h('small',{},issue.path),button(w('Ir al campo','Go to field'),()=>navigateIssue(issue)))));
+    const generation=++reviewGeneration;
+    const status=h('p',{role:'status'},w('Comprobando la revisión guardada…','Checking the saved revision…'));box.append(status);
+    const body=await checkReview(slug);if(!box.isConnected||S.slug!==slug||generation!==reviewGeneration)return;
+    status.remove();const issues=reviewSession.issues,errors=issues.filter(x=>x.level==='error').length;
+    const next=button(w('Resolver siguiente pendiente','Resolve next pending item'),resolveNext,true);next.dataset.reviewNext='';next.disabled=!issues.length;
+    box.append(card(h('h3',{},errors+' '+w('errores','errors')+' · '+(issues.length-errors)+' '+w('avisos','warnings')),progressNode(),hint('El progreso compara los avisos de esta sesión con la revisión guardada actual. Que un aviso desaparezca no demuestra que una vulnerabilidad se haya corregido. La aceptación editorial y la verificación técnica se registran por separado.','Progress compares this session’s initial items with the current saved revision. An item disappearing does not prove that a vulnerability was fixed. Editorial acceptance and technical verification are recorded separately.'),row(next,button(w('Volver a comprobar','Check again'),()=>renderMain()),button(w('Mesa de revisión editorial','Editorial review desk'),()=>InsightsUI.open('review')))));
+    if(!issues.length)box.append(card(w('No se detectaron omisiones en estas comprobaciones.','No omissions detected by these checks.')));
+    for(const [key,es,en] of reviewGroups){
+      const group=issues.filter(issue=>reviewCategory(issue)===key);if(!group.length)continue;
+      const section=h('section',{class:'review-group','data-review-group':key},h('h3',{},w(es,en)+' ('+group.length+')'));
+      for(const issue of group)section.append(card(h('strong',{class:'wf-'+issue.level},issue.message),h('small',{},issue.path),h('details',{class:'review-help'},h('summary',{},w('Cómo resolverlo','How to resolve it')),h('p',{},issue.help||w('Abre el campo, contrasta lo escrito con tu evidencia y vuelve a revisar. Un aviso no determina si el sistema es vulnerable.','Open the field, check the text against your evidence, then review again. A warning does not determine whether the system is vulnerable.'))),button(w('Ir al campo','Go to field'),()=>navigateIssue(issue))));
+      box.append(section);
+    }
     box.append(button(w('Guardar versión de entrega','Save delivery version'),()=>{go('history');},true));
   }
   function navigateIssue(issue){
     let fieldKey=issue.path.split('.').pop().replace(/\[\d+\]/g,'');
     if(issue.finding_uid){const i=S.data.findings.findIndex(f=>f.uid===issue.finding_uid);if(i>=0)select('finding',i);}
+    else if(issue.path.startsWith('attachments')){AnnexUI.open();return;}
+    else if(issue.path.startsWith('capture_inbox'))select('capture');
     else if(issue.path.startsWith('coverage'))go('coverage');
     else if(issue.path.startsWith('evidence'))go('evidence');
     else if(issue.path.startsWith('assets'))go('assets');
@@ -99,10 +170,11 @@ const WorkflowUI = (() => {
     function focus(){
       const scope=$('#editor');const group=issue.path.match(/^(assets|coverage|evidence)\[(\d+)\]/);
       const step=issue.path.match(/(?:walkthrough|steps)\[(\d+)\]/);
+      if(group?.[1]==='evidence'&&!scope.querySelector(`[data-workflow-index="${group[2]}"]`))scope.querySelector('[data-workflow-view="evidence"]')?.dispatchEvent(new CustomEvent('report-gen:evidence-page',{detail:{index:Number(group[2])}}));
       const container=(group?scope.querySelector(`[data-workflow-index="${group[2]}"]`):step?scope.querySelector(`[data-step-index="${step[1]}"]`):scope)||scope;
       let target=Array.from(container.querySelectorAll('[data-field]')).find(x=>x.dataset.field===fieldKey);
       if(!target&&issue.path.includes('walkthrough'))target=container.querySelector('[data-add-step]');
-      if(target){target.scrollIntoView?.({block:'center'});(target.matches('input,textarea,select,button')?target:target.querySelector('input,textarea,select'))?.focus();target.classList.add('wf-focus');setTimeout(()=>target.classList.remove('wf-focus'),3000);}
+      if(target){WorkbenchUI.revealFindingField?.(target);let ancestor=target.closest('details');while(ancestor){ancestor.open=true;ancestor=ancestor.parentElement?.closest('details');}target.scrollIntoView?.({block:'center'});(target.matches('input,textarea,select,button')?target:target.querySelector('input,textarea,select'))?.focus();target.classList.add('wf-focus');setTimeout(()=>target.classList.remove('wf-focus'),3000);}
       else if(++attempts<30)setTimeout(focus,100);
     }
     setTimeout(focus,50);
@@ -117,8 +189,9 @@ const WorkflowUI = (() => {
     const diff=h('div',{class:'wf-diff'});box.append(diff);
     const list=h('div',{});box.append(list);const filter={auto:false};
     const draw=()=>{list.replaceChildren();records.filter(r=>filter.auto||r.stage!=='auto').forEach(r=>list.append(card(row(h('strong',{},r.label),h('small',{},(stageNames.find(s=>s[0]===r.stage)?.slice(1)[S.uiLang==='en'?1:0]||w('Autoguardado','Autosave'))+' · '+new Date(r.created).toLocaleString())),row(button(w('Comparar','Compare'),async()=>{
-      if(!await doSave())return;const {body:changes}=await requestJson(url('/history/'+r.id+'/compare'+(chosen.to?'?to='+encodeURIComponent(chosen.to):''),slug));if(!diff.isConnected)return;diff.replaceChildren(h('h3',{},w('Cambios','Changes')+' · '+changes.length));
-      changes.forEach(c=>diff.append(card(h('strong',{},c.path),row(h('pre',{},JSON.stringify(c.before,null,2)??'—'),h('pre',{},JSON.stringify(c.after,null,2)??'—')))));diff.scrollIntoView?.({block:'start'});
+      if(!await doSave())return;
+      ProgressUI.compare(diff,slug,r.id,chosen.to);
+
     }),button(w('Restaurar','Restore'),async()=>{if(confirm(w('¿Restaurar esta versión y sus imágenes? El estado actual quedará en el historial.','Restore this version and its images? The current state will remain in history.')))await mutate('/history/'+r.id+'/restore',{});})))));};
     box.insertBefore(check(w('Mostrar autoguardados','Show autosaves'),false,v=>{filter.auto=v;draw();}),list);draw();
     if(!records.some(r=>r.stage!=='auto'))list.append(hint('Todavía no hay versiones nombradas. Los autoguardados ya están disponibles.','No named versions yet. Autosaves are already available.'));
@@ -155,8 +228,33 @@ const WorkflowUI = (() => {
     box.append(button(w('Exportar informe con retest','Export report with retest'),async()=>{S.data.report.workflow=S.data.report.workflow||{};S.data.report.workflow.include_retest=true;scheduleSave();await exportFile($('#exportFormat').value);},true));
   }
   function reportOptions(box,keys){
-    const cfg=(S.data.report.workflow=S.data.report.workflow||{});const labels={include_assets:['Incluir activos en el informe','Include assets in report'],include_coverage:['Incluir cobertura y limitaciones','Include coverage and limitations'],include_retest:['Incluir seguimiento y retest','Include tracking and retest']};
-    box.append(card(...keys.map(k=>check(w(...labels[k]),cfg[k]!==false,v=>{cfg[k]=v;scheduleSave();}))));
+    const cfg=S.data.report.workflow||{};const labels={include_assets:['Incluir activos en el informe','Include assets in report'],include_coverage:['Incluir cobertura y limitaciones','Include coverage and limitations'],include_retest:['Incluir seguimiento y retest','Include tracking and retest']};
+    box.append(card(...keys.map(k=>check(w(...labels[k]),cfg[k]!==false,v=>{S.data.report.workflow=S.data.report.workflow||cfg;cfg[k]=v;scheduleSave();}))));
+  }
+  function evidenceCard(e,slug,editable=false){
+    const c=card(h('img',{class:'wf-thumb',src:url('/'+e.src,slug),alt:e.caption||e.title||w('Evidencia vinculada','Linked evidence'),loading:'lazy'}),...(editable?[field(w('Título','Title'),e,'title'),field(w('Pie de imagen','Caption'),e,'caption')]:[h('h4',{},e.title||w('Sin título','Untitled')),h('p',{},e.caption||'')]));
+    c.dataset.evidenceUid=e.uid;
+    return c;
+  }
+  function evidenceActions(e,slug){
+    const current=fn=>()=>{if(S.slug!==slug)throw Error(w('Vuelve a abrir la evidencia del proyecto activo.','Reopen evidence in the active project.'));return fn();};
+    return row(button(w('Anotar / censurar','Annotate / redact'),current(()=>annotations(e))),button(w('Descargar original','Download original'),current(()=>download(url('/evidence/'+e.uid+'/original',slug),'original-'+e.src.split('/').pop()))));
+  }
+  function findingEvidence(box,findingUid){
+    box.replaceChildren();const slug=S.slug;
+    const finding=(S.data.findings||[]).find(f=>f.uid===findingUid);
+    if(!finding){box.append(hint('Este hallazgo ya no está en el proyecto activo.','This finding is no longer in the active project.'));return;}
+    const linked=[...new Set(finding.evidence_uids||[])],pool=new Map((S.data.evidence||[]).map(e=>[e.uid,e]));
+    box.append(hint('Los informes usan la copia procesada. El original se conserva por separado y puede contener información privada.','Reports use the processed copy. The original is kept separately and may contain private information.'));
+    if(!linked.length)box.append(hint('Este hallazgo no tiene evidencias vinculadas. Selecciónalas arriba o regístralas en Evidencias.','This finding has no linked evidence. Select it above or register it in Evidence.'));
+    const controls=h('div',{}),gallery=h('div',{class:'wf-gallery'});box.append(controls,gallery);
+    const pageSize=linked.length>50?20:50;let page=0;
+    function draw(){
+      controls.replaceChildren();gallery.replaceChildren();
+      if(linked.length>pageSize)controls.append(workspacePageBar('finding-evidence-'+findingUid,linked.length,page,pageSize,next=>{page=next;draw();}));
+      linked.slice(page*pageSize,(page+1)*pageSize).forEach(id=>{const e=pool.get(id);if(!e){gallery.append(card(h('p',{},w('Referencia de evidencia ausente: ','Missing evidence reference: ')+id)));return;}const c=evidenceCard(e,slug);c.append(evidenceActions(e,slug));gallery.append(c);});
+    }
+    draw();
   }
   async function evidence(box,slug){
     if(!await doSave())return;
@@ -165,18 +263,68 @@ const WorkflowUI = (() => {
     box.append(button(w('Subir evidencia','Upload evidence'),()=>pick('image/png,image/jpeg,image/webp,image/gif',async file=>{
       const source=await sendImage(file);if(source)await mutate('/evidence',{src:source.src,title:file.name});
     }),true));
-    const gallery=h('div',{class:'wf-gallery'});box.append(gallery);
-    (S.data.evidence||[]).forEach((e,index)=>{
-      const c=card(h('img',{class:'wf-thumb',src:url('/'+e.src,slug),alt:e.caption||e.title,loading:'lazy'}),field(w('Título','Title'),e,'title'),field(w('Pie de imagen','Caption'),e,'caption'));
-      c.dataset.workflowIndex=index;
-      const refs=h('fieldset',{class:'wf-links'},h('legend',{},w('Usada en hallazgos','Used in findings')));
-      S.data.findings.forEach(f=>refs.append(check(f.id+' · '+f.title,(f.evidence_uids||[]).includes(e.uid),v=>{f.evidence_uids=v?[...new Set([...(f.evidence_uids||[]),e.uid])]:(f.evidence_uids||[]).filter(x=>x!==e.uid);scheduleSave();})));c.append(refs);
-      c.append(row(button(w('Anotar / censurar','Annotate / redact'),()=>annotations(e)),button(w('Descargar original','Download original'),()=>download(url('/evidence/'+e.uid+'/original',slug),'original-'+e.src.split('/').pop()))));gallery.append(c);
-    });
-    if(body.unlinked.length){box.append(h('h3',{},w('Imágenes del proyecto sin registrar','Unregistered project images')));body.unlinked.forEach(e=>box.append(card(h('img',{class:'wf-thumb',src:url('/'+e.src,slug),alt:e.src,loading:'lazy'}),button(w('Registrar en la galería','Register in gallery'),()=>mutate('/evidence',{src:e.src,title:e.src.split('/').pop()})))));}
+    const gallery=h('div',{class:'wf-gallery'}), galleryControls=h('div',{});box.append(galleryControls,gallery);
+    const evidence=S.data.evidence||[], findings=S.data.findings||[], pageSize=evidence.length>50?20:50;
+    let page=0;
+    function draw(){
+      gallery.replaceChildren();galleryControls.replaceChildren();
+      page=Math.max(0,Math.min(Math.max(0,Math.ceil(evidence.length/pageSize)-1),page));
+      if(evidence.length>pageSize)galleryControls.append(workspacePageBar('evidence',evidence.length,page,pageSize,next=>{page=next;draw();}));
+      evidence.slice(page*pageSize,(page+1)*pageSize).forEach((e,offset)=>{
+        const index=page*pageSize+offset;
+        const c=evidenceCard(e,slug,true);
+        c.dataset.workflowIndex=index;c.dataset.evidenceUid=e.uid;
+        const refs=h('fieldset',{class:'wf-links'},h('legend',{},w('Usada en hallazgos','Used in findings')));
+        function findingCheck(f){
+          const control=check(f.id+' · '+f.title,(f.evidence_uids||[]).includes(e.uid),v=>{f.evidence_uids=v?[...new Set([...(f.evidence_uids||[]),e.uid])]:(f.evidence_uids||[]).filter(x=>x!==e.uid);scheduleSave();});
+          control.querySelector('input').dataset.findingUid=f.uid;return control;
+        }
+        if(findings.length<=50)findings.forEach(f=>refs.append(findingCheck(f)));
+        else{
+          const details=h('details',{'data-evidence-associations':''}), summary=h('summary',{},w('Consultar / cambiar vínculos','Review / change links'));
+          const list=h('div',{}), controls=h('div',{});let filter='', findingPage=0, loaded=false;
+          const search=h('input',{type:'search','aria-label':w('Buscar hallazgo para vincular','Search finding to link'),placeholder:w('ID o título del hallazgo','Finding ID or title'),oninput:event=>{filter=event.target.value.trim().toLocaleLowerCase();findingPage=0;drawLinks();}});
+          function drawLinks(){
+            const matches=findings.filter(f=>!filter||(f.id+' '+f.title).toLocaleLowerCase().includes(filter));
+            findingPage=Math.max(0,Math.min(Math.max(0,Math.ceil(matches.length/50)-1),findingPage));
+            list.replaceChildren();controls.replaceChildren();
+            if(matches.length>50)controls.append(workspacePageBar('evidence-links-'+e.uid,matches.length,findingPage,50,next=>{findingPage=next;drawLinks();}));
+            else controls.append(h('p',{role:'status'},matches.length+' '+w('hallazgos','findings')));
+            matches.slice(findingPage*50,(findingPage+1)*50).forEach(f=>list.append(findingCheck(f)));
+          }
+          details.append(summary,hint('Solo esta lista cambia de página. Todos los hallazgos y sus vínculos se conservan en el proyecto y en la exportación.','Only this list is paged. Every finding and its links remain in the project and export.'),search,controls,list);
+          details.addEventListener('toggle',()=>{if(details.open&&!loaded){loaded=true;drawLinks();}});
+          refs.append(details);
+        }
+        c.append(refs);
+        c.append(evidenceActions(e,slug));gallery.append(c);
+      });
+    }
+    box.addEventListener('report-gen:evidence-page',event=>{const index=event.detail?.index;if(Number.isInteger(index)&&index>=0&&index<evidence.length){page=Math.floor(index/pageSize);draw();}});
+    draw();
+    if(body.unlinked.length){
+      const controls=h('div',{}),unregistered=h('div',{class:'wf-gallery','data-unregistered-evidence':''});let unregisteredPage=0;
+      function drawUnregistered(){
+        controls.replaceChildren();unregistered.replaceChildren();
+        if(body.unlinked.length>50)controls.append(workspacePageBar('unregistered-evidence',body.unlinked.length,unregisteredPage,20,next=>{unregisteredPage=next;drawUnregistered();}));
+        const size=body.unlinked.length>50?20:50;
+        body.unlinked.slice(unregisteredPage*size,(unregisteredPage+1)*size).forEach(e=>unregistered.append(card(h('img',{class:'wf-thumb',src:url('/'+e.src,slug),alt:e.src,loading:'lazy'}),button(w('Registrar en la galería','Register in gallery'),()=>mutate('/evidence',{src:e.src,title:e.src.split('/').pop()})))));
+      }
+      box.append(h('h3',{},w('Imágenes del proyecto sin registrar','Unregistered project images')),controls,unregistered);drawUnregistered();
+    }
   }
   function modal(titleText,...children){
-    const close=()=>m.remove();const m=h('div',{class:'modal open',role:'dialog','aria-modal':'true','aria-label':titleText},h('div',{class:'modal-box wide'},row(h('h3',{},titleText),button(w('Cerrar','Close'),close)),...children));document.body.append(m);return m;
+    const previous=document.activeElement===document.body?modalTrigger:document.activeElement;
+    const close=()=>{if(m.open)m.close();};
+    const m=h('dialog',{class:'modal','aria-label':titleText},h('div',{class:'modal-box wide'},row(h('h3',{},titleText),button(w('Cerrar','Close'),close)),...children));
+    m.addEventListener('close',()=>{
+      m.remove();
+      requestAnimationFrame(()=>{
+        const parent=[...document.querySelectorAll('dialog[open]')].at(-1);
+        const target=previous?.closest('details:not([open])')?.querySelector('summary')||previous;
+        (target?.isConnected&&!target.disabled&&(!parent||parent.contains(target))?target:parent?.querySelector('button')||$('#editor'))?.focus({preventScroll:true});
+      });
+    });m.closeModal=close;document.body.append(m);m.showModal();return m;
   }
   function annotations(e){
     const slug=S.slug;const operations=[];let start=null;const mode={type:'redact',text:''};
@@ -192,7 +340,7 @@ const WorkflowUI = (() => {
     area.addEventListener('pointerdown',ev=>{ev.preventDefault();start=point(ev);area.setPointerCapture?.(ev.pointerId);});
     area.addEventListener('pointerup',ev=>{if(!start)return;const end=point(ev);const op={type:mode.type,x:Math.min(start.x,end.x),y:Math.min(start.y,end.y),w:Math.abs(end.x-start.x),h:Math.abs(end.y-start.y),text:mode.text};start=null;if(op.w>.001&&op.h>.001){operations.push(op);redraw();}});
     const m=modal(w('Anotar y censurar evidencia','Annotate and redact evidence'),hint('Arrastra sobre la imagen para marcar una zona. La censura negra se aplica a los píxeles al guardar; no se puede quitar de esa copia. El original se conserva por separado.','Drag on the image to mark an area. Black redaction is applied to pixels on save and cannot be removed from that copy. The original is retained separately.'),row(selectField(w('Herramienta','Tool'),mode,'type',[['redact','Censura negra','Black redaction'],['box','Recuadro','Box'],['arrow','Flecha','Arrow'],['text','Texto','Text']],false),localField(w('Texto de anotación','Annotation text'),mode,'text')),area,button(w('Añadir zona con coordenadas','Add area by coordinates'),()=>{operations.push({type:mode.type,x:.1,y:.1,w:.3,h:.15,text:mode.text});redraw();}),list,button(w('Aplicar y guardar copia','Apply and save copy'),async()=>{
-      if(S.slug!==slug)throw Error(w('Vuelve a abrir la evidencia del proyecto activo.','Reopen evidence in the active project.'));await mutate('/evidence/'+e.uid+'/edit',{operations});m.remove();
+      if(S.slug!==slug)throw Error(w('Vuelve a abrir la evidencia del proyecto activo.','Reopen evidence in the active project.'));await mutate('/evidence/'+e.uid+'/edit',{operations});m.closeModal();
     },true));
   }
   function backup(box){
@@ -219,16 +367,81 @@ const WorkflowUI = (() => {
     await editTemplate({name:f.__name||f.title||'',tags:[],content:body.content});
   }
   async function editTemplate(entry){
-    const {etag}=await requestJson('/api/library');const draft=clone(entry);draft.tagsText=(draft.tags||[]).join(', ');draft.json=JSON.stringify(draft.content,null,2);
-    const editor=localField(w('Contenido reutilizable (JSON)','Reusable content (JSON)'),draft,'json','textarea');editor.querySelector('textarea').rows=15;
-    const fields=row(localField(w('Nombre','Name'),draft,'name'),localField(w('Etiquetas, separadas por coma','Comma-separated tags'),draft,'tagsText'));
+    const {etag}=await requestJson('/api/library');const draft=clone(entry);draft.tagsText=(draft.tags||[]).join(', ');
+    let advancedDirty=false;const visual=h('div',{'data-template-editor':'visual'}),preview=h('div',{class:'template-preview',hidden:''});
+    const raw=h('textarea',{rows:15,'aria-label':w('Contenido avanzado JSON','Advanced JSON content'),oninput:()=>{advancedDirty=true;}});
+    function stepsEditor(steps){
+      const box=h('div',{});
+      const draw=()=>{
+        box.replaceChildren();steps.forEach((s,i)=>box.append(h('div',{class:'template-step'},h('strong',{},w('Paso ','Step ')+(i+1)),
+          localField(w('Título del paso','Step title'),s,'lead'),localField(w('Procedimiento y resultado observado','Procedure and observed result'),s,'text_md','textarea'),
+          localField(w('Comando o petición (texto)','Command or request (text)'),s,'command','textarea'),
+          button(w('Quitar paso','Remove step'),()=>{steps.splice(i,1);draw();}))));
+        box.append(button(w('Añadir paso','Add step'),()=>{steps.push({lead:'',text_md:'',command:''});draw();}));
+      };draw();return box;
+    }
+    function draw(){
+      const c=draft.content;c.mode=c.mode||'vuln';visual.replaceChildren();preview.hidden=true;
+      const mode=selectField(w('Tipo','Type'),c,'mode',[['vuln','Vulnerabilidad','Vulnerability'],['machine','Máquina / laboratorio','Machine / lab']],false);
+      mode.querySelector('select').addEventListener('change',draw);
+      visual.append(mode,localField(w('Título del hallazgo','Finding title'),c,'title'));
+      if(c.mode==='machine'){
+        visual.append(localField(w('Ruta de ataque / resumen','Attack path / summary'),c,'summary_md','textarea'));
+        const phases=h('div',{});c.phases=c.phases||[];
+        c.phases.forEach((phase,i)=>{phase.steps=phase.steps||[];phases.append(card(localField(w('Fase','Phase'),phase,'name'),stepsEditor(phase.steps),button(w('Quitar fase','Remove phase'),()=>{c.phases.splice(i,1);draw();})));});
+        visual.append(phases,button(w('Añadir fase','Add phase'),()=>{c.phases.push({name:'',steps:[]});draw();}));
+      }else{
+        visual.append(row(selectField(w('Severidad','Severity'),c,'severity',[['info','Informativa','Informational'],['low','Baja','Low'],['medium','Media','Medium'],['high','Alta','High'],['critical','Crítica','Critical']],false),localField('CWE',c,'cwe')),
+          localField(w('Vector CVSS (opcional)','CVSS vector (optional)'),c,'cvss_vector'),localField(w('Puntuación CVSS','CVSS score'),c,'cvss','number'),
+          button(w('Calcular desde el vector','Calculate from vector'),async()=>{
+            const vector=(c.cvss_vector||'').trim();const {body}=await requestJson('/api/cvss',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vector})});
+            if(draft.content!==c||c.cvss_vector.trim()!==vector)return;
+            c.cvss=body.score;c.severity=body.severity;c.cvss_version=vector.startsWith('CVSS:4.0/')?'4.0':'3.1';draw();
+          }),
+          h('details',{},h('summary',{},w('Ayuda para redactar','Writing guidance')),hint('Describe qué control falló, qué observaste y qué impacto puedes demostrar. Indica cómo reproducirlo y cómo comprobar la corrección.','Describe the failed control, observed behavior and demonstrated impact. Explain reproduction and how to verify the fix.')),
+          localField(w('Descripción (Markdown)','Description (Markdown)'),c,'description_md','textarea'),
+          localField(w('Impacto demostrado (Markdown)','Demonstrated impact (Markdown)'),c,'impact_md','textarea'),
+          localField(w('Remediación (Markdown)','Remediation (Markdown)'),c,'remediation_md','textarea'));
+        c.walkthrough=c.walkthrough||[];visual.append(h('h4',{},w('Pasos de reproducción','Reproduction steps')),stepsEditor(c.walkthrough));
+      }
+      const refs=h('textarea',{'data-field':'references',rows:3,oninput:e=>{c.references=e.target.value.split('\n').filter(x=>x.trim());}});refs.value=(c.references||[]).join('\n');
+      visual.append(h('label',{},w('Referencias, una por línea','References, one per line'),refs));
+    }
+    draw();
+    let insertionField=null;
+    visual.addEventListener('focusin',e=>{if(e.target.matches('textarea,input[type="text"]'))insertionField=e.target;});
+    const variables=h('div',{class:'template-toolbar'},h('span',{},w('Insertar variable en el campo activo: ','Insert variable in the active field: ')));
+    ['cliente','objetivo','evaluador','endpoint'].forEach(key=>variables.append(button('{{'+key+'}}',()=>{
+      if(!insertionField?.isConnected)throw Error(w('Selecciona primero un campo de texto del hallazgo.','Select a finding text field first.'));
+      const target=insertionField;target.setRangeText('{{'+key+'}}',target.selectionStart,target.selectionEnd,'end');
+      target.dispatchEvent(new Event('input',{bubbles:true}));target.focus();
+    })));
+    const advanced=h('details',{},h('summary',{},w('Edición avanzada JSON','Advanced JSON editing')),raw,
+      button(w('Aplicar JSON al formulario','Apply JSON to form'),()=>{
+        const value=JSON.parse(raw.value);
+        const validSteps=a=>Array.isArray(a)&&a.every(s=>s&&typeof s==='object'&&!Array.isArray(s));
+        if(!value||typeof value!=='object'||Array.isArray(value)||
+           (value.walkthrough!==undefined&&!validSteps(value.walkthrough))||
+           (value.phases!==undefined&&(!validSteps(value.phases)||value.phases.some(p=>p.steps!==undefined&&!validSteps(p.steps))))||
+           (value.references!==undefined&&(!Array.isArray(value.references)||value.references.some(r=>typeof r!=='string'))))
+          throw Error(w('JSON incompatible: comprueba los pasos, fases y referencias. El formulario se conserva.','Incompatible JSON: check steps, phases and references. The form is preserved.'));
+        draft.content=value;advancedDirty=false;draw();
+      }));
+    advanced.addEventListener('toggle',()=>{if(advanced.open&&!advancedDirty)raw.value=JSON.stringify(draft.content,null,2);});
     const checked={value:false};
-    const m=modal(w('Plantilla reutilizable','Reusable template'),hint('Se retiran imágenes, activos, responsables, retests y referencias internas. Revisa también descripciones, comandos y URLs: no se pueden anonimizar automáticamente todos los datos escritos.','Images, assets, owners, retests and internal references are removed. Also review descriptions, commands and URLs: automatic sanitization cannot remove all free-text client data.'),fields,editor,check(w('He revisado que no contenga datos de otro cliente','I reviewed it for other client data'),false,v=>{checked.value=v;}),button(w('Guardar versión de plantilla','Save template version'),async()=>{
+    const m=modal(w('Plantilla reutilizable','Reusable template'),hint('Se retiran imágenes, activos, responsables, retests y referencias internas. Revisa también descripciones, comandos y URLs.','Images, assets, owners, retests and internal references are removed. Review descriptions, commands and URLs too.'),
+      row(localField(w('Nombre','Name'),draft,'name'),localField(w('Etiquetas, separadas por coma','Comma-separated tags'),draft,'tagsText')),variables,visual,
+      button(w('Vista previa del texto','Preview text'),async()=>{
+        const c=draft.content,source=JSON.stringify(c),text=['## '+(c.title||''),c.description_md,c.summary_md,c.impact_md,c.remediation_md].filter(Boolean).join('\n\n');
+        const {body}=await requestJson('/api/md',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,slug:''})});
+        if(source===JSON.stringify(draft.content)&&m.isConnected){preview.innerHTML=body.html;preview.hidden=false;}
+      }),preview,advanced,check(w('He revisado que no contenga datos de otro cliente','I reviewed it for other client data'),false,v=>{checked.value=v;}),button(w('Guardar versión de plantilla','Save template version'),async()=>{
       if(!checked.value)throw Error(w('Revisa el contenido antes de guardar la plantilla.','Review the content before saving.'));
-      const payload={name:draft.name,tags:draft.tagsText.split(',').map(x=>x.trim()).filter(Boolean),content:JSON.parse(draft.json)};
-      await requestJson('/api/library'+(entry.uid?'/'+entry.uid:''),{method:entry.uid?'PUT':'POST',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(payload)});m.remove();toast(w('Plantilla guardada','Template saved'),'ok');if(S.sel.type==='workflow'&&S.sel.idx==='library')renderMain();
+      if(advancedDirty)throw Error(w('Aplica primero los cambios del JSON al formulario.','Apply your JSON changes to the form first.'));
+      const payload={name:draft.name,tags:draft.tagsText.split(',').map(x=>x.trim()).filter(Boolean),content:draft.content};
+      await requestJson('/api/library'+(entry.uid?'/'+entry.uid:''),{method:entry.uid?'PUT':'POST',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(payload)});m.closeModal();toast(w('Plantilla guardada','Template saved'),'ok');if(S.sel.type==='workflow'&&S.sel.idx==='library')renderMain();
     },true));
-    if(entry.versions?.length){const version={v:String(entry.versions.length)};const field=selectField(w('Cargar versión anterior para editar','Load previous version to edit'),version,'v',entry.versions.map(v=>[String(v.version),'v'+v.version+' · '+v.created]),false);field.querySelector('select').addEventListener('change',()=>{const chosen=entry.versions.find(v=>String(v.version)===version.v);draft.json=JSON.stringify(chosen.content,null,2);editor.querySelector('textarea').value=draft.json;});editor.before(field);}
+    if(entry.versions?.length){const version={v:String(entry.versions.length)};const field=selectField(w('Cargar versión anterior para editar','Load previous version to edit'),version,'v',entry.versions.map(v=>[String(v.version),'v'+v.version+' · '+v.created]),false);field.querySelector('select').addEventListener('change',()=>{const chosen=entry.versions.find(v=>String(v.version)===version.v);draft.content=clone(chosen.content);advancedDirty=false;raw.value=JSON.stringify(draft.content,null,2);draw();});visual.before(field);}
   }
   function insertTemplate(entry){
     if(!S.data)throw Error(w('Abre un proyecto.','Open a project.'));const slug=S.slug;
@@ -236,8 +449,8 @@ const WorkflowUI = (() => {
     const m=modal(w('Insertar plantilla','Insert template'),...keys.map(k=>localField(k,values,k)),button(w('Insertar en el proyecto','Insert into project'),async()=>{
       if(S.slug!==slug)throw Error(w('El proyecto activo cambió.','The active project changed.'));
       const {body:f}=await requestJson('/api/library/'+entry.uid+'/instantiate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values})});
-      if(S.slug!==slug)return;f.id=nextFid();S.data.findings.push(f);renumberFindings();scheduleSave();select('finding',S.data.findings.length-1);m.remove();
+      if(S.slug!==slug)return;f.id=nextFid();S.data.findings.push(f);ensureFindingIds();scheduleSave();select('finding',S.data.findings.length-1);m.closeModal();
     },true));
   }
-  return {bind,updateNav,render,findingPanel,saveTemplate,openLibrary:()=>go('library'),navigateIssue,uid};
+  return {bind,updateNav,render,findingPanel,findingEvidence,saveTemplate,openLibrary:()=>go('library'),navigateIssue,reviewControls,resetReview,uid};
 })();

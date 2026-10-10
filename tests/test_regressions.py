@@ -172,6 +172,6 @@ def test_zero_score_is_preserved_in_all_exports(tmp_path):
     data, meta, labels = export.prepare(path)
     tree = html.fromstring(engine.render_html(engine.build_env(), data, tmp_path, {}, False, labels))
     assert any('0' in n.text_content() for n in tree.xpath('//span[contains(@class,"sev-info")]'))
-    assert '(0)' in export.to_markdown(data, meta, labels, tmp_path)
+    assert '**CVSS:** 0' in export.to_markdown(data, meta, labels, tmp_path)
     doc = Document(export.export(path, 'docx', tmp_path / 'zero.docx'))
-    assert any(cell.text.strip() == '0' for table in doc.tables for row in table.rows for cell in row.cells)
+    assert any(p.text == 'CVSS\t0' for p in doc.paragraphs if p.style.name=='ReportGenMeta')

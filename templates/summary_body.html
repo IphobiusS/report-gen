@@ -1,0 +1,39 @@
+{# Shared by legacy and section-based reports. #}
+{% set maxc = [sev_counts.values()|max, 1]|max %}
+<p class="sum-lead">{{ summary_text }}</p>
+  {% if sev_counts.values()|sum %}
+  {% if unclassified_count %}<p class="chart-scope">{{ L.summary.chart_scope }}</p>{% endif %}
+  <div class="chart-wrap">
+  <svg class="sevchart" viewBox="0 0 370 155" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ L.labels.summary }}">
+    <line class="axis" stroke="#d6dbe2" stroke-width="1" x1="14" y1="120" x2="354" y2="120"/>
+    {% for s in sev_order %}
+      {% set x = 20 + loop.index0 * 68 %}
+      {% set h = (100 * sev_counts[s] / maxc)|round(0, 'floor')|int %}
+      {% set y = 120 - h %}
+      {% if sev_counts[s] > 0 %}
+      <rect class="bar bar-{{ s }}" fill="{{ chart_colors[s] }}" x="{{ x }}" y="{{ y }}" width="40" height="{{ h }}"/>
+      <text class="bar-val" font-size="9" font-family="sans-serif" fill="#263244" text-anchor="middle" x="{{ x + 20 }}" y="{{ y - 5 }}">{{ sev_counts[s] }}</text>
+      {% else %}
+      <line class="bar-zero" stroke="#d6dbe2" stroke-width="2" x1="{{ x }}" y1="120" x2="{{ x + 40 }}" y2="120"/>
+      {% endif %}
+      <text class="bar-lab" font-size="7" font-family="sans-serif" fill="#475569" text-anchor="middle" x="{{ x + 20 }}" y="135">{{ L.severity[s] }}</text>
+    {% endfor %}
+  </svg>
+  </div>
+  {% endif %}
+
+  {% if sum_findings %}
+  <table class="sumtable">
+    <thead><tr><th class="c-n">{{ L.labels.col_num }}</th><th class="c-sev">{{ L.labels.col_sev }}</th><th>{{ L.labels.col_finding }}</th>{% if finding_links %}<th class="c-pg">{{ L.labels.col_page }}</th>{% endif %}</tr></thead>
+    <tbody>
+    {% for f in sum_findings %}
+    <tr>
+      <td class="c-n">{{ loop.index }}</td>
+      <td class="c-sev">{% if f.mode == 'machine' %}<span class="sev-chip sev-machine">{{ L.labels.machine }}</span>{% else %}<span class="sev-chip sev-{{ f.severity if f.severity in sev_order else "pending" }}">{{ L.severity[f.severity] if f.severity in sev_order else L.labels.severity_pending }}{% if f.cvss is defined and f.cvss is not none and f.cvss != "" %} <b>({{ f.cvss }})</b>{% endif %}</span>{% endif %}</td>
+      <td>{% if finding_links %}<a class="sumlink" href="#{{ f.id|fragment }}">{{ f.title or f.id }}</a>{% else %}{{ f.title or f.id }}{% endif %}</td>
+      {% if finding_links %}<td class="c-pg">{{ page_map.get(f.id,'') }}</td>{% endif %}
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}

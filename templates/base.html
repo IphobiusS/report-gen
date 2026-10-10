@@ -10,27 +10,30 @@
 <title>{{ meta.report_title }}</title>
 <link rel="stylesheet" href="{{ theme_css }}">
 <style>
-  :root { --accent: {{ br.accent or '#39ff14' }}; }
+  {% if br.accent %}:root { --accent: {{ br.accent }}; }{% endif %}
   @page {
-    @top-left     { content: "{{ wordmark }}"; }
-    @top-center   { content: "{{ meta.report_title }}"; }
-    @top-right    { content: "{{ rhright }}"; }
-    @bottom-left  { content: "{{ byline }}"; }
-    @bottom-right { content: "{{ L.running.page }} " counter(page) " {{ L.running.of }} " counter(pages); }
+    @top-left     { content: {{ wordmark|css_string }}; }
+    @top-center   { content: {{ meta.report_title|css_string }}; }
+    @top-right    { content: {{ rhright|css_string }}; }
+    @bottom-left  { content: {{ byline|css_string }}; }
+    @bottom-right { content: {{ (L.running.page ~ " ")|css_string }} counter(page) {{ (" " ~ L.running.of ~ " ")|css_string }} counter(pages); }
   }
 </style>
+{% if profile_css %}<style>{{ profile_css|safe }}</style>{% endif %}
+{% if machine_graph_css %}<style>{{ machine_graph_css|safe }}</style>{% endif %}
 </head>
-<body>
+<body class="density-{{ meta.report_density or 'comfortable' }}">
 
-{% macro pm(key) %}{% if pagemarks %}<span class="pm">PGMK{{ key }}PGMK</span>{% endif %}{% endmacro %}
+{% macro pm(key) %}{% if pagemarks %}<span class="pm">PGMK{{ key|fragment }}PGMK</span>{% endif %}{% endmacro %}
 
 {% include 'cover.html' %}
 {% include 'frontmatter.html' %}
 {% include 'summary.html' %}
 
 {% for f in findings %}
+{% set machine_graph = machine_graphs[loop.index0] if machine_graphs else none %}
 <section class="finding mode-{{ f.mode }}{% if f.severity %} sev-{{ f.severity }}{% endif %}" id="{{ f.id }}">
-  {% if f.mode == 'vuln' %}{% include 'finding_vuln.html' %}
+  {% if f.mode|default('vuln') == 'vuln' %}{% include 'finding_vuln.html' %}
   {% elif f.mode == 'machine' %}{% include 'finding_machine.html' %}
   {% else %}<p class="error">Modo de finding desconocido: {{ f.mode }}</p>{% endif %}
 </section>
@@ -39,7 +42,7 @@
 {% if appendix %}{% include 'appendix.html' %}{% endif %}
 
 {% for s in workflow_sections %}
-<section class="frontsec brk" id="{{ s.key }}">{{ pm(s.key) }}<h1>{{ s.title }}</h1>{{ s.body|md }}</section>
+<section class="frontsec brk sect-{{ s.key }}" id="{{ s.key }}">{{ pm(s.key) }}<h1>{{ s.title }}</h1>{{ s.body|md }}</section>
 {% endfor %}
 </body>
 </html>

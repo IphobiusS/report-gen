@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 import yaml
-from flask import Flask, jsonify, request, send_file, send_from_directory, abort, Response, session
+from flask import Flask, jsonify, request, send_file, send_from_directory, abort, Response, session, g
 
 HERE = Path(__file__).resolve().parent
 REPORT_ROOT = HERE.parent
@@ -34,8 +34,9 @@ import validate as validatelib  # noqa: E402
 from storage import revision, atomic_write  # noqa: E402
 import project_history  # noqa: E402
 import workflows  # noqa: E402
+from error_messages import message as backend_message, current_language, normalized_language, set_language, reset_language  # noqa: E402
 
-ALLOWED_THEMES = {p.stem for p in (REPORT_ROOT / "themes").glob("*.css") if p.stem != "_common"}
+from report_designs import THEMES as ALLOWED_THEMES  # noqa: E402
 ALLOWED_LANGS = {"es", "en"}
 
 
@@ -45,7 +46,7 @@ def sanitize_meta(data):
     if m.get("theme") not in ALLOWED_THEMES:
         m["theme"] = "serio" if "serio" in ALLOWED_THEMES else (next(iter(ALLOWED_THEMES), "serio"))
     if m.get("lang") not in ALLOWED_LANGS:
-        m["lang"] = "es"
+        m["lang"] = engine.report_language(data) if not m.get("lang") else "es"
     return data
 
 app = Flask(__name__, static_folder=str(HERE / "static"), static_url_path="/static")
@@ -59,30 +60,51 @@ def project_lock(fn):
     @wraps(fn)
     def locked(*args, **kwargs):
         with _PROJECT_LOCK:
+            project_history.recover_transactions(PROJECTS)
             return fn(*args, **kwargs)
     return locked
+
+
+@app.before_request
+def select_error_language():
+    """The UI preference controls backend prose, never authored report data."""
+    g.error_language_token = set_language(request.headers.get('X-UI-Language', 'es'))
+
+
+@app.teardown_request
+def release_error_language(_error):
+    token = g.pop('error_language_token', None)
+    if token is not None:
+        reset_language(token)
 
 
 @app.before_request
 def protect_local_api():
     if not request.path.startswith("/api/"):
         return
-    if request.path == "/api/projects/import":
+    if request.path in ("/api/projects/import", "/api/workspace/restore"):
         request.max_content_length = project_history.MAX_ARCHIVE + 1024 * 1024
+    if request.path.endswith("/attachments/upload"):
+        request.max_content_length = 17 * 1024 * 1024
+    if request.path.endswith('/visual') and request.method == 'POST':
+        request.max_content_length = 17 * 1024 * 1024
     origin = request.headers.get("Origin")
     if origin:
-        parsed = urlsplit(origin)
+        try:
+            parsed = urlsplit(origin)
+        except ValueError:
+            abort(403, backend_message('Origen no permitido'))
         if parsed.scheme != request.scheme or parsed.netloc != request.host:
-            abort(403, "Origen no permitido")
+            abort(403, backend_message('Origen no permitido'))
     if request.headers.get("Sec-Fetch-Site") == "cross-site":
-        abort(403, "Solicitud entre sitios bloqueada")
+        abort(403, backend_message('Solicitud entre sitios bloqueada'))
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
         supplied = request.headers.get("X-CSRF-Token", "")
         token = session.get("csrf", "")
-        if not token or not secrets.compare_digest(supplied, token):
-            abort(403, "Sesión local caducada; vuelve a abrir la aplicación")
-        if request.content_length and not request.path.endswith("/image") and request.path != "/api/projects/import" and not request.is_json:
-            abort(415, "Se requiere application/json")
+        if not token or not secrets.compare_digest(supplied.encode('utf-8'), token.encode('utf-8')):
+            abort(403, backend_message('Sesión local caducada; vuelve a abrir la aplicación'))
+        if request.content_length and not request.path.endswith(("/image", "/attachments/upload", "/visual")) and request.path not in ("/api/projects/import", "/api/workspace/restore") and not request.is_json:
+            abort(415, backend_message('Se requiere application/json'))
 
 
 @app.after_request
@@ -90,8 +112,12 @@ def security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+    if ('/history/' in request.path and request.path.endswith('/visual')) or request.path.endswith('/retest-diff/visual'):
+        response.headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; frame-ancestors 'self'"
     if request.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-store"
+        if response.status_code >= 400:
+            response.headers['Content-Language'] = normalized_language(request.headers.get('X-UI-Language', 'es'))
     return response
 
 
@@ -99,27 +125,47 @@ from werkzeug.exceptions import HTTPException  # noqa: E402
 
 @app.errorhandler(HTTPException)
 def api_error(error):
-    return jsonify({"error": error.description}), error.code
+    response = jsonify({"error": error.description})
+    # Host/routing errors can precede before_request; inspect only the explicit
+    # preference here, without loading a project or bypassing the host guard.
+    response.headers['Content-Language'] = normalized_language(request.headers.get('X-UI-Language', 'es'))
+    return response, error.code
+
+
+@app.errorhandler(ValueError)
+def invalid_data(error):
+    response = jsonify({'error': str(error)})
+    response.headers['Content-Language'] = current_language()
+    return response, 422
+
+
+@app.errorhandler(OSError)
+def storage_error(error):
+    app.logger.error('No se pudo completar la operación de almacenamiento: %s', error)
+    response = jsonify({'error': backend_message('No se pudo completar la operación. Revisa el espacio y los permisos, y vuelve a abrir el proyecto.')})
+    response.headers['Content-Language'] = current_language()
+    return response, 503
 
 
 @app.route("/api/session")
 def local_session():
     if "csrf" not in session:
         session["csrf"] = secrets.token_urlsafe(32)
-    return jsonify({"csrf": session["csrf"]})
+    from version import __version__
+    return jsonify({"csrf": session["csrf"], "version": __version__})
 
 
 def checked_data(data, final=False):
     if not isinstance(data, dict):
-        abort(400, "Se esperaba un objeto JSON")
-    issues = validatelib.structure_issues(data)
+        abort(400, backend_message('Se esperaba un objeto JSON'))
+    issues = validatelib.structure_issues(data, current_language())
     if issues:
         return_data_error(issues)
     data.setdefault("meta", {})
     data.setdefault("findings", [])
     sanitize_meta(data)
     if final:
-        issues = validatelib.validate(data)
+        issues = validatelib.validate(data, lang=current_language())
         if any(level == "error" for level, _ in issues):
             return_data_error(issues)
     return data
@@ -132,9 +178,9 @@ def return_data_error(issues):
 def require_revision(path):
     tag = request.headers.get("If-Match")
     if not tag:
-        abort(428, "Falta la revisión del proyecto; vuelve a cargarlo")
+        abort(428, backend_message('Falta la revisión del proyecto; vuelve a cargarlo'))
     if tag.strip('"') != revision(path):
-        abort(409, "El proyecto cambió en otra pestaña. Conserva tus cambios y vuelve a cargarlo")
+        abort(409, backend_message('El proyecto cambió en otra pestaña. Conserva tus cambios y vuelve a cargarlo'))
 
 
 def source_data(directory, final=False):
@@ -151,10 +197,14 @@ def slugify(s):
 
 def _json_dict():
     if not request.is_json:
-        abort(415, "Se requiere application/json")
-    b = request.get_json(silent=True)
+        abort(415, backend_message('Se requiere application/json'))
+    from input_guard import load_json
+    try:
+        b = load_json(request.get_data())
+    except ValueError as exc:
+        abort(422, str(exc))
     if not isinstance(b, dict):
-        abort(400, "Se esperaba un objeto JSON")
+        abort(400, backend_message('Se esperaba un objeto JSON'))
     return b
 
 
@@ -163,9 +213,9 @@ def proj_dir(slug):
     d = (PROJECTS / slugify(slug)).resolve()
     # defensa en profundidad: el resultado debe quedar dentro de projects/
     if base != d.parent:
-        abort(404, "proyecto no encontrado")
+        abort(404, backend_message('proyecto no encontrado'))
     if not d.exists():
-        abort(404, f"proyecto no encontrado: {slug}")
+        abort(404, backend_message('proyecto no encontrado: {p0}', p0=slug))
     return d
 
 
@@ -186,15 +236,15 @@ def md_preview():
     body = _json_dict()
     slug = body.get("slug", "")
     if not isinstance(body.get("text", ""), str) or not isinstance(slug, str):
-        abort(400, "Texto o proyecto inválido")
-    return jsonify({"html": str(engine.md(body.get("text", ""), img_base=f"/api/projects/{slugify(slug)}/" if slug else ""))})
+        abort(400, backend_message('Texto o proyecto inválido'))
+    return jsonify({"html": str(engine.md(body.get("text", ""), img_base=f"/api/projects/{slugify(slug)}/resource/" if slug else ""))})
 
 
 @app.route("/api/validate", methods=["POST"])
 def validate_engagement():
     data = _json_dict()
     meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
-    lang = request.args.get("lang") or meta.get("lang") or "es"
+    lang = current_language() if 'X-UI-Language' in request.headers else request.args.get("lang") or meta.get("lang") or "es"
     issues = validatelib.validate(data, lang=lang)
     return jsonify({"issues": [{"level": lvl, "message": msg} for lvl, msg in issues]})
 
@@ -244,24 +294,25 @@ def api_cvss():
         version = "4.0" if vector.startswith("CVSS:4.0/") else "3.1"
     if version == "3.1":
         if vector and not vector.startswith("CVSS:3.1/"):
-            abort(400, "se esperaba un vector CVSS:3.1/")
+            abort(400, backend_message('se esperaba un vector CVSS:3.1/'))
         try:
             metrics = body.get("metrics") or cvss.parse_vector(vector)
             return jsonify(cvss.compute(metrics))
         except Exception:
-            abort(400, "vector o metricas CVSS 3.1 invalidos")
+            abort(400, backend_message('vector o metricas CVSS 3.1 invalidos'))
     if version == "4.0":
         if not vector.startswith("CVSS:4.0/"):
-            abort(400, "se esperaba un vector CVSS:4.0/")
+            abort(400, backend_message('se esperaba un vector CVSS:4.0/'))
         try:
             return jsonify(cvss.score(vector))  # {score, severity, vector, macrovector}; ValueError si invalido
         except ValueError:
-            abort(400, "vector CVSS 4.0 invalido")
-    abort(400, "version CVSS no soportada")
+            abort(400, backend_message('vector CVSS 4.0 invalido'))
+    abort(400, backend_message('version CVSS no soportada'))
 
 
 # ---- Proyectos -------------------------------------------------------------
 @app.route("/api/projects")
+@project_lock
 def list_projects():
     out = []
     for d in sorted(PROJECTS.iterdir()):
@@ -270,7 +321,8 @@ def list_projects():
         y = d / "engagement.yaml"
         if y.exists():
             try:
-                meta = (yaml.safe_load(y.read_text(encoding="utf-8")) or {}).get("meta", {})
+                from input_guard import load_yaml_file
+                meta = (load_yaml_file(y) or {}).get("meta", {})
             except Exception:
                 meta = {}
             if not isinstance(meta, dict):
@@ -285,28 +337,26 @@ def list_projects():
 def create_project():
     body = _json_dict()
     if any(value is not None and not isinstance(value, str) for value in body.values()):
-        abort(400, "Los datos del proyecto deben ser texto")
+        abort(400, backend_message('Los datos del proyecto deben ser texto'))
     model = MODELS.get(body.get("model", "corporativo-es")) or MODELS["corporativo-es"]
     slug = slugify(body.get("slug") or body.get("title") or "engagement")
     d = PROJECTS / slug
-    if d.exists():
-        abort(409, "ya existe un proyecto con ese nombre")
-    (d / "img").mkdir(parents=True)
+    if d.exists() or (PROJECTS.exists() and any(path.name.casefold() == slug.casefold() for path in PROJECTS.iterdir())):
+        abort(409, backend_message('Ya existe un proyecto con un nombre equivalente en mayúsculas o Unicode; usa otro nombre'))
     meta = {
         "lang": model["lang"],
         "report_title": body.get("title", "Nuevo informe"),
         "report_subtitle": model["subtitle"],
         "client": body.get("client", ""),
-        "assessor": "Sebastian Latorre Munoz (iphobiuss)",
-        "assessor_title": "AI Red Team Operator",
+        "assessor": "",
+        "assessor_title": "",
         "date": body.get("date", ""),
         "version": "1.0",
         "theme": model["theme"],
         "branding": {"wordmark": "iphobiuss", "byline": "Sebastian Latorre Munoz / iphobiuss",
                      "accent": "#1f5fa8" if model["theme"] == "corporativo" else "#39ff14",
                      "confidential_text": model["confidential"]},
-        "contacts": {"client": [], "assessor": [
-            {"name": "Sebastian Latorre Munoz", "title": "AI Red Team Operator", "email": ""}]},
+        "contacts": {"client": [], "assessor": []},
         "scope": [],
     }
     preset = body.get("preset")
@@ -318,7 +368,9 @@ def create_project():
             meta["branding"]["accent"] = pdef["accent"]
     sections = sectionlib.preset_sections(preset, model["lang"]) if preset else sectionlib.default_enabled()
     report = {"sections": sections}
-    project_history.save(d, {"meta": meta, "report": report, "findings": []})
+    with project_history.transaction(d) as staged:
+        (staged / 'img').mkdir(exist_ok=True)
+        project_history.save(staged, {"meta": meta, "report": report, "findings": []})
     return jsonify({"slug": slug})
 
 
@@ -373,7 +425,7 @@ def restore_project(slug):
         previous = checked_data(engine.load_engagement(backup))
         project_history.save(d, previous)
     else:
-        abort(404, "No hay una versión anterior")
+        abort(404, backend_message('No hay una versión anterior'))
     response = jsonify({"ok": True})
     response.set_etag(revision(target))
     return response
@@ -409,24 +461,24 @@ def upload_image(slug):
     d = proj_dir(slug)
     f = request.files.get("file")
     if not f or not f.filename:
-        abort(400, "sin archivo")
+        abort(400, backend_message('sin archivo'))
     # lectura acotada: nunca mas de MAX+1 en memoria (defensa aunque falle el limite HTTP)
     blob = f.read(MAX_IMAGE_BYTES + 1)
     if len(blob) > MAX_IMAGE_BYTES:
-        abort(413, "imagen demasiado grande")
+        abort(413, backend_message('imagen demasiado grande'))
     # validacion real de imagen (no solo magic bytes) y formato permitido
     try:
         with Image.open(BytesIO(blob)) as img:
             fmt = img.format
             if img.width * img.height > 25_000_000:
-                abort(413, "imagen mayor que 25 megapíxeles")
+                abort(413, backend_message('imagen mayor que 25 megapíxeles'))
             img.verify()
     except HTTPException:
         raise
     except Exception:
-        abort(400, "el archivo no es una imagen valida")
+        abort(400, backend_message('el archivo no es una imagen valida'))
     if fmt not in IMAGE_EXT:
-        abort(400, "formato no permitido (usa png, jpg, gif o webp)")
+        abort(400, backend_message('formato no permitido (usa png, jpg, gif o webp)'))
     # nombre saneado + extension DERIVADA del formato real detectado
     stem = secure_filename(Path(f.filename).stem)
     if not stem or stem in (".", ".."):
@@ -439,7 +491,19 @@ def upload_image(slug):
 
 @app.route("/api/projects/<slug>/img/<path:name>")
 def get_image(slug, name):
-    return send_from_directory(str(proj_dir(slug) / "img"), name)
+    return project_image(slug, 'img/' + name)
+
+
+@app.route("/api/projects/<slug>/resource/<path:name>")
+@project_lock
+def project_image(slug, name):
+    from resources import local_image
+    from urllib.parse import quote
+    try:
+        path = local_image(quote(name, safe='/'), proj_dir(slug))
+    except ValueError:
+        abort(404, backend_message('Imagen no disponible'))
+    return send_file(path)
 
 
 @app.route("/theme/<path:name>")
@@ -448,14 +512,15 @@ def theme_file(name):
 
 
 @app.route("/api/projects/<slug>/preview", methods=["POST"])
+@project_lock
 def preview_html(slug):
     d = proj_dir(slug)
     data = source_data(d)
     try:
         engine.number_figures(data["findings"])
-        language = engine.load_lang(data["meta"].get("lang", "es"))
+        language = engine.load_lang(engine.report_language(data))
         html = engine.render_html(engine.build_env(), data, d, {}, False, language,
-            theme_href=f"/theme/{data['meta']['theme']}.css", img_base=f"/api/projects/{slugify(slug)}/")
+            theme_href=f"/theme/{data['meta']['theme']}.css", img_base=f"/api/projects/{slugify(slug)}/resource/")
     except (ValueError, TypeError) as exc:
         abort(422, str(exc))
     html = html.replace("<head>", f'<head><base href="{escape(request.host_url, quote=True)}">', 1)
@@ -467,11 +532,13 @@ def render_project(slug):
     return render_snapshot(slug, "pdf", attachment=False)
 
 
-MIMES = {
-    "pdf": "application/pdf",
-    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "md": "application/zip",
-}
+from export_formats import REGISTRY as EXPORT_FORMATS, catalog as export_catalog  # noqa: E402
+MIMES = {key: spec.mime for key, spec in EXPORT_FORMATS.items()}
+
+@app.get('/api/export-formats')
+def export_formats():
+    return jsonify(export_catalog())
+
 
 
 @app.route("/api/projects/<slug>/export/<fmt>", methods=["POST"])
@@ -482,15 +549,31 @@ def export_project(slug, fmt):
 
 
 def render_snapshot(slug, fmt, attachment=True):
-    d = proj_dir(slug)
-    data = source_data(d, final=True)
-    snapshot = None
     try:
-        # Snapshot YAML lives beside img/ but never overwrites the saved project.
-        with tempfile.NamedTemporaryFile(dir=d, prefix=".render-", suffix=".yaml", delete=False) as f:
-            snapshot = Path(f.name)
-        dump_yaml(data, snapshot)
         with tempfile.TemporaryDirectory(prefix="report-gen-export-") as temp:
+            import shutil
+            from lxml import html as html_parser
+            from urllib.parse import quote
+            from urllib.request import url2pathname
+            from resources import local_image
+            root = Path(temp) / 'project'
+            root.mkdir()
+            snapshot = root / 'engagement.yaml'
+            # Copy one consistent YAML/image state; release the lock before rendering.
+            with _PROJECT_LOCK:
+                d = proj_dir(slug)
+                data = source_data(d, final=True)
+                markup = engine.render_html(engine.build_env(), data, d, {}, False,
+                                            engine.load_lang(engine.report_language(data)))
+                sources = {node.get('src') for node in html_parser.fromstring(markup).xpath('//img[@src]')}
+                for source in sources:
+                    parsed = urlsplit(source)
+                    relative = Path(url2pathname(parsed.path)).relative_to(d.resolve()).as_posix()
+                    image = local_image(quote(relative, safe='/'), d)
+                    target_image = root / relative
+                    target_image.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(image, target_image)
+                dump_yaml(data, snapshot)
             suffix = "zip" if fmt == "md" else fmt
             target = Path(temp) / f"report.{suffix}"
             out = export.export(snapshot, "mdzip" if fmt == "md" else fmt, target)
@@ -499,17 +582,57 @@ def render_snapshot(slug, fmt, attachment=True):
                          download_name=f"{slugify(slug)}.{suffix}")
     except (ValueError, OSError, subprocess.SubprocessError) as exc:
         abort(422, str(exc))
-    finally:
-        if snapshot:
-            snapshot.unlink(missing_ok=True)
-            snapshot.with_suffix(snapshot.suffix + ".bak").unlink(missing_ok=True)
 
 
 from workflow_api import register as register_workflows  # noqa: E402
 register_workflows(sys.modules[__name__])
+from retest_api import register as register_retest_views  # noqa: E402
+register_retest_views(sys.modules[__name__])
+from experience_api import register as register_experience  # noqa: E402
+register_experience(sys.modules[__name__])
+from design_api import register as register_designs  # noqa: E402
+register_designs(sys.modules[__name__])
+from workspace_api import register as register_workspace  # noqa: E402
+register_workspace(sys.modules[__name__])
+from progress_api import register as register_progress  # noqa: E402
+register_progress(sys.modules[__name__])
+from workbench_api import register as register_workbench  # noqa: E402
+register_workbench(sys.modules[__name__])
 
+
+from publication_api import register as register_publication
+register_publication(sys.modules[__name__])
+
+
+def create_local_server(port=8080):
+    """One process preserves the shared project lock; never expose the editor."""
+    from waitress import create_server
+    return create_server(app, host='127.0.0.1', port=port, threads=4,
+                         max_request_body_size=project_history.MAX_ARCHIVE + 1024 * 1024,
+                         channel_timeout=180, clear_untrusted_proxy_headers=True)
+
+
+
+from attachments_api import register as register_attachments  # noqa: E402
+register_attachments(sys.modules[__name__])
+
+from privacy_api import register as register_privacy  # noqa: E402
+register_privacy(sys.modules[__name__])
+
+from insights_api import register as register_insights  # noqa: E402
+register_insights(sys.modules[__name__])
+from audience_api import register as register_audiences  # noqa: E402
+register_audiences(sys.modules[__name__])
+from assistant_api import register as register_assistant  # noqa: E402
+register_assistant(sys.modules[__name__])
+from visual_api import register as register_visual  # noqa: E402
+register_visual(sys.modules[__name__])
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
-    print(f"report-gen webapp -> http://127.0.0.1:{port}")
-    app.run(host="127.0.0.1", port=port, debug=False)
+    server = create_local_server(port)
+    print(f"report-gen webapp -> http://127.0.0.1:{server.effective_port}", flush=True)
+    try:
+        server.run()
+    finally:
+        server.close()

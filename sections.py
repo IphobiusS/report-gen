@@ -48,7 +48,8 @@ def preset_sections(preset_id, lang="es"):
     for sec in p["sections"]:
         entry = {"key": sec["key"]}
         if sec.get("title"):
-            entry["title"] = sec["title"]           # renombrado de la seccion
+            title = sec["title"]
+            entry["title"] = (title.get(lang) or title.get('es') or '') if isinstance(title, dict) else title
         if sec.get("body") is not None:
             b = sec["body"]                          # cuerpo de seccion generica (apendices)
             entry["body"] = (b.get(lang) or b.get("es") or "") if isinstance(b, dict) else b
@@ -61,6 +62,22 @@ def preset_sections(preset_id, lang="es"):
     return out
 
 
+def is_empty_appendix(section, data, schema=None):
+    """Only the automatic, optional appendix may be absent from presentation.
+
+    Authored custom sections keep their own titles/bodies. The source's enabled
+    section list stays intact so later proof records or fields can populate it.
+    """
+    if schema is None:
+        schema = catalog_by_key().get(section.get("key"))
+    if not schema or schema.get("special") != "appendix":
+        return False
+    if any(section.get(field["key"]) for field in schema.get("fields", [])):
+        return False
+    from engine import appendix_rows
+    return not appendix_rows(data.get("findings") or [])
+
+
 def resolve_sections(data, L, lang):
     """Convierte report.sections (activas + datos) en una lista lista para render."""
     bykey = catalog_by_key()
@@ -70,6 +87,8 @@ def resolve_sections(data, L, lang):
     for sec in enabled:
         key = sec.get("key")
         schema = bykey.get(key)
+        if is_empty_appendix(sec, data, schema or {}):
+            continue
         if not schema:
             # seccion generica (sin schema): titulo propio + cuerpo markdown.
             # Permite apendices nombrados (Appendix A - ...) y secciones a medida por preset.

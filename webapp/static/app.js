@@ -13,12 +13,14 @@ function h(tag, attrs, ...kids) {
 }
 let csrfPromise;
 async function appFetch(url, options = {}) {
+  const uiLanguage = S.uiLang === "en" ? "en" : "es";
+  options = { ...options, headers: { ...options.headers, "X-UI-Language": uiLanguage } };
   const method = (options.method || "GET").toUpperCase();
   if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
-    csrfPromise ||= fetch("/api/session").then(async r => {
-      if (!r.ok) throw new Error("No se pudo iniciar la sesión local");
+    csrfPromise ||= fetch("/api/session", { headers: { "X-UI-Language": uiLanguage } }).then(async r => {
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || (uiLanguage === "en" ? "Could not start the local session" : "No se pudo iniciar la sesión local"));
       return (await r.json()).csrf;
-    });
+    }).catch(error => { csrfPromise = null; throw error; });
     options = { ...options, headers: { ...options.headers, "X-CSRF-Token": await csrfPromise } };
   }
   return fetch(url, options);
@@ -70,8 +72,8 @@ const S = { designs: [], projects: [], slug: null, data: null, sel: { type: "rep
 const I18N = {
   es: {
     new_project:"Nuevo proyecto", delete:"Eliminar", delete_title:"Eliminar el proyecto actual",
-    hide_preview:"Ocultar preview", show_preview:"Mostrar preview", preview_toggle_title:"Mostrar u ocultar la vista previa",
-    ui_lang_title:"Idioma del sitio", validate_title:"Validar informe", translating:"Actualizando\u2026", toast_created:"Proyecto creado", toast_exported:"Exportado", toast_copied:"Copiado", exporting:"Generando", validate_ok:"Sin avisos", validate_issues:"aviso(s)", dash_sort_sev:"Severidad", dash_sort_manual:"Manual", theme_light:"Tema claro", theme_dark:"Tema oscuro", update_preview:"Actualizar preview", export:"Exportar",
+    hide_preview:"Ocultar vista previa", show_preview:"Mostrar vista previa", preview_toggle_title:"Mostrar u ocultar la vista previa",
+    ui_lang_title:"Idioma del sitio", validate_title:"Validar informe", translating:"Actualizando\u2026", toast_created:"Proyecto creado", toast_exported:"Exportado", toast_copied:"Copiado", exporting:"Generando", validate_ok:"Sin avisos", validate_issues:"aviso(s)", dash_sort_sev:"Severidad", dash_sort_manual:"Manual", dash_incomplete:"CVSS o CWE sin registrar (opcionales). No impide exportar.", theme_light:"Tema claro", theme_dark:"Tema oscuro", update_preview:"Actualizar vista previa", export:"Exportar",
     rename:"Renombrar", rename_title:"Cambiar el nombre del proyecto (título del informe)", rename_prompt:"Nuevo nombre del proyecto:",
  credit_by:"Desarrollado por", recommended:"recomendada", sec_title:"Título de la sección", sec_body:"Contenido (Markdown)", lang_label:"Idioma", cert_label:"Certificación", htb_family:"HTB (certificación)", preset_label:"Plantilla", preset_note:"Los nombres «estilo OSCP/HTB» son descriptivos; no afiliado a OffSec ni Hack The Box.",
     search_ph:"Buscar en el proyecto\u2026", search_none:"Sin resultados",
@@ -83,9 +85,10 @@ const I18N = {
     cover_meta:"Portada / Metadatos", report_title:"Titulo del informe", subtitle:"Subtitulo", client:"Cliente",
     subtitle_ph:"ej. Informe de hallazgos \u2014 App web", assessor_ph:"ej. Nombre Apellido",
     assessor_title_ph:"ej. Ethical Hacker / Pentester", version_ph:"ej. 1.0",
+    osid:"ID del evaluador", osid_ph:"ej. OS-12345 (opcional)", email_ph:"ej. nombre@ejemplo.com",
     wordmark_ph:"ej. tu marca", byline_ph:"ej. Nombre / marca", target_ph:"ej. https://app.cliente.com",
     date:"Fecha (YYYY-MM-DD)", assessor:"Evaluador", assessor_title:"Cargo del evaluador", version:"Version",
-    design:"Diseno", report_lang:"Idioma", wordmark:"Wordmark", byline:"Byline (pie)",
+    design:"Diseño", report_lang:"Idioma", wordmark:"Marca de texto", byline:"Autoría (pie)",
     cover_image:"Imagen de portada", own_logo:"Tu logo", client_logo:"Logo del cliente", remove:"Quitar",
     conf_text:"Texto de confidencialidad", accent:"Color de acento",
     contacts_scope_note:"Los contactos y el alcance se editan en sus secciones (Contactos del engagement y Alcance y objetivos).",
@@ -113,8 +116,9 @@ const I18N = {
     note_appendix:"La tabla de evidencias (hosts, flags, hashes) se genera desde los hallazgos; arriba puedes anadir apendices en texto.", report_title_ph:"Evaluacion de Seguridad ...", client_ph:"Cliente Ltd.",
     slug_label:"Nombre de carpeta (slug)", slug_ph:"cliente-2026", cancel:"Cancelar", create:"Crear", close:"Cerrar",
     sections_modal_h:"Secciones del informe", sections_hint:"Activa las secciones que necesites. Las obligatorias no se pueden desmarcar.",
-    done:"Listo", preview_head:"Vista previa", live:"Vivo",
+    done:"Listo", preview_head:"Vista previa", live:"HTML",
     delete_finding_confirm:"¿Eliminar este hallazgo?", copy_vector:"Copiar vector", copied:"Copiado",
+    copy_vector_failed:"No se pudo copiar. Selecciona el vector y cópialo manualmente.",
     cvss_paste_label:"Pegar vector", cvss_paste_ph:"pega un vector completo (con o sin CVSS:x.x/) y calcula solo",
     cvss_paste_bad:"vector inválido para esta versión", duplicate_finding:"Duplicar", save_to_lib:"\u2605 Plantilla", lib_open:"\u2605 Biblioteca", lib_title:"Biblioteca de hallazgos", lib_empty:"No hay plantillas guardadas. Usa \u201c\u2605 Plantilla\u201d en un hallazgo.", lib_insert:"Insertar", lib_delete:"Eliminar", lib_saved:"Guardado en biblioteca", export_findings:"\u21e3 Exportar", import_findings:"\u21e1 Importar", findings_imported:"hallazgo(s) importado(s)", lib_name_prompt:"Nombre de la plantilla:",
     unsaved:"Hay cambios sin guardar. ¿Salir de todas formas?",
@@ -123,7 +127,7 @@ const I18N = {
   en: {
     new_project:"New project", delete:"Delete", delete_title:"Delete the current project",
     hide_preview:"Hide preview", show_preview:"Show preview", preview_toggle_title:"Show or hide the preview",
-    ui_lang_title:"Site language", validate_title:"Validate report", translating:"Updating\u2026", toast_created:"Project created", toast_exported:"Exported", toast_copied:"Copied", exporting:"Generating", validate_ok:"No warnings", validate_issues:"warning(s)", dash_sort_sev:"Severity", dash_sort_manual:"Manual", theme_light:"Light theme", theme_dark:"Dark theme", update_preview:"Refresh preview", export:"Export",
+    ui_lang_title:"Site language", validate_title:"Validate report", translating:"Updating\u2026", toast_created:"Project created", toast_exported:"Exported", toast_copied:"Copied", exporting:"Generating", validate_ok:"No warnings", validate_issues:"warning(s)", dash_sort_sev:"Severity", dash_sort_manual:"Manual", dash_incomplete:"CVSS or CWE not recorded (optional). Export remains available.", theme_light:"Light theme", theme_dark:"Dark theme", update_preview:"Refresh preview", export:"Export",
     rename:"Rename", rename_title:"Rename the project (report title)", rename_prompt:"New project name:",
  credit_by:"Developed by", recommended:"recommended", sec_title:"Section title", sec_body:"Content (Markdown)", lang_label:"Language", cert_label:"Certification", htb_family:"HTB (certification)", preset_label:"Template", preset_note:"«OSCP/HTB-style» names are descriptive; not affiliated with OffSec or Hack The Box.",
     search_ph:"Search the project\u2026", search_none:"No results",
@@ -135,6 +139,7 @@ const I18N = {
     cover_meta:"Cover / Metadata", report_title:"Report title", subtitle:"Subtitle", client:"Client",
     subtitle_ph:"e.g. Findings report \u2014 Web app", assessor_ph:"e.g. First Last",
     assessor_title_ph:"e.g. Ethical Hacker / Pentester", version_ph:"e.g. 1.0",
+    osid:"Assessor ID", osid_ph:"e.g. OS-12345 (optional)", email_ph:"e.g. name@example.com",
     wordmark_ph:"e.g. your brand", byline_ph:"e.g. Name / brand", target_ph:"e.g. https://app.client.com",
     date:"Date (YYYY-MM-DD)", assessor:"Assessor", assessor_title:"Assessor title", version:"Version",
     design:"Theme", report_lang:"Language", wordmark:"Wordmark", byline:"Byline (footer)",
@@ -167,6 +172,7 @@ const I18N = {
     sections_modal_h:"Report sections", sections_hint:"Enable the sections you need. Required ones cannot be unchecked.",
     done:"Done", preview_head:"Preview", live:"Live",
     delete_finding_confirm:"Delete this finding?", copy_vector:"Copy vector", copied:"Copied",
+    copy_vector_failed:"Could not copy. Select the vector and copy it manually.",
     cvss_paste_label:"Paste vector", cvss_paste_ph:"paste a full vector (with or without CVSS:x.x/) and it auto-calculates",
     cvss_paste_bad:"invalid vector for this version", duplicate_finding:"Duplicate", save_to_lib:"\u2605 Template", lib_open:"\u2605 Library", lib_title:"Findings library", lib_empty:"No saved templates yet. Use \u201c\u2605 Template\u201d on a finding.", lib_insert:"Insert", lib_delete:"Delete", lib_saved:"Saved to library", export_findings:"\u21e3 Export", import_findings:"\u21e1 Import", findings_imported:"finding(s) imported", lib_name_prompt:"Template name:",
     unsaved:"You have unsaved changes. Leave anyway?",
@@ -180,14 +186,20 @@ function applyStaticI18n() {
   document.querySelectorAll("[data-i18n-title]").forEach(el => { el.title = t(el.getAttribute("data-i18n-title")); });
   document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.getAttribute("data-i18n-ph")); });
   document.documentElement.lang = S.uiLang || "es";
+  if (S.formats) {
+    const format = $("#exportFormat"), selected = format.value;
+    format.replaceChildren(...S.formats.map(spec => h("option", {value:spec.key}, spec["label_"+(S.uiLang === "en" ? "en" : "es")])));
+    if (S.formats.some(spec => spec.key === selected)) format.value = selected;
+  }
 }
 function setUiLang(lang) {
   S.uiLang = lang;
   try { localStorage.setItem("rg.uiLang", lang); } catch (_) {}
   const b = document.getElementById("langToggle"); if (b) b.textContent = lang.toUpperCase();
   applyStaticI18n();
+  if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.update();
   const pb = document.getElementById("previewToggle"); if (pb) pb.textContent = S.previewVisible ? t("hide_preview") : t("show_preview");
-  if (S.data) { S.data.meta.lang = lang; scheduleSave(); }
+  // Interface language is a preference. Report language is edited explicitly in metadata.
   renderSidebar(); renderMain();
   if (S.previewVisible && S.previewMode === "live") refreshLivePreview();
 }
@@ -195,11 +207,15 @@ function toggleUiLang() { setUiLang(S.uiLang === "en" ? "es" : "en"); }
 
 const SEV_RANK = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
 const SEV = [["critical", "Crítica"], ["high", "Alta"], ["medium", "Media"], ["low", "Baja"], ["info", "Informativa"]];
+function severityLabel(key) {
+  if (!key) return S.uiLang === "en" ? "Pending assessment" : "Pendiente de valoración";
+  return S.uiLang === "en" ? ({critical:"Critical",high:"High",medium:"Medium",low:"Low",info:"Informational"}[key] || key) : (SEV.find(s=>s[0]===key)?.[1] || key);
+}
 
 // ---- reordenar arrastrando --------------------------------------------------
 let dragCtx = null;
 function dragHandle(arr, i) {
-  return h("span", { class: "drag", draggable: "true", title: "Arrastrar para reordenar",
+  return h("span", { class: "drag", draggable: "true", title: S.uiLang==="en"?"Drag to reorder":"Arrastrar para reordenar",
     ondragstart: e => { dragCtx = { arr, from: i }; e.dataTransfer.effectAllowed = "move"; e.stopPropagation(); } }, "\u283F");
 }
 function makeDropZone(el, arr, i) {
@@ -209,55 +225,85 @@ function makeDropZone(el, arr, i) {
     el.classList.remove("dragover");
     if (dragCtx && dragCtx.arr === arr && dragCtx.from !== i) {
       e.preventDefault();
-      const it = arr.splice(dragCtx.from, 1)[0];
-      arr.splice(i, 0, it);
+      UndoUI.move(arr,dragCtx.from,i);
       const wasFindings = arr === S.data.findings;
       dragCtx = null;
-      if (wasFindings) { renumberFindings(); S.sel = { type: "finding", idx: i }; }
+      if (wasFindings) { ensureFindingIds(); S.sel = { type: "finding", idx: i }; }
       scheduleSave(); renderSidebar(); renderMain();
     }
   });
 }
-function renumberFindings() { (S.data.findings || []).forEach((f, i) => { f.id = "F" + (i + 1); f.uid = f.uid || WorkflowUI.uid(); }); }
+function ensureFindingIds() {
+  const rows=S.data.findings||[];
+  const sequence=findingSequence(S.data), missing=rows.filter(f=>!f.id).length;
+  if (missing > Number.MAX_SAFE_INTEGER-sequence) throw findingSequenceError();
+  S.data.finding_sequence=sequence;
+  rows.forEach(f=>{if(!f.id)f.id=nextFid();f.uid=f.uid||WorkflowUI.uid();});
+}
 
 const projectStore = new ProjectStore(appFetch, (state, error) => {
   S.dirty = projectStore.dirty;
   if (state === "loaded") return;
-  setSaveState(t(state === "error" ? "err" : state));
+  if(typeof ProgressUI!=="undefined")ProgressUI.saveState(state,error);
+  else setSaveState(t(state === "error" ? "err" : state));
   if (state === "saved" && !projectStore.loading) {
     const opt = [...$("#projectSelect").options].find(o => o.value === S.slug);
-    if (opt && S.data) opt.textContent = `${S.data.meta.report_title || S.slug} [${S.data.meta.theme}/${S.data.meta.lang}]`;
+    if (opt && S.data) opt.textContent = S.data.meta.report_title || S.slug;
     if (S.previewVisible && S.previewMode === "live") refreshLivePreview();
   }
   if (error) toast(error.message, "err");
 });
 window.addEventListener("beforeunload", e => { if (projectStore.dirty) { e.preventDefault(); e.returnValue = t("unsaved"); } });
 function scheduleSave() {
+  if(typeof WorkbenchUI!=="undefined")WorkbenchUI.dirty();
   projectStore.data = S.data;
   projectStore.changed();
+  if(typeof RetestMatrixUI!=="undefined")RetestMatrixUI.invalidate();
+  if(typeof RetestDiffUI!=="undefined")RetestDiffUI.invalidate();
 }
 async function doSave() {
   try {
     await projectStore.save();
     const opt = [...$("#projectSelect").options].find(o => o.value === S.slug);
-    if (opt && S.data) opt.textContent = `${S.data.meta.report_title || S.slug} [${S.data.meta.theme}/${S.data.meta.lang}]`;
+    if (opt && S.data) opt.textContent = S.data.meta.report_title || S.slug;
     if (S.previewMode === "live") refreshLivePreview();
     return true;
   } catch (_) { return false; }
 }
+let projectBusyCount = 0;
 function busyProject(busy) {
-  document.querySelector(".layout").inert = busy;
-  ["#projectSelect", "#newProjectBtn", "#renameProjectBtn", "#deleteProjectBtn", "#restoreProjectBtn", "#importProjectBtn"].forEach(id => { const el = $(id); if (el) el.disabled = busy; });
+  projectBusyCount = Math.max(0, projectBusyCount + (busy ? 1 : -1));
+  const active = projectBusyCount > 0;
+  document.querySelector(".layout").inert = active;
+  ["#projectSelect", "#newProjectBtn", "#renameProjectBtn", "#deleteProjectBtn", "#restoreProjectBtn", "#importProjectBtn", "#langToggle", "#demoBtn", "#deliveryBtn", "#designLibraryBtn", "#workspaceBackupBtn", "#previewBtn", "#previewToggle", "#validateBtn", "#downloadBtn", "#exportFormat"].forEach(id => { const el = $(id); if (el) el.disabled = active; });
+  if(typeof WorkspaceUI!=='undefined')WorkspaceUI.update();
 }
-function setSaveState(t) { $("#saveState").textContent = t; }
+function setSaveState(t) { if(typeof ProgressUI==="undefined")$("#saveState").textContent = t; }
 function toast(msg, kind) {
   let host = document.getElementById("toastHost");
   if (!host) { host = h("div", { id: "toastHost" }); document.body.append(host); }
-  const el = h("div", { class: "toast" + (kind ? " toast-" + kind : "") }, msg);
+  const el = h("div", { class: "toast" + (kind ? " toast-" + kind : ""), role: kind === "err" ? "alert" : "status" }, msg);
   host.append(el);
   requestAnimationFrame(() => el.classList.add("show"));
   setTimeout(() => { el.classList.add("hide"); setTimeout(() => el.remove(), 320); }, 2200);
 }
+function openModal(modal) {
+  if (modal.open) return;
+  modal._opener = document.activeElement;
+  if (!modal._focusBound) {
+    modal._focusBound = true;
+    modal.addEventListener("close", () => {
+      modal.classList.remove("open");
+      const previous = modal._opener;
+      const target = previous?.closest("details:not([open])")?.querySelector("summary") || previous;
+      (target?.isConnected && !target.disabled ? target : $("#editor"))?.focus({preventScroll:true});
+    });
+    modal.closeModal = () => modal.close();
+  }
+  modal.classList.add("open");
+  modal.showModal();
+}
+function closeModal(modal) { if (modal.open) modal.close(); }
 let _plTimer = null, _plStart = 0;
 function showPreviewLoading() {
   const el = document.getElementById("previewLoading");
@@ -273,7 +319,7 @@ function hidePreviewLoading() {
 function applyUiTheme(mode) {
   document.documentElement.setAttribute("data-theme", mode);
   try { localStorage.setItem("rg.uiTheme", mode); } catch (_) {}
-  const b = $("#themeToggle"); if (b) { b.textContent = mode === "light" ? "\u2600" : "\u263e"; b.title = t(mode === "light" ? "theme_dark" : "theme_light"); }
+  const b = $("#themeToggle"); if (b) { b.textContent = mode === "light" ? "\u2600" : "\u263e"; b.title = t(mode === "light" ? "theme_dark" : "theme_light"); b.setAttribute("aria-label",b.title); }
 }
 function toggleUiTheme() {
   const cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
@@ -296,17 +342,19 @@ async function runValidation() {
 }
 function showValidationPanel(issues) {
   let m = document.getElementById("validateModal");
-  if (m) m.remove();
+  if (m) { closeModal(m); m.remove(); }
   const list = h("div", { class: "val-list" });
   issues.forEach(i => list.append(h("div", { class: "val-item val-" + i.level },
     h("span", { class: "val-lvl" }, i.level === "error" ? "\u2715" : "!"),
     h("span", {}, i.message))));
-  m = h("div", { id: "validateModal", class: "modal open", onclick: e => { if (e.target === m) m.remove(); } },
+  m = h("dialog", { id: "validateModal", class: "modal", "aria-labelledby":"validateModalTitle", onclick: e => { if (e.target === m) closeModal(m); } },
     h("div", { class: "modal-box" },
-      h("div", { class: "modal-title" }, issues.length + " " + t("validate_issues")),
+      h("div", { id:"validateModalTitle", class: "modal-title" }, issues.length + " " + t("validate_issues")),
       list,
-      h("div", { class: "modal-actions" }, h("button", { class: "btn", onclick: () => m.remove() }, "OK"))));
+      h("div", { class: "modal-actions" }, h("button", { class: "btn", onclick: () => closeModal(m) }, "OK"))));
+  m.addEventListener("close", () => m.remove());
   document.body.append(m);
+  openModal(m);
 }
 function setPvStatus(t) { $("#pvStatus").textContent = t; }
 
@@ -315,22 +363,52 @@ function updateLangBtn() {
 }
 
 let previewGeneration = 0;
+let previewPdfUrl = null;
+let livePreviewRequest = null;
+function previewPaneVisible() {
+  return !!S.previewVisible && !!$("#pdfPreview")?.getClientRects().length;
+}
+function ensureLivePreview() {
+  if (S.previewMode === 'live' && previewPaneVisible() && !projectStore.loading &&
+      livePreviewRequest === null && !WorkbenchUI.hasLivePreview()) refreshLivePreview();
+}
+function releasePdfPreview() {
+  if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
+  previewPdfUrl = null;
+}
 async function refreshLivePreview() {
-  if (!S.slug || projectStore.loading) return;
-  const slug = S.slug, generation = ++previewGeneration;
+  if (!S.slug || !previewPaneVisible() || projectStore.loading || S.previewMode !== 'live') return;
+  const slug = S.slug, generation = ++previewGeneration, snapshotRevision=projectStore.revision;
+  const findingIds = new Map((S.data.findings || []).map(f => [f.uid, f.id]));
+  livePreviewRequest = generation;
+  let waitingForDocument = false;
   setPvStatus(t("updating")); showPreviewLoading();
   try {
     const r = await appFetch(`/api/projects/${S.slug}/preview`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
     await requireOk(r);
     const html = await r.text();
-    if (slug !== S.slug || generation !== previewGeneration) return;
+    if (slug !== S.slug || generation !== previewGeneration || !previewPaneVisible() || S.previewMode !== 'live') return;
     const f = $("#pdfPreview");
     f.removeAttribute("src");
     f.setAttribute("sandbox", "allow-same-origin");  // el preview no ejecuta scripts del contenido
-    f.srcdoc = html;
+    waitingForDocument = true;
+    f.onload = () => {
+      if (slug !== S.slug || generation !== previewGeneration || S.previewMode !== 'live') return;
+      const doc=f.contentDocument;
+      // A queued load from an older srcdoc cannot claim the newer snapshot.
+      if(doc?.querySelector('meta[name="rg-preview-generation"]')?.content!==String(generation))return;
+      if (livePreviewRequest === generation) livePreviewRequest = null;
+      if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.ready(doc);
+      if(typeof WorkbenchUI!=="undefined")WorkbenchUI.previewReady(snapshotRevision,{slug,findingIds,document:doc});
+    };
+    f.srcdoc = html.replace(/<head(?:\s[^>]*)?>/i,head=>head+'<meta name="rg-preview-generation" content="'+generation+'">');
+    releasePdfPreview();
     setPvStatus(t("uptodate"));
-  } catch (e) { setPvStatus(t("err")); }
-  finally { hidePreviewLoading(); }
+  } catch (e) { if (generation === previewGeneration) setPvStatus(t("err")); }
+  finally {
+    if (!waitingForDocument && livePreviewRequest === generation) livePreviewRequest = null;
+    if (generation === previewGeneration) hidePreviewLoading();
+  }
 }
 function setPreviewVisible(vis) {
   S.previewVisible = vis;
@@ -344,7 +422,11 @@ function setPreviewVisible(vis) {
 }
 
 function setPreviewMode(m) {
+  previewGeneration++;
+  livePreviewRequest = null;
+  $("#pdfPreview").onload = null;
   S.previewMode = m;
+  if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.update();
   $("#pvLive").classList.toggle("primary", m === "live");
   $("#pvPdf").classList.toggle("primary", m === "pdf");
   if (m === "live") refreshLivePreview();
@@ -354,6 +436,10 @@ function setPreviewMode(m) {
 // ---- carga -----------------------------------------------------------------
 
 async function init() {
+  const sessionInfo = await api.get("/api/session");
+  S.version=sessionInfo.version;
+  $(".brand-caption").textContent="Pentest reporting / v"+S.version;
+  S.formats = await api.get("/api/export-formats");
   S.designs = await api.get("/api/designs");
   S.owasp.web = await api.get("/api/owasp/web");
   S.owasp.llm = await api.get("/api/owasp/llm");
@@ -364,43 +450,68 @@ async function init() {
   (S.catalog.sections || []).forEach(s => { S.catBy[s.key] = s; });
   await refreshProjects();
   bindUI();
+  if(typeof ProgressUI!=="undefined")ProgressUI.bind();
+  if(typeof WorkbenchUI!=="undefined")WorkbenchUI.bind();
+  StudioUI.bind();
+  if(typeof GuideUI!=="undefined")GuideUI.bind();
+  if(typeof InsightsUI!=="undefined")InsightsUI.bind();
+  if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.bind();
   { let l = "es"; try { l = localStorage.getItem("rg.uiLang") || "es"; } catch (_) {} S.uiLang = l; }
   { let th = "dark"; try { th = localStorage.getItem("rg.uiTheme") || "dark"; } catch (_) {} applyUiTheme(th); }
   updateLangBtn(); applyStaticI18n();
+  if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.update();
+  if(typeof ProgressUI!=="undefined")ProgressUI.update();
   if (S.projects.length) loadProject(S.projects[0].slug);
+  else renderMain();
   hideSplash();
 }
-const SPLASH_MIN_MS = 3000;
-const _splashStart = Date.now();
 function hideSplash() {
+  document.querySelectorAll('.topbar[inert],.layout[inert],.skip-link[inert],.app-credit[inert]').forEach(node=>node.removeAttribute('inert'));
   const s = document.getElementById("splash");
   if (!s) return;
-  const wait = Math.max(0, SPLASH_MIN_MS - (Date.now() - _splashStart));
-  setTimeout(() => { s.classList.add("hide"); setTimeout(() => s.remove(), 500); }, wait);
+  s.remove();
 }
 async function refreshProjects() {
   S.projects = await api.get("/api/projects");
   const sel = $("#projectSelect");
   sel.innerHTML = "";
-  S.projects.forEach(p => sel.append(h("option", { value: p.slug }, `${p.title} [${p.theme}/${p.lang}]`)));
+  S.projects.forEach(p => sel.append(h("option", { value: p.slug }, p.title || p.slug)));
 }
 async function loadProject(slug) {
   if (projectStore.loading) return;
+  if(typeof WorkbenchUI!=="undefined")WorkbenchUI.position();
+  previewGeneration++;
   busyProject(true);
   try {
     if (!await projectStore.load(slug)) return;
     S.slug = projectStore.slug; S.data = projectStore.data; S.dashFilter = null;
     S.data.findings ||= []; S.data.report ||= { sections: [] }; S.data.report.sections ||= [];
-    S.sel = { type: "report", idx: -1 };
+    if(typeof WorkbenchUI!=="undefined")WorkbenchUI.projectChanged();
+    S.sel = { type: typeof WorkspaceUI!=='undefined' ? "home" : "report", idx: -1 };
     $("#projectSelect").value = S.slug;
     renderSidebar(); renderMain(); updateLangBtn();
+    releasePdfPreview();
+    livePreviewRequest = null;
+    const frame = $("#pdfPreview"); frame.onload=null; frame.removeAttribute('src'); frame.removeAttribute('srcdoc');
     if (S.previewMode === "live") refreshLivePreview();
+    else renderPdf(false);
   } catch (_) { $("#projectSelect").value = S.slug || ""; }
-  finally { busyProject(false); updateDeleteBtn(); }
+  finally { busyProject(false); updateDeleteBtn(); if(projectStore.recovery?.length)StudioUI.recovery(); }
 }
 
 // ---- sidebar ---------------------------------------------------------------
-function renderSidebar() {
+const findingPageState = { slug:null, sidebar:0, board:0, boardKey:"" };
+function workspacePageBar(area, total, page, size, change) {
+  const pages=Math.max(1,Math.ceil(total/size)), english=S.uiLang==="en";
+  const nav=h("nav",{class:"workspace-pagebar","data-workspace-pagination":area,"aria-label":english?"Pagination":"Paginación"});
+  const update=next=>{change(Math.max(0,Math.min(pages-1,next)));requestAnimationFrame(()=>document.querySelector('[data-workspace-pagination="'+area+'"] select')?.focus({preventScroll:true}));};
+  const selectPage=h("select",{"aria-label":english?"Choose page":"Elegir página",onchange:e=>update(Number(e.target.value))},Array.from({length:pages},(_,index)=>h("option",{value:index,selected:index===page?"":null},String(index+1)+" / "+pages)));
+  nav.append(h("span",{class:"workspace-pagebar-count",role:"status"},total?String(page*size+1)+"–"+Math.min(total,(page+1)*size)+(english?" of ":" de ")+total:(english?"0 items":"0 elementos")),
+    h("button",{type:"button",class:"btn sm","aria-label":english?"Previous page":"Página anterior",disabled:page===0?"":null,onclick:()=>update(page-1)},"‹"),selectPage,
+    h("button",{type:"button",class:"btn sm","aria-label":english?"Next page":"Página siguiente",disabled:page===pages-1?"":null,onclick:()=>update(page+1)},"›"));
+  return nav;
+}
+function renderSidebar(pageOverride) {
   WorkflowUI.updateNav();
   $("#navReport").classList.toggle("active", S.sel.type === "report");
   // secciones activas
@@ -408,54 +519,70 @@ function renderSidebar() {
   const secs = (S.data && S.data.report && S.data.report.sections) || [];
   secs.forEach((sec, i) => {
     const schema = S.catBy[sec.key] || {};
-    const lang = (S.data.meta.lang || "es");
+    const lang = (S.data.meta.lang || "en");
     const title = sec.title || schema["title_" + lang] || schema.title_es || sec.key;
-    const li = h("li", { draggable: "true", class: S.sel.type === "section" && S.sel.key === sec.key ? "active" : "", onclick: () => select("section", sec.key) },
+    const active = S.sel.type === "section" && S.sel.key === sec.key;
+    const li = h("li", { draggable: "true", class: active ? "active" : "" },
+      h("button", {type:"button",class:"finding-nav","aria-current":active?"page":null,onclick:()=>select("section",sec.key)},
       h("span", { class: "ftitle" }, `${i + 1}. ${title}`),
-      schema.special ? h("span", { class: "sect-badge" }, schema.special) : null);
+      schema.special ? h("span", { class: "sect-badge" }, schema.special) : null));
     li.addEventListener("dragstart", e => { dragCtx = { arr: secs, from: i }; e.dataTransfer.effectAllowed = "move"; });
     makeDropZone(li, secs, i);
     sl.append(li);
   });
   // hallazgos
   const ul = $("#findingList"); ul.innerHTML = "";
-  (S.data?.findings || []).forEach((f, i) => {
+  ul.parentElement.querySelector('[data-workspace-pagination="sidebar"]')?.remove();
+  const findings=S.data?.findings||[], pageSize=50;
+  if(findingPageState.slug!==S.slug){findingPageState.slug=S.slug;findingPageState.sidebar=0;findingPageState.board=0;findingPageState.boardKey="";}
+  if(Number.isInteger(pageOverride))findingPageState.sidebar=pageOverride;
+  else if(S.sel.type==="finding")findingPageState.sidebar=Math.floor(S.sel.idx/pageSize);
+  findingPageState.sidebar=Math.max(0,Math.min(Math.max(0,Math.ceil(findings.length/pageSize)-1),findingPageState.sidebar));
+  const start=findings.length>pageSize?findingPageState.sidebar*pageSize:0;
+  findings.slice(start,start+pageSize).forEach((f, offset) => {
+    const i=start+offset;
     const sev = f.severity || (f.mode === "machine" ? "info" : "info");
-    const li = h("li", { draggable: "true", class: S.sel.type === "finding" && S.sel.idx === i ? "active" : "", onclick: () => select("finding", i) },
+    const active = S.sel.type === "finding" && S.sel.idx === i;
+    const li = h("li", { draggable: "true", class: active ? "active" : "", "data-finding-uid":f.uid },
+      h("button",{type:"button",class:"finding-nav","aria-current":active?"page":null,onclick:()=>select("finding",i)},
       h("span", { class: "sev-dot sev-" + sev }),
       h("span", { class: "fid" }, f.id || ""),
-      h("span", { class: "ftitle" }, f.title || t("untitled"))
+      h("span", { class: "ftitle" }, f.title || t("untitled")))
     );
     li.addEventListener("dragstart", e => { dragCtx = { arr: S.data.findings, from: i }; e.dataTransfer.effectAllowed = "move"; });
     makeDropZone(li, S.data.findings, i);
     ul.append(li);
   });
+  if(findings.length>pageSize)ul.after(workspacePageBar("sidebar",findings.length,findingPageState.sidebar,pageSize,page=>renderSidebar(page)));
 }
 // ---- buscador global -------------------------------------------------------
 function searchTargets() {
   const d = S.data, out = [];
+  const w = (es,en) => S.uiLang === "en" ? en : es;
   if (!d) return out;
   const m = d.meta || {}, rep = { type: "report" };
-  [["report_title", "Titulo"], ["report_subtitle", "Subtitulo"], ["client", "Cliente"], ["assessor", "Evaluador"], ["assessor_title", "Cargo"], ["version", "Version"]]
-    .forEach(([k, lab]) => { if (m[k]) out.push({ nav: rep, where: "Informe \u00b7 " + lab, text: String(m[k]) }); });
-  ((m.contacts && m.contacts.client) || []).forEach(c => out.push({ nav: { type: "section", key: "contacts" }, where: "Contactos cliente", text: [c.name, c.title, c.email].filter(Boolean).join(" ") }));
-  ((m.contacts && m.contacts.assessor) || []).forEach(c => out.push({ nav: { type: "section", key: "contacts" }, where: "Equipo evaluador", text: [c.name, c.title, c.email].filter(Boolean).join(" ") }));
-  (m.scope || []).forEach(s => out.push({ nav: { type: "section", key: "scope" }, where: "Alcance", text: [s.target, s.description].filter(Boolean).join(" ") }));
+  [["report_title", w("Título", "Title")], ["report_subtitle", w("Subtítulo", "Subtitle")], ["client", w("Cliente", "Client")], ["assessor", w("Evaluador", "Assessor")], ["assessor_title", w("Cargo", "Role")], ["version", w("Versión", "Version")]]
+    .forEach(([k, lab]) => { if (m[k]) out.push({ nav: rep, where: w("Informe", "Report") + " / " + lab, text: String(m[k]) }); });
+  ((m.contacts && m.contacts.client) || []).forEach(c => out.push({ nav: { type: "section", key: "contacts" }, where: w("Contactos del cliente", "Client contacts"), text: [c.name, c.title, c.email].filter(Boolean).join(" ") }));
+  ((m.contacts && m.contacts.assessor) || []).forEach(c => out.push({ nav: { type: "section", key: "contacts" }, where: w("Equipo evaluador", "Assessment team"), text: [c.name, c.title, c.email].filter(Boolean).join(" ") }));
+  (m.scope || []).forEach(s => out.push({ nav: { type: "section", key: "scope" }, where: w("Alcance", "Scope"), text: [s.target, s.description].filter(Boolean).join(" ") }));
   ((d.report && d.report.sections) || []).forEach(sec => {
     const schema = S.catBy[sec.key] || {};
     (schema.fields || []).forEach(f => { const v = sec[f.key]; if (typeof v === "string" && v) out.push({ nav: { type: "section", key: sec.key }, where: (schema["title_" + (S.uiLang || "es")] || schema.title_es || sec.key), text: v }); });
   });
   (d.findings || []).forEach((f, idx) => {
-    const nav = { type: "finding", idx }, w = f.id + (f.title ? " " + f.title : "");
-    [["title", "Titulo"], ["cwe", "CWE"], ["affected", "Host"], ["description_md", "Descripcion"], ["impact_md", "Impacto"], ["remediation_md", "Remediacion"]]
-      .forEach(([k, lab]) => { if (f[k]) out.push({ nav, where: w + " \u00b7 " + lab, text: String(f[k]) }); });
-    (f.references || []).forEach(r => { if (r) out.push({ nav, where: w + " \u00b7 Ref", text: r }); });
-    if (f.host) [["name", "Maquina"], ["ip", "IP"], ["os", "SO"]].forEach(([k, lab]) => { if (f.host[k]) out.push({ nav, where: w + " \u00b7 " + lab, text: f.host[k] }); });
-    if (f.open_ports) out.push({ nav, where: w + " \u00b7 Puertos", text: f.open_ports });
-    if (f.summary_md) out.push({ nav, where: w + " \u00b7 Ruta", text: f.summary_md });
+    const nav = { type: "finding", idx }, location = f.id + (f.title ? " " + f.title : "");
+    [["title", w("Título", "Title")], ["cwe", "CWE"], ["affected", "Host"], ["description_md", w("Descripción", "Description")], ["impact_md", w("Impacto", "Impact")], ["remediation_md", w("Remediación", "Remediation")]]
+      .forEach(([k, lab]) => { if (f[k]) out.push({ nav, where: location + " \u00b7 " + lab, text: String(f[k]) }); });
+    (f.references || []).forEach(r => { if (r) out.push({ nav, where: location + " \u00b7 Ref", text: r }); });
+    if (f.host) [["name", w("Máquina", "Machine")], ["ip", "IP"], ["os", w("SO", "OS")]].forEach(([k, lab]) => { if (f.host[k]) out.push({ nav, where: location + " \u00b7 " + lab, text: f.host[k] }); });
+    if (f.open_ports) out.push({ nav, where: location + " / " + w("Puertos", "Ports"), text: f.open_ports });
+    if (f.summary_md) out.push({ nav, where: location + " / " + w("Ruta", "Path"), text: f.summary_md });
+    const addStep = st => ["lead", "text_md", "command"].forEach(k => { if(st[k])out.push({nav,where:location+" / "+w("Paso","Step"),text:String(st[k])}); });
+    (f.walkthrough || []).forEach(addStep);
     (f.phases || []).forEach(ph => {
-      if (ph.name) out.push({ nav, where: w + " \u00b7 Fase", text: ph.name });
-      (ph.steps || []).forEach(st => ["lead", "text", "code"].forEach(k => { if (st[k]) out.push({ nav, where: w + " \u00b7 Paso", text: st[k] }); }));
+      if (ph.name) out.push({ nav, where: location + " / " + w("Fase", "Phase"), text: ph.name });
+      (ph.steps || []).forEach(addStep);
     });
   });
   return out;
@@ -480,6 +607,7 @@ function navTo(nav) {
   else select("report", -1);
 }
 function renderSearch(q) {
+  if(typeof WorkbenchUI!=="undefined")return WorkbenchUI.search(q);
   const box = $("#searchResults");
   const results = searchProject(q);
   box.innerHTML = "";
@@ -494,39 +622,124 @@ function renderSearch(q) {
   });
 }
 
-function select(type, val) { S.sel = (type === "section") ? { type, key: val } : { type, idx: val }; renderSidebar(); renderMain(); }
-function nextFid() { return "F" + ((S.data.findings.length) + 1); }
+function select(type, val) { if(typeof WorkbenchUI!=="undefined")WorkbenchUI.position(); S.sel = (type === "section") ? { type, key: val } : { type, idx: val }; renderSidebar(); renderMain(); }
+function findingSequenceError() {
+  return Error(S.uiLang === "en" ? "The finding identifier counter is exhausted. Existing findings can still be edited and exported." : "Se agotó el contador de identificadores de hallazgos. Puedes seguir editando y exportando los hallazgos existentes.");
+}
+function findingSequence(data) {
+  let sequence=data.finding_sequence||0;
+  if (!Number.isSafeInteger(sequence) || sequence < 0) throw findingSequenceError();
+  const reserve=value=>{
+    const number=Number(value);
+    if (!Number.isSafeInteger(number) || number < 0) throw findingSequenceError();
+    sequence=Math.max(sequence,number);
+  };
+  for (const finding of data.findings||[]) if (/^F[0-9]+$/.test(finding.id||'')) reserve(finding.id.slice(1));
+  for (const match of JSON.stringify(data).matchAll(/#F([0-9]+)\b/g)) reserve(match[1]);
+  const pending=[data];
+  while (pending.length) {
+    const value=pending.pop();
+    if (typeof value === 'string') {
+      for (const match of value.matchAll(/#([^\s<>()\[\]{}"'`]+)/g)) {
+        let fragment;
+        try { fragment=decodeURIComponent(match[1]); } catch (_) { continue; }
+        if (/^F[0-9]+$/.test(fragment)) reserve(fragment.slice(1));
+      }
+    } else if (value && typeof value === 'object') {
+      for (const child of Object.values(value)) pending.push(child);
+    }
+  }
+  return sequence;
+}
+function nextFid(data=S.data) {
+  // Public IDs are permanent anchors, not positions. Reserve removed numbers
+  // across saves so a later addition cannot revive a link to a different item.
+  const sequence=findingSequence(data);
+  if (sequence >= Number.MAX_SAFE_INTEGER) throw findingSequenceError();
+  data.finding_sequence=sequence+1;
+  return 'F'+data.finding_sequence;
+}
+function requestedFindingId() {
+  try { return nextFid(); }
+  catch (error) { toast(error.message,"err"); return null; }
+}
 
 // ---- editor principal ------------------------------------------------------
 function renderMain() {
   const el = $("#editor"); el.innerHTML = "";
+  if(typeof WorkspaceUI!=='undefined') {
+    WorkspaceUI.update();
+    ExperienceUI.update();
+    if(S.sel.type==='insights'&&typeof InsightsUI!=='undefined'){InsightsUI.render(el);if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();return;}
+    if(S.sel.type==='guide'&&typeof GuideUI!=='undefined'){GuideUI.render(el);if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();return;}
+    if(!S.data||S.sel.type==='home'){WorkspaceUI.render(el);if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();return;}
+  }
+  if(typeof ExperienceUI!=='undefined') {
+    ExperienceUI.update();
+    if(!S.data){ExperienceUI.welcome(el);return;}
+  }
   if (!S.data) { el.append(h("div", { class: "empty" }, t("empty"))); return; }
-  if (S.sel.type === "report") el.append(reportEditor());
+  if(S.sel.type === "studio")StudioUI.render(el,S.sel.idx);
+  else if (S.sel.type === "findings") el.append(h("h2",{},S.uiLang==="en"?"Findings":"Hallazgos"),findingsDashboard());
+  else if (S.sel.type === "capture") WorkbenchUI.inbox(el);
+  else if (S.sel.type === "report") el.append(reportEditor());
   else if (S.sel.type === "section") el.append(sectionEditor(S.sel.key));
   else if (S.sel.type === "workflow") WorkflowUI.render(S.sel.idx, el);
-  else el.append(findingEditor(S.data.findings[S.sel.idx]));
+  else if(S.data.findings[S.sel.idx])el.append(findingEditor(S.data.findings[S.sel.idx]));
+  if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();
 }
 
+function moveFindingDialog(identity) {
+  const findings=S.data?.findings||[], index=findings.findIndex(f=>f.uid===identity);
+  if(index<0)return;
+  const previous=document.activeElement, slug=S.slug, titleId="finding-move-"+WorkflowUI.uid();
+  const dialog=h("dialog",{class:"experience-dialog","aria-labelledby":titleId}),body=h("div",{class:"experience-body"});
+  const close=h("button",{type:"button",class:"btn",onclick:()=>dialog.close()},S.uiLang==="en"?"Close":"Cerrar");
+  const position=h("input",{type:"number",min:1,max:findings.length,value:index+1,"data-finding-position":""});
+  const label=S.uiLang==="en"?"Destination position":"Posición de destino";
+  const error=h("p",{role:"alert"});
+  body.append(h("p",{},S.uiLang==="en"?"Change the manual order across pages. Finding IDs and evidence links stay unchanged.":"Cambia el orden manual entre páginas. Los IDs y vínculos de evidencia se conservan."),h("label",{},label,position),error,
+    h("button",{type:"button",class:"btn primary","data-finding-move-apply":"",onclick:()=>{
+      if(S.slug!==slug||S.data?.findings!==findings||projectBusyCount>0){error.textContent=S.uiLang==="en"?"The project changed. Reopen the move dialog.":"El proyecto cambió. Vuelve a abrir el diálogo de orden.";return;}
+      const to=Number(position.value), from=findings.findIndex(f=>f.uid===identity);
+      if(!position.value.trim()||!Number.isInteger(to)||to<1||to>findings.length||from<0){error.textContent=S.uiLang==="en"?"Choose an existing position.":"Elige una posición existente.";position.focus();return;}
+      if(from===to-1){dialog.close();return;}
+      const selected=S.sel.type==="finding"?findings[S.sel.idx]?.uid:null;
+      UndoUI.move(findings,from,to-1);
+      if(selected)S.sel.idx=findings.findIndex(f=>f.uid===selected);
+      scheduleSave();renderSidebar();renderMain();
+      if(S.sel.type==="findings"){findingPageState.board=Math.floor((to-1)/50);renderMain();}
+      dialog.close();
+    }},S.uiLang==="en"?"Move finding":"Mover hallazgo"));
+  dialog.append(h("div",{class:"experience-heading"},h("h2",{id:titleId},findings[index].id+" · "+(S.uiLang==="en"?"Manual order":"Orden manual")),close),body);
+  dialog.addEventListener("close",()=>{dialog.remove();(previous?.isConnected?previous:$("#editor")).focus({preventScroll:true});});
+  document.body.append(dialog);dialog.showModal();position.focus();position.select();
+}
 function findingsDashboard() {
   const box = h("div", {});
+  const actions=h("div",{class:"finding-create-actions"},
+    h("button",{type:"button",class:"btn primary","data-finding-create":"blank",onclick:()=>{addFinding("blank");$("#editor").focus({preventScroll:true});}},t("add_finding")),
+    h("button",{type:"button",class:"btn","data-finding-create":"library",onclick:()=>$("#libBtn").click()},S.uiLang==="en"?"Use finding library":"Usar biblioteca de hallazgos"));
+  box.append(actions);
   const all = (S.data.findings || []);
   const vulns = all.filter(f => f.mode !== "machine");
   const machines = all.filter(f => f.mode === "machine");
-  const counts = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
-  vulns.forEach(f => { if (counts[f.severity] != null) counts[f.severity]++; });
+  const counts = { critical: 0, high: 0, medium: 0, low: 0, info: 0, pending: 0 };
+  vulns.forEach(f => { if (counts[f.severity] != null) counts[f.severity]++; else counts.pending++; });
+  const dashboardSeverities = [...SEV, ["pending", severityLabel("")]];
   const totalV = vulns.length;
   // barra de distribución
   if (totalV) {
     const bar = h("div", { class: "dash-bar" });
-    SEV.forEach(([k]) => { if (counts[k]) bar.append(h("span", { class: "dash-bar-seg sev-" + k, style: "flex:" + counts[k] })); });
+    dashboardSeverities.forEach(([k]) => { if (counts[k]) bar.append(h("span", { class: "dash-bar-seg sev-" + k, style: "flex:" + counts[k] })); });
     box.append(bar);
   }
   // píldoras clicables (filtro por severidad)
   const sumBar = h("div", { class: "dash-summary" });
-  SEV.forEach(([k, lab]) => sumBar.append(h("button", {
+  dashboardSeverities.forEach(([k]) => sumBar.append(h("button", {
     class: "dash-pill sev-" + k + (S.dashFilter === k ? " active" : ""),
     onclick: () => { S.dashFilter = S.dashFilter === k ? null : k; renderMain(); }
-  }, String(counts[k]), h("small", {}, lab))));
+  }, String(counts[k]), h("small", {}, severityLabel(k === "pending" ? "" : k)))));
   if (machines.length) sumBar.append(h("button", {
     class: "dash-pill sev-machine" + (S.dashFilter === "machine" ? " active" : ""),
     onclick: () => { S.dashFilter = S.dashFilter === "machine" ? null : "machine"; renderMain(); }
@@ -539,7 +752,8 @@ function findingsDashboard() {
     h("button", { class: "dash-tab" + (sortMode === "sev" ? " active" : ""), onclick: () => { S.dashSort = "sev"; renderMain(); } }, t("dash_sort_sev")),
     h("button", { class: "dash-tab" + (sortMode === "manual" ? " active" : ""), onclick: () => { S.dashSort = "manual"; renderMain(); } }, t("dash_sort_manual")));
   box.append(toolbar);
-  let rows = all.map((f, idx) => ({ f, idx }));
+  box.append(WorkbenchUI.filterBar());
+  let rows = WorkbenchUI.filterRows(all.map((f, idx) => ({ f, idx })));
   if (sortMode === "sev") {
     rows.sort((a, b) => {
       const am = a.f.mode === "machine", bm = b.f.mode === "machine";
@@ -548,27 +762,33 @@ function findingsDashboard() {
       return (SEV_RANK[a.f.severity] ?? 9) - (SEV_RANK[b.f.severity] ?? 9);
     });
   }
-  if (S.dashFilter) rows = rows.filter(({ f }) => S.dashFilter === "machine" ? f.mode === "machine" : (f.mode !== "machine" && f.severity === S.dashFilter));
+  if (S.dashFilter) rows = rows.filter(({ f }) => S.dashFilter === "machine" ? f.mode === "machine" : (f.mode !== "machine" && (f.severity || "pending") === S.dashFilter));
   const canDrag = sortMode === "manual" && !S.dashFilter;
+  const pageSize=50, key=JSON.stringify([S.slug,sortMode,S.dashFilter,rows.map(({f})=>f.uid||f.id)]);
+  if(findingPageState.boardKey!==key){findingPageState.boardKey=key;findingPageState.board=0;}
+  findingPageState.board=Math.max(0,Math.min(Math.max(0,Math.ceil(rows.length/pageSize)-1),findingPageState.board));
+  if(rows.length>pageSize)box.append(workspacePageBar("board",rows.length,findingPageState.board,pageSize,page=>{findingPageState.board=page;renderMain();}));
+  const visibleRows=rows.slice(findingPageState.board*pageSize,(findingPageState.board+1)*pageSize);
   const tbl = h("table", { class: "dash-table" });
   tbl.append(h("thead", {}, h("tr", {},
     canDrag ? h("th", { class: "c-drag" }, "") : null,
     h("th", { class: "c-n" }, "#"), h("th", {}, t("dash_sev")), h("th", {}, t("dash_finding")),
     h("th", {}, t("dash_cwe")), h("th", { class: "c-cvss" }, t("dash_cvss")))));
   const tb = h("tbody", {});
-  rows.forEach(({ f, idx }) => {
+  visibleRows.forEach(({ f, idx }) => {
     const isM = f.mode === "machine";
     const sevCell = isM
       ? h("span", { class: "tag sev-machine" }, t("dash_machine"))
-      : h("span", { class: "tag sev-" + (f.severity || "info") }, (SEV.find(s => s[0] === f.severity) || [, f.severity || "—"])[1]);
+      : h("span", { class: "tag sev-" + (f.severity || "pending") }, severityLabel(f.severity));
     const cwe = (f.cwe || "").split(" —")[0].split(" -")[0].trim();
     const cvss = isM ? "—" : (f.cvss != null && f.cvss !== "" ? f.cvss + (f.cvss_version ? "  (" + f.cvss_version + ")" : "") : "—");
     const host = isM && f.host ? (f.host.name || f.host.ip || "") : "";
     const incomplete = !isM && (f.cvss == null || f.cvss === "" || !cwe);
-    const title = h("td", { class: "c-title" }, f.title || (isM ? host : "—"));
+    const title = h("td", { class: "c-title" }, h("button",{type:"button",class:"finding-row-open",onclick:e=>{e.stopPropagation();select("finding",idx);}},f.title || (isM ? host : "—")));
+    title.append(WorkbenchUI.findingChips(f));
     if (incomplete) title.append(h("span", { class: "dash-warn", title: t("dash_incomplete") }, "!"));
-    const tr = h("tr", { class: "dash-row", onclick: e => { if (!e.target.closest(".drag")) select("finding", idx); } },
-      canDrag ? h("td", { class: "c-drag" }, dragHandle(S.data.findings, idx)) : null,
+    const tr = h("tr", { class: "dash-row", "data-finding-uid":f.uid, onclick: e => { if (!e.target.closest(".drag")) select("finding", idx); } },
+      canDrag ? h("td", { class: "c-drag" }, dragHandle(S.data.findings, idx),all.length>50?h("button",{type:"button",class:"btn sm","data-finding-move":f.uid,"aria-label":(S.uiLang==="en"?"Move ":"Mover ")+f.id,onclick:event=>{event.stopPropagation();moveFindingDialog(f.uid);}},S.uiLang==="en"?"Move":"Mover"):null) : null,
       h("td", { class: "c-n" }, f.id || ("F" + (idx + 1))),
       h("td", {}, sevCell), title,
       h("td", { class: "c-cwe" }, isM ? host : (cwe || "—")),
@@ -577,7 +797,8 @@ function findingsDashboard() {
     tb.append(tr);
   });
   tbl.append(tb);
-  box.append(tbl);
+  if(!rows.length)box.append(h("p",{role:"status"},S.uiLang==="en"?"No findings match these filters. Use Clear filters to see all findings.":"No hay hallazgos con estos filtros. Usa Limpiar filtros para verlos todos."));
+  box.append(h("div",{class:"findings-table-scroll",role:"region",tabindex:"0","aria-label":S.uiLang==="en"?"Findings table. Scroll horizontally on small screens.":"Tabla de hallazgos. Desplazamiento horizontal en pantallas pequeñas."},tbl));
   return box;
 }
 function noteCard(text) {
@@ -602,7 +823,7 @@ function scopeListEditor() {
 
 function sectionEditor(key) {
   const schema = S.catBy[key] || {};
-  const lang = (S.data.meta.lang || "es");
+  const lang = (S.data.meta.lang || "en");
   const sec = S.data.report.sections.find(s => s.key === key) || {};
   const wrap = h("div", {});
   const isGeneric = !S.catBy[key];
@@ -660,10 +881,16 @@ function field(label, obj, key, opts = {}) {
   if (opts.type === "color") return colorField(label, obj, key);
   let inp;
   if (opts.area) {
-    inp = h("textarea", { rows: opts.rows || 4, class: "grow", oninput: e => { obj[key] = e.target.value; autoGrow(e.target); scheduleSave(); } });
+    inp = h("textarea", { rows: opts.rows || 4, class: "grow", oninput: e => { obj[key] = e.target.value; autoGrow(e.target); if(opts.onChange)opts.onChange(); scheduleSave(); } });
     inp.value = obj[key] || ""; setTimeout(() => autoGrow(inp), 0);
   } else {
-    inp = h("input", { type: opts.type || "text", value: obj[key] || "", oninput: e => { obj[key] = e.target.value; scheduleSave(); } });
+    inp = h("input", { type: opts.type || "text", value: obj[key] || "", oninput: e => {
+      obj[key] = e.target.value; if(opts.onChange)opts.onChange(); scheduleSave();
+      if(key==="title"&&S.sel.type==="finding"&&S.data?.findings[S.sel.idx]===obj){
+        const item=Array.from(document.querySelectorAll("#findingList [data-finding-uid]")).find(el=>el.dataset.findingUid===obj.uid);
+        const title=item?.querySelector(".ftitle");if(title)title.textContent=obj.title||t("untitled");
+      }
+    } });
   }
   inp.dataset.field = key;
   if (opts.ph) inp.setAttribute("placeholder", opts.ph);
@@ -672,9 +899,9 @@ function field(label, obj, key, opts = {}) {
 
 // Editor Markdown estilo SysReptor: barra + Write/Preview + imagen + tabla.
 function mdEditor(label, obj, key, opts = {}) {
-  obj[key] = obj[key] || "";
-  const ta = h("textarea", { rows: opts.rows || 10, class: "grow" });
-  ta.value = obj[key]; ta.dataset.field = key;
+  const w = (es, en) => S.uiLang === "en" ? en : es;
+  const ta = h("textarea", { rows: opts.rows || 10, class: "grow", "aria-label":label });
+  ta.id = "markdown-" + WorkflowUI.uid(); ta.value = obj[key] || ""; ta.dataset.field = key;
   const prev = h("div", { class: "mded-prev", style: "display:none" });
 
   function apply() { obj[key] = ta.value; autoGrow(ta); scheduleSave(); }
@@ -708,26 +935,26 @@ function mdEditor(label, obj, key, opts = {}) {
       const file = e.target.files[0]; if (!file) return;
       const r = await sendImage(file);
       if (!r) return;
-      insertAtCursor(`\n![epígrafe de la imagen](${r.src}){width="auto"}\n`);
+      insertAtCursor(`\n![${w("epígrafe de la imagen", "image caption")}](${r.src}){width="auto"}\n`);
       setSaveState(t("saved"));
     } });
 
-  const tb = (txt, title, fn) => h("button", { class: "mded-btn", type: "button", title, onclick: fn }, txt);
+  const tb = (txt, title, fn) => h("button", { class: "mded-btn", type: "button", title, "aria-label":title, onclick: fn }, txt);
   const bar = h("div", { class: "mded-bar" },
-    tb("B", "Negrita", () => insert("**", "**", "texto")),
-    tb("i", "Cursiva", () => insert("*", "*", "texto")),
-    tb("</>", "Código en línea", () => insert("`", "`", "código")),
-    tb("{ }", "Bloque de código", () => insert("```bash\n", "\n```", "comando")),
-    tb("H", "Encabezado (negrita)", () => prefixLines("**") /* estilo del ejemplo: titulo en negrita */),
-    tb("•", "Lista", () => prefixLines("- ")),
-    tb("1.", "Lista numerada", () => prefixLines("1. ")),
-    tb("❝", "Cita", () => prefixLines("> ")),
-    tb("Enlace", "Enlace", () => insert("[", "](https://)", "texto")),
-    tb("Imagen", "Subir imagen", () => fileInp.click()),
-    tb("Tabla", "Insertar tabla", () => insertAtCursor("\n| Col1 | Col2 |\n|---|---|\n| a | b |\n")),
+    tb("B", w("Negrita", "Bold"), () => insert("**", "**", w("texto", "text"))),
+    tb("i", w("Cursiva", "Italic"), () => insert("*", "*", w("texto", "text"))),
+    tb("</>", w("Código en línea", "Inline code"), () => insert("`", "`", w("código", "code"))),
+    tb("{ }", w("Bloque de código", "Code block"), () => insert("```bash\n", "\n```", w("comando", "command"))),
+    tb("H", w("Encabezado en negrita", "Bold heading"), () => insert("**", "**", w("encabezado", "heading"))),
+    tb("•", w("Lista", "List"), () => prefixLines("- ")),
+    tb("1.", w("Lista numerada", "Numbered list"), () => prefixLines("1. ")),
+    tb("❝", w("Cita", "Quote"), () => prefixLines("> ")),
+    tb(w("Enlace", "Link"), w("Enlace", "Link"), () => insert("[", "](https://)", w("texto", "text"))),
+    tb(w("Imagen", "Image"), w("Subir imagen", "Upload image"), () => fileInp.click()),
+    tb(w("Tabla", "Table"), w("Insertar tabla", "Insert table"), () => insertAtCursor("\n| Col1 | Col2 |\n|---|---|\n| a | b |\n")),
     h("span", { class: "mded-sp" }),
-    (() => { const b = h("button", { class: "mded-tab active", type: "button" }, "Write"); b.dataset.role = "w"; return b; })(),
-    (() => { const b = h("button", { class: "mded-tab", type: "button" }, "Preview"); b.dataset.role = "p"; return b; })(),
+    (() => { const b = h("button", { class: "mded-tab active", type: "button" }, w("Editar", "Write")); b.dataset.role = "w"; return b; })(),
+    (() => { const b = h("button", { class: "mded-tab", type: "button" }, w("Vista previa", "Preview")); b.dataset.role = "p"; return b; })(),
     fileInp
   );
   const wTab = bar.querySelector('[data-role="w"]'), pTab = bar.querySelector('[data-role="p"]');
@@ -737,17 +964,18 @@ function mdEditor(label, obj, key, opts = {}) {
     ta.style.display = "none"; prev.style.display = ""; pTab.classList.add("active"); wTab.classList.remove("active");
     try {
       const r = await api.post("/api/md", { text: ta.value, slug: S.slug }).then(requireOk).then(x => x.json());
-      prev.innerHTML = r.html || "<em>(vacío)</em>";
-    } catch (_) { prev.innerHTML = "<em>error al renderizar</em>"; }
+      prev.innerHTML = r.html || "<em>" + w("(vacío)", "(empty)") + "</em>";
+    } catch (_) { prev.innerHTML = "<em>" + w("error al renderizar", "rendering failed") + "</em>"; }
   });
   const box = h("div", { class: "mded" }, bar, ta, prev);
-  return h("label", { class: "mdedlabel" }, label, box);
+  return h("div", { class: "mdedlabel" }, h("label", { for: ta.id }, label), box);
 }
 
 function reportEditor() {
   const m = S.data.meta;
   const wrap = h("div", {});
   wrap.append(h("h2", {}, t("report")));
+  wrap.append(DesignLibraryUI.panel());
 
   const c1 = h("div", { class: "card" }, h("h4", {}, t("cover_meta")));
   c1.append(field(t("report_title"), m, "report_title", { ph: t("report_title_ph") }));
@@ -758,16 +986,19 @@ function reportEditor() {
            field(t("version"), m, "version", { ph: t("version_ph") }),
            field(t("osid"), m, "osid", { ph: t("osid_ph") }), field(t("email"), m, "email", { ph: t("email_ph") }));
   // diseño (theme) e idioma
-  const themeSel = h("select", { onchange: e => { m.theme = e.target.value; scheduleSave(); } },
-    ["serio", "corporativo", "offsec", "htb"].map(t => h("option", { value: t, selected: m.theme === t ? "" : null }, t)));
+  const themeSel = h("select", { "data-field":"theme", onchange: e => { m.theme = e.target.value; delete m.design; scheduleSave(); renderMain(); } },
+    ["serio", "corporativo", "offsec", "htb", "ejecutivo", "laboratorio"].map(t => h("option", { value: t, selected: m.theme === t ? "" : null }, t)));
   const langSel = h("select", { onchange: e => { m.lang = e.target.value; scheduleSave(); } },
-    ["es", "en"].map(t => h("option", { value: t, selected: m.lang === t ? "" : null }, t)));
+    ["es", "en"].map(t => h("option", { value: t, selected: (m.lang || "en") === t ? "" : null }, t)));
   g.append(h("label", {}, t("design"), themeSel), h("label", {}, t("report_lang"), langSel));
+  const density=h("select", {"data-field":"report_density", onchange:e=>{m.report_density=e.target.value;scheduleSave();}},
+    [ ["comfortable",S.uiLang==="en"?"Comfortable":"Cómoda"], ["compact",S.uiLang==="en"?"Compact":"Compacta"] ].map(([v,label])=>h("option",{value:v,selected:(m.report_density||"comfortable")===v?"":null},label)));
+  g.append(h("label",{},S.uiLang==="en"?"Report spacing":"Espaciado del informe",density));
   c1.append(g);
   const b = m.branding = m.branding || {};
   const g2 = h("div", { class: "grid2" });
   g2.append(field(t("wordmark"), b, "wordmark", { ph: t("wordmark_ph") }), field(t("byline"), b, "byline", { ph: t("byline_ph") }),
-            field(t("conf_text"), b, "confidential_text"), field(t("accent"), b, "accent", { type: "color" }));
+            field(t("conf_text"), b, "confidential_text"), field(t("accent"), m.design || b, "accent", { type: "color" }));
   g2.append(coverImgField(b, "cover_image", t("cover_image")), coverImgField(b, "logo", t("own_logo")), coverImgField(b, "client_logo", t("client_logo")));
   c1.append(g2);
   wrap.append(c1);
@@ -776,17 +1007,17 @@ function reportEditor() {
 }
 
 function inlineField(obj, key, ph) {
-  return h("input", { value: obj[key] || "", placeholder: ph, oninput: e => { obj[key] = e.target.value; scheduleSave(); } });
+  return h("input", { value: obj[key] || "", placeholder: ph, "aria-label":ph||key, oninput: e => { obj[key] = e.target.value; scheduleSave(); } });
 }
-function listCard(title, arr, factory, rowFields) {
+function listCard(title, arr, factory, rowFields, beforeEdit=()=>{}) {
   const card = h("div", { class: "card" }, h("h4", {}, title));
   arr.forEach((row, i) => {
     const r = h("div", { class: "row" });
     rowFields(row).forEach(x => r.append(x));
-    r.append(h("button", { class: "btn sm danger", onclick: () => { arr.splice(i, 1); scheduleSave(); renderMain(); } }, "✕"));
+    r.append(h("button", { class: "btn sm danger", onclick: () => { beforeEdit();UndoUI.remove(arr,i); scheduleSave(); renderMain(); } }, "✕"));
     card.append(r);
   });
-  card.append(h("button", { class: "btn sm", onclick: () => { arr.push(factory()); scheduleSave(); renderMain(); } }, t("add_row")));
+  card.append(h("button", { class: "btn sm", onclick: () => { beforeEdit();arr.push(factory()); scheduleSave(); renderMain(); } }, t("add_row")));
   return card;
 }
 
@@ -794,18 +1025,28 @@ function listCard(title, arr, factory, rowFields) {
 function findingEditor(f) {
   const wrap = h("div", {});
   const head = h("h2", {}, `${f.id} `);
-  const modeSel = h("select", { style: "width:auto;display:inline-block;margin-left:8px", onchange: e => { f.mode = e.target.value; scheduleSave(); renderMain(); } },
+  const modeSel = h("select", { "aria-label":S.uiLang === "en" ? "Finding type" : "Tipo de hallazgo", style: "width:auto;display:inline-block;margin-left:8px", onchange: e => { f.mode = e.target.value; scheduleSave(); renderMain(); } },
     [["vuln", t("vuln")], ["machine", t("machine")]].map(o => h("option", { value: o[0], selected: f.mode === o[0] ? "" : null }, o[1])));
   head.append(modeSel);
   head.append(h("button", { class: "btn sm", style: "float:right;margin-left:8px", onclick: () => {
-    const copy = JSON.parse(JSON.stringify(f)); copy.id = nextFid(); copy.uid = WorkflowUI.uid(); delete copy.retests; copy.status = "open";
-    S.data.findings.splice(S.sel.idx + 1, 0, copy); renumberFindings(); scheduleSave(); select("finding", S.sel.idx + 1);
+    const id=requestedFindingId(); if (!id) return;
+    const copy = JSON.parse(JSON.stringify(f)); copy.id = id; copy.uid = WorkflowUI.uid(); delete copy.retests; copy.status = "open"; copy.verification = "unverified"; if(copy.import_source)copy.import_source.reviewed=false;
+    S.data.findings.splice(S.sel.idx + 1, 0, copy); ensureFindingIds(); scheduleSave(); select("finding", S.sel.idx + 1);
   } }, t("duplicate_finding")));
   head.append(h("button", { class: "btn sm", style: "float:right;margin-left:8px", onclick: () => saveToLibrary(f) }, t("save_to_lib")));
-  head.append(h("button", { class: "btn sm danger", style: "float:right", onclick: () => { if (!confirm(t("delete_finding_confirm"))) return; S.data.findings.splice(S.sel.idx, 1); renumberFindings(); S.sel = { type: "report", idx: -1 }; scheduleSave(); renderSidebar(); renderMain(); } }, t("delete_finding")));
+  head.append(h("button", { class: "btn sm danger", style: "float:right", onclick: () => { if (!confirm(t("delete_finding_confirm"))) return; UndoUI.remove(S.data.findings,S.sel.idx); ensureFindingIds(); S.sel = { type: "report", idx: -1 }; scheduleSave(); renderSidebar(); renderMain(); } }, t("delete_finding")));
   wrap.append(head);
   wrap.append(f.mode === "machine" ? machineEditor(f) : vulnEditor(f));
-  wrap.append(WorkflowUI.findingPanel(f));
+  const tracking=WorkflowUI.findingPanel(f);
+  const evidencePart=h("section",{"data-workpart":"evidence",class:"finding-part"},h("h3",{},S.uiLang==="en"?"Evidence":"Evidencias"));
+  const evidenceLinks=tracking.querySelector('[data-field="evidence_uids"]');if(evidenceLinks)evidencePart.append(evidenceLinks);
+  evidencePart.append(h("button",{type:"button",class:"btn",onclick:()=>select("workflow","evidence")},S.uiLang==="en"?"Open evidence gallery":"Abrir galería de evidencias"));
+  WorkbenchUI.findingWorkspace(evidencePart,f);
+  const remediationPart=wrap.querySelector('[data-workpart="remediation"]');
+  if(remediationPart)remediationPart.before(evidencePart);else wrap.append(evidencePart);
+  wrap.append(tracking);
+  if(f.mode==="machine"){const m=wrap.children[1];m.firstElementChild.dataset.workpart="description";const phase=m.querySelector(".card:nth-child(2)");if(phase)phase.dataset.workpart="reproduction";tracking.dataset.workpart="remediation";}
+  WorkbenchUI.findingNavigation(wrap,f);
   if (S.focusTitle) { S.focusTitle = false; setTimeout(() => { const el = document.querySelector("#editor .card input"); if (el) el.focus(); }, 0); }
   return wrap;
 }
@@ -849,39 +1090,40 @@ function vulnEditor(f) {
   const c = h("div", { class: "card" }, h("h4", {}, t("finding_data")));
   c.append(field(t("title"), f, "title"));
   // severidad + cvss
-  const sevSel = h("select", { onchange: e => { f.severity = e.target.value; scheduleSave(); renderSidebar(); } },
-    SEV.map(o => h("option", { value: o[0], selected: f.severity === o[0] ? "" : null }, o[1])));
+  const sevSel = h("select", { onchange: e => { if(e.target.value)f.severity=e.target.value;else delete f.severity; scheduleSave(); renderSidebar(); } },
+    [[""], ...SEV].map(o => h("option", { value: o[0], selected: (f.severity || "") === o[0] ? "" : null }, severityLabel(o[0]))));
   const g = h("div", { class: "grid2" });
-  g.append(h("label", {}, "Severidad", sevSel), cweField(f), field(t("affected"), f, "affected"));
+  g.append(h("label", {}, t("dash_sev"), sevSel), cweField(f), field(t("affected"), f, "affected"));
   c.append(g);
-  c.append(cvssWidget(f, sevSel));
-  box.append(c);
+  c.append(h("details",{class:"cvss-details"},h("summary",{},"CVSS / "+(f.cvss||"—")),cvssWidget(f, sevSel)));
+  const description=h("section",{"data-workpart":"description",class:"finding-part"});description.append(c);box.append(description);
 
   const c2 = h("div", { class: "card" }, h("h4", {}, t("content")));
   c2.append(field(t("desc_root"), f, "description_md", { area: true, rows: 4 }));
   c2.append(field(t("impact"), f, "impact_md", { area: true, rows: 3 }));
-  c2.append(field(t("remediation"), f, "remediation_md", { area: true, rows: 3 }));
-  f.references = f.references || [];
+
+  const references=f.references||[];
   const refCard = h("div", {}, h("h4", {}, t("references")));
-  f.references.forEach((r, i) => {
+  references.forEach((r, i) => {
     const row = h("div", { class: "row" },
-      h("input", { value: r, oninput: e => { f.references[i] = e.target.value; scheduleSave(); } }),
-      h("button", { class: "btn sm danger", onclick: () => { f.references.splice(i, 1); scheduleSave(); renderMain(); } }, "✕"));
+      h("input", { value: r, "aria-label":t("references")+" "+(i+1), oninput: e => { references[i] = e.target.value;f.references=references; scheduleSave(); } }),
+      h("button", { class: "btn sm danger", onclick: () => { f.references=references;UndoUI.remove(references,i); scheduleSave(); renderMain(); } }, "✕"));
     refCard.append(row);
   });
-  refCard.append(h("button", { class: "btn sm", onclick: () => { f.references.push(""); scheduleSave(); renderMain(); } }, t("add_ref")));
+  refCard.append(h("button", { class: "btn sm", onclick: () => { f.references=references;references.push(""); scheduleSave(); renderMain(); } }, t("add_ref")));
   c2.append(refCard);
-  box.append(c2);
+  description.append(c2);
 
   // walkthrough
-  f.walkthrough = f.walkthrough || [];
-  box.append(stepsCard(t("procedure"), f.walkthrough));
+  const walkthrough=f.walkthrough||[];
+  box.append(h("section",{"data-workpart":"reproduction",class:"finding-part"},stepsCard(t("procedure"),walkthrough,()=>f.walkthrough=walkthrough)));
 
   // remediation summary
-  const rs = f.remediation_summary = f.remediation_summary || {};
+  const rs=f.remediation_summary||{}, persistRemediation=()=>f.remediation_summary=rs;
   const c3 = h("div", { class: "card" }, h("h4", {}, t("rem_summary")));
-  c3.append(field("Corto plazo", rs, "short_md"), field("Mediano plazo", rs, "medium_md"), field("Largo plazo", rs, "long_md"));
-  box.append(c3);
+  c3.append(field(t("remediation"),f,"remediation_md",{area:true,rows:4}));
+  c3.append(field(S.uiLang==="en"?"Short term":"Corto plazo", rs, "short_md",{onChange:persistRemediation}), field(S.uiLang==="en"?"Medium term":"Mediano plazo", rs, "medium_md",{onChange:persistRemediation}), field(S.uiLang==="en"?"Long term":"Largo plazo", rs, "long_md",{onChange:persistRemediation}));
+  box.append(h("section",{"data-workpart":"remediation",class:"finding-part"},c3));
   return box;
 }
 
@@ -953,9 +1195,23 @@ function cvssPanel(r, dict, version) {
   return wrap;
 }
 function copyVectorBtn(vector) {
-  const b = h("button", { class: "btn sm", style: "padding:3px 9px;flex:none", title: t("copy_vector"),
-    onclick: () => { if (navigator.clipboard) (navigator.clipboard ? navigator.clipboard.writeText(vector) : Promise.resolve());
-      const o = b.textContent; b.textContent = "\u2713"; setTimeout(() => { b.textContent = o; }, 1000); } }, "\u29C9");
+  let restoreTimer;
+  const b = h("button", { type: "button", class: "btn sm", style: "padding:3px 9px;flex:none",
+    title: t("copy_vector"), "aria-label": t("copy_vector"),
+    onclick: async () => {
+      clearTimeout(restoreTimer);
+      b.disabled = true; b.setAttribute("aria-busy", "true"); b.textContent = "\u2026";
+      try {
+        if (typeof navigator.clipboard?.writeText !== "function") throw new Error("Clipboard unavailable");
+        await navigator.clipboard.writeText(vector);
+        b.textContent = "\u2713"; toast(t("copied"), "ok");
+        restoreTimer = setTimeout(() => { b.textContent = "\u29C9"; }, 1000);
+      } catch (_) {
+        b.textContent = "\u29C9"; toast(t("copy_vector_failed"), "err");
+      } finally {
+        b.disabled = false; b.removeAttribute("aria-busy");
+      }
+    } }, "\u29C9");
   return b;
 }
 function applyPastedVector(f, raw, errEl) {
@@ -978,22 +1234,22 @@ function applyPastedVector(f, raw, errEl) {
 }
 
 function cvssWidget(f, sevSel) {
-  f.cvss_version = f.cvss_version || "3.1";
+  const version=f.cvss_version||"3.1";
   const wrap = h("div", { style: "margin-top:10px" });
-  const verSel = h("select", { style: "width:auto;display:inline-block;margin-left:8px",
+  const verSel = h("select", { "aria-label":S.uiLang==="en"?"CVSS version":"Versión de CVSS", style: "width:auto;display:inline-block;margin-left:8px",
     onchange: e => {
       f.cvss_version = e.target.value;
       f.cvss = ""; f.cvss_vector = ""; f.macrovector = "";  // estado incompatible entre versiones
       scheduleSave(); renderMain();
     } },
-    ["3.1", "4.0"].map(v => h("option", { value: v, selected: f.cvss_version === v ? "" : null }, "CVSS " + v)));
+    ["3.1", "4.0"].map(v => h("option", { value: v, selected: version === v ? "" : null }, "CVSS " + v)));
   wrap.append(h("h4", {}, t("calculator"), verSel));
   const pasteErr = h("span", { class: "cvss-paste-err" });
   const paste = h("input", { class: "cvss-paste", placeholder: t("cvss_paste_ph"), value: f.cvss_vector || "",
     onchange: e => applyPastedVector(f, e.target.value, pasteErr),
     onkeydown: e => { if (e.key === "Enter") applyPastedVector(f, e.target.value, pasteErr); } });
   wrap.append(h("label", { style: "margin-top:6px" }, t("cvss_paste_label"), h("div", { style: "display:flex;gap:8px;align-items:center" }, paste, pasteErr)));
-  wrap.append(f.cvss_version === "4.0" ? cvss4Widget(f, sevSel) : cvss31Widget(f, sevSel));
+  wrap.append(version === "4.0" ? cvss4Widget(f, sevSel) : cvss31Widget(f, sevSel));
   return wrap;
 }
 
@@ -1004,14 +1260,14 @@ function cvss31Widget(f, sevSel) {
   const out = h("div", { class: "cvssout" });
   function refresh() {
     const r = cvssCompute(metrics);
-    f.cvss = String(r.score); f.cvss_vector = r.vector; f.severity = r.severity;
+    f.cvss_version="3.1"; f.cvss = String(r.score); f.cvss_vector = r.vector; f.severity = r.severity;
     if (sevSel) sevSel.value = r.severity;
     out.innerHTML = "";
     out.append(cvssPanel(r, metrics, "3.1"));
     scheduleSave(); renderSidebar();
   }
   CV.M.forEach(k => {
-    const sel = h("select", { title: CVSS_TIP[k] || "", onchange: e => { metrics[k] = e.target.value; refresh(); } },
+    const sel = h("select", { title: (S.uiLang==="en"?METRIC_NAME.en[k]:CVSS_TIP[k]) || "", onchange: e => { metrics[k] = e.target.value; refresh(); } },
       CV.OPTS[k].map(o => h("option", { value: o[0], selected: metrics[k] === o[0] ? "" : null }, `${k}: ${o[1]}`)));
     bx.append(h("div", { class: "m" }, sel));
   });
@@ -1023,7 +1279,7 @@ function cvss31Widget(f, sevSel) {
 
 function cvss4Widget(f, sevSel) {
   const c = h("div", {});
-  if (!window.CVSS40) { c.append(h("p", { class: "cvss-vec" }, "cvss40.js no cargado")); return c; }
+  if (!window.CVSS40) { c.append(h("p", { class: "cvss-vec" }, S.uiLang==="en"?"CVSS 4.0 calculator could not load":"No se pudo cargar la calculadora CVSS 4.0")); return c; }
   const C = window.CVSS40;
   const base = {};
   if ((f.cvss_vector || "").startsWith("CVSS:4.0/")) {
@@ -1043,7 +1299,7 @@ function cvss4Widget(f, sevSel) {
     draw(r); scheduleSave(); renderSidebar();
   }
   CVSS4_BASE.forEach(k => {
-    const sel = h("select", { title: CVSS_TIP[k] || "", onchange: e => { base[k] = e.target.value; refresh(); } },
+    const sel = h("select", { title: (S.uiLang==="en"?METRIC_NAME.en[k]:CVSS_TIP[k]) || "", onchange: e => { base[k] = e.target.value; refresh(); } },
       CVSS4_OPTS[k].map(o => h("option", { value: o[0], selected: base[k] === o[0] ? "" : null }, `${k}: ${o[1]}`)));
     bx.append(h("div", { class: "m" }, sel));
   });
@@ -1054,44 +1310,44 @@ function cvss4Widget(f, sevSel) {
 
 function machineEditor(f) {
   const box = h("div", {});
-  f.host = f.host || {};
+  const host=f.host||{};
   const c = h("div", { class: "card" }, h("h4", {}, t("host")));
   c.append(field(t("machine_name"), f, "title"));
   const g = h("div", { class: "grid2" });
-  g.append(field(t("ip"), f.host, "ip", { ph: t("ip_ph") }), field(t("os"), f.host, "os", { ph: t("os_ph") }), field(t("ports"), f, "open_ports", { ph: t("ports_ph") }));
+  g.append(field(t("ip"),host,"ip",{ph:t("ip_ph"),onChange:()=>f.host=host}),field(t("os"),host,"os",{ph:t("os_ph"),onChange:()=>f.host=host}), field(t("ports"), f, "open_ports", { ph: t("ports_ph") }));
   c.append(g);
   c.append(field(t("attack_path"), f, "summary_md", { area: true, rows: 3, ph: t("attack_path_ph") }));
   c.append(h("p", { style: "color:var(--muted);font-size:13px;margin:8px 2px 0" }, t("machine_hint")));
   box.append(c);
 
-  f.phases = f.phases || [];
-  f.phases.forEach((ph, i) => {
+  const phases=f.phases||[];
+  phases.forEach((ph, i) => {
     const pc = h("div", { class: "card" });
     const head = h("h4", {}, "");
     const nameInp = h("input", { value: ph.name || "", placeholder: t("phase_name_ph"), style: "max-width:60%;display:inline-block", oninput: e => { ph.name = e.target.value; scheduleSave(); } });
-    head.append(t("phase") + " ", nameInp, h("button", { class: "btn sm danger", style: "float:right", onclick: () => { f.phases.splice(i, 1); scheduleSave(); renderMain(); } }, t("remove_phase")));
+    head.append(t("phase") + " ", nameInp, h("button", { class: "btn sm danger", style: "float:right", onclick: () => { f.phases=phases;UndoUI.remove(phases,i); scheduleSave(); renderMain(); } }, t("remove_phase")));
     pc.append(head);
-    ph.steps = ph.steps || [];
-    pc.append(stepsInner(ph.steps));
+    const steps=ph.steps||[];
+    pc.append(stepsInner(steps,()=>ph.steps=steps));
     box.append(pc);
   });
-  box.append(h("button", { class: "btn sm", onclick: () => { f.phases.push({ name: "", steps: [] }); scheduleSave(); renderMain(); } }, t("add_phase")));
+  box.append(h("button", { class: "btn sm", onclick: () => { f.phases=phases;phases.push({ name: "", steps: [] }); scheduleSave(); renderMain(); } }, t("add_phase")));
 
-  f.proof = f.proof || [];
-  box.append(listCard(t("evidence"), f.proof, () => ({ name: "", value: "" }),
-    row => [inlineField(row, "name", t("ev_name")), inlineField(row, "value", t("ev_value"))]));
+  const proof=f.proof||[];
+  box.append(listCard(t("evidence"),proof,()=>({name:"",value:""}),
+    row=>[inlineField(row,"name",t("ev_name")),inlineField(row,"value",t("ev_value"))],()=>f.proof=proof));
   return box;
 }
 
-function stepsCard(title, steps) {
+function stepsCard(title, steps, beforeEdit=()=>{}) {
   const card = h("div", { class: "card" }, h("h4", {}, title));
-  card.append(stepsInner(steps));
+  card.append(stepsInner(steps,beforeEdit));
   return card;
 }
-function stepsInner(steps) {
+function stepsInner(steps,beforeEdit=()=>{}) {
   const wrap = h("div", {});
   steps.forEach((s, i) => wrap.append(stepBlock(steps, s, i)));
-  wrap.append(h("button", { class: "btn sm", "data-add-step": "", onclick: () => { steps.push({}); scheduleSave(); renderMain(); } }, t("add_step")));
+  wrap.append(h("button", { class: "btn sm", "data-add-step": "", onclick: () => { beforeEdit();steps.push({}); scheduleSave(); renderMain(); } }, t("add_step")));
   return wrap;
 }
 function stepBlock(steps, s, i) {
@@ -1099,9 +1355,9 @@ function stepBlock(steps, s, i) {
   const head = h("div", { class: "block-head" },
     h("span", { class: "lbl" }, dragHandle(steps, i), " " + t("step") + " " + (i + 1)),
     h("span", {},
-      h("button", { class: "btn sm", onclick: () => { if (i > 0) { steps.splice(i - 1, 0, steps.splice(i, 1)[0]); scheduleSave(); renderMain(); } } }, "↑"),
-      h("button", { class: "btn sm", onclick: () => { if (i < steps.length - 1) { steps.splice(i + 1, 0, steps.splice(i, 1)[0]); scheduleSave(); renderMain(); } } }, "↓"),
-      h("button", { class: "btn sm danger", onclick: () => { steps.splice(i, 1); scheduleSave(); renderMain(); } }, "✕")));
+      h("button", { class: "btn sm", onclick: () => { if (i > 0) { UndoUI.move(steps,i,i-1); scheduleSave(); renderMain(); } } }, "↑"),
+      h("button", { class: "btn sm", onclick: () => { if (i < steps.length - 1) { UndoUI.move(steps,i,i+1); scheduleSave(); renderMain(); } } }, "↓"),
+      h("button", { class: "btn sm danger", onclick: () => { UndoUI.remove(steps,i); scheduleSave(); renderMain(); } }, "✕")));
   b.append(head);
   makeDropZone(b, steps, i);
   b.append(field(t("lead"), s, "lead"));
@@ -1113,8 +1369,8 @@ function stepBlock(steps, s, i) {
   const file = h("input", { type: "file", "data-field": "src", accept: "image/*", onchange: e => uploadImage(e, s) });
   figWrap.append(h("label", {}, t("image"), file));
   if (fig.src) {
-    figWrap.append(h("img", { class: "imgprev", src: `/api/projects/${S.slug}/${fig.src}` }));
-    figWrap.append(h("input", { value: fig.caption || "", placeholder: t("caption_ph"), oninput: e => { s.figure.caption = e.target.value; scheduleSave(); } }));
+    figWrap.append(h("img", { class: "imgprev", src: `/api/projects/${S.slug}/${fig.src}`, alt:fig.caption || t("image")+" "+(i+1) }));
+    figWrap.append(h("input", { value: fig.caption || "", placeholder: t("caption_ph"), "aria-label":t("caption_ph"), oninput: e => { s.figure.caption = e.target.value; scheduleSave(); } }));
     figWrap.append(h("button", { class: "btn sm danger", onclick: () => { delete s.figure; scheduleSave(); renderMain(); } }, t("remove_image")));
   }
   b.append(figWrap);
@@ -1157,87 +1413,93 @@ function exportFindings() {
   const url = URL.createObjectURL(blob);
   const a = h("a", { href: url, download: (S.slug || "hallazgos") + "-findings.json" }); a.click(); URL.revokeObjectURL(url);
 }
-function importFindings(ev) {
+async function importFindings(ev) {
   const file = ev.target.files[0]; if (!file || !S.data) return;
-  const rd = new FileReader();
-  rd.onload = () => {
-    try {
-      let arr = JSON.parse(rd.result);
-      if (!Array.isArray(arr)) arr = arr.findings || [];
-      let n = 0;
-      arr.forEach(f => { if (f && typeof f === "object") { const g = JSON.parse(JSON.stringify(f)); g.id = nextFid(); g.uid = WorkflowUI.uid(); delete g.__name; delete g.asset_uids; delete g.evidence_uids; delete g.retests; S.data.findings.push(g); n++; } });
-      renumberFindings(); scheduleSave(); renderSidebar(); renderMain();
-      toast(n + " " + t("findings_imported"), "ok");
-    } catch (_) { toast(t("err"), "err"); }
-    ev.target.value = "";
-  };
-  rd.readAsText(file);
+  const slug=S.slug, current=S.data, revision=projectStore.revision, etag=projectStore.etag, snapshot=JSON.stringify(current);
+  const unchanged=()=>S.slug===slug && S.data===current && projectStore.revision===revision && projectStore.etag===etag && JSON.stringify(S.data)===snapshot;
+  try {
+    if (file.size>24*1024*1024) throw Error(S.uiLang === "en" ? "The file exceeds 24 MiB." : "El archivo supera 24 MiB.");
+    const text=await new Promise((resolve,reject)=>{const rd=new FileReader();rd.onload=()=>resolve(rd.result);rd.onerror=()=>reject(Error(S.uiLang === "en" ? "Could not read the file." : "No se pudo leer el archivo."));rd.readAsText(file);});
+    const parsed=JSON.parse(text), arr=Array.isArray(parsed)?parsed:parsed && typeof parsed==='object' && Array.isArray(parsed.findings)?parsed.findings:null;
+    if (!arr || arr.some(f=>!f || typeof f!=='object' || Array.isArray(f) || (f.mode!==undefined && !['vuln','machine'].includes(f.mode)))) throw Error(S.uiLang === "en" ? "Use an array of findings or an object with a findings array. Each finding must be an object with type vuln or machine." : "Usa una lista de hallazgos o un objeto con la lista findings. Cada hallazgo debe ser un objeto de tipo vuln o machine.");
+    if (!arr.length) { toast("0 "+t("findings_imported"),"ok"); return; }
+    const candidate=JSON.parse(snapshot);
+    for (const f of arr) {
+      const g=JSON.parse(JSON.stringify(f));g.id='F'+nextFid(candidate).slice(1).padStart(2,'0');g.uid=WorkflowUI.uid();g.mode ??= 'vuln';
+      delete g.__name;delete g.asset_uids;delete g.evidence_uids;delete g.retests;candidate.findings.push(g);
+    }
+    if (!unchanged()) throw Error(S.uiLang === "en" ? "The project changed. Import the file again." : "El proyecto cambió. Importa el archivo otra vez.");
+    const response=await requireOk(await appFetch('/api/projects/'+encodeURIComponent(slug)+'/draft-check',{method:'POST',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(candidate)}));
+    const accepted=(await response.json()).data;
+    if (!unchanged()) throw Error(S.uiLang === "en" ? "The project changed. Import the file again." : "El proyecto cambió. Importa el archivo otra vez.");
+    // Undo records refer to the existing model arrays; adopt only the approved additions.
+    current.findings.push(...accepted.findings.slice(current.findings.length));
+    current.finding_sequence=accepted.finding_sequence;
+    scheduleSave();renderSidebar();renderMain();toast(arr.length+" "+t("findings_imported"),"ok");
+  } catch (error) { toast(error instanceof SyntaxError ? (S.uiLang === "en" ? "Invalid JSON file." : "Archivo JSON inválido.") : error.message,"err"); }
+  finally { ev.target.value=""; }
 }
 function addFinding(kind) {
   if (!S.data) return;
   if (kind === "blank") {
-    S.data.findings.push({ id: nextFid(), mode: "vuln", title: "", severity: "medium", cvss: "", cvss_vector: "" });
+    const id=requestedFindingId(); if (!id) return;
+    S.data.findings.push({ id, mode: "vuln", title: "", cvss: "", cvss_vector: "" });
     S.focusTitle = true; finishAdd(); return;
   }
   openOwasp(kind);
 }
-function finishAdd() { renumberFindings(); scheduleSave(); const i = S.data.findings.length - 1; select("finding", i); }
+function finishAdd() { ensureFindingIds(); scheduleSave(); const i = S.data.findings.length - 1; select("finding", i); }
 function openOwasp(kind) {
   const cat = S.owasp[kind];
   $("#owaspTitle").textContent = cat.catalog;
   const list = $("#owaspList"); list.innerHTML = "";
-  const es = (S.data.meta.lang || "es") === "es";
+  const es = (S.data.meta.lang || "en") === "es";
   cat.items.forEach(it => {
     list.append(h("li", {},
       h("div", { class: "oid" }, `${it.id}  ${es ? it.name_es : it.name}`),
       h("div", { class: "osum" }, es ? it.summary_es : it.summary),
-      h("button", { class: "btn sm primary", onclick: () => insertOwasp(it) }, "Insertar como hallazgo")));
+      h("button", { class: "btn sm primary", onclick: () => insertOwasp(it) }, S.uiLang === "en" ? "Insert as finding" : "Insertar como hallazgo")));
   });
-  $("#owaspModal").classList.add("open");
+  openModal($("#owaspModal"));
 }
 function insertOwasp(it) {
-  const es = (S.data.meta.lang || "es") === "es";
+  const es = (S.data.meta.lang || "en") === "es";
+  const id=requestedFindingId(); if (!id) return;
   S.data.findings.push({
-    id: nextFid(), mode: "vuln",
+    id, mode: "vuln",
     title: `${it.id} ${es ? it.name_es : it.name}`,
     severity: "high", cvss: "", cvss_vector: "",
     cwe: it.cwe || "", description_md: es ? it.summary_es : it.summary,
     references: it.ref ? [it.ref] : [],
   });
-  $("#owaspModal").classList.remove("open");
+  closeModal($("#owaspModal"));
   finishAdd();
 }
 
 // ---- preview / descarga ----------------------------------------------------
 async function renderPdf(download) {
+  const generation = download ? previewGeneration : ++previewGeneration;
   if (!S.slug || !await doSave()) return;
-  const slug = S.slug;
+  const slug = S.slug, snapshotRevision=projectStore.revision;
+  if (!download && (generation !== previewGeneration || S.previewMode !== 'pdf')) return;
   setSaveState(t("updating")); if (!download) showPreviewLoading();
   try {
     const r = await appFetch(`/api/projects/${S.slug}/render`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
     if (!r.ok) { const e = await r.json().catch(() => ({})); setSaveState(t("err")); toast("Render: " + (e.error || r.status), "err"); return; }
-    const blob = await r.blob(); const url = URL.createObjectURL(blob);
-    if (download) { const a = h("a", { href: url, download: (slug || "informe") + ".pdf" }); a.click(); }
-    else if (slug === S.slug) { const f = $("#pdfPreview"); f.removeAttribute("sandbox"); f.removeAttribute("srcdoc"); f.setAttribute("src", url); }
-    if (slug === S.slug) setSaveState(t(projectStore.dirty ? "saving" : "saved"));
-  } catch (error) { toast(error.message, "err"); } finally { if (!download) hidePreviewLoading(); }
+    const blob = await r.blob();
+    if (!download && (slug !== S.slug || generation !== previewGeneration || S.previewMode !== 'pdf')) return;
+    const url = URL.createObjectURL(blob);
+    if (download) { const a = h("a", { href: url, download: (slug || "informe") + ".pdf" }); a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+    else { const f = $("#pdfPreview"); f.removeAttribute("sandbox"); f.removeAttribute("srcdoc"); f.setAttribute("src", url); releasePdfPreview(); previewPdfUrl = url; }
+    if (slug === S.slug) {setSaveState(t(projectStore.dirty ? "saving" : "saved"));if(!download)WorkbenchUI.previewReady(snapshotRevision); }
+  } catch (error) { if (download || generation === previewGeneration) toast(error.message, "err"); }
+  finally { if (!download && generation === previewGeneration) hidePreviewLoading(); }
 }
 
 async function exportFile() {
   if (!S.slug || !await doSave()) return;
-  const slug = S.slug;
-  const fmt = $("#exportFormat").value;
-  const btn = $("#downloadBtn");
-  btn.disabled = true; const prev = btn.textContent; btn.textContent = t("exporting") + " " + fmt.toUpperCase() + "\u2026";
-  setSaveState(t("exporting") + " " + fmt + "\u2026");
-  try {
-    const r = await appFetch(`/api/projects/${S.slug}/export/${fmt}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
-    if (!r.ok) { const e = await r.json().catch(() => ({})); setSaveState(t("err")); toast("Export: " + (e.error || r.status), "err"); return; }
-    const blob = await r.blob(); const url = URL.createObjectURL(blob);
-    const a = h("a", { href: url, download: (slug || "informe") + "." + (fmt === "md" ? "zip" : fmt) }); a.click();
-    URL.revokeObjectURL(url);
-    if (slug === S.slug) setSaveState(t(projectStore.dirty ? "saving" : "saved")); toast(t("toast_exported") + " \u00b7 " + fmt.toUpperCase(), "ok");
-  } catch (error) { toast(error.message, "err"); } finally { btn.disabled = false; btn.textContent = prev; }
+  try { await ProgressUI.enqueue(S.slug,projectStore.etag,{kind:'export',formats:[$('#exportFormat').value],label:(S.data.meta.report_title||S.slug).slice(0,120)}); }
+  catch(error){toast(error.message,'err');}
 }
 
 // ---- UI binding ------------------------------------------------------------
@@ -1258,8 +1520,9 @@ function disableSection(key) {
 }
 function toggleSection(key, on) { on ? enableSection(key) : disableSection(key); scheduleSave(); renderSidebar(); openSectionsModal(); renderMain(); }
 function openSectionsModal() {
+  const focusedKey=document.activeElement?.dataset.sectionKey;
   const cat = S.catalog, box = $("#sectionCatalog"); box.innerHTML = "";
-  const lang = (S.data.meta.lang || "es");
+  const lang = (S.data.meta.lang || "en");
   const enabled = new Set(S.data.report.sections.map(s => s.key));
   const groups = cat.groups || [...new Set(cat.sections.map(s => s.group))];
   groups.forEach(g => {
@@ -1267,7 +1530,7 @@ function openSectionsModal() {
     if (!secs.length) return;
     box.append(h("div", { class: "grp" }, g));
     secs.forEach(s => {
-      const cb = h("input", { type: "checkbox" });
+      const cb = h("input", { type: "checkbox", "data-section-key":s.key });
       cb.checked = enabled.has(s.key);
       cb.addEventListener("change", () => toggleSection(s.key, cb.checked));
       box.append(h("label", { class: "optrow" }, cb,
@@ -1276,7 +1539,8 @@ function openSectionsModal() {
         s.special ? h("span", { class: "sect-badge" }, " " + s.special) : null));
     });
   });
-  $("#sectionsModal").classList.add("open");
+  openModal($("#sectionsModal"));
+  if(focusedKey) [...box.querySelectorAll('input')].find(cb=>cb.dataset.sectionKey===focusedKey)?.focus();
 }
 
 function fillCertOptions(fam) {
@@ -1310,6 +1574,9 @@ function populatePresetSelector() {
 }
 function bindUI() {
   WorkflowUI.bind();
+  if(typeof ExperienceUI!=='undefined')ExperienceUI.bind();
+  DesignLibraryUI.bind();
+  if(typeof WorkspaceUI!=='undefined')WorkspaceUI.bind();
   $("#projectSelect").addEventListener("change", e => loadProject(e.target.value));
   $("#navReport").addEventListener("click", () => select("report", -1));
   document.querySelectorAll("[data-add]").forEach(b => b.addEventListener("click", () => addFinding(b.dataset.add)));
@@ -1321,7 +1588,7 @@ function bindUI() {
     const si = $("#globalSearch"); let st = null;
     si.addEventListener("input", e => { clearTimeout(st); st = setTimeout(() => renderSearch(e.target.value), 120); });
     si.addEventListener("keydown", e => { if (e.key === "Escape") { si.value = ""; renderSearch(""); si.blur(); } });
-    si.addEventListener("blur", () => setTimeout(() => $("#searchResults").classList.remove("open"), 150));
+    si.addEventListener("blur", () => setTimeout(() => {if(!$(".search-wrap").contains(document.activeElement))$("#searchResults").classList.remove("open");}, 150));
     si.addEventListener("focus", e => { if (e.target.value) renderSearch(e.target.value); });
   }
   $("#previewBtn").addEventListener("click", () => S.previewMode === "live" ? refreshLivePreview() : renderPdf(false));
@@ -1334,26 +1601,26 @@ function bindUI() {
   $("#validateBtn").addEventListener("click", runValidation);
   document.addEventListener("keydown", e => {
     const mod = e.ctrlKey || e.metaKey;
-    if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); const s = $("#globalSearch"); if (s) s.focus(); }
+    if (mod && e.key.toLowerCase() === "k" && !document.querySelector('dialog[open],.modal.open:not(dialog)')) { e.preventDefault(); const s = $("#globalSearch"); if (s) { const menu=s.closest('details')||(window.matchMedia('(max-width:760px)').matches?$('#studioMore'):null);if(menu)menu.open=true;s.focus();requestAnimationFrame(()=>s.focus());renderSearch(s.value); } }
     else if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); if (S.slug) { doSave().then(ok => { if (ok) toast(t("saved"), "ok"); }); } }
     else if (e.key === "Escape") {
-      document.querySelectorAll(".modal.open").forEach(m => m.id === "validateModal" ? m.remove() : m.classList.remove("open"));
+      document.querySelectorAll(".modal.open:not(dialog)").forEach(m => m.closeModal ? m.closeModal() : m.classList.remove("open"));
       const sr = $("#searchResults"); if (sr) sr.classList.remove("open");
     }
   });
   $("#downloadBtn").addEventListener("click", exportFile);
-  $("#owaspCancel").addEventListener("click", () => $("#owaspModal").classList.remove("open"));
+  $("#owaspCancel").addEventListener("click", () => closeModal($("#owaspModal")));
   $("#manageSections").addEventListener("click", openSectionsModal);
-  $("#sectionsClose").addEventListener("click", () => $("#sectionsModal").classList.remove("open"));
+  $("#sectionsClose").addEventListener("click", () => closeModal($("#sectionsModal")));
   // nuevo proyecto
   $("#mPreset").addEventListener("change", () => { const v = $("#mPreset").value; if (v.startsWith("family:")) fillCertOptions(v.slice(7)); refreshPresetDesc(); });
   $("#mCert").addEventListener("change", refreshPresetDesc);
   populatePresetSelector();
-  $("#newProjectBtn").addEventListener("click", () => { populatePresetSelector(); $("#newModal").classList.add("open"); });
+  $("#newProjectBtn").addEventListener("click", () => { populatePresetSelector(); $("#mLang").value='corporativo-'+S.uiLang; openModal($("#newModal")); });
   $("#deleteProjectBtn").addEventListener("click", deleteProject);
   $("#renameProjectBtn").addEventListener("click", renameProject);
   $("#restoreProjectBtn").addEventListener("click", restoreProject);
-  $("#mCancel").addEventListener("click", () => $("#newModal").classList.remove("open"));
+  $("#mCancel").addEventListener("click", () => closeModal($("#newModal")));
   $("#mCreate").addEventListener("click", createProject);
   ["#mTitle", "#mClient", "#mSlug"].forEach(s => $(s).addEventListener("keydown", e => { if (e.key === "Enter") createProject(); }));
 }
@@ -1375,46 +1642,78 @@ async function renameProject() {
 
 async function deleteProject() {
   if (!S.slug) return;
+  const slug = S.slug;
   const proj = S.projects.find(p => p.slug === S.slug);
   const name = proj ? proj.title : S.slug;
   if (!confirm(t("delete_confirm").replace("{n}", name))) return;
-  if (!await doSave()) return;
-  try { await api.del(`/api/projects/${S.slug}`); } catch (error) { toast(error.message, "err"); return; }
-  projectStore.reset();
-  await refreshProjects();
-  if (S.projects.length) {
-    loadProject(S.projects[0].slug);
-  } else {
+  busyProject(true);
+  try {
+    if (!await doSave()) return;
+    await api.del(`/api/projects/${encodeURIComponent(slug)}`);
+    if(typeof InsightsUI!=="undefined")InsightsUI.projectDeleted(slug);
+    projectStore.reset();
     S.slug = null; S.data = null; S.sel = { type: "report", idx: -1 };
-    $("#projectSelect").innerHTML = "";
-    renderSidebar(); renderMain();
-    updateDeleteBtn();
-  }
+    previewGeneration++; releasePdfPreview();
+    const frame = $("#pdfPreview"); frame.removeAttribute('src'); frame.removeAttribute('srcdoc');
+    await refreshProjects();
+    if (S.projects.length) await loadProject(S.projects[0].slug);
+    else { $("#projectSelect").innerHTML = ""; renderSidebar(); renderMain(); }
+  } catch (error) { toast(error.message, "err"); }
+  finally { busyProject(false); updateDeleteBtn(); }
 }
 
 async function restoreProject() {
   if (!S.slug || projectStore.dirty) { toast(t("restore_pending"), "err"); return; }
   if (!confirm(S.uiLang === "en" ? "Restore the previous saved version?" : "¿Restaurar la versión anterior guardada?")) return;
+  const slug = S.slug;
+  busyProject(true);
   try {
-    await appFetch(`/api/projects/${S.slug}/restore`, {method: "POST", headers: {"Content-Type": "application/json", "If-Match": projectStore.etag}, body: "{}"}).then(requireOk);
-    await loadProject(S.slug);
+    await appFetch(`/api/projects/${encodeURIComponent(slug)}/restore`, {method: "POST", headers: {"Content-Type": "application/json", "If-Match": projectStore.etag}, body: "{}"}).then(requireOk);
+    await loadProject(slug);
   } catch (error) { toast(error.message, "err"); }
+  finally { busyProject(false); updateDeleteBtn(); }
 }
 
 function updateDeleteBtn() {
-  const restore = $("#restoreProjectBtn"); if (restore) restore.disabled = !S.slug;
-  const b = $("#deleteProjectBtn"); if (b) b.disabled = !S.slug;
-  const r = $("#renameProjectBtn"); if (r) r.disabled = !S.slug;
+  const restore = $("#restoreProjectBtn"); if (restore) restore.disabled = !S.slug || projectBusyCount > 0;
+  const b = $("#deleteProjectBtn"); if (b) b.disabled = !S.slug || projectBusyCount > 0;
+  const r = $("#renameProjectBtn"); if (r) r.disabled = !S.slug || projectBusyCount > 0;
 }
 
+let creatingProject=false;
 async function createProject() {
-  const body = { model: $("#mLang").value, preset: selectedPresetId(), title: $("#mTitle").value, client: $("#mClient").value, slug: $("#mSlug").value };
-  const r = await api.post("/api/projects", body);
-  if (!r.ok) { const resp = await r.json().catch(() => ({})); alert(resp.error || t("create_fail")); return; }
-  const { slug } = await r.json();
-  $("#newModal").classList.remove("open");
-  $("#mTitle").value = $("#mClient").value = $("#mSlug").value = "";
-  await refreshProjects(); loadProject(slug); toast(t("toast_created"), "ok");
+  if(creatingProject)return;
+  $("#newProjectError")?.remove();
+  creatingProject=true;$("#mCreate").disabled=true;
+  try {
+    const body = { model: $("#mLang").value, preset: selectedPresetId(), title: $("#mTitle").value, client: $("#mClient").value, slug: $("#mSlug").value };
+    const r = await requireOk(await api.post("/api/projects", body));
+    const { slug } = await r.json();
+    if(typeof InsightsUI!=="undefined")InsightsUI.projectCreated(slug);
+    closeModal($("#newModal"));
+    $("#mTitle").value = $("#mClient").value = $("#mSlug").value = "";
+    await refreshProjects();await loadProject(slug);$("#editor").focus({preventScroll:true});toast(t("toast_created"), "ok");
+  } catch(error) {
+    const message=error.message || t("create_fail"),modal=$("#newModal");
+    if(modal.open)modal.querySelector('.modal-actions').before(h('p',{id:'newProjectError',role:'alert'},message));
+    else toast(message,"err");
+  }
+  finally {creatingProject=false;$("#mCreate").disabled=false;}
 }
 
-init().catch(e => { console.error(e); }).finally(() => { try { hideSplash(); } catch (_) {} });
+function startupFailed(error) {
+  hideSplash();
+  let language=S.uiLang;
+  try { language=localStorage.getItem("rg.uiLang")||language; } catch (_) {}
+  const english=language==="en";
+  document.querySelectorAll("button,select,input,textarea").forEach(control=>{control.disabled=true;});
+  const editor=$("#editor");
+  editor.replaceChildren(h("section",{class:"card",role:"alert"},
+    h("h2",{},english?"report-gen could not start":"No se pudo iniciar report-gen"),
+    h("p",{},english?"The local application did not finish loading. Reload it to retry. Your saved projects and browser drafts have not been replaced.":"La aplicación local no terminó de cargar. Recárgala para reintentar. Tus proyectos guardados y borradores del navegador no se han reemplazado."),
+    h("p",{},error.message),
+    h("button",{type:"button",class:"btn primary",onclick:()=>location.reload()},english?"Reload application":"Recargar aplicación")));
+  $("#saveState").textContent=english?"startup error":"error de inicio";
+  editor.focus({preventScroll:true});
+}
+init().catch(error => { console.error(error); startupFailed(error); }).finally(() => { try { hideSplash(); } catch (_) {} });

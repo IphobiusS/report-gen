@@ -3,14 +3,14 @@
 {{ pm(f.id) }}
 <header class="f-head">
   <span class="f-id">{{ f.id }}</span>
-  <h2 class="f-title">{{ f.title }}</h2>
+  <h2 class="f-title">{{ f.title or f.id }}</h2>
   {% if f.severity %}<span class="sev-chip sev-{{ f.severity }}">{{ L.severity[f.severity] }}{% if f.cvss is defined and f.cvss is not none and f.cvss != "" %} <b>{{ f.cvss }}</b>{% endif %}</span>{% endif %}
 </header>
 
 <table class="meta">
   <tbody>
   {% if f.cwe %}<tr><th>{{ L.labels.cwe }}</th><td>{{ f.cwe }}</td></tr>{% endif %}
-  {% set _cv = f.cvss_vector or "" %}{% if f.cvss is defined and f.cvss is not none and f.cvss != "" %}<tr><th>{{ L.labels.cvss }}{{ " 4.0" if _cv.startswith("CVSS:4.0") else (" 3.1" if _cv.startswith("CVSS:3.1") else "") }}</th><td><span class="score">{{ f.cvss }}</span>{% if f.cvss_vector %} <code class="vector">{{ f.cvss_vector }}</code>{% endif %}</td></tr>{% endif %}
+  {% set _cv = f.cvss_vector or "" %}{% set _has_score = f.cvss is defined and f.cvss is not none and f.cvss != "" %}{% if _has_score or _cv %}<tr><th>{{ L.labels.cvss }}{{ " 4.0" if _cv.startswith("CVSS:4.0") else (" 3.1" if _cv.startswith("CVSS:3.1") else "") }}</th><td>{% if _has_score %}<span class="score">{{ f.cvss }}</span>{% endif %}{% if _cv %}{% if _has_score %} {% endif %}<code class="vector">{{ _cv }}</code>{% endif %}</td></tr>{% endif %}
   {% if f.description_md %}<tr><th>{{ L.labels.desc_root }}</th><td>{{ f.description_md|md }}</td></tr>{% endif %}
   {% if f.impact_md %}<tr><th>{{ L.labels.impact }}</th><td>{{ f.impact_md|md }}</td></tr>{% endif %}
   {% if f.affected %}<tr><th>{{ L.labels.affected }}</th><td><code>{{ f.affected }}</code></td></tr>{% endif %}
@@ -25,8 +25,13 @@
 <ol class="steps">
   {% for s in f.walkthrough %}
   <li>
-    {% if s.lead %}<b class="lead">{{ s.lead }}</b> {% endif %}{{ s.text_md|md_inline }}
-    {% if s.command %}<pre class="cmd">{{ s.command|trim }}</pre>{% endif %}
+    {% set step_text = s.text_md|md_inline %}
+    {% if step_text.startswith(('<table', '<pre', '<figure', '<p', '<ul', '<ol', '<blockquote', '<h')) or (not step_text and (s.command or (s.figure and s.figure.src))) %}
+    {% if s.lead %}<p class="step-heading"><b class="lead">{{ s.lead }}</b></p>{% endif %}{{ step_text }}
+    {% else %}
+    {% if s.lead %}<b class="lead">{{ s.lead }}</b> {% endif %}{{ step_text }}
+    {% endif %}
+    {% if s.command %}<pre class="cmd">{{ s.command }}</pre>{% endif %}
     {% if s.figure and s.figure.src %}
     <figure>
       <img src="{{ engagement_dir }}{{ s.figure.src }}" alt="{{ L.figure }} {{ s.figure.number }}">

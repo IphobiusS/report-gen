@@ -6,12 +6,15 @@ import re
 import sys
 import tempfile
 from pathlib import Path
+from urllib.parse import quote
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from safe_markup import md, md_inline, set_img_base
 from resources import restricted_fetcher
+from markupsafe import Markup
 import validate as validatelib
+from error_messages import language_scope, message
 
 ROOT = Path(__file__).resolve().parent
 TEMPLATES = ROOT / "templates"
@@ -22,8 +25,8 @@ SEVERITY_RANK = {s: i for i, s in enumerate(SEVERITY_ORDER)}
 
 
 def load_engagement(path):
-    with path.open(encoding="utf-8") as fh:
-        data = yaml.safe_load(fh)
+    from input_guard import load_yaml_file
+    data = load_yaml_file(path)
     validatelib.require_valid(data)
     data.setdefault("meta", {})
     data.setdefault("findings", [])
@@ -39,12 +42,29 @@ def _deep_merge(base, over):
     return base
 
 
+def report_language(data):
+    """Resolve legacy absent/nullable language without modifying source metadata.
+
+    English is the renderer's historical fallback. The wizard continues to
+    select Spanish explicitly for new projects.
+    """
+    return (data.get("meta") or {}).get("lang") or "en"
+
+
+def report_title(data):
+    """Accessible presentation fallback; the missing source title stays missing."""
+    title = (data.get("meta") or {}).get("report_title")
+    if title is not None and str(title).strip():
+        return title
+    return "Informe sin título" if report_language(data) == "es" else "Untitled report"
+
+
 def load_lang(lang):
     """Carga en.yaml como base y superpone el idioma pedido (rellena huecos)."""
     base = yaml.safe_load((ROOT / "lang" / "en.yaml").read_text(encoding="utf-8"))
     lang = lang or "en"
     if lang not in {"en", "es"}:
-        raise ValueError("Idioma no soportado")
+        raise ValueError(message("Idioma no soportado"))
     if lang != "en":
         p = ROOT / "lang" / f"{lang}.yaml"
         if p.exists():
@@ -58,7 +78,7 @@ def number_figures(findings):
     n = 0
     for f in findings:
         steps = []
-        if f.get("mode") == "vuln":
+        if f.get("mode", "vuln") == "vuln":
             steps = f.get("walkthrough", [])
         elif f.get("mode") == "machine":
             for phase in f.get("phases", []):
@@ -87,10 +107,36 @@ def machine_count(findings):
 
 
 def summary_findings(findings):
-    vulns = [f for f in findings if f.get("mode") != "machine" and f.get("severity") in SEVERITY_RANK]
-    vulns.sort(key=lambda f: SEVERITY_RANK[f["severity"]])
+    # Classification and technical verification are independent. A finding
+    # without a severity remains a finding and must not disappear at export.
+    vulns = [f for f in findings if f.get("mode") != "machine"]
+    vulns.sort(key=lambda f: SEVERITY_RANK.get(f.get("severity"), len(SEVERITY_ORDER)))
     machines = [f for f in findings if f.get("mode") == "machine"]
-    return vulns + machines  # vulns por severidad, luego maquinas
+    return vulns + machines
+
+
+def unclassified_count(findings):
+    return sum(f.get("mode") != "machine" and f.get("severity") not in SEVERITY_RANK
+               for f in findings)
+
+
+def summary_text(findings, L):
+    """Same totals and pending classification wording in every public format."""
+    words = L["summary"]
+    counts = severity_counts(findings)
+    pending = unclassified_count(findings)
+    total = sum(counts.values()) + pending
+    noun = words["finding"] if total == 1 else words["findings"]
+    text = f"{words['identified']} {total} {noun}"
+    parts = [f"{counts[s]} {L['severity'][s].lower()}" for s in SEVERITY_ORDER if counts[s]]
+    if pending:
+        parts.append(words["pending_one" if pending == 1 else "pending_many"].replace("{n}", str(pending)))
+    if parts:
+        text += f" {words['rating']} " + ", ".join(parts)
+    machines = machine_count(findings)
+    if machines:
+        text += " " + words["and_machines_one" if machines == 1 else "and_machines_many"].replace("{n}", str(machines))
+    return text + "."
 
 
 def appendix_rows(findings):
@@ -124,23 +170,39 @@ def select_findings(findings, only):
 
 def build_env():
     env = Environment(loader=FileSystemLoader(str(TEMPLATES)),
-                      autoescape=select_autoescape(["html"]), trim_blocks=True, lstrip_blocks=True)
+                      autoescape=select_autoescape(["html"]), trim_blocks=True, lstrip_blocks=True,
+                      finalize=lambda value: "" if value is None else value)
     env.filters["md"] = md
     env.filters["md_inline"] = md_inline
+    env.filters["css_string"] = css_string
+    # IDs are literal author data; only their URL-fragment representation is
+    # encoded. User-authored links pass through the Markdown boundary unchanged.
+    env.filters["fragment"] = lambda value: quote(str(value), safe="")
     return env
 
 
-def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=None, img_base=None):
+def css_string(value):
+    """Quote text for CSS content without HTML entities or style termination."""
+    return Markup('"' + ''.join(
+        f'\\{ord(char):x} ' if char in '\\"<>\n\r\f' or ord(char) < 32 else char
+        for char in str(value or '')
+    ) + '"')
+
+
+def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=None, img_base=None,
+                machine_graphs=False):
     from workflows import project_report, report_sections
+    documented_phase_counts = [len(f.get('phases', [])) for f in data.get('findings', [])]
     data = project_report(data)
     number_figures(data["findings"])
     meta = data["meta"]
     theme = meta.get("theme", "serio")
-    if theme not in {"serio", "corporativo", "offsec", "htb"}:
-        raise ValueError("Tema no soportado")
+    from report_designs import THEMES as SUPPORTED_THEMES
+    if theme not in SUPPORTED_THEMES:
+        raise ValueError(message("Tema no soportado"))
     theme_css = THEMES / f"{theme}.css"
     if not theme_css.exists():
-        raise ValueError(f"tema no encontrado: {theme}")
+        raise ValueError(message("tema no encontrado: {p0}", p0=theme))
     findings = data["findings"]
     img_base_val = img_base or (engagement_dir.as_uri() + "/")
     set_img_base(img_base_val)
@@ -149,28 +211,43 @@ def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=No
     colors = {key: re.search(r"--sev-" + key + r":\s*(#[0-9A-Fa-f]{6})", theme_css.read_text()).group(1) for key in SEVERITY_ORDER}
     ctx = dict(workflow_sections=report_sections(data), chart_colors=colors, meta=meta, findings=findings, sum_findings=summary_findings(findings),
                sev_counts=severity_counts(findings), sev_order=SEVERITY_ORDER,
+               summary_text=summary_text(findings, L), unclassified_count=unclassified_count(findings),
                machine_count=machine_count(findings),
                appendix=appendix_rows(findings),
                theme_css=theme_href or theme_css.as_uri(),
                engagement_dir=img_base or (engagement_dir.as_uri() + "/"), page_map=page_map,
                pagemarks=pagemarks, L=L)
+    ctx['machine_graphs'] = []
+    if machine_graphs:
+        from exporters.machine_graph import build
+        ctx['machine_graphs'] = [build(f, count, meta['lang']) if f.get('mode') == 'machine' else None
+                                 for f, count in zip(findings, documented_phase_counts)]
+        ctx['machine_graph_css'] = (THEMES / '_machine_graph.css').read_text(encoding='utf-8')
     if section_based:
         import sections as _sections
         ctx["rsections"] = _sections.resolve_sections(data, L, meta.get("lang", "en"))
-    result = tpl.render(**ctx)
+    ctx["finding_links"] = not section_based or any(
+        section.get("special") == "findings" for section in ctx.get("rsections", []))
+    import design_render
+    if meta.get("design"):
+        ctx.update(profile_css=design_render.css(meta["design"]), profile_mark=design_render.svg(meta["design"]))
+        from provider_branding import provider_mark
+        ctx['provider_mark'] = provider_mark(meta['design'])
+    from report_layout import prepare_html
+    result = prepare_html(tpl.render(**ctx))
     if img_base is None:
         from lxml import html as html_parser
         from resources import local_image
-        from urllib.parse import urlsplit, unquote
+        from urllib.parse import urlsplit, quote
         from urllib.request import url2pathname
         for image in html_parser.fromstring(result).xpath("//img[@src]"):
             source = image.get("src")
             parsed = urlsplit(source)
             if parsed.scheme == "file":
-                path = Path(url2pathname(unquote(parsed.path))).resolve()
+                path = Path(url2pathname(parsed.path)).resolve()
                 if not path.is_relative_to(engagement_dir.resolve()):
-                    raise ValueError("Imagen fuera del engagement")
-                source = path.relative_to(engagement_dir.resolve()).as_posix()
+                    raise ValueError(message("Imagen fuera del engagement"))
+                source = quote(path.relative_to(engagement_dir.resolve()).as_posix(), safe='/')
             local_image(source, engagement_dir)
     return result
 
@@ -199,10 +276,10 @@ def render_pdf_chromium(html, out_pdf, meta):
             b = p.chromium.launch()
             pg = b.new_page(java_script_enabled=False)
             def restrict(route):
-                from urllib.parse import urlsplit, unquote
+                from urllib.parse import urlsplit
                 from urllib.request import url2pathname
                 parsed = urlsplit(route.request.url)
-                path = Path(url2pathname(unquote(parsed.path))).resolve() if parsed.scheme == "file" else None
+                path = Path(url2pathname(parsed.path)).resolve() if parsed.scheme == "file" else None
                 if path and (path == tmp or path.is_relative_to(ROOT / "themes") or path.is_relative_to(Path(meta["_resource_root"]))):
                     route.continue_()
                 else:
@@ -232,8 +309,10 @@ def resolve_backend(backend):
             return "weasyprint"
         except Exception as exc:  # ImportError, u OSError si faltan libs de sistema (GTK en Windows)
             if backend == "weasyprint":
-                sys.exit(f"[!] WeasyPrint no disponible ({exc.__class__.__name__}): instala sus "
-                         f"librerias de sistema (GTK) o usa --backend chromium")
+                sys.exit(message(
+                    "[!] WeasyPrint no disponible ({error}): instala sus librerias de sistema (GTK) o usa --backend chromium",
+                    en="[!] WeasyPrint unavailable ({error}): install its system libraries (GTK) or use --backend chromium",
+                    error=exc.__class__.__name__))
             print("[i] Backend PDF: Chromium (WeasyPrint no disponible)")
             return "chromium"
     return backend
@@ -254,23 +333,28 @@ def read_page_map(pdf_path, keys):
             txt = page.extract_text() or ""
             norm = re.sub(r"\s+", "", txt)
             for key in keys:
-                if key not in found and f"PGMK{key}PGMK" in norm:
+                if key not in found and f"PGMK{quote(str(key), safe='')}PGMK" in norm:
                     found[key] = i
     return found
 
 
 def toc_keys(data):
     from workflows import report_sections
-    extra_keys = [s["key"] for s in report_sections(data)]
     if (data.get("report") or {}).get("sections"):
-        keys = [s["key"] for s in data["report"]["sections"] if s.get("key")]
-        keys += [f["id"] for f in data["findings"]]
-        return keys + extra_keys
-    keys = ["conf", "contacts", "overview", "summary"]
+        from sections import resolve_sections
+        resolved = resolve_sections(data, None, report_language(data))
+        keys = [s["key"] for s in resolved]
+        if any(s.get('special') == 'findings' for s in resolved):
+            keys += [f["id"] for f in data["findings"]]
+        return keys
+    # Use the emitted HTML destinations rather than legacy short aliases:
+    # a documentary finding called 'conf' must not share the confidentiality
+    # block's page marker ('sec-conf').
+    keys = ["sec-conf", "sec-contacts", "sec-overview", "sec-summary"]
     keys += [f["id"] for f in data["findings"]]
     if appendix_rows(data["findings"]):
-        keys.append("appendix")
-    return keys + extra_keys
+        keys.append("sec-appendix")
+    return keys + [s["key"] for s in report_sections(data)]
 
 
 def main():
@@ -282,39 +366,42 @@ def main():
     ap.add_argument("--backend", default="auto", choices=["auto", "weasyprint", "chromium"])
     ap.add_argument("--lang", help="idioma del informe (en, es); sobreescribe meta.lang")
     ap.add_argument("--theme", help="tema/diseno; sobreescribe meta.theme")
+    ap.add_argument("--error-language", default="es", choices=["es", "en"],
+                    help="idioma de los errores; no cambia el idioma del informe")
     args = ap.parse_args()
+    with language_scope(args.error_language):
+        return _run(args)
 
+
+def _run(args):
     yaml_path = Path(args.engagement).resolve()
     engagement_dir = yaml_path.parent
     data = load_engagement(yaml_path)
+    source_inputs = data.copy()
+    out_dir = ROOT / "out"
+    out_pdf = Path(args.out).resolve() if args.out else out_dir / f"{engagement_dir.name}.pdf"
     data["findings"] = select_findings(data["findings"], args.only)
-    validatelib.require_valid(data, final=True)
-    number_figures(data["findings"])
-
     meta = data["meta"]
     if args.lang:
         meta["lang"] = args.lang
     if args.theme:
         meta["theme"] = args.theme
-    L = load_lang(meta.get("lang", "en"))
+    issues = validatelib.require_valid(data, final=True)
+    from storage import require_export_destination
+    out_pdf = require_export_destination(yaml_path, out_pdf, source_inputs)
+    if args.html:
+        require_export_destination(yaml_path, out_pdf.with_suffix(".html"), source_inputs)
+    number_figures(data["findings"])
+    L = load_lang(report_language(data))
 
-    try:
-        import validate as _validate
-        issues = _validate.validate(data)
-    except Exception as exc:  # noqa: BLE001 - visible, no silencioso
-        print(f"[warning] la validacion no pudo ejecutarse: {exc}")
-        issues = []
     for lvl, msg in issues:
         print(f"[{lvl}] {msg}")
 
-    out_dir = ROOT / "out"
-    out_dir.mkdir(exist_ok=True)
-    out_pdf = Path(args.out).resolve() if args.out else out_dir / f"{engagement_dir.name}.pdf"
     backend = resolve_backend(args.backend)
     env = build_env()
     keys = toc_keys(data)
 
-    html1 = render_html(env, data, engagement_dir, page_map={}, pagemarks=True, L=L)
+    html1 = render_html(env, data, engagement_dir, page_map={}, pagemarks=True, L=L, machine_graphs=True)
     out_pdf.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(suffix=".pdf", dir=out_pdf.parent, delete=False) as tmp:
         tmp_pdf = Path(tmp.name)
@@ -327,11 +414,13 @@ def main():
     if missing:
         print(f"[i] sin pagina resuelta para: {', '.join(missing)}")
 
-    html2 = render_html(env, data, engagement_dir, page_map=page_map, pagemarks=False, L=L)
+    html2 = render_html(env, data, engagement_dir, page_map=page_map, pagemarks=False, L=L, machine_graphs=True)
     if args.html:
         (out_pdf.with_suffix(".html")).write_text(html2, encoding="utf-8")
         print(f"[+] HTML: {out_pdf.with_suffix('.html')}")
-    do_render(html2, out_pdf, engagement_dir, meta, backend)
+    from storage import atomic_output
+    with atomic_output(out_pdf) as output:
+        do_render(html2, output, engagement_dir, meta, backend)
     print(f"[+] PDF ({backend}, {meta.get('theme','serio')}, {meta.get('lang','en')}): {out_pdf}")
 
 

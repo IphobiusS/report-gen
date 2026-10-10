@@ -1,0 +1,46 @@
+name: Browser acceptance
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Create, save, export, inspect annexes and capture UI
+        run: node scripts/audit-browser-0210.cjs --browser ${{ matrix.browser }} --output out/browser-${{ matrix.browser }}
+      - name: Concurrent tabs, storage faults, crash recovery and privacy
+        run: node scripts/audit-browser-0211.cjs --browser ${{ matrix.browser }} --output out/recovery-${{ matrix.browser }}
+      - name: Portable HTML reflow, filters, anchors and printing
+        if: matrix.browser == 'chromium'
+        run: |
+          export REPORT_GEN_CHROMIUM="$(node -p "require('playwright').chromium.executablePath()")"
+          python -m pytest tests/test_portable_report_browser.py --junitxml=out/portable-chromium.xml
+      - name: Editor dialogs, import validation and mobile keyboard search
+        if: matrix.browser == 'chromium'
+        run: node tests/test_editor_browser_0213.cjs --output out/editor-chromium
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-${{ matrix.browser }}
+          path: |
+            out/browser-${{ matrix.browser }}/
+            out/recovery-${{ matrix.browser }}/
+            out/portable-chromium.xml
+            out/editor-chromium/

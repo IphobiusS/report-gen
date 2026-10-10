@@ -1,15 +1,13 @@
 """CVSS v4.0 (FIRST, publicado el 1-nov-2023). Frontera separada de la 3.1.
 
-Estado: parser estricto + tabla oficial congelada (`v40_lookup.py`, commit
-716695d). El calculo del score (MacroVector EQ1-EQ6 + interpolacion) esta en
-curso y se validara al 100% contra el corpus de referencia de FIRST antes de que
-`score()` devuelva un numero. Hasta entonces `score()` falla explicito: para una
-herramienta de seguridad, un score erroneo es peor que ninguno.
+Parser estricto y cálculo por MacroVector EQ1-EQ6 e interpolación, con la tabla
+oficial congelada (`v40_lookup.py`, commit 716695d). El corpus de referencia de
+FIRST y las pruebas de paridad Python/JavaScript comprueban sus resultados.
 
 El modelo 4.0 (nomenclatura nueva): se elimina Scope y se separan el sistema
 vulnerable (VC/VI/VA) del subsecuente/afectado (SC/SI/SA).
 """
-from .v40_lookup import LOOKUP  # noqa: F401  (tabla oficial congelada; se usara al puntuar)
+from .v40_lookup import LOOKUP
 
 # Metricas y valores permitidos. Base = obligatorias; el resto opcionales.
 BASE = {

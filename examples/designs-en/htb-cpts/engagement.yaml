@@ -1,0 +1,67 @@
+meta:
+  lang: en
+  theme: ejecutivo
+  report_title: Security assessment
+  report_subtitle: CPTS / Fictional sample
+  client: Aurora Lab
+  assessor: Example Analyst
+  date: '2026-10-03'
+  version: '1.0'
+  branding:
+    wordmark: AURORA LAB
+    confidential_text: CONFIDENTIAL
+  design:
+    id: htb-cpts
+    name: CPTS
+    provider: HTB
+    certificate: CPTS
+    accent: '#9FEF00'
+    background: '#161D2A'
+    layout: rail
+    motif: network
+    schema: 1
+    variant: brand
+    base_theme: ejecutivo
+    guidance_id: htb-cpts
+  email: analista@example.test
+  osid: LAB-042
+report:
+  sections:
+  - key: sample-summary
+    title: Work summary
+    body: 'This fictional sample demonstrates the report layout. No customer was assessed.
+      The scope is an isolated training environment. Replace this text with the demonstrated
+      results of your own work.
+
+
+      The example documents one permitted validation, the evidence collected and the
+      remaining verification. Technical conclusions require reproducible evidence
+      and explicit limitations.'
+  - key: sample-technical
+    title: Scope and rules
+    body: 'Record the test conditions, version and timestamp before comparing results.
+      In this example, the command inventories a local evidence directory without
+      contacting a target.
+
+
+      ```sh
+
+      find ./evidence -type f -print
+
+      sha256sum ./evidence/session.txt
+
+      ```
+
+
+      The example output is illustrative. Preserve the original files and connect
+      every conclusion to its evidence identifier.
+
+
+      | Evidence | Source | Status |
+
+      |---|---|---|
+
+      | EV-001 | Local session | Illustrative |
+
+      | EV-002 | Configuration snapshot | Illustrative |'
+findings: []

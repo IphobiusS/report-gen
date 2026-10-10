@@ -37,6 +37,14 @@ MODELS = {
                        "subtitle": "Report of Findings", "confidential": "CONFIDENTIAL"},
 }
 SEVERITIES = ["critical", "high", "medium", "low", "info"]
+for _theme, _es, _en in [('ejecutivo', 'Ejecutivo editorial', 'Executive editorial'),
+                        ('laboratorio', 'Laboratorio técnico', 'Technical laboratory'),
+                        ('offsec', 'Técnico clásico', 'Classic technical'),
+                        ('htb', 'Laboratorio oscuro', 'Dark laboratory')]:
+    for _lang, _label in [('es', _es), ('en', _en)]:
+        MODELS[_theme+'-'+_lang] = {'label':_label+' ('+_lang.upper()+')', 'theme':_theme,
+                                  'lang':_lang, 'subtitle':'Informe de seguridad' if _lang=='es' else 'Security report',
+                                  'confidential':'CONFIDENCIAL' if _lang=='es' else 'CONFIDENTIAL'}
 
 
 # --- YAML con block scalars para la prosa multilinea -------------------------
@@ -54,8 +62,12 @@ _Dumper.add_representer(str, _str_rep)
 
 def dump_yaml(data, path):
     from storage import atomic_write
-    text = yaml.dump(data, Dumper=_Dumper, allow_unicode=True, sort_keys=False, width=100)
-    atomic_write(path, text.encode("utf-8"), backup=True)
+    from input_guard import load_yaml
+    from incremental_save import serialized_yaml, already_validated
+    blob = serialized_yaml(data)
+    if not already_validated(data, blob):
+        load_yaml(blob)  # A writer must never commit more than its reader accepts.
+    atomic_write(path, blob, backup=True)
 
 
 # --- Entrada -----------------------------------------------------------------
@@ -291,7 +303,8 @@ def cmd_new(args):
 
 def cmd_add_finding(args):
     path = Path(args.engagement).resolve()
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    from engine import load_engagement
+    data = load_engagement(path)
     data.setdefault("findings", [])
     img_dir = path.parent / "img"
     fid = next_fid(data["findings"])

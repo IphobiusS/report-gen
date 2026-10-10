@@ -3,7 +3,7 @@
 {{ pm(f.id) }}
 <header class="f-head">
   <span class="f-id">{{ f.id }}</span>
-  <h2 class="f-title">{{ f.host.name if f.host and f.host.name else f.title }}</h2>
+  <h2 class="f-title">{{ f.host.name if f.host and f.host.name else (f.title or f.id) }}</h2>
   {% if f.host and f.host.ip %}<span class="host-chip">{{ f.host.ip }}</span>{% endif %}
 </header>
 
@@ -17,12 +17,23 @@
 </table>
 </div>
 
+{% if machine_graph %}{% include 'machine_graph.html' %}{% endif %}
+
 {% for phase in f.phases %}
+{% set machine_phase_number = loop.index %}
 <h3>{{ phase.name }}</h3>
   {% for s in phase.steps %}
   <div class="step">
-    <p>{% if s.lead %}<b class="lead">{{ s.lead }}</b> {% endif %}{{ s.text_md|md_inline }}</p>
-    {% if s.command %}<pre class="cmd">{{ s.command|trim }}</pre>{% endif %}
+    {% if machine_graph and machine_phase_number <= machine_graph.nodes|length %}
+    <p class="machine-step-ref">{{ machine_graph.words.step }} {{ machine_phase_number }}.{{ loop.index }}</p>
+    {% endif %}
+    {% set step_text = s.text_md|md_inline %}
+    {% if step_text.startswith(('<table', '<pre', '<figure', '<p', '<ul', '<ol', '<blockquote', '<h')) %}
+    {% if s.lead %}<p class="step-heading"><b class="lead">{{ s.lead }}</b></p>{% endif %}{{ step_text }}
+    {% else %}
+    <p{% if not step_text and (s.command or (s.figure and s.figure.src)) %} class="step-heading"{% endif %}>{% if s.lead %}<b class="lead">{{ s.lead }}</b> {% endif %}{{ step_text }}</p>
+    {% endif %}
+    {% if s.command %}<pre class="cmd">{{ s.command }}</pre>{% endif %}
     {% if s.figure and s.figure.src %}
     <figure>
       <img src="{{ engagement_dir }}{{ s.figure.src }}" alt="{{ L.figure }} {{ s.figure.number }}">

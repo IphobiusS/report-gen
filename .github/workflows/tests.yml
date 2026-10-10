@@ -20,12 +20,29 @@ jobs:
       - name: Instalar dependencias Python
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -e ".[dev]" -c requirements-audited.txt
       - name: Instalar dependencias de las pruebas del editor
         run: npm ci --ignore-scripts
       - name: Guardado JavaScript
         run: npm test
+      - name: Instalar Chromium para las pruebas reales del editor
+        run: |
+          npx playwright install --with-deps chromium
+          node -e "process.stdout.write('REPORT_GEN_CHROMIUM=' + require('playwright').chromium.executablePath() + '\n')" >> "$GITHUB_ENV"
+      - name: Recorridos del editor y contratos del cliente
+        run: |
+          npm run test:workspace
+          npm run test:editor
+          npm run test:daily
+          npm run test:delivery
+          npm run test:finding
+          npm run test:diff
+          npm run test:matrix
+          npm run test:language
+          npm run test:ui-geometry
       - name: Ruff (lint)
         run: ruff check .
+      - name: Comparar formatos con un caso ficticio completo
+        run: python scripts/audit-exports-0210.py --output out/export-acceptance
       - name: Pytest
         run: pytest -q

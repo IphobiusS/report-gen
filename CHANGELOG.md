@@ -1,3 +1,359 @@
+# Cambios 0.25.0 (2026-10-09)
+
+- Gráfico de retest con etiqueta, cantidad y barra en una misma fila; geometría responsiva y ampliación de texto verificables.
+- Preparación con estados, contador y accesos directos; vista previa ajustada al ancho con zoom manual.
+- Lectura YAML acelerada con prevalidación acotada, controles de grafo y fallback de compatibilidad.
+- Recorrido PDF compacto por fases y conservación del texto introductorio junto al siguiente bloque.
+- Fingerprint de claves públicas Ed25519, ciclo de vida POSIX sin servidor hijo y limpieza de señales de consola en Windows.
+- CI ampliado y variable canónica de Chromium con compatibilidad del nombre anterior.
+- Resultados, comandos y límites de esta versión en VALIDACION-0.25.0.md. Los registros de versiones anteriores conservan su alcance.
+
+# Cambios 0.24.0 (2026-10-09)
+
+- R10: firma Ed25519 separada y opcional para entregas, con clave pública externa, captura inmutable, verificación del ZIP/manifiesto exactos y rechazo de entradas ambiguas o no portables. Claves privadas locales fuera del editor; dependencia signing opcional.
+- R12: serialización incremental de hallazgos y objetos compuestos del historial para proyectos grandes. No-op verificado sin escrituras ni cambio de ETag; YAML completo, activación atómica, recuperación y respaldos portátiles v1 conservados.
+- Firma no equivale a cifrado, identidad real ni validación técnica. El historial local nuevo requiere 0.24.0; un respaldo exportado permite migrarlo a la versión anterior sin perder sus objetos.
+- Comandos, medidas reales, auditoría completa y límites de esta ronda en VALIDACION-0.24.0.md. Ejemplos, capturas y documentos históricos conservados.
+
+# Cambios 0.23.4 (2026-10-09)
+
+- R11: catálogo explícito para errores propios y validación, elegido por el idioma de la interfaz antes de interpolar datos; idioma capturado para los trabajos y subprocesos de exportación. Sin sustituciones sobre texto del usuario ni cambios en códigos HTTP, CSRF, Origin/Host, revisiones o ETag.
+- R14: recorrido vectorial por máquina en PDF desde fases, pasos y figuras registrados, con orden documental explícito, evidencia vinculada separada y alternativa textual paginable. Las flechas no acreditan causalidad, éxito ni verificación técnica. Los otros formatos conservan su contenido.
+- Versiones históricas y ejemplos conservados. Comandos, pruebas y límites de esta ronda en VALIDACION-0.23.4.md.
+
+# Cambios 0.23.3 (2026-10-09)
+
+- R07: pestañas accesibles Evidencia y Decisiones por hallazgo, con vínculos y modelo existentes, galería compartida y borradores conservados.
+- R08: comparación de solo lectura con snapshot de entrega identificado, selección explícita ante ambigüedad, guardas de revisión y comparación visual compartible o privada.
+- R09: matriz y gráfico de retest derivados de observaciones reales, con filtros y distinción de estado, verificación técnica y resultado observado.
+- La etapa delivered significa entrega registrada localmente, sin acreditar recepción del cliente ni éxito de exportación. Eliminar un hallazgo no acredita corrección.
+- Sin cambio del esquema de proyectos ni de las políticas de publicación y exportación. Evidencia y límites en VALIDACION-0.23.3.md.
+
+# Cambios 0.23.2 (2026-10-09)
+
+- R03: atajos contextuales j/k, Ctrl+Enter/⌘+Enter y ayuda ?, con guardas de guardado, proyecto, revisión, foco y diálogos.
+- R04: contexto de activos, responsable, estado y evidencias en fichas y tabla, a partir de las referencias reales; relaciones ausentes se indican explícitamente.
+- R05: revisión agrupada, progreso de avisos de sesión y Guardar y comprobar siguiente. Resolver un aviso editorial no registra verificación técnica.
+- R06: lista de preparación de entrega de solo lectura para anexos, posibles secretos y asociaciones, derivada de la revisión guardada y marcada como antigua cuando cambia el borrador.
+- La importación y restauración preparan sus copias privadas sin una segunda transacción interna. Se corrige un defecto heredado: un fallo transitorio de limpieza podía dejar un registro que posteriormente recreaba una carpeta temporal y bloqueaba el respaldo del espacio. Se conservan la publicación atómica, los snapshots y la recuperación del proyecto.
+- La navegación de teclado resuelve el UID del hallazgo visible tras una reordenación; los recursos corruptos o ausentes producen una comprobación pendiente en Entregar.
+- No cambia el esquema de proyectos, los exportadores ni los documentos históricos. Se conservan revisión, recuperación y control de concurrencia.
+- Evidencia y límites de esta ejecución en VALIDACION-0.23.2.md. Sin despliegue ni tag.
+
+# Cambios 0.23.1 (2026-10-08)
+
+- Anterior/Siguiente dentro del editor de hallazgo, con foco accesible y orden completo explícito del proyecto; selección por UID, sin reescribir fuentes al navegar.
+- Preview sincronizada tras load con el mapa UID del snapshot renderizado; una respuesta antigua no reclama el proyecto actual y el resaltado no se exporta.
+- Se comprueba visibilidad real del panel antes de pedir previews, incluidas vistas de inicio, tabla y móvil.
+- Marca WebP lossless a 900×600, suficiente para el mayor uso a DPR3; transparencia conservada y PNG reducido retenido por documentación histórica.
+- Navegación superior, relaciones de activos, calculadora CVSS y acciones de galería redistribuidas en móvil con texto ampliado al 200 %, sin etiquetas superpuestas, desbordamiento de página ni regiones vacías con scroll.
+- Selector de versión CVSS con nombre accesible en español e inglés y etiqueta crítica con contraste AA en tema claro.
+- Metadatos DOCX tomados de la copia preparada del informe: título, evaluador e idioma; sin autor de biblioteca, comentarios de plantilla ni fechas heredadas de 2013. Las fechas de creación desconocidas se omiten.
+- Instrucciones de actualización ES/EN alineadas con 0.23.1; referencias históricas conservadas.
+- Contrato de descarga progresiva del HTML sin carreras de temporizador: el servidor espera a comprobar controles aún sin cablear antes de liberar el resto, conservando las guardas de CLS, visibilidad y CSP.
+- Contratos reales de navegador, negativos y límites documentados en VALIDACION-0.23.1.md.
+
+# Cambios 0.23.0 (2026-10-08)
+
+- Espacio opcional Evidencia y decisiones: mapa basado en vínculos existentes, afirmaciones observadas/inferidas/hipotéticas y límites explícitos de evidencia.
+- Priorización empresarial redactada por el autor: servicio, objetivo, consecuencia, tolerancia, fuente, supuestos, razón y responsable; no se calcula pérdida financiera desde CVSS.
+- Observaciones por campo y revisión ligada al contenido y a los comentarios. Una modificación invalida la aceptación previa; identidades declaradas localmente.
+- Entregas técnica, ejecutiva y pública como archivos independientes. La pública usa texto aprobado explícito, alias y consentimiento; el modelo privado de revisión queda fuera de todos los informes.
+- Revisión visual del PDF real, con miniaturas aisladas, notas por página y registro descargable ligado al SHA-256. Es opcional, temporal y no certifica Word nativo.
+- Sustituciones literales con límites UTF-8 acumulados e intermedios, comprobados antes de reservar memoria; rechazo controlado de expansión excesiva.
+- Reglas editoriales transparentes y adaptador Ollama opcional: solo campos seleccionados, modelos locales instalados, comparación antes de aceptación y guardas de revisión.
+- Galería, tablero y lateral paginados para proyectos grandes. La vista previa oculta deja de renderizar y leer un editor heredado no añade campos al proyecto.
+- Contratos, resultados medidos y límites en VALIDACION-0.23.0.md.
+
+# Cambios 0.22.1 (2026-10-08)
+
+- Los enlaces de los diálogos de trabajo usan el acento del tema y conservan el subrayado: el enlace GitHub de Acerca de ya no hereda el azul oscuro del navegador.
+
+- El registro de cambios incorpora la entrada de 0.22.0, antes documentada únicamente en los README y su validación. Se conserva el registro histórico de aquella entrega.
+- La cabecera usa desde el inicio el símbolo SVG que ya empleaba tras la inicialización; evita solicitar el logotipo completo durante ese arranque. El PNG permanece en bienvenida, Acerca de y documentación.
+- El PNG de marca se recomprime sin cambiar sus píxeles RGBA ni sus dimensiones de 1536 × 1024: pasa de 1.602.203 a 1.483.406 bytes. Comprobaciones de esta revisión en VALIDACION-0.22.1.md.
+
+# Cambios 0.22.0 (2026-10-08)
+
+- Guía visual opcional de seis pasos en español e inglés: inicio, alcance, hallazgos, evidencia, revisión y entrega/respaldo. Se abre desde Inicio, el lateral o Más en móvil, con ejemplos ficticios y enlaces a las pantallas reales.
+- Leer la guía no crea proyectos ni rellena campos. Su animación breve respeta movimiento reducido; al cambiar de paso, el foco revela el título si queda fuera de pantalla.
+- El tablero de Hallazgos ofrece acciones visibles para añadir una entrada o usar la biblioteca, también cuando todavía está vacío.
+- Abrir editores Markdown y opciones de inclusión conserva los datos y la revisión; los campos ausentes solo se incorporan al editar.
+- Revisión y entrega comparten un preflight. Los avisos de validación y del flujo se conservan en verificacion.json y LEEME.txt, y requieren confirmación al entregar directamente o en cola. Los errores siguen bloqueando la entrega y la publicación usa el documento revisado.
+- Los README priorizan instalación, primer uso y actualización. Contratos ejecutados, exportación de los cuatro formatos y límites en VALIDACION-0.22.0.md.
+
+# Cambios 0.21.9 (2026-10-08)
+
+- La exportación rechaza destinos que coinciden con la fuente o recursos locales referenciados, incluidos symlinks y hardlinks, antes de escribir. Se conserva la sustitución legítima de informes previos.
+- La CLI protege también sus salidas secundarias y comprueba los destinos efectivos de Markdown.
+- Los contratos y la nueva generación real se documentan en VALIDACION-0.21.9.md.
+
+# Cambios 0.21.8 (2026-10-08)
+
+- Contrato de listas compara la secuencia y sus límites en HTML, Word y Markdown; conserva listas anidadas. Una guarda común rechaza ordinales fuera del rango representable por navegador y Word en los cuatro formatos, sin alterar archivos previos.
+- Índice PDF codifica las claves documentales, evita colisiones de secciones heredadas y exige referencias solo a los bloques emitidos. Las opciones CLI se aplican antes de la validación final.
+- Referencias internas codificadas reservan sus IDs también en el editor. Fechas de seguimiento usan AAAA-MM-DD para mantener comparación cronológica y estados coherentes.
+- Enteros no representables exactamente por el editor se rechazan con ruta de campo y recomendación de guardarlos como texto, sin redondear ni modificar la fuente.
+- Creación desde diseños rechaza colisiones Unicode; declaraciones de anexos rechazan JSON ambiguo; bibliotecas exigen una versión entera válida.
+- Tres diálogos de plantillas y notas usan modalidad nativa, foco inicial y restauración. Retiradas las trampas manuales de foco redundantes.
+- Arranque con app.js ausente o JavaScript desactivado muestra un aviso operable y recarga nativa; el editor queda inerte hasta instalar sus eventos. Retirados estilos y markup animado de carga sin consumidor.
+- Búsqueda del HTML portátil reconoce representaciones Unicode equivalentes sin retirar acentos. Documentación inglesa de actualización y validación puesta al día.
+- Pruebas, exportaciones reales y límites documentados en VALIDACION-0.21.8.md.
+
+# Cambios 0.21.7 (2026-10-08)
+
+- Entradas nulas y títulos ausentes accesibles; idioma efectivo consistente; fragmentos codificados y resúmenes sin enlaces a detalles omitidos.
+- Límites numéricos/contador seguros, importaciones Unicode y ZIP inválidos controlados, y arranque del editor con recuperación visible.
+- Orden y límites de tablas comprobados en HTML, Word y Markdown; HTML portátil y tablas Word extensas mejorados.
+- Retirados helpers sin consumidores; dependencia opcional PyMuPDF corregida a 1.26.7.
+- Pruebas, exportaciones reales y límites documentados en VALIDACION-0.21.7.md.
+
+# Cambios 0.21.6 (2026-10-08)
+
+- Valida el espacio efectivo de anclas antes de exportar, incluidos controles portátiles y secciones automáticas, conservando identidades y claves personalizadas legítimas.
+- Conserva todos los activos sin UID en el inventario, evita vínculos implícitos al último activo y admite títulos nulos en proyección sin inventar un título ni modificar la fuente.
+- Corrige el falso rechazo de código PDF envuelto físicamente y detecta líneas reordenadas o repeticiones ausentes; mantiene explícitos los límites de extracción textual y revisión manual.
+- HTML portátil con palabras completas en columnas comparativas intermedias, nota en main, versión visible de exportación y márgenes de impresión A4; el contenido histórico del ejemplo Banco Lumbre se conserva.
+- Copia de CVSS espera confirmación de portapapeles, informa fallos y conserva nombre accesible estable.
+- 1.200 pruebas Python, npm 12, DOM/API 29 y Chromium 48/72/24/58 aprobados. Nuevo informe Cooperativa Faro exportado en cuatro formatos, revisado en PDF/Word/HTML. Alcance y límites en VALIDACION-0.21.6.md.
+
+# Cambios 0.21.5 (2026-10-08)
+
+- Fichas del HTML portátil con columna de etiquetas acotada y alineación superior en escritorio; lectura apilada en móvil, conservando filas, encabezados y contenido.
+- Tablas comparativas con anchura suficiente para leer los datos, región de desplazamiento local accesible por teclado y comportamiento de impresión independiente.
+- Barra de filtros con geometría reservada antes del primer pintado y controles disponibles después de instalar eventos; arranque mínimo y script de lectura autorizados por sus hashes CSP.
+- Fuente opcional en HTML portátil para evitar su intercambio tardío. Sin cambios de esquema, del motor PDF ni de los PDF históricos.
+- Títulos móviles más contenidos para mantener palabras largas completas a 320 px, sin alterar escritorio ni impresión.
+- Contratos de navegador y contenido para ES/EN y disposiciones por secciones/heredada. Resultados y límites en VALIDACION-0.21.5.md.
+
+# Cambios 0.21.4 (2026-10-08)
+
+- Severidad contrastada con vectores CVSS 3.1 y 4.0 cuando la puntuación escalar está ausente, nula o vacía, sin modificar ni completar datos del informe.
+- Un tema explícitamente nulo se rechaza en la validación final; el editor conserva su normalización compatible al tema serio.
+- Retiradas dos expresiones regulares sin uso y corregidas las descripciones de compatibilidad CVSS.
+- 62 contratos nuevos de validación y exportación, con evidencia antes/después. Resultados y límites en VALIDACION-0.21.4.md.
+
+# Cambios 0.21.3 (2026-10-08)
+
+- HTML portátil sin desbordamiento en 320/360 px; reapertura del mismo fragmento con filtros activos y separación de anclas según la altura real de la barra.
+- Exportaciones conservan imágenes WebP y enlazadas, referencias literales y vectores CVSS con puntuación ausente/null/vacía/cero. El inspector compara las referencias y la huella exacta de la conversión Word; mantiene las guardas de contenido y asociaciones.
+- Importación JSON validada sobre copia antes de modificar el editor, con protección de cambios concurrentes y del proyecto elegido. La incorporación conserva las identidades del modelo para que Deshacer siga operativo.
+- Diálogos nativos con foco, teclado y errores contextualizados; nombres de controles, semántica de listas, contraste observado, Ctrl+K móvil y referencias ARIA de exportación corregidos.
+- Biblioteca sanea formas Markdown y rutas privadas sin alterar código literal ni citas bibliográficas. Las variables se vuelven a comprobar después de rellenarse.
+- Respaldo conserva recuperación heredada y sus recursos sin escribir en el origen; creación y respaldo rechazan colisiones Unicode. Restauración completada con fallo posterior de limpieza devuelve éxito con aviso y conserva un reintento seguro.
+- Excepciones de constructores YAML inválidos normalizadas como entrada 422, sin estado parcial.
+- 196 casos Python nuevos; suite final completa: 1.050 aprobados sin omisiones. Editor: 72 comprobaciones en Chromium real; npm: 12; DOM/API: 29. Las suites previas de navegador aprueban 48 y 24 comprobaciones. Revisión visual de DOCX con LibreOfficeDev y PDF sintéticos. Nuevas guardas incorporadas al workflow Chromium.
+- Auditoría y alcance en AUDITORIA-0.21.3.md y VALIDACION-0.21.3.md; guía de actualización con el caso de `.bak` omitido por exportadores anteriores. Word nativo, Firefox local y lector de pantalla siguen sin ejecutar en esta ronda.
+
+# Cambios 0.21.2 (2026-10-05)
+
+- RG-L01: IDs persistentes al eliminar, reordenar y duplicar fichas, contador de asignación sin reutilización y bloqueo de referencias internas huérfanas. Markdown incluye anclas explícitas; Word y Markdown enlazan también desde el resumen.
+- RG-L02: contrato v3 con portada, metadatos tipados, tablas nativas y destinos de enlaces comparados con la copia pública de origen. CVSS escalar, incluido cero, se publica de forma explícita en Markdown.
+- RG-L03: huella de cada imagen pública, pie, contexto y posición respecto de los comandos. Se detecta también el traslado de una evidencia entre pasos sin comandos. Recursos con espacios y corchetes se resuelven correctamente.
+- RG-L04: el verificador excluye HTML estáticamente oculto mediante atributos o reglas CSS soportadas. Todos los formatos declaran revisión visual requerida. La interfaz muestra las nuevas comprobaciones y sus límites.
+- RG-L05: metadatos iniciales de Word como párrafos nativos con continuidad de paginación. En el motor disponible, los 24 hallazgos y dos máquinas conservan su título con el comienzo del contenido; los cuatro casos huérfanos de la auditoría ya no se reproducen.
+- Texto contextual ES/EN para CVSS/CWE opcionales sin registrar.
+- 67 pruebas Python nuevas; suite completa: 854 aprobadas. 12 pruebas JS, 29 comprobaciones DOM/Flask y 26 comprobaciones en Chromium. Ocho mutaciones rechazadas. Informe Grupo Ladera repetido: PDF de 78 páginas y DOCX renderizado de 65 páginas. Word nativo, LibreOffice estable y Firefox siguen pendientes en este ciclo. Detalles en VALIDACION-0.21.2.md.
+
+# Cambios 0.21.1 (2026-10-05)
+
+- Contrato de contenido por hallazgo: párrafos completos con repeticiones y código literal. Mutaciones de contenido, espacios y ubicación provocan rechazo en HTML, Markdown y Word. PDF declara sus límites de extracción y revisión manual.
+- Corregidos el recorte de espacios y líneas vacías de comandos y la expansión de tabulaciones dentro de bloques Markdown. Se conserva la protección contra HTML activo.
+- Corregida la omisión del nombre genérico del equipo en Word y Markdown de informes antiguos sin evaluador.
+- Inventario de datos privados, descarga y eliminación protegida de borradores, y limpieza transaccional de historial, anexos retirados y respaldo YAML anterior. La limpieza es explícita y conserva los datos actuales.
+- Anexos obligatorios bloquean la entrega cuando faltan, están excluidos o no conservan su hash. Análisis orientativo de patrones y metadatos sin divulgar secretos ni modificar el anexo.
+- Tamaños pequeños expresados en bytes, errores de anexos dentro del diálogo y limpieza del error al corregir el campo.
+- Pruebas reales de conflictos entre pestañas, ENOSPC, EACCES, terminación del proceso entre renombres y recuperación en el mismo origen. Respaldo restaurado en una instalación vacía.
+- CI ampliada para Chromium, Firefox y Windows; script de Word nativo disponible. Las ejecuciones remotas y Word de escritorio siguen pendientes. Resultados en VALIDACION-0.21.1.md.
+
+# Cambios 0.21.0 (2026-10-05)
+
+- Inventario explícito de anexos con SHA-256, límites de tamaño, revisión individual y copia seleccionada en `anexos/`. Los respaldos conservan anexos privados; las exportaciones individuales no los adjuntan.
+- Registro visible y descargable de revisión, huellas y comprobaciones en cada exportación. Los resultados siguen ligados a su sesión local.
+- Registro único de formatos para CLI, API, cola e interfaz. Comparación de títulos, comandos, filas de tablas y orden de listas con la copia de publicación.
+- Inspección adicional de enlaces, integridad e imágenes publicadas en Word; retención del bloque introductorio del hallazgo con su contenido.
+- Espaciado cómodo o compacto del informe, separado de la densidad del editor. Filtros de tipo, valoración pendiente, limpieza y estado vacío en HTML.
+- Búsqueda de pasos y comandos en hallazgos y máquinas. Severidad pendiente explícita en selector, inicio y tablero; los hallazgos nuevos no reciben severidad por defecto.
+- Corregida una referencia de índice no definido en Inicio para borradores sin ID.
+- Instalador pip del entorno virtual actualizado antes de instalar dependencias. Comprobación final de paquetes sin avisos conocidos en las bases consultadas; no equivale a ausencia de vulnerabilidades.
+- Pruebas reales en Chromium, matriz Chromium/Firefox en CI, ejemplo ficticio complejo y corpus de carga. Control manual de Microsoft Word sobre copias, con revisión de campos y exportación nativa.
+- 34 pruebas Python nuevas. 739 casos Python distintos aprobados en la suite completa y la comprobación adicional del instalador; 49 comprobaciones reales de navegador. Firefox local bloqueado por EPERM y Microsoft Word nativo sin ejecutar. Detalles en VALIDACION-0.21.0.md.
+
+# Cambios 0.20.2 (2026-10-05)
+
+- La descarga individual de HTML deja de tratarse como ZIP. La cola y la entrega conjunta comparten el selector de inspección por formato. El inspector HTML comprueba recursos incorporados y destinos internos.
+- Las etiquetas de Markdown se separan del contenido para conservar tablas, código y listas al comienzo de campos, pasos y resúmenes.
+- Word conserva el orden de párrafos, código y sublistas, sus sangrías y los espacios entre estilos en línea.
+- Los enlaces Markdown a hallazgos y secciones se convierten en enlaces internos de Word a marcadores estables. Los enlaces web siguen siendo externos.
+- La exportación HTML por terminal valida el proyecto antes de publicar, igual que los otros formatos; un error no sobrescribe un destino existente.
+- 27 pruebas nuevas; suite completa de 705 aprobadas. Dos simulaciones y verificación de PDF, DOCX, Markdown y HTML. Límites y resultados en VALIDACION-0.20.2.md. Sin migración de esquema.
+
+# Cambios 0.20.1 (2026-10-05)
+
+- Los hallazgos sin severidad permanecen en el resumen PDF, HTML, Word y Markdown, con etiqueta pendiente ES/EN. El conteo de máquinas se mantiene separado y no se fabrican puntuaciones.
+- Los puntos del índice PDF se alinean con su entrada, incluidos los títulos que requieren varias líneas.
+- Las tablas Markdown y estructuradas reparten columnas por contenido. PDF/HTML y Word comparten el criterio y las proporciones específicas de las tablas de activos, cobertura y retest.
+- Los bloques Markdown usan el mismo estilo de bloque que los comandos, sin heredar cajas de código en línea. Los bloques cortos se mantienen juntos; las etiquetas breves en negrita acompañan a su bloque.
+- Índice Word nativo con enlaces, marcadores y campos actualizables. El resultado inicial conserva títulos y no inventa números de página; F9 actualiza los campos en el editor.
+- Pruebas de regresión y ejemplo ficticio de hallazgos pendientes. Alcance de la validación en VALIDACION-0.20.1.md.
+
+# Cambios 0.20.0 (2026-10-04)
+
+- Navegación Trabajar, Revisar, Entregar y Biblioteca; cabecera móvil compacta y preferencias agrupadas.
+- Borradores recuperables, descarga de emergencia y resolución explícita de conflictos con validación estructural.
+- Proyección pública común, imágenes sin metadatos, originales privados conservados y comparación compartible separada de la interna.
+- Inspector de texto, recursos y huellas; patrones de secretos, excepciones registradas y censuras literales.
+- Informe HTML autónomo con búsqueda, severidad, vista ejecutiva e impresión; lectura completa sin JavaScript.
+- Corregidos vínculos rotos de capturas, selección CSV, huella original del importador, etiquetas Markdown y estados al duplicar/retest.
+- Instrucciones inglesas de entrega y biblioteca ES/EN conservada. Calibri/Carlito y las mascotas no cambian.
+- Lanzador de instalación/diagnóstico y documentación ES/EN. Evidencias antiguas separadas del paquete principal.
+- Alcance, límites y ejecuciones documentados en VALIDACION-0.20.0.md.
+
+# Cambios 0.18.0 (2026-10-04)
+
+- Inicio contextual, retorno al último hallazgo y posición, y lista de actividad reciente.
+- Navegación por trabajo, revisión y herramientas, densidad y concentración; autoría en «Acerca de».
+- Símbolo vectorial compacto con Prometeo y Evaristo; ilustración original conservada.
+- Editor por apartados con cabecera contextual; vista HTML sincronizada, ancho ajustable y revisión visible.
+- Vista propia de Hallazgos, filtros y vistas guardadas. Corregido «Ver todos los hallazgos», que llevaba a la configuración del informe.
+- Deshacer por operación para eliminaciones y reordenaciones, sin revertir texto editado después.
+- Búsqueda de acciones con Ctrl+K y navegación de resultados por teclado.
+- CSV/Burp en Archivo, Columnas y Revisión; protección frente a respuestas de archivos anteriores.
+- Exportaciones en panel no modal con estado persistente, cancelación y restauración del foco.
+- Verificación técnica separada de remediación/retest y revisión de importación; estados antiguos conservados.
+- Bandeja privada con notas, comandos, HTTP e imágenes, original/SHA-256, vínculo explícito y respaldo.
+- Traducciones de controles nuevos, barra Markdown y ubicaciones de búsqueda; idiomas del informe y de la interfaz independientes.
+- Diseños, biblioteca bilingüe, logos de plataformas y tipografías de informes conservados.
+- Regresiones y alcance documentados en VERIFICACION-0.18.0.md.
+
+# Cambios 0.17.0 (2026-10-04)
+
+- Versión canónica en `version.py`, compartida por empaquetado Python, API, dashboard y entregas.
+- Corregido el manifiesto de entrega que todavía anunciaba 0.15.1.
+- Estados de guardado, hora real, error persistente y reintento; la exportación no sobrescribe el estado de guardado.
+- Cola de procesos con revisión inmutable, etapas reales, cancelación activa/en espera, limpieza y caducidad.
+- CSV y Burp XML con vista previa, mapeo, procedencia, límites, deduplicación y revisión previa a entrega.
+- Comparación visual de texto y evidencia histórica, con HTML autónomo imprimible.
+- Conservados diseños, tipografías, logos y biblioteca bilingüe.
+- Automatización Windows y script de Microsoft Word incluidos; ejecución nativa pendiente.
+- Resultados y evidencia reproducible en `VERIFICACION-0.17.0.md`.
+
+# Cambios 0.16.0 (2026-10-03)
+
+- Dashboard con estado real del proyecto, accesos a hallazgos y preparación de entrega.
+- Cabecera reorganizada, navegación móvil, temas claro y oscuro y foco visible.
+- Emblema de Prometeo y Evaristo sobre una consola; wordmark HTML sin cortes.
+- Separados el idioma de interfaz y el del documento: cambiar ES/EN no altera el informe.
+- 150 nuevas vistas inglesas, además de las 150 españolas. Editor personal con campos ES/EN.
+- Respaldo integral de proyectos, originales, historial y ambas bibliotecas personales.
+- Restauración solo en instalación vacía, límites acumulados, hashes y recuperación ante interrupciones.
+- 574 pruebas Python, 29 comprobaciones del nuevo DOM, cinco de guardado y 50 en Chromium.
+- Muestras inglesas OSCP y CPTS en PDF/Word; fuentes del informe y motores conservados.
+
+# Cambios 0.15.1 (2026-10-03)
+
+- Logos de OffSec y Hack The Box en los 22 perfiles y sus dos variantes, en PDF,
+  Word y vistas previas. Recursos incluidos, con procedencia y hashes.
+- Selección clara u oscura según el fondo, sin sustituir los logos de autor y cliente.
+- Corregida la vista previa de plantillas personales con estructura mínima.
+- Conservada la variante Sobria al duplicar, guardar y crear desde una plantilla personal.
+- Valores inválidos para un diseño general devuelven 422 sin modificar el proyecto.
+- Galería y 50 pares de muestras regenerados; pruebas y alcance en VERIFICACION-0.15.1.md.
+
+# Cambios 0.15.0 (2026-10-03)
+
+- Biblioteca con 14 perfiles OffSec y ocho HTB, seis diseños generales conservados y referencias históricas separadas.
+- Cinco composiciones nuevas con título central y datos en el tercio inferior, variantes Marca y Sobria, Calibri/Carlito y código monoespaciado.
+- Galería con 150 vistas reales de portada, resumen y página técnica, búsqueda y filtros.
+- Creación ES/EN con guías TODO; aplicar apariencia conserva el contenido existente.
+- Plantillas personales con edición de colores, composición y estructura. Cada proyecto conserva su propia copia de la apariencia.
+- Orientación de entrega con fuente y fecha de consulta; Markdown propuesto para CWEE y limitación de cifrado explícita.
+- Escrituras atómicas, revisión de biblioteca y proyecto, entradas acotadas y comprobación de que la biblioteca escrita pueda volver a abrirse.
+- Muestras PDF y Word, regresión de Nimbus, pruebas de navegador y limitaciones registradas en VERIFICACION-0.15.0.md.
+
+# Cambios 0.14.0 (2026-10-03)
+
+- Demo Nimbus editable con copias independientes, guía breve y diagnóstico real de instalación.
+- Editor visual para plantillas reutilizables: vulnerabilidades, máquinas, fases,
+  pasos, variables, CVSS, ayuda de redacción, vista previa y JSON opcional.
+- Preparar entrega desde una instantánea guardada: formatos seleccionables,
+  avisos explícitos, comprobación de recursos y ZIP con hashes de las salidas.
+- Diseños propios Ejecutivo y Laboratorio en PDF y Word; seis temas revisados.
+- Catorce presets revisados en ES/EN, con guías TODO y sin afirmaciones de
+  compromisos no realizados. Se corrige la especialidad de CWEE y CWPE.
+- Portadas con ilustraciones más compactas, encabezados Word alineados y código
+  monoespaciado con DejaVu Sans Mono. No se añade un prompt ficticio a los comandos.
+- Contraste corregido en etiquetas de máquinas y avisos del editor en modo claro.
+- Regresiones, muestras nativas y límites documentados en VERIFICACION-0.14.0.md.
+
+# Cambios 0.13.5 (2026-10-03)
+
+- Registro de activación y recuperación de procesos interrumpidos, con copias
+  conservadas cuando falla también la reversión.
+- Reescritura de destinos Markdown comprobada por el parser, sin alterar código,
+  etiquetas ni texto; trabajo de análisis acotado y rechazo sin cambios si no
+  puede demostrar la conservación del contenido.
+- Revisión de imágenes consistente con el parser y separación de campos de
+  texto, comandos y recursos; rechazo final de imágenes no locales.
+- Validación de campos legacy de exportación; valores nulos y numéricos admitidos
+  conservados en Word y Markdown.
+- Bloqueo del idioma durante navegación pendiente.
+- Escape de texto plano y tablas Markdown; celdas estructuradas Word literales
+  para conservar todos sus valores.
+- Evidencia, regresiones y límites en VERIFICACION-0.13.5.md.
+
+# 0.13.2 - 2026-10-02
+
+## 0.13.4 - 2026-10-03
+
+Reauditoría sobre el ZIP 0.13.3 entregado. Guardado y evidencias se preparan como
+un estado completo; errores controlados conservan el proyecto anterior. El escritor
+comprueba los límites de su lector. Eliminación/restauración bloquean la navegación
+hasta completar la operación. Markdown conserva código literal y normaliza también
+imágenes por referencia. DOCX admite vector CVSS nulo y se rechazan caracteres no
+compatibles. YAML limita nodos durante su composición. Se corrige una expectativa
+antigua que aprobaba modificar código literal al censurar una imagen.
+
+293 tests Python, 5 JavaScript, 75 comprobaciones Chromium. Nimbus conserva sus
+673 fragmentos, 19 imágenes y composición. Alcance y limitaciones en VERIFICACION-0.13.4.md.
+
+## 0.13.3 - 2026-10-03
+
+Auditoría adversa sobre 0.13.2. Censura por recurso canónico, respaldo e historial
+con imágenes externas a img/, lectura acotada de JSON/YAML con rechazo de claves
+duplicadas y datos no finitos, fechas ISO, alias con identidades independientes,
+decodificación única de URLs y cabeceras inválidas rechazadas sin errores 500.
+Arranque con Waitress local de un proceso. Dependencias de producción fijadas y
+consultadas contra avisos conocidos. Véase VERIFICACION-0.13.3.md.
+
+
+- Auditoría del informe Nimbus completo usando las salidas nativas y el editor real.
+- Markdown conserva los metadatos y las imágenes de portada en las dos ramas de exportación.
+- Escape de pies de figura, rutas locales codificadas y empaquetado de nombres reales.
+- Cercas de código más largas que las presentes en el comando original.
+- Modo `vuln` implícito coherente en numeración de figuras y plantilla PDF clásica.
+- Word: gráfico de severidad ES/EN, tamaño legible y fuente DejaVu Sans incluida con licencia.
+- Word: unión de etiquetas de lista y plazos de remediación con su contenido.
+- Diez regresiones adicionales. Registro y evidencia en `VERIFICACION-0.13.2.md`.
+- Se conservan los cálculos CVSS y el formato de los proyectos.
+
+# 0.13.1 - 2026-10-02
+
+- Protege las entregas con escritura atómica y copia consistente de YAML e imágenes durante la exportación web.
+- Corrige la sustitución de referencias de evidencia para no modificar nombres que solo comparten un prefijo.
+- Rechaza exportaciones finales de hallazgos sin ID o con versión CVSS incompatible con su vector; conserva los borradores.
+- Da formato a tablas Markdown y columnas de activos, cobertura y retest; mantiene encabezados y evidencias de retest juntos cuando caben.
+- Corrige el contraste de etiquetas de severidad en los cuatro temas y los colores de texto del gráfico.
+- Añade soporte WebP/rotación EXIF a Word, logos e ilustración de portada, OSID/correo y figuras ajustadas al área imprimible.
+- Adapta el cuerpo del tema HTB en Word a papel blanco; conserva su portada oscura.
+- Escapa cadenas de cabeceras CSS de forma segura y evita entidades HTML visibles.
+- Conserva el nombre report-gen en una línea, mejora controles estrechos y foco; completa etiquetas ES/EN.
+- Descarta vistas previas antiguas, libera sus URLs y permite reintentar la sesión tras un error transitorio.
+- Corrige pies de evidencia con escapes Markdown y estilos de títulos/pies de Word.
+- Incluye regresiones Python/DOM, comprobación reproducible en Chromium y registro de auditoría.
+
+---
+
 # 0.13.0 — 2026-09-08
 
 - Añade historial completo de proyectos con objetos deduplicados, etapas con nombre, comparación por identidad y restauración de archivos con rollback.

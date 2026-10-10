@@ -31,5 +31,6 @@ def summary_sev(L, f):
     severidad ni score, muestran su propia etiqueta."""
     if f.get("mode") == "machine":
         return (L.get("labels") or {}).get("machine", "Machine")
-    s = sev_label(L, f.get("severity", ""))
+    s = (sev_label(L, f["severity"]) if f.get("severity") in engine.SEVERITY_RANK
+         else L["labels"]["severity_pending"])
     return s + (f" ({f['cvss']})" if f.get("cvss") not in (None, "") else "")

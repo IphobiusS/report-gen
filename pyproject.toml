@@ -1,7 +1,7 @@
 [project]
 name = "report-gen"
-version = "0.13.0"
-description = "Generador propio de informes de pentesting: engagement.yaml como fuente de verdad, secciones canonicas activables, salida PDF/DOCX/MD consistente, editor local estilo SysReptor."
+dynamic = ["version"]
+description = "Generador propio de informes de pentesting: engagement.yaml como fuente de verdad, secciones canonicas activables, salida PDF/DOCX/MD/HTML consistente, editor local estilo SysReptor."
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Sebastian Latorre Munoz", email = "iphobiuss@proton.me" }]
@@ -11,20 +11,32 @@ dependencies = [
   "pyyaml",
   "markdown",
   "weasyprint",
+  "tinycss2>=1.4,<2",
+  "cssselect2>=0.8,<1",
   "pdfplumber",
+  "pypdf>=6.1,<7",
   "python-docx",
   "flask>=3.1,<4",
+  "waitress>=3.0.2,<4",
   "nh3>=0.3.2,<0.4",
   "lxml>=5,<7",
   "pillow>=10.1",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff"]
+dev = ["pytest", "ruff", "cryptography>=46,<52"]
+previews = ["pymupdf>=1.26.7,<2", "playwright>=1.56,<2"]
+signing = ["cryptography>=46,<52"]
 
 [tool.setuptools]
 packages = ["cvss", "exporters"]
-py-modules = ["engine", "export", "sections", "validate", "wizard", "safe_markup", "resources", "storage", "pdf_pagination", "workflows", "project_history", "evidence", "finding_library"]
+py-modules = ["engine", "export", "sections", "validate", "wizard", "safe_markup", "resources", "storage", "pdf_pagination", "report_layout", "workflows", "project_history", "evidence", "finding_library", "input_guard", "delivery", "publication", "portable_report", "diagnostics", "report_designs", "design_library", "design_render", "design_samples", "provider_branding", "workspace_backup", "version", "export_jobs", "export_formats", "export_contract", "export_semantics", "attachments", "private_data", "finding_imports", "report_compare", "capture_inbox", "reusable_markup", "insights", "audience", "editorial_assistant", "visual_review", "readiness", "retest_compare", "retest_summary", "error_messages", "delivery_signature", "incremental_save"]
+
+[tool.setuptools.package-data]
+exporters = ["fonts/*.ttf", "fonts/*.txt", "branding/*.svg", "branding/*.png", "branding/*.json", "branding/*.md"]
+
+[tool.setuptools.dynamic]
+version = {attr = "version.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

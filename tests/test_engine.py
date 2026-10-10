@@ -43,7 +43,7 @@ def test_toc_keys_section_model():
 def test_toc_keys_fixed_model():
     data = {"findings": [{"id": "F1", "severity": "high"}]}
     keys = engine.toc_keys(data)
-    assert keys[:4] == ["conf", "contacts", "overview", "summary"]
+    assert keys[:4] == ["sec-conf", "sec-contacts", "sec-overview", "sec-summary"]
     assert "F1" in keys
 
 

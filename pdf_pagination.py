@@ -1,11 +1,10 @@
 """Fail a PDF export instead of delivering a split or overflowing finding table."""
+from error_messages import message as backend_message
 
 
 def table_error(finding):
     return ValueError(
-        f"Hallazgo {finding}: una tabla no cabe completa en una página junto a su encabezado. "
-        "Acorta la tabla o mueve el contenido extenso al procedimiento detallado. "
-        "El PDF no se ha generado para evitar cortar la tabla."
+        backend_message('Hallazgo {p0}: una tabla no cabe completa en una página junto a su encabezado. Acorta la tabla o mueve el contenido extenso al procedimiento detallado. El PDF no se ha generado para evitar cortar la tabla.', p0=finding)
     )
 
 
@@ -70,7 +69,7 @@ def verify_table_markers(pdf_bytes, checks):
         first = [i for i, page in enumerate(pages) if start in page]
         last = [i for i, page in enumerate(pages) if end in page]
         if not first or not last:
-            raise ValueError(f"No se pudo verificar la paginación de la tabla del hallazgo {finding}. Prueba el motor WeasyPrint.")
+            raise ValueError(backend_message('No se pudo verificar la paginación de la tabla del hallazgo {p0}. Prueba el motor WeasyPrint.', p0=finding))
         if len(first) != 1 or first != last:
             raise table_error(finding)
         page = first[0]

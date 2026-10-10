@@ -5,8 +5,8 @@ Este test exige que produzca EXACTAMENTE lo mismo (score Y macrovector, no solo
 score) sobre el corpus congelado + una muestra amplia determinista, y valida por
 separado los defaults/X y MSI:S/MSA:S. Se salta si `node` no esta disponible.
 
-El modulo JS NO esta cableado a la UI todavia: este checkpoint es exclusivamente
-"JS 4.0 implementado; paridad Python<->JS demostrada", sin tocar Flask/HTML/calc.
+La integración del módulo con la interfaz y Flask se verifica por separado en
+test_ui_loads_cvss40.py y test_api_cvss.py; aquí se contrasta el cálculo puro.
 """
 import json
 import random

@@ -1,0 +1,12 @@
+.readiness-list{list-style:none;margin:18px 0;padding:0}
+.readiness-list>li{display:grid;grid-template-columns:1.75em minmax(0,1fr);gap:10px;padding:14px 0;border-top:1px solid var(--line);break-inside:avoid}
+.readiness-icon{display:grid;place-items:center;border:1px solid currentColor;border-radius:50%;width:1.65em;height:1.65em;font-weight:700;line-height:1;color:var(--fg)}
+[data-readiness-status=checked] .readiness-icon{color:var(--accent)}
+.readiness-copy{min-width:0;overflow-wrap:anywhere}
+.readiness-copy p{margin:7px 0 12px}
+.readiness-copy .btn{white-space:normal;text-align:left;max-width:100%;min-height:44px}
+.readiness-scope{color:var(--muted);font-size:.875em}
+[data-readiness-progress]{font-weight:650}
+.preview-zoom{display:flex;align-items:center;flex-wrap:wrap;gap:6px;max-width:100%;margin:0;font-size:12px}
+.preview-zoom select{width:auto;max-width:100%;min-width:0;min-height:32px;padding:5px 8px;font:inherit}
+.preview-zoom output{font-variant-numeric:tabular-nums;min-width:4ch}

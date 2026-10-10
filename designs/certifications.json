@@ -1,0 +1,1888 @@
+{
+  "schema": 1,
+  "checked": "2026-10-03",
+  "profiles": [
+    {
+      "id": "offsec-oscp",
+      "name": "OSCP / OSCP+",
+      "provider": "OffSec",
+      "certificate": "OSCP / OSCP+",
+      "course": "PEN-200",
+      "accent": "#FF5500",
+      "background": "#1C1822",
+      "layout": "rail",
+      "motif": "network",
+      "domain": "network",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "engagement",
+          "title": {
+            "es": "Alcance y reglas",
+            "en": "Scope and rules"
+          },
+          "body": {
+            "es": "TODO: Documenta los objetivos autorizados, límites, fechas y restricciones.",
+            "en": "TODO: Document authorized targets, boundaries, dates and restrictions."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "attack-path",
+          "title": {
+            "es": "Ruta de compromiso",
+            "en": "Attack path"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada acceso con su evidencia, comandos y privilegios obtenidos.",
+            "en": "TODO: Link each access to its evidence, commands and obtained privileges."
+          }
+        },
+        {
+          "key": "recovery",
+          "title": {
+            "es": "Remediación y comprobación",
+            "en": "Remediation and verification"
+          },
+          "body": {
+            "es": "TODO: Prioriza las correcciones y describe cómo verificar cada una.",
+            "en": "TODO: Prioritize fixes and describe how to verify each one."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://www.offsec.com/courses/pen-200/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-osep",
+      "name": "OSEP",
+      "provider": "OffSec",
+      "certificate": "OSEP",
+      "course": "PEN-300",
+      "accent": "#00B600",
+      "background": "#1C1822",
+      "layout": "split",
+      "motif": "network",
+      "domain": "network",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "engagement",
+          "title": {
+            "es": "Alcance y reglas",
+            "en": "Scope and rules"
+          },
+          "body": {
+            "es": "TODO: Documenta los objetivos autorizados, límites, fechas y restricciones.",
+            "en": "TODO: Document authorized targets, boundaries, dates and restrictions."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "attack-path",
+          "title": {
+            "es": "Ruta de compromiso",
+            "en": "Attack path"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada acceso con su evidencia, comandos y privilegios obtenidos.",
+            "en": "TODO: Link each access to its evidence, commands and obtained privileges."
+          }
+        },
+        {
+          "key": "recovery",
+          "title": {
+            "es": "Remediación y comprobación",
+            "en": "Remediation and verification"
+          },
+          "body": {
+            "es": "TODO: Prioriza las correcciones y describe cómo verificar cada una.",
+            "en": "TODO: Prioritize fixes and describe how to verify each one."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://www.offsec.com/courses/pen-300/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-oswa",
+      "name": "OSWA",
+      "provider": "OffSec",
+      "certificate": "OSWA",
+      "course": "WEB-200",
+      "accent": "#FF0064",
+      "background": "#1C1822",
+      "layout": "frame",
+      "motif": "web",
+      "domain": "web",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "surface",
+          "title": {
+            "es": "Superficie y alcance",
+            "en": "Surface and scope"
+          },
+          "body": {
+            "es": "TODO: Identifica aplicaciones, roles, endpoints y exclusiones.",
+            "en": "TODO: Identify applications, roles, endpoints and exclusions."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "requests",
+          "title": {
+            "es": "Peticiones y reproducción",
+            "en": "Requests and reproduction"
+          },
+          "body": {
+            "es": "TODO: Conserva las peticiones HTTP, respuestas, precondiciones y resultado observado.",
+            "en": "TODO: Preserve HTTP requests, responses, preconditions and observed results."
+          }
+        },
+        {
+          "key": "web-fixes",
+          "title": {
+            "es": "Remediación y retest",
+            "en": "Remediation and retest"
+          },
+          "body": {
+            "es": "TODO: Explica la causa y una prueba de regresión por hallazgo.",
+            "en": "TODO: Explain the cause and a regression test for each finding."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://www.offsec.com/courses/web-200/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-oswe",
+      "name": "OSWE",
+      "provider": "OffSec",
+      "certificate": "OSWE",
+      "course": "WEB-300",
+      "accent": "#07C7C2",
+      "background": "#1C1822",
+      "layout": "band",
+      "motif": "code",
+      "domain": "code",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "code-scope",
+          "title": {
+            "es": "Aplicación y revisión de código",
+            "en": "Application and code review"
+          },
+          "body": {
+            "es": "TODO: Anota versión, commit, componentes, rutas y precondiciones.",
+            "en": "TODO: Record version, commit, components, paths and preconditions."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "source-trace",
+          "title": {
+            "es": "Trazado de la vulnerabilidad",
+            "en": "Vulnerability trace"
+          },
+          "body": {
+            "es": "TODO: Relaciona origen, transformaciones y destino de los datos con líneas de código.",
+            "en": "TODO: Connect sources, transformations and sinks with code references."
+          }
+        },
+        {
+          "key": "exploit-chain",
+          "title": {
+            "es": "Explotación reproducible",
+            "en": "Reproducible exploitation"
+          },
+          "body": {
+            "es": "TODO: Documenta la cadena completa, dependencias, ejecución y salida esperada.",
+            "en": "TODO: Document the complete chain, dependencies, execution and expected output."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://www.offsec.com/courses/web-300/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-oswp",
+      "name": "OSWP",
+      "provider": "OffSec",
+      "certificate": "OSWP",
+      "course": "PEN-210",
+      "accent": "#0069FF",
+      "background": "#1C1822",
+      "layout": "split",
+      "motif": "wifi",
+      "domain": "wifi",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "radio-scope",
+          "title": {
+            "es": "Alcance inalámbrico",
+            "en": "Wireless scope"
+          },
+          "body": {
+            "es": "TODO: Identifica SSID, BSSID, canales, autorización y límites de captura.",
+            "en": "TODO: Identify SSIDs, BSSIDs, channels, authorization and capture limits."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "wireless-test",
+          "title": {
+            "es": "Captura y validación",
+            "en": "Capture and validation"
+          },
+          "body": {
+            "es": "TODO: Anota adaptador, controlador, comandos, tiempos y evidencia verificable.",
+            "en": "TODO: Record adapter, driver, commands, timing and verifiable evidence."
+          }
+        },
+        {
+          "key": "wireless-fixes",
+          "title": {
+            "es": "Protecciones recomendadas",
+            "en": "Recommended protections"
+          },
+          "body": {
+            "es": "TODO: Relaciona los resultados con autenticación, segmentación y configuración.",
+            "en": "TODO: Relate results to authentication, segmentation and configuration."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://www.offsec.com/courses/pen-210/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-osed",
+      "name": "OSED",
+      "provider": "OffSec",
+      "certificate": "OSED",
+      "course": "EXP-301",
+      "accent": "#00B775",
+      "background": "#1C1822",
+      "layout": "band",
+      "motif": "code",
+      "domain": "exploit",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "target-build",
+          "title": {
+            "es": "Objetivo y entorno",
+            "en": "Target and environment"
+          },
+          "body": {
+            "es": "TODO: Registra arquitectura, versión, mitigaciones y herramientas del depurador.",
+            "en": "TODO: Record architecture, version, mitigations and debugger tools."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "root-cause",
+          "title": {
+            "es": "Fallo y causa raíz",
+            "en": "Crash and root cause"
+          },
+          "body": {
+            "es": "TODO: Documenta el fallo, registros, memoria y control alcanzado.",
+            "en": "TODO: Document the crash, registers, memory and achieved control."
+          }
+        },
+        {
+          "key": "reliability",
+          "title": {
+            "es": "Prueba y fiabilidad",
+            "en": "Proof and reliability"
+          },
+          "body": {
+            "es": "TODO: Incluye código, dependencias, ejecución, limitaciones y repeticiones.",
+            "en": "TODO: Include code, dependencies, execution, limitations and repeated trials."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://www.offsec.com/courses/exp-301/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-osee",
+      "name": "OSEE",
+      "provider": "OffSec",
+      "certificate": "OSEE",
+      "course": "EXP-401",
+      "accent": "#F01A00",
+      "background": "#1C1822",
+      "layout": "frame",
+      "motif": "code",
+      "domain": "exploit",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "target-build",
+          "title": {
+            "es": "Objetivo y entorno",
+            "en": "Target and environment"
+          },
+          "body": {
+            "es": "TODO: Registra arquitectura, versión, mitigaciones y herramientas del depurador.",
+            "en": "TODO: Record architecture, version, mitigations and debugger tools."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "root-cause",
+          "title": {
+            "es": "Fallo y causa raíz",
+            "en": "Crash and root cause"
+          },
+          "body": {
+            "es": "TODO: Documenta el fallo, registros, memoria y control alcanzado.",
+            "en": "TODO: Document the crash, registers, memory and achieved control."
+          }
+        },
+        {
+          "key": "reliability",
+          "title": {
+            "es": "Prueba y fiabilidad",
+            "en": "Proof and reliability"
+          },
+          "body": {
+            "es": "TODO: Incluye código, dependencias, ejecución, limitaciones y repeticiones.",
+            "en": "TODO: Include code, dependencies, execution, limitations and repeated trials."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://www.offsec.com/courses/exp-401/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-osda",
+      "name": "OSDA",
+      "provider": "OffSec",
+      "certificate": "OSDA",
+      "course": "SOC-200",
+      "accent": "#5CD6ED",
+      "background": "#1C1822",
+      "layout": "timeline",
+      "motif": "events",
+      "domain": "defense",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "case-scope",
+          "title": {
+            "es": "Caso y fuentes de datos",
+            "en": "Case and data sources"
+          },
+          "body": {
+            "es": "TODO: Define el objetivo, período, fuentes, zona horaria y límites de visibilidad.",
+            "en": "TODO: Define the objective, period, sources, timezone and visibility limits."
+          }
+        },
+        {
+          "key": "timeline",
+          "title": {
+            "es": "Cronología de evidencias",
+            "en": "Evidence timeline"
+          },
+          "body": {
+            "es": "TODO: Relaciona marcas de tiempo, eventos, consultas e interpretación.",
+            "en": "TODO: Connect timestamps, events, queries and interpretation."
+          }
+        },
+        {
+          "key": "response",
+          "title": {
+            "es": "Conclusiones y respuesta",
+            "en": "Conclusions and response"
+          },
+          "body": {
+            "es": "TODO: Distingue hechos de hipótesis y prioriza detección, contención y recuperación.",
+            "en": "TODO: Separate facts from hypotheses and prioritize detection, containment and recovery."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://www.offsec.com/courses/soc-200/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-osir",
+      "name": "OSIR",
+      "provider": "OffSec",
+      "certificate": "OSIR",
+      "course": "IR-200",
+      "accent": "#06C68D",
+      "background": "#1C1822",
+      "layout": "timeline",
+      "motif": "events",
+      "domain": "defense",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "ir-scope",
+          "title": {
+            "es": "Incidente y preservación",
+            "en": "Incident and preservation"
+          },
+          "body": {
+            "es": "TODO: Describe el incidente, fuentes, preservación y cadena de custodia.",
+            "en": "TODO: Describe the incident, sources, preservation and chain of custody."
+          }
+        },
+        {
+          "key": "timeline",
+          "title": {
+            "es": "Cronología de evidencias",
+            "en": "Evidence timeline"
+          },
+          "body": {
+            "es": "TODO: Relaciona marcas de tiempo, eventos, consultas e interpretación.",
+            "en": "TODO: Connect timestamps, events, queries and interpretation."
+          }
+        },
+        {
+          "key": "response",
+          "title": {
+            "es": "Conclusiones y respuesta",
+            "en": "Conclusions and response"
+          },
+          "body": {
+            "es": "TODO: Distingue hechos de hipótesis y prioriza detección, contención y recuperación.",
+            "en": "TODO: Separate facts from hypotheses and prioritize detection, containment and recovery."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://www.offsec.com/courses/ir-200/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-osth",
+      "name": "OSTH",
+      "provider": "OffSec",
+      "certificate": "OSTH",
+      "course": "TH-200",
+      "accent": "#9869F5",
+      "background": "#1C1822",
+      "layout": "rail",
+      "motif": "events",
+      "domain": "hunt",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "hypothesis",
+          "title": {
+            "es": "Hipótesis de búsqueda",
+            "en": "Hunting hypothesis"
+          },
+          "body": {
+            "es": "TODO: Define hipótesis, señales esperadas, población y criterios de descarte.",
+            "en": "TODO: Define a hypothesis, expected signals, population and rejection criteria."
+          }
+        },
+        {
+          "key": "queries",
+          "title": {
+            "es": "Consultas y resultados",
+            "en": "Queries and results"
+          },
+          "body": {
+            "es": "TODO: Incluye las consultas ejecutadas, fuentes, tiempos y resultados negativos.",
+            "en": "TODO: Include executed queries, sources, times and negative results."
+          }
+        },
+        {
+          "key": "hunt-outcome",
+          "title": {
+            "es": "Conclusión y detecciones",
+            "en": "Outcome and detections"
+          },
+          "body": {
+            "es": "TODO: Explica la evidencia, incertidumbres y oportunidades de detección.",
+            "en": "TODO: Explain evidence, uncertainty and detection opportunities."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://www.offsec.com/courses/th-200/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-osai",
+      "name": "OSAI / OSAI+",
+      "provider": "OffSec",
+      "certificate": "OSAI / OSAI+",
+      "course": "AI-300",
+      "accent": "#FB203B",
+      "background": "#1C1822",
+      "layout": "frame",
+      "motif": "ai",
+      "domain": "ai",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "ai-scope",
+          "title": {
+            "es": "Modelo y límites de confianza",
+            "en": "Model and trust boundaries"
+          },
+          "body": {
+            "es": "TODO: Identifica modelo, versión, herramientas, datos y permisos autorizados.",
+            "en": "TODO: Identify model, version, tools, data and authorized permissions."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "ai-tests",
+          "title": {
+            "es": "Casos de prueba y trazas",
+            "en": "Test cases and traces"
+          },
+          "body": {
+            "es": "TODO: Conserva entradas, salidas, contexto, repetición y acceso a herramientas.",
+            "en": "TODO: Preserve inputs, outputs, context, repetition and tool access."
+          }
+        },
+        {
+          "key": "ai-impact",
+          "title": {
+            "es": "Impacto y controles",
+            "en": "Impact and controls"
+          },
+          "body": {
+            "es": "TODO: Separa comportamiento inesperado de impacto demostrado y comprueba los controles.",
+            "en": "TODO: Separate unexpected behavior from demonstrated impact and verify controls."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://www.offsec.com/courses/ai-300/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-oscc-sec",
+      "name": "OSCC SEC",
+      "provider": "OffSec",
+      "certificate": "OSCC SEC",
+      "course": "SEC-100",
+      "accent": "#FFDF00",
+      "background": "#1C1822",
+      "layout": "split",
+      "motif": "blocks",
+      "domain": "fundamentals",
+      "purpose": "study",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "learning",
+          "title": {
+            "es": "Objetivos de práctica",
+            "en": "Practice objectives"
+          },
+          "body": {
+            "es": "TODO: Define habilidades, entorno y límites de este laboratorio.",
+            "en": "TODO: Define skills, environment and boundaries of this lab."
+          }
+        },
+        {
+          "key": "practice",
+          "title": {
+            "es": "Procedimiento y evidencias",
+            "en": "Procedure and evidence"
+          },
+          "body": {
+            "es": "TODO: Documenta pasos, comandos, salida observada y explicación.",
+            "en": "TODO: Document steps, commands, observed output and explanation."
+          }
+        },
+        {
+          "key": "lessons",
+          "title": {
+            "es": "Comprobación y aprendizaje",
+            "en": "Verification and lessons"
+          },
+          "body": {
+            "es": "TODO: Explica lo aprendido, errores y cómo repetir la práctica.",
+            "en": "TODO: Explain lessons, mistakes and how to repeat the exercise."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Cuaderno de práctica. No presupone que esta certificación solicite un informe de examen.",
+          "en": "Practice notebook. Does not assume this certification requires an exam report."
+        },
+        "formats": [
+          "pdf",
+          "docx",
+          "md"
+        ],
+        "source": "https://www.offsec.com/courses/sec-100/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-oscc-sjd",
+      "name": "OSCC SJD",
+      "provider": "OffSec",
+      "certificate": "OSCC SJD",
+      "course": "SJD-100",
+      "accent": "#5B9EB3",
+      "background": "#1C1822",
+      "layout": "band",
+      "motif": "code",
+      "domain": "java",
+      "purpose": "study",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "requirements",
+          "title": {
+            "es": "Objetivo y requisitos",
+            "en": "Objective and requirements"
+          },
+          "body": {
+            "es": "TODO: Describe el problema, entradas, salidas y restricciones.",
+            "en": "TODO: Describe the problem, inputs, outputs and constraints."
+          }
+        },
+        {
+          "key": "implementation",
+          "title": {
+            "es": "Diseño e implementación",
+            "en": "Design and implementation"
+          },
+          "body": {
+            "es": "TODO: Explica las decisiones, clases, dependencias y compilación.",
+            "en": "TODO: Explain decisions, classes, dependencies and build steps."
+          }
+        },
+        {
+          "key": "tests",
+          "title": {
+            "es": "Pruebas y resultados",
+            "en": "Tests and results"
+          },
+          "body": {
+            "es": "TODO: Incluye casos de prueba, resultados y límites conocidos.",
+            "en": "TODO: Include test cases, results and known limitations."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Cuaderno de práctica. No presupone que esta certificación solicite un informe de examen.",
+          "en": "Practice notebook. Does not assume this certification requires an exam report."
+        },
+        "formats": [
+          "pdf",
+          "docx",
+          "md"
+        ],
+        "source": "https://www.offsec.com/courses/sjd-100/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "offsec-klcp",
+      "name": "KLCP",
+      "provider": "OffSec",
+      "certificate": "KLCP",
+      "course": "PEN-103",
+      "accent": "#2777FF",
+      "background": "#1C1822",
+      "layout": "rail",
+      "motif": "blocks",
+      "domain": "linux",
+      "purpose": "study",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "linux-scope",
+          "title": {
+            "es": "Entorno y objetivo",
+            "en": "Environment and objective"
+          },
+          "body": {
+            "es": "TODO: Anota distribución, versión, red y objetivo de la práctica.",
+            "en": "TODO: Record distribution, version, network and practice objective."
+          }
+        },
+        {
+          "key": "linux-work",
+          "title": {
+            "es": "Comandos y configuración",
+            "en": "Commands and configuration"
+          },
+          "body": {
+            "es": "TODO: Conserva comandos, archivos modificados, permisos y salida observada.",
+            "en": "TODO: Preserve commands, changed files, permissions and observed output."
+          }
+        },
+        {
+          "key": "linux-check",
+          "title": {
+            "es": "Verificación y restauración",
+            "en": "Verification and restoration"
+          },
+          "body": {
+            "es": "TODO: Demuestra el resultado y cómo revertir los cambios de laboratorio.",
+            "en": "TODO: Demonstrate the outcome and how to revert lab changes."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Cuaderno de práctica. No presupone que esta certificación solicite un informe de examen.",
+          "en": "Practice notebook. Does not assume this certification requires an exam report."
+        },
+        "formats": [
+          "pdf",
+          "docx",
+          "md"
+        ],
+        "source": "https://www.offsec.com/courses/pen-103/",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://www.offsec.com/courses/"
+    },
+    {
+      "id": "htb-cpts",
+      "name": "CPTS",
+      "provider": "HTB",
+      "certificate": "CPTS",
+      "course": "Penetration Testing",
+      "accent": "#9FEF00",
+      "background": "#161D2A",
+      "layout": "rail",
+      "motif": "network",
+      "domain": "network",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "engagement",
+          "title": {
+            "es": "Alcance y reglas",
+            "en": "Scope and rules"
+          },
+          "body": {
+            "es": "TODO: Documenta los objetivos autorizados, límites, fechas y restricciones.",
+            "en": "TODO: Document authorized targets, boundaries, dates and restrictions."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "attack-path",
+          "title": {
+            "es": "Ruta de compromiso",
+            "en": "Attack path"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada acceso con su evidencia, comandos y privilegios obtenidos.",
+            "en": "TODO: Link each access to its evidence, commands and obtained privileges."
+          }
+        },
+        {
+          "key": "recovery",
+          "title": {
+            "es": "Remediación y comprobación",
+            "en": "Remediation and verification"
+          },
+          "body": {
+            "es": "TODO: Prioriza las correcciones y describe cómo verificar cada una.",
+            "en": "TODO: Prioritize fixes and describe how to verify each one."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "La guía consultada indica PDF o ZIP sin cifrar de hasta 20 MB. Revisa idioma, nombre y requisitos de evidencia en tu guía de examen. El paquete de report-gen incluye archivos auxiliares; selecciona los documentos solicitados antes de subirlos.",
+          "en": "The reviewed guide specifies unencrypted PDF or ZIP up to 20 MB. Check language, naming and evidence requirements in your exam guide. The report-gen package includes auxiliary files; select the requested documents before uploading."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+    },
+    {
+      "id": "htb-cwes",
+      "name": "CWES",
+      "provider": "HTB",
+      "certificate": "CWES",
+      "course": "Web Exploitation",
+      "accent": "#9FEF00",
+      "background": "#161D2A",
+      "layout": "frame",
+      "motif": "web",
+      "domain": "web",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "surface",
+          "title": {
+            "es": "Superficie y alcance",
+            "en": "Surface and scope"
+          },
+          "body": {
+            "es": "TODO: Identifica aplicaciones, roles, endpoints y exclusiones.",
+            "en": "TODO: Identify applications, roles, endpoints and exclusions."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "requests",
+          "title": {
+            "es": "Peticiones y reproducción",
+            "en": "Requests and reproduction"
+          },
+          "body": {
+            "es": "TODO: Conserva las peticiones HTTP, respuestas, precondiciones y resultado observado.",
+            "en": "TODO: Preserve HTTP requests, responses, preconditions and observed results."
+          }
+        },
+        {
+          "key": "web-fixes",
+          "title": {
+            "es": "Remediación y retest",
+            "en": "Remediation and retest"
+          },
+          "body": {
+            "es": "TODO: Explica la causa y una prueba de regresión por hallazgo.",
+            "en": "TODO: Explain the cause and a regression test for each finding."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "La guía consultada indica PDF o ZIP sin cifrar de hasta 20 MB. Revisa idioma, nombre y requisitos de evidencia en tu guía de examen. El paquete de report-gen incluye archivos auxiliares; selecciona los documentos solicitados antes de subirlos.",
+          "en": "The reviewed guide specifies unencrypted PDF or ZIP up to 20 MB. Check language, naming and evidence requirements in your exam guide. The report-gen package includes auxiliary files; select the requested documents before uploading."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+    },
+    {
+      "id": "htb-cwee",
+      "name": "CWEE",
+      "provider": "HTB",
+      "certificate": "CWEE",
+      "course": "Web Exploitation Expert",
+      "accent": "#9FEF00",
+      "background": "#161D2A",
+      "layout": "band",
+      "motif": "code",
+      "domain": "code",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "code-scope",
+          "title": {
+            "es": "Aplicación y revisión de código",
+            "en": "Application and code review"
+          },
+          "body": {
+            "es": "TODO: Anota versión, commit, componentes, rutas y precondiciones.",
+            "en": "TODO: Record version, commit, components, paths and preconditions."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "source-trace",
+          "title": {
+            "es": "Trazado de la vulnerabilidad",
+            "en": "Vulnerability trace"
+          },
+          "body": {
+            "es": "TODO: Relaciona origen, transformaciones y destino de los datos con líneas de código.",
+            "en": "TODO: Connect sources, transformations and sinks with code references."
+          }
+        },
+        {
+          "key": "exploit-chain",
+          "title": {
+            "es": "Explotación reproducible",
+            "en": "Reproducible exploitation"
+          },
+          "body": {
+            "es": "TODO: Documenta la cadena completa, dependencias, ejecución y salida esperada.",
+            "en": "TODO: Document the complete chain, dependencies, execution and expected output."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "La guía de HTB indica Markdown sin procesar en un ZIP protegido con la contraseña del examen. Exporta Markdown y crea después el archivo protegido siguiendo esa guía. report-gen no cifra el ZIP.",
+          "en": "HTB guidance specifies raw Markdown in a ZIP protected with the exam password. Export Markdown, then create the protected archive following that guide. report-gen does not encrypt the ZIP."
+        },
+        "formats": [
+          "md"
+        ],
+        "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+    },
+    {
+      "id": "htb-cape",
+      "name": "CAPE",
+      "provider": "HTB",
+      "certificate": "CAPE",
+      "course": "Active Directory",
+      "accent": "#9FEF00",
+      "background": "#161D2A",
+      "layout": "rail",
+      "motif": "network",
+      "domain": "network",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "ad-scope",
+          "title": {
+            "es": "Dominios e identidades",
+            "en": "Domains and identities"
+          },
+          "body": {
+            "es": "TODO: Documenta dominios, relaciones de confianza, identidades y permisos autorizados.",
+            "en": "TODO: Document domains, trusts, identities and authorized permissions."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "attack-path",
+          "title": {
+            "es": "Ruta de compromiso",
+            "en": "Attack path"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada acceso con su evidencia, comandos y privilegios obtenidos.",
+            "en": "TODO: Link each access to its evidence, commands and obtained privileges."
+          }
+        },
+        {
+          "key": "recovery",
+          "title": {
+            "es": "Remediación y comprobación",
+            "en": "Remediation and verification"
+          },
+          "body": {
+            "es": "TODO: Prioriza las correcciones y describe cómo verificar cada una.",
+            "en": "TODO: Prioritize fixes and describe how to verify each one."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "La guía consultada indica PDF o ZIP sin cifrar de hasta 20 MB. Revisa idioma, nombre y requisitos de evidencia en tu guía de examen. El paquete de report-gen incluye archivos auxiliares; selecciona los documentos solicitados antes de subirlos.",
+          "en": "The reviewed guide specifies unencrypted PDF or ZIP up to 20 MB. Check language, naming and evidence requirements in your exam guide. The report-gen package includes auxiliary files; select the requested documents before uploading."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+    },
+    {
+      "id": "htb-cwpe",
+      "name": "CWPE",
+      "provider": "HTB",
+      "certificate": "CWPE",
+      "course": "Wi-Fi Pentesting",
+      "accent": "#9FEF00",
+      "background": "#161D2A",
+      "layout": "split",
+      "motif": "wifi",
+      "domain": "wifi",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "radio-scope",
+          "title": {
+            "es": "Alcance inalámbrico",
+            "en": "Wireless scope"
+          },
+          "body": {
+            "es": "TODO: Identifica SSID, BSSID, canales, autorización y límites de captura.",
+            "en": "TODO: Identify SSIDs, BSSIDs, channels, authorization and capture limits."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "wireless-test",
+          "title": {
+            "es": "Captura y validación",
+            "en": "Capture and validation"
+          },
+          "body": {
+            "es": "TODO: Anota adaptador, controlador, comandos, tiempos y evidencia verificable.",
+            "en": "TODO: Record adapter, driver, commands, timing and verifiable evidence."
+          }
+        },
+        {
+          "key": "wireless-fixes",
+          "title": {
+            "es": "Protecciones recomendadas",
+            "en": "Recommended protections"
+          },
+          "body": {
+            "es": "TODO: Relaciona los resultados con autenticación, segmentación y configuración.",
+            "en": "TODO: Relate results to authentication, segmentation and configuration."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+    },
+    {
+      "id": "htb-cdsa",
+      "name": "CDSA",
+      "provider": "HTB",
+      "certificate": "CDSA",
+      "course": "Defensive Security",
+      "accent": "#9FEF00",
+      "background": "#161D2A",
+      "layout": "timeline",
+      "motif": "events",
+      "domain": "defense",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "case-scope",
+          "title": {
+            "es": "Caso y fuentes de datos",
+            "en": "Case and data sources"
+          },
+          "body": {
+            "es": "TODO: Define el objetivo, período, fuentes, zona horaria y límites de visibilidad.",
+            "en": "TODO: Define the objective, period, sources, timezone and visibility limits."
+          }
+        },
+        {
+          "key": "timeline",
+          "title": {
+            "es": "Cronología de evidencias",
+            "en": "Evidence timeline"
+          },
+          "body": {
+            "es": "TODO: Relaciona marcas de tiempo, eventos, consultas e interpretación.",
+            "en": "TODO: Connect timestamps, events, queries and interpretation."
+          }
+        },
+        {
+          "key": "response",
+          "title": {
+            "es": "Conclusiones y respuesta",
+            "en": "Conclusions and response"
+          },
+          "body": {
+            "es": "TODO: Distingue hechos de hipótesis y prioriza detección, contención y recuperación.",
+            "en": "TODO: Separate facts from hypotheses and prioritize detection, containment and recovery."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "La guía consultada indica PDF o ZIP sin cifrar de hasta 20 MB. Revisa idioma, nombre y requisitos de evidencia en tu guía de examen. El paquete de report-gen incluye archivos auxiliares; selecciona los documentos solicitados antes de subirlos.",
+          "en": "The reviewed guide specifies unencrypted PDF or ZIP up to 20 MB. Check language, naming and evidence requirements in your exam guide. The report-gen package includes auxiliary files; select the requested documents before uploading."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+    },
+    {
+      "id": "htb-cjca",
+      "name": "CJCA",
+      "provider": "HTB",
+      "certificate": "CJCA",
+      "course": "Junior Cybersecurity",
+      "accent": "#9FEF00",
+      "background": "#161D2A",
+      "layout": "split",
+      "motif": "blocks",
+      "domain": "fundamentals",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "learning",
+          "title": {
+            "es": "Objetivos de práctica",
+            "en": "Practice objectives"
+          },
+          "body": {
+            "es": "TODO: Define habilidades, entorno y límites de este laboratorio.",
+            "en": "TODO: Define skills, environment and boundaries of this lab."
+          }
+        },
+        {
+          "key": "practice",
+          "title": {
+            "es": "Procedimiento y evidencias",
+            "en": "Procedure and evidence"
+          },
+          "body": {
+            "es": "TODO: Documenta pasos, comandos, salida observada y explicación.",
+            "en": "TODO: Document steps, commands, observed output and explanation."
+          }
+        },
+        {
+          "key": "lessons",
+          "title": {
+            "es": "Comprobación y aprendizaje",
+            "en": "Verification and lessons"
+          },
+          "body": {
+            "es": "TODO: Explica lo aprendido, errores y cómo repetir la práctica.",
+            "en": "TODO: Explain lessons, mistakes and how to repeat the exercise."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+    },
+    {
+      "id": "htb-coae",
+      "name": "COAE",
+      "provider": "HTB",
+      "certificate": "COAE",
+      "course": "Offensive AI",
+      "accent": "#9FEF00",
+      "background": "#161D2A",
+      "layout": "frame",
+      "motif": "ai",
+      "domain": "ai",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen del trabajo",
+            "en": "Work summary"
+          },
+          "body": {
+            "es": "TODO: Resume el objetivo, el trabajo realizado, los resultados demostrados y las limitaciones.",
+            "en": "TODO: Summarize the objective, work performed, demonstrated results and limitations."
+          }
+        },
+        {
+          "key": "ai-scope",
+          "title": {
+            "es": "Modelo y límites de confianza",
+            "en": "Model and trust boundaries"
+          },
+          "body": {
+            "es": "TODO: Identifica modelo, versión, herramientas, datos y permisos autorizados.",
+            "en": "TODO: Identify model, version, tools, data and authorized permissions."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "ai-tests",
+          "title": {
+            "es": "Casos de prueba y trazas",
+            "en": "Test cases and traces"
+          },
+          "body": {
+            "es": "TODO: Conserva entradas, salidas, contexto, repetición y acceso a herramientas.",
+            "en": "TODO: Preserve inputs, outputs, context, repetition and tool access."
+          }
+        },
+        {
+          "key": "ai-impact",
+          "title": {
+            "es": "Impacto y controles",
+            "en": "Impact and controls"
+          },
+          "body": {
+            "es": "TODO: Separa comportamiento inesperado de impacto demostrado y comprueba los controles.",
+            "en": "TODO: Separate unexpected behavior from demonstrated impact and verify controls."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Registro de evidencias",
+            "en": "Evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada evidencia con su origen, fecha y paso reproducible.",
+            "en": "TODO: Link each evidence item to its source, date and reproducible step."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+        },
+        "formats": [
+          "pdf"
+        ],
+        "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
+        "checked": "2026-10-03"
+      },
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+    }
+  ],
+  "historical": [
+    {
+      "name": "CBBH",
+      "provider": "HTB",
+      "note": {
+        "es": "Transición a CWES. Usa el perfil CWES para trabajo nuevo.",
+        "en": "Transitioned to CWES. Use the CWES profile for new work."
+      },
+      "replacement": "htb-cwes",
+      "source": "https://academy.hackthebox.com/news/the-transition-from-htb-cbbh-to-htb-cwes-has-officially-started"
+    },
+    {
+      "name": "OSMR",
+      "provider": "OffSec",
+      "note": {
+        "es": "Emisión en pausa. Conserva tus proyectos anteriores y consulta la guía correspondiente.",
+        "en": "Issuance on hiatus. Keep existing projects and consult the corresponding guide."
+      },
+      "source": "https://help.offsec.com/hc/en-us/articles/41591722499604-OSMR-Certification-Exam-Changes-FAQ"
+    },
+    {
+      "name": "OSCE³",
+      "provider": "OffSec",
+      "note": {
+        "es": "Reconocimiento conjunto de OSEP, OSWE y OSED; no tiene un examen independiente.",
+        "en": "Combined recognition for OSEP, OSWE and OSED; no standalone exam."
+      },
+      "source": "https://help.offsec.com/hc/en-us/articles/4403282452628-OSCE-FAQ"
+    }
+  ]
+}

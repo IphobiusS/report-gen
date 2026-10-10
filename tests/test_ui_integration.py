@@ -22,3 +22,5 @@ def test_editor_with_real_api(tmp_path, monkeypatch):
         print(result.stdout)
     finally:
         server.shutdown();thread.join(timeout=3)
+        queue=webapp.app.extensions.pop("export_queue",None)
+        if queue: queue.close()

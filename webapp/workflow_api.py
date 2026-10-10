@@ -1,4 +1,5 @@
 """Workflow routes registered against the existing app and its project lock."""
+from error_messages import message as backend_message
 from io import BytesIO
 from pathlib import Path
 import yaml
@@ -82,10 +83,11 @@ def register(api):
     @errors
     def import_project():
         file = request.files.get('file')
-        if not file: abort(400, 'Selecciona un respaldo ZIP de proyecto')
+        if not file: abort(400, backend_message('Selecciona un respaldo ZIP de proyecto'))
         slug = api.slugify(request.form.get('slug', '') or Path(file.filename or '').stem)
         target = api.PROJECTS / slug
-        if target.exists(): abort(409, 'Ese proyecto ya existe. Usa otro nombre para importar una copia')
+        if target.exists() or any(path.name.casefold() == slug.casefold() for path in api.PROJECTS.iterdir()):
+            abort(409, backend_message('Ese proyecto ya existe o tiene un nombre equivalente en mayúsculas o Unicode. Usa otro nombre para importar una copia'))
         history.import_bundle(file.read(history.MAX_ARCHIVE + 1), target)
         return jsonify({'slug': slug})
 
@@ -94,9 +96,13 @@ def register(api):
     @errors
     def review(slug):
         d, data = project(slug)
-        issues = workflows.review(data, d)
-        issues.extend(dict(level=level, message=msg, path='report', finding_uid=None) for level, msg in api.validatelib.validate(data))
-        return jsonify({'issues': issues})
+        lang = request.args.get("lang", "es")
+        issues = workflows.preflight(data, d, lang)
+        from design_library import guidance
+        from readiness import checklist
+        return json_response({'issues': issues, 'delivery_guidance': guidance(data),
+                              'revision': revision(d / 'engagement.yaml'),
+                              'readiness': checklist(data, d, issues, lang)}, d)
 
     @app.get('/api/projects/<slug>/evidence')
     @api.project_lock
@@ -113,15 +119,17 @@ def register(api):
     def register_evidence(slug):
         d, data = project(slug, True); body = api._json_dict(); source = body.get('src', '')
         from resources import local_image
-        if not isinstance(source, str) or not workflows.safe_member(source, 'img/'): raise ValueError('Ruta de evidencia inválida')
+        if not isinstance(source, str) or not workflows.safe_member(source, 'img/'): raise ValueError(backend_message('Ruta de evidencia inválida'))
         path = local_image(source, d)
         title = body.get('title', path.stem)
-        if not isinstance(title, str) or len(title) > 300: raise ValueError('Título inválido')
-        if any(e['src'] == source for e in data.get('evidence', [])): raise ValueError('Esta imagen ya está registrada')
+        if not isinstance(title, str) or len(title) > 300: raise ValueError(backend_message('Título inválido'))
+        if any(e['src'] == source for e in data.get('evidence', [])): raise ValueError(backend_message('Esta imagen ya está registrada'))
         uid = workflows.new_uid(); original = 'originals/' + uid + path.suffix.lower()
-        atomic_write(d / original, path.read_bytes())
-        data.setdefault('evidence', []).append({'uid': uid, 'title': title, 'caption': '', 'src': source, 'original': original})
-        return saved(d, data)
+        with history.transaction(d) as staged:
+            atomic_write(staged / original, path.read_bytes())
+            data.setdefault('evidence', []).append({'uid': uid, 'title': title, 'caption': '', 'src': source, 'original': original})
+            response = saved(staged, data)
+        return response
 
     @app.post('/api/projects/<slug>/evidence/<uid>/edit')
     @api.project_lock
@@ -129,14 +137,19 @@ def register(api):
     def edit_evidence(slug, uid):
         d, data = project(slug, True); body = api._json_dict()
         entry = next((e for e in data.get('evidence', []) if e['uid'] == uid), None)
-        if not entry: abort(404, 'Evidencia inexistente')
-        history.checkpoint(d)
-        old = entry['src']; new = evidence_lib.edit_image(d, old, body.get('operations'))
-        data = evidence_lib.replace_references(data, old, new)
-        response = saved(d, data)
-        # The original remains in originals/ and historical objects, never as an export candidate.
-        (d / old).unlink(missing_ok=True)
-        history.checkpoint(d)
+        if not entry: abort(404, backend_message('Evidencia inexistente'))
+        from resources import local_image, referenced_images, relative_image
+        with history.transaction(d) as staged:
+            history.checkpoint(staged)
+            old = entry['src']; old_path = local_image(old, staged)
+            new = evidence_lib.edit_image(staged, old, body.get('operations'))
+            data = evidence_lib.replace_references(data, old, new)
+            # Refuse an unsupported alias before changing the visible project.
+            if any(relative_image(src) == relative_image(old) for src in referenced_images(data)):
+                raise ValueError(backend_message('No se pudo actualizar una referencia a la imagen; el proyecto se conserva'))
+            response = saved(staged, data)
+            old_path.unlink()
+            history.checkpoint(staged)
         return response
 
     @app.get('/api/projects/<slug>/evidence/<uid>/original')
@@ -156,13 +169,13 @@ def register(api):
     def retest(slug):
         d, data = project(slug, True); body = api._json_dict()
         finding = next((f for f in data['findings'] if f.get('uid') == body.get('finding_uid')), None)
-        if not finding: abort(404, 'Hallazgo inexistente')
-        if not isinstance(body.get('result'), str) or body['result'] not in workflows.RESULTS: raise ValueError('Resultado de retest inválido')
+        if not finding: abort(404, backend_message('Hallazgo inexistente'))
+        if not isinstance(body.get('result'), str) or body['result'] not in workflows.RESULTS: raise ValueError(backend_message('Resultado de retest inválido'))
         record = {k: body.get(k, '') for k in ('tested_on', 'assessor', 'notes_md', 'result')}
         record.update(uid=workflows.new_uid(), created=history.now(), evidence_uids=body.get('evidence_uids', []))
-        if not record['tested_on'] or not record['assessor'] or not record['notes_md']: raise ValueError('Completa fecha, evaluador y resultado observado')
+        if not record['tested_on'] or not record['assessor'] or not record['notes_md']: raise ValueError(backend_message('Completa fecha, evaluador y resultado observado'))
         pool = {e['uid'] for e in data.get('evidence', [])}
-        if not isinstance(record['evidence_uids'], list) or any(not isinstance(x, str) or x not in pool for x in record['evidence_uids']): raise ValueError('Evidencia de retest inexistente')
+        if not isinstance(record['evidence_uids'], list) or any(not isinstance(x, str) or x not in pool for x in record['evidence_uids']): raise ValueError(backend_message('Evidencia de retest inexistente'))
         finding.setdefault('retests', []).append(record)
         finding['status'] = {'fixed': 'verified_fixed', 'open': 'open', 'partial': 'in_progress', 'not_verified': 'not_verified'}.get(record['result'], 'open')
         return saved(d, data)
@@ -173,8 +186,8 @@ def register(api):
         return revision(path) if path.exists() else 'empty'
     def library_revision():
         tag = request.headers.get('If-Match', '').strip('"')
-        if not tag: abort(428, 'Falta la revisión de la biblioteca')
-        if tag != lib_tag(): abort(409, 'La biblioteca cambió. Vuelve a abrirla antes de guardar')
+        if not tag: abort(428, backend_message('Falta la revisión de la biblioteca'))
+        if tag != lib_tag(): abort(409, backend_message('La biblioteca cambió. Vuelve a abrirla antes de guardar'))
     def library_response(value):
         response = jsonify(value); response.set_etag(lib_tag()); return response
 
@@ -209,8 +222,8 @@ def register(api):
     @errors
     def sanitize_template():
         body = api._json_dict()
-        if not isinstance(body.get('finding'), dict) or not isinstance(body.get('context', {}), dict): raise ValueError('Plantilla inválida')
-        if any(not isinstance(v, str) for v in body.get('context', {}).values()): raise ValueError('Variables inválidas')
+        if not isinstance(body.get('finding'), dict) or not isinstance(body.get('context', {}), dict): raise ValueError(backend_message('Plantilla inválida'))
+        if any(not isinstance(v, str) for v in body.get('context', {}).values()): raise ValueError(backend_message('Variables inválidas'))
         return jsonify({'content': lib.sanitize(body['finding'], body.get('context'))})
 
     @app.post('/api/library/<uid>/instantiate')
@@ -226,17 +239,19 @@ def register(api):
     @errors
     def import_library():
         library_revision(); body = api._json_dict()
-        if body.get('format') != 'report-gen-library' or body.get('version') != 1 or not isinstance(body.get('templates'), list): raise ValueError('Formato de biblioteca inválido')
+        if (body.get('format') != 'report-gen-library' or type(body.get('version')) is not int
+                or body['version'] != 1 or not isinstance(body.get('templates'), list)):
+            raise ValueError(backend_message('Formato de biblioteca inválido'))
         # Validate all versions before any write; import into an isolated temporary file.
         import tempfile
         target = library_path(); target.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=target.parent) as tmp:
             staging = Path(tmp) / 'library.json'; atomic_write(staging, history.dumps(lib.load(target)))
-            if len(body['templates']) > 500: raise ValueError('Demasiadas plantillas')
+            if len(body['templates']) > 500: raise ValueError(backend_message('Demasiadas plantillas'))
             for row in body['templates']:
-                if not isinstance(row, dict): raise ValueError('Plantilla inválida')
+                if not isinstance(row, dict): raise ValueError(backend_message('Plantilla inválida'))
                 versions = row.get('versions') or [row]
-                if not isinstance(versions, list) or len(versions) > 200: raise ValueError('Historial de plantilla inválido')
+                if not isinstance(versions, list) or len(versions) > 200: raise ValueError(backend_message('Historial de plantilla inválido'))
                 uid = None
                 for entry in versions: uid = lib.put(staging, entry, uid)['uid']
             atomic_write(target, staging.read_bytes(), backup=True)

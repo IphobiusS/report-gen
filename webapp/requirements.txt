@@ -3,9 +3,13 @@ jinja2
 pyyaml
 markdown
 weasyprint
+tinycss2>=1.4,<2
+cssselect2>=0.8,<1
 pdfplumber
+pypdf>=6.1,<7
 python-docx
 flask>=3.1,<4
+waitress>=3.0.2,<4
 nh3>=0.3.2,<0.4
 lxml>=5,<7
-pillow
+pillow>=10.1

@@ -1,30 +1,36 @@
-{# Portada: layout unico, colores por tema, etiquetas por idioma #}
-<section class="cover">
-  <div class="cover-top">
-    <span class="cv-wordmark">{{ wordmark }}</span>
-    <span class="cv-tag">{{ conf }}</span>
+{# Three independent cover zones; no simulated terminal or invented metadata. #}
+{% set b = meta.branding or {} %}
+{% set fields = [] %}
+{% if meta.client %}{% set _ = fields.append((L.labels.client, meta.client)) %}{% endif %}
+{% if meta.osid %}{% set _ = fields.append((L.labels.cover_osid, meta.osid)) %}{% endif %}
+{% if meta.email %}{% set _ = fields.append((L.labels.cover_email, meta.email)) %}{% endif %}
+{% if meta.assessor %}{% set _ = fields.append((L.labels.cover_assessor, meta.assessor ~ (' · ' ~ meta.assessor_title if meta.assessor_title else ''))) %}{% endif %}
+{% if meta.date %}{% set _ = fields.append((L.labels.cover_date, meta.date)) %}{% endif %}
+{% if meta.version %}{% set _ = fields.append((L.labels.cover_version, meta.version)) %}{% endif %}
+<section class="cover{% if meta.design %} profile-cover layout-{{ meta.design.layout }}{% endif %}{% if b.cover_image %} has-illustration{% endif %}">
+  <div class="cover-header">
+    <div class="cover-top"><span class="cv-wordmark">{{ wordmark }}</span><span class="cv-tag">{{ conf }}</span></div>
+    {% if meta.design %}<div class="profile-identity"><span class="profile-certificate">{{ provider_mark.provider }} / {{ meta.design.certificate }}</span><span class="provider-logo" role="img" aria-label="{{ provider_mark.name }}">{{ provider_mark.svg|safe }}</span></div>{% endif %}
+    {% if b.logo or b.client_logo %}<div class="cv-logos">
+      {% if b.logo %}<img class="cv-logo" src="{{ engagement_dir }}{{ b.logo }}" alt="">{% endif %}
+      {% if b.client_logo %}<img class="cv-logo cv-logo-client" src="{{ engagement_dir }}{{ b.client_logo }}" alt="">{% endif %}
+    </div>{% endif %}
   </div>
-  {% set b = meta.branding or {} %}
-  {% if b.logo or b.client_logo %}
-  <div class="cv-logos">
-    {% if b.logo %}<img class="cv-logo" src="{{ engagement_dir }}{{ b.logo }}" alt="">{% endif %}
-    {% if b.client_logo %}<img class="cv-logo cv-logo-client" src="{{ engagement_dir }}{{ b.client_logo }}" alt="">{% endif %}
+  <div class="cover-center"><div class="cover-content">
+    <div class="cover-main">
+      <h1 class="cv-title">{{ meta.report_title }}</h1>
+      {% if meta.report_subtitle %}<p class="cv-subtitle">{{ meta.report_subtitle }}</p>{% endif %}
+    </div>
+    {% if b.cover_image %}<div class="cv-image"><img src="{{ engagement_dir }}{{ b.cover_image }}" alt=""></div>{% endif %}
+  </div></div>
+  <div class="cover-bottom">
+    {% if meta.theme in ['ejecutivo','corporativo','laboratorio'] %}
+    <table class="cover-meta cover-grid"><tbody>
+      {% for pair in fields|batch(2) %}<tr>{% for key,value in pair %}<td><span class="cv-field-label">{{ key }}</span><span class="cv-field-value">{{ value }}</span></td>{% endfor %}{% if pair|length == 1 %}<td></td>{% endif %}</tr>{% endfor %}
+    </tbody></table>
+    {% else %}
+    <table class="cover-meta cover-ledger"><tbody>{% for key,value in fields %}<tr><th>{{ key }}</th><td>{{ value }}</td></tr>{% endfor %}</tbody></table>
+    {% endif %}
+    <div class="cover-foot">{{ conf }}</div>
   </div>
-  {% endif %}
-  <div class="cover-main">
-    <div class="cv-rule"></div>
-    <h1 class="cv-title">{{ meta.report_title }}</h1>
-    {% if meta.report_subtitle %}<p class="cv-subtitle">{{ meta.report_subtitle }}</p>{% endif %}
-    <div class="cv-rule"></div>
-  </div>
-  {% if b.cover_image %}<div class="cv-image"><img src="{{ engagement_dir }}{{ b.cover_image }}" alt=""></div>{% endif %}
-  <table class="cover-meta">
-    {% if meta.client %}<tr><th>{{ L.labels.client }}</th><td>{{ meta.client }}</td></tr>{% endif %}
-    {% if meta.osid %}<tr><th>{{ L.labels.cover_osid }}</th><td>{{ meta.osid }}</td></tr>{% endif %}
-    {% if meta.email %}<tr><th>{{ L.labels.cover_email }}</th><td>{{ meta.email }}</td></tr>{% endif %}
-    {% if meta.assessor %}<tr><th>{{ L.labels.cover_assessor }}</th><td>{{ meta.assessor }}{% if meta.assessor_title %} &middot; {{ meta.assessor_title }}{% endif %}</td></tr>{% endif %}
-    {% if meta.date %}<tr><th>{{ L.labels.cover_date }}</th><td>{{ meta.date }}</td></tr>{% endif %}
-    {% if meta.version %}<tr><th>{{ L.labels.cover_version }}</th><td>{{ meta.version }}</td></tr>{% endif %}
-  </table>
-  <div class="cover-foot">{{ conf }}</div>
 </section>

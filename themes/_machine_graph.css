@@ -1,0 +1,15 @@
+/* PDF-only. Native alternative text flows even when names span many pages. */
+.machine-route { margin: 3mm 0 5mm; }
+.machine-route-compact { break-inside: avoid; page-break-inside: avoid; }
+.machine-route-scope { font-size: 8.5pt; color: var(--ink-soft); }
+.machine-route-panel { break-inside: avoid; page-break-inside: avoid; margin: 3mm 0 2mm; }
+.machine-route-panel h4, .machine-route-text h4, .machine-route > h4 {
+  font-size: 8.5pt; margin: 2mm 0; color: var(--ink-soft);
+  break-after: avoid; page-break-after: avoid;
+}
+.machine-route-svg { display: block; width: 100%; height: auto; }
+.machine-route-text { font-size: 8.5pt; }
+.machine-route-text p { margin: 0 0 2mm; overflow-wrap: anywhere; orphans: 2; widows: 2; }
+.machine-route-text b { overflow-wrap: anywhere; }
+.machine-step-ref { font: 700 8pt var(--font-mono); color: var(--ink-soft); margin-bottom: 1mm; break-after: avoid; page-break-after: avoid; }
+.finding.mode-machine h3, .finding.mode-machine .lead { overflow-wrap: anywhere; }

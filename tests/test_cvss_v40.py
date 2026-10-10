@@ -1,6 +1,8 @@
-"""Tests de CVSS 4.0 disponibles hoy: integridad de la tabla oficial congelada y
-parser estricto. El calculo (EQ/MacroVector/interpolacion) se testeara contra el
-corpus de FIRST cuando se implemente; por ahora score() debe fallar explicito."""
+"""CVSS 4.0: tabla oficial, parser estricto y cálculo EQ/MacroVector.
+
+El corpus de FIRST se contrasta por separado en test_cvss_v40_reference.py;
+estas pruebas comprueban el comportamiento público y sus límites de entrada.
+"""
 from cvss import v40
 from cvss.v40_lookup import LOOKUP
 

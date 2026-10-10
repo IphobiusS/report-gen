@@ -1,357 +1,933 @@
-# Presets de secciones para nuevos proyectos.
-#
-# Los nombres "estilo OSCP" / "estilo HTB" son descriptivos y solo indican el tipo
-# de informe al que se parecen. report-gen NO esta afiliado, asociado ni respaldado
-# por OffSec, Hack The Box ni ninguna certificacion, y no reproduce sus plantillas
-# oficiales. Son puntos de partida genericos que enciendes y editas.
-
+# Diseños propios y puntos de partida editables. No son plantillas oficiales de certificación.
 presets:
-  - id: base
-    name_es: "Base (por defecto)"
-    name_en: "Base (default)"
-    desc_es: "Secciones por defecto del catalogo."
-    desc_en: "Catalog default sections."
-    theme: serio
-    accent: "#39ff14"
-    sections: []          # vacio => usa default_enabled()
+- id: base
+  name_es: Base (por defecto)
+  name_en: Base (default)
+  desc_es: Secciones por defecto del catalogo.
+  desc_en: Catalog default sections.
+  theme: serio
+  accent: '#39ff14'
+  sections: []
+- id: client
+  name_es: Pentest para cliente
+  name_en: Client pentest
+  desc_es: 'Informe profesional: resumen ejecutivo, alcance, metodologia, hallazgos con CVSS y plan de remediacion.'
+  desc_en: 'Professional report: executive summary, scope, methodology, findings with CVSS and remediation plan.'
+  theme: corporativo
+  accent: '#1f5fa8'
+  sections:
+  - key: confidentiality
+  - key: contacts
+  - key: executive_summary
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de evaluación autorizada, los resultados demostrados, su impacto y las limitaciones.
+          Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of authorized assessment, demonstrated results, impact and limitations. Distinguish
+          verified actions from pending work.'
+  - key: scope
+    content:
+      objectives:
+        es: 'TODO: El objetivo fue identificar y explotar vulnerabilidades en [aplicacion/red], determinando el
+          impacto real sobre confidencialidad, integridad y disponibilidad.'
+        en: 'TODO: The goal was to identify and exploit vulnerabilities in [application/network], assessing the
+          real impact on confidentiality, integrity and availability.'
+      assumptions:
+        es: 'TODO: Modalidad [grey/black/white]-box. Fuera de alcance: DoS, ingenieria social y terceros. Ventana:
+          [fechas/horario].'
+        en: 'TODO: [grey/black/white]-box. Out of scope: DoS, social engineering and third parties. Window: [dates/hours].'
+  - key: methodology
+    content:
+      approach:
+        es: 'TODO: Describe el método que se aplicó realmente, las herramientas utilizadas y la cobertura. Registra
+          por separado las limitaciones y el retest, si se realizó.'
+        en: 'TODO: Describe the method actually used, tools and coverage. Record limitations and any retest separately.'
+  - key: findings_summary
+  - key: findings
+  - key: remediation_plan
+    content:
+      overview:
+        es: 'TODO: Plan de remediacion priorizado por riesgo. Corregir primero critico/alto.'
+        en: 'TODO: Risk-prioritised remediation plan. Fix critical/high first.'
+  - key: appendix
+- id: exam
+  name_es: Examen de certificacion (estilo OSCP)
+  name_en: Certification exam (OSCP-style)
+  desc_es: 'Informe por host: resumen de alto nivel, metodologia (recopilacion, enumeracion, penetracion, mantenimiento
+    de acceso, limpieza), hosts comprometidos con pasos y flags, y apendices. No oficial.'
+  desc_en: 'Host-based report: high-level summary, methodology (gathering, enumeration, penetration, maintaining
+    access, cleanup), compromised hosts with steps and flags, and appendices. Unofficial.'
+  theme: offsec
+  accent: '#1b3a5b'
+  sections:
+  - key: confidentiality
+    title:
+      es: Confidencialidad
+      en: Statement of Confidentiality
+  - key: executive_summary
+    title:
+      es: Resumen general
+      en: High-Level Summary
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de laboratorio por objetivo, los resultados demostrados, su impacto y las
+          limitaciones. Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of host-based laboratory, demonstrated results, impact and limitations. Distinguish
+          verified actions from pending work.'
+  - key: methodology
+    title:
+      es: Metodología
+      en: Methodologies
+    content:
+      information_gathering:
+        es: 'TODO: Recopilacion de informacion del objetivo.'
+        en: 'TODO: Target information gathering.'
+      enumeration:
+        es: 'TODO: Enumeracion de servicios (nmap, servicios web/SMB, etc.).'
+        en: 'TODO: Service enumeration (nmap, web/SMB services, etc.).'
+      exploitation:
+        es: 'TODO: Penetracion: explotacion del vector para obtener shell inicial.'
+        en: 'TODO: Penetration: exploiting the vector to obtain an initial shell.'
+      post_exploitation:
+        es: 'TODO: Documenta las acciones autorizadas posteriores al acceso, los privilegios observados y los cambios
+          que deben revertirse.'
+        en: 'TODO: Document authorized post-access actions, observed privileges and changes that require cleanup.'
+      cleanup:
+        es: 'TODO: Limpieza: reversion de cambios realizados durante el examen.'
+        en: 'TODO: House cleaning: reverting changes made during the exam.'
+  - key: findings
+    title:
+      es: Objetivos y resultados
+      en: Compromised Hosts
+  - key: appendix_flags
+    title:
+      es: 'Apéndice: evidencias y flags'
+      en: Appendix - Proof and Local Flags
+    body:
+      es: 'TODO: Tabla de flags (local.txt / proof.txt) recolectadas por objetivo. Sustituye esta guía por los datos
+        del ejercicio o desactiva la sección.'
+      en: 'TODO: Table of flags (local.txt / proof.txt) collected per target. Replace this guidance with exercise
+        data or disable this section.'
+- id: cpts
+  family: htb
+  cert_es: CPTS — Pentest de red
+  cert_en: CPTS — Network pentest
+  name_es: Certificacion HTB (estilo CPTS)
+  name_en: HTB certification (CPTS-style)
+  desc_es: 'Pentest de red: resumen ejecutivo, resumen de la evaluacion, walkthrough del compromiso, remediacion,
+    detalle tecnico de hallazgos y apendices. No oficial.'
+  desc_en: 'Network pentest: executive summary, assessment summary, compromise walkthrough, remediation, technical
+    findings details and appendices. Unofficial.'
+  theme: htb
+  accent: '#5a8f2a'
+  sections:
+  - key: confidentiality
+    title:
+      es: Confidencialidad
+      en: Statement of Confidentiality
+  - key: contacts
+    title:
+      es: Contactos
+      en: Engagement Contacts
+  - key: executive_summary
+    title:
+      es: Resumen ejecutivo
+      en: Executive Summary
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de red y servicios, los resultados demostrados, su impacto y las limitaciones.
+          Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of network and services, demonstrated results, impact and limitations. Distinguish
+          verified actions from pending work.'
+  - key: scope
+    content:
+      objectives:
+        es: 'TODO: El objetivo fue identificar y explotar vulnerabilidades en [aplicacion/red], determinando el
+          impacto real sobre confidencialidad, integridad y disponibilidad.'
+        en: 'TODO: The goal was to identify and exploit vulnerabilities in [application/network], assessing the
+          real impact on confidentiality, integrity and availability.'
+      assumptions:
+        es: 'TODO: Modalidad [grey/black/white]-box. Fuera de alcance: DoS, ingenieria social y terceros. Ventana:
+          [fechas/horario].'
+        en: 'TODO: [grey/black/white]-box. Out of scope: DoS, social engineering and third parties. Window: [dates/hours].'
+  - key: findings_summary
+    title:
+      es: Resumen de hallazgos
+      en: Assessment Summary
+  - key: attack_narrative
+    title:
+      es: Ruta de compromiso interno
+      en: Internal Compromise Walkthrough
+    content:
+      narrative:
+        es: 'TODO: Documenta la secuencia comprobada en red y servicios. Para cada paso, indica precondiciones,
+          acción, resultado y evidencia vinculada. No asumas acceso ni privilegios no demostrados.'
+        en: 'TODO: Document the verified sequence in network and services. For each step, record preconditions,
+          action, result and linked evidence. Do not assume unproven access or privileges.'
+  - key: remediation_plan
+    title:
+      es: Plan de remediación
+      en: Remediation Summary
+    content:
+      short_term:
+        es: 'TODO: Acciones inmediatas (dias).'
+        en: 'TODO: Immediate actions (days).'
+      medium_term:
+        es: 'TODO: Acciones a medio plazo (semanas).'
+        en: 'TODO: Medium-term actions (weeks).'
+      long_term:
+        es: 'TODO: Mejoras estructurales (meses).'
+        en: 'TODO: Structural improvements (months).'
+  - key: findings
+    title:
+      es: Detalle técnico de hallazgos
+      en: Technical Findings Details
+  - key: appendix_a
+    title:
+      es: 'Apéndice A: criterios de severidad'
+      en: Appendix A - Finding Severities
+    body:
+      es: 'TODO: Escala de severidad usada (CVSS) y criterios. Sustituye esta guía por los datos del ejercicio o
+        desactiva la sección.'
+      en: 'TODO: Severity scale used (CVSS) and criteria. Replace this guidance with exercise data or disable this
+        section.'
+  - key: appendix_b
+    title:
+      es: 'Apéndice B: objetivos y acceso demostrado'
+      en: Appendix B - Exploited Hosts
+    body:
+      es: 'TODO: Hosts comprometidos y via de acceso. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Compromised hosts and access path. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_c
+    title:
+      es: 'Apéndice C: cuentas y privilegios observados'
+      en: Appendix C - Compromised Users
+    body:
+      es: 'TODO: Cuentas comprometidas y su privilegio. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Compromised accounts and their privilege. Replace this guidance with exercise data or disable this
+        section.'
+  - key: appendix_d
+    title:
+      es: 'Apéndice D: cambios y limpieza'
+      en: Appendix D - Changes / Host Cleanup
+    body:
+      es: 'TODO: Cambios realizados y limpieza efectuada. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Changes made and cleanup performed. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_e
+    title:
+      es: 'Apéndice E: revisión de contraseñas del dominio'
+      en: Appendix E - Domain Password Review
+    body:
+      es: 'TODO: Analisis de contrasenas del dominio. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Domain password review. Replace this guidance with exercise data or disable this section.'
+- id: cwes
+  family: htb
+  cert_es: CWES — Explotacion web
+  cert_en: CWES — Web exploitation
+  name_es: Certificacion HTB (estilo CWES / web)
+  name_en: HTB certification (CWES-style / web)
+  desc_es: 'Evaluación de aplicaciones web: alcance, evidencias, impacto y remediación. Diseño propio.'
+  desc_en: 'Web application assessment: scope, evidence, impact and remediation. Custom design.'
+  theme: htb
+  accent: '#5a8f2a'
+  sections:
+  - key: confidentiality
+    title:
+      es: Confidencialidad
+      en: Statement of Confidentiality
+  - key: contacts
+    title:
+      es: Contactos
+      en: Engagement Contacts
+  - key: executive_summary
+    title:
+      es: Resumen ejecutivo
+      en: Executive Summary
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de aplicaciones web, los resultados demostrados, su impacto y las limitaciones.
+          Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of web applications, demonstrated results, impact and limitations. Distinguish
+          verified actions from pending work.'
+  - key: scope
+    content:
+      objectives:
+        es: 'TODO: El objetivo fue identificar y explotar vulnerabilidades en [aplicacion/red], determinando el
+          impacto real sobre confidencialidad, integridad y disponibilidad.'
+        en: 'TODO: The goal was to identify and exploit vulnerabilities in [application/network], assessing the
+          real impact on confidentiality, integrity and availability.'
+      assumptions:
+        es: 'TODO: Modalidad [grey/black/white]-box. Fuera de alcance: DoS, ingenieria social y terceros. Ventana:
+          [fechas/horario].'
+        en: 'TODO: [grey/black/white]-box. Out of scope: DoS, social engineering and third parties. Window: [dates/hours].'
+  - key: findings_summary
+    title:
+      es: Resumen de evaluación web
+      en: Web Application Assessment Summary
+  - key: findings
+    title:
+      es: Detalle técnico de hallazgos
+      en: Technical Findings Details
+  - key: appendix_flags
+    title:
+      es: 'Apéndice: flags registradas'
+      en: Appendix - Flags Discovered
+    body:
+      es: 'TODO: Flags recolectadas durante la evaluacion. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Flags collected during the assessment. Replace this guidance with exercise data or disable this
+        section.'
+  - key: remediation_plan
+    content:
+      overview:
+        es: 'TODO: Plan de remediacion priorizado por riesgo. Corregir primero critico/alto.'
+        en: 'TODO: Risk-prioritised remediation plan. Fix critical/high first.'
+- id: cape
+  family: htb
+  cert_es: CAPE — Active Directory
+  cert_en: CAPE — Active Directory
+  name_es: Certificacion HTB (estilo CAPE / AD)
+  name_en: HTB certification (CAPE-style / AD)
+  desc_es: 'Pentest de Active Directory: resumen ejecutivo, resumen de la evaluacion AD, walkthrough del compromiso
+    del dominio, remediacion, detalle tecnico y apendices completos. No oficial.'
+  desc_en: 'Active Directory pentest: executive summary, AD assessment summary, domain compromise walkthrough, remediation,
+    technical details and full appendices. Unofficial.'
+  theme: htb
+  accent: '#5a8f2a'
+  sections:
+  - key: confidentiality
+    title:
+      es: Confidencialidad
+      en: Statement of Confidentiality
+  - key: contacts
+    title:
+      es: Contactos
+      en: Engagement Contacts
+  - key: executive_summary
+    title:
+      es: Resumen ejecutivo
+      en: Executive Summary
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de Active Directory, los resultados demostrados, su impacto y las limitaciones.
+          Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of Active Directory, demonstrated results, impact and limitations. Distinguish
+          verified actions from pending work.'
+  - key: scope
+    content:
+      objectives:
+        es: 'TODO: El objetivo fue identificar y explotar vulnerabilidades en [aplicacion/red], determinando el
+          impacto real sobre confidencialidad, integridad y disponibilidad.'
+        en: 'TODO: The goal was to identify and exploit vulnerabilities in [application/network], assessing the
+          real impact on confidentiality, integrity and availability.'
+      assumptions:
+        es: 'TODO: Modalidad [grey/black/white]-box. Fuera de alcance: DoS, ingenieria social y terceros. Ventana:
+          [fechas/horario].'
+        en: 'TODO: [grey/black/white]-box. Out of scope: DoS, social engineering and third parties. Window: [dates/hours].'
+  - key: findings_summary
+    title:
+      es: Resumen de evaluación de Active Directory
+      en: Active Directory Penetration Test Assessment Summary
+  - key: attack_narrative
+    title:
+      es: Ruta de compromiso de Active Directory
+      en: Active Directory Compromise Walkthrough
+    content:
+      narrative:
+        es: 'TODO: Documenta la secuencia comprobada en Active Directory. Para cada paso, indica precondiciones,
+          acción, resultado y evidencia vinculada. No asumas acceso ni privilegios no demostrados.'
+        en: 'TODO: Document the verified sequence in Active Directory. For each step, record preconditions, action,
+          result and linked evidence. Do not assume unproven access or privileges.'
+  - key: remediation_plan
+    title:
+      es: Plan de remediación
+      en: Remediation Summary
+    content:
+      short_term:
+        es: 'TODO: Acciones inmediatas (dias).'
+        en: 'TODO: Immediate actions (days).'
+      medium_term:
+        es: 'TODO: Acciones a medio plazo (semanas).'
+        en: 'TODO: Medium-term actions (weeks).'
+      long_term:
+        es: 'TODO: Mejoras estructurales de AD (meses).'
+        en: 'TODO: Structural AD improvements (months).'
+  - key: findings
+    title:
+      es: Detalle técnico de hallazgos
+      en: Technical Findings Details
+  - key: appendix_a
+    title:
+      es: 'Apéndice A: criterios de severidad'
+      en: Appendix A - Finding Severities
+    body:
+      es: 'TODO: Escala de severidad (CVSS) y criterios. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Severity scale (CVSS) and criteria. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_b
+    title:
+      es: 'Apéndice B: inventario de hosts y servicios'
+      en: Appendix B - Host & Service Discovery
+    body:
+      es: 'TODO: Hosts y servicios descubiertos. Sustituye esta guía por los datos del ejercicio o desactiva la
+        sección.'
+      en: 'TODO: Discovered hosts and services. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_c
+    title:
+      es: 'Apéndice C: inventario de subdominios'
+      en: Appendix C - Subdomain Discovery
+    body:
+      es: 'TODO: Subdominios y superficie descubierta. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Discovered subdomains and surface. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_d
+    title:
+      es: 'Apéndice D: objetivos y acceso demostrado'
+      en: Appendix D - Exploited Hosts
+    body:
+      es: 'TODO: Hosts comprometidos y via de acceso. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Compromised hosts and access path. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_e
+    title:
+      es: 'Apéndice E: cuentas y privilegios observados'
+      en: Appendix E - Compromised Users
+    body:
+      es: 'TODO: Cuentas comprometidas y su privilegio. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Compromised accounts and their privilege. Replace this guidance with exercise data or disable this
+        section.'
+  - key: appendix_f
+    title:
+      es: 'Apéndice F: cambios y limpieza'
+      en: Appendix F - Changes / Host Cleanup
+    body:
+      es: 'TODO: Cambios realizados y limpieza efectuada. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Changes made and cleanup performed. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_g
+    title:
+      es: 'Apéndice G: flags registradas'
+      en: Appendix G - Flags Discovered
+    body:
+      es: 'TODO: Flags recolectadas durante la evaluacion. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Flags collected during the assessment. Replace this guidance with exercise data or disable this
+        section.'
+- id: coae
+  family: htb
+  cert_es: COAE — Seguridad de IA/LLM
+  cert_en: COAE — AI/LLM security
+  name_es: Certificacion HTB (estilo COAE / IA)
+  name_en: HTB certification (COAE-style / AI)
+  desc_es: 'Seguridad de IA/LLM: resumen de la evaluacion, resumen de seguridad de IA, hallazgos por objetivo y
+    flags. No oficial.'
+  desc_en: 'AI/LLM security: assessment overview, AI security summary, findings per target and flags. Unofficial.'
+  theme: htb
+  accent: '#5a8f2a'
+  sections:
+  - key: confidentiality
+    title:
+      es: Confidencialidad
+      en: Statement of Confidentiality
+  - key: contacts
+    title:
+      es: Contactos
+      en: Engagement Contacts
+  - key: executive_summary
+    title:
+      es: Visión de la evaluación
+      en: Assessment Overview
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de sistemas de IA y LLM, los resultados demostrados, su impacto y las limitaciones.
+          Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of AI and LLM systems, demonstrated results, impact and limitations. Distinguish
+          verified actions from pending work.'
+  - key: scope
+    content:
+      objectives:
+        es: 'TODO: El objetivo fue identificar y explotar vulnerabilidades en [aplicacion/red], determinando el
+          impacto real sobre confidencialidad, integridad y disponibilidad.'
+        en: 'TODO: The goal was to identify and exploit vulnerabilities in [application/network], assessing the
+          real impact on confidentiality, integrity and availability.'
+      assumptions:
+        es: 'TODO: Modalidad [grey/black/white]-box. Fuera de alcance: DoS, ingenieria social y terceros. Ventana:
+          [fechas/horario].'
+        en: 'TODO: [grey/black/white]-box. Out of scope: DoS, social engineering and third parties. Window: [dates/hours].'
+  - key: findings_summary
+    title:
+      es: Resumen de seguridad de IA
+      en: AI Security Assessment Summary
+  - key: findings
+    title:
+      es: Hallazgos
+      en: Findings
+  - key: appendix_flags
+    title:
+      es: 'Apéndice: flags registradas'
+      en: Appendix - Flags Discovered
+    body:
+      es: 'TODO: Flags recolectadas durante la evaluacion. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Flags collected during the assessment. Replace this guidance with exercise data or disable this
+        section.'
+  - key: remediation_plan
+    content:
+      overview:
+        es: 'TODO: Plan de remediacion priorizado por riesgo. Corregir primero critico/alto.'
+        en: 'TODO: Risk-prioritised remediation plan. Fix critical/high first.'
+- id: cwee
+  family: htb
+  cert_es: CWEE / Explotación web experta
+  cert_en: CWEE / Expert web exploitation
+  name_es: Laboratorio web avanzado (CWEE)
+  name_en: Advanced web laboratory (CWEE)
+  desc_es: 'Aplicaciones web: caja negra, revisión de código, cadenas de explotación y remediación. Diseño propio.'
+  desc_en: 'Web applications: black-box testing, source review, exploit chains and remediation. Custom design.'
+  theme: htb
+  accent: '#5a8f2a'
+  sections:
+  - key: confidentiality
+  - key: contacts
+  - key: executive_summary
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de aplicaciones web y revisión de código, los resultados demostrados, su
+          impacto y las limitaciones. Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of web applications and source review, demonstrated results, impact and limitations.
+          Distinguish verified actions from pending work.'
+  - key: scope
+    content:
+      objectives:
+        es: 'TODO: El objetivo fue identificar y explotar vulnerabilidades en [aplicacion/red], determinando el
+          impacto real sobre confidencialidad, integridad y disponibilidad.'
+        en: 'TODO: The goal was to identify and exploit vulnerabilities in [application/network], assessing the
+          real impact on confidentiality, integrity and availability.'
+      assumptions:
+        es: 'TODO: Modalidad [grey/black/white]-box. Fuera de alcance: DoS, ingenieria social y terceros. Ventana:
+          [fechas/horario].'
+        en: 'TODO: [grey/black/white]-box. Out of scope: DoS, social engineering and third parties. Window: [dates/hours].'
+  - key: methodology
+    content:
+      approach:
+        es: 'TODO: Describe el método que se aplicó realmente, las herramientas utilizadas y la cobertura. Registra
+          por separado las limitaciones y el retest, si se realizó.'
+        en: 'TODO: Describe the method actually used, tools and coverage. Record limitations and any retest separately.'
+  - key: code_review
+    title:
+      es: Revisión de código
+      en: Source code review
+    body:
+      es: 'TODO: Documenta los componentes revisados, la causa raíz y la relación con las evidencias de explotación.
+        Sustituye esta guía por los datos del ejercicio o desactiva la sección.'
+      en: 'TODO: Document reviewed components, root causes and the relationship to exploitation evidence. Replace
+        this guidance with exercise data or disable this section.'
+  - key: findings_summary
+  - key: findings
+  - key: remediation_plan
+    content:
+      overview:
+        es: 'TODO: Plan de remediacion priorizado por riesgo. Corregir primero critico/alto.'
+        en: 'TODO: Risk-prioritised remediation plan. Fix critical/high first.'
+  - key: appendix
+- id: cwpe
+  family: htb
+  cert_es: CWPE / Pentesting Wi-Fi
+  cert_en: CWPE / Wi-Fi pentesting
+  name_es: Laboratorio Wi-Fi (CWPE)
+  name_en: Wi-Fi laboratory (CWPE)
+  desc_es: 'Evaluación inalámbrica: alcance, redes, evidencias, impacto y remediación. Diseño propio.'
+  desc_en: 'Wireless assessment: scope, networks, evidence, impact and remediation. Custom design.'
+  theme: htb
+  accent: '#5a8f2a'
+  sections:
+  - key: confidentiality
+    title:
+      es: Confidencialidad
+      en: Statement of Confidentiality
+  - key: contacts
+    title:
+      es: Contactos
+      en: Engagement Contacts
+  - key: executive_summary
+    title:
+      es: Resumen ejecutivo
+      en: Executive Summary
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de redes Wi-Fi, los resultados demostrados, su impacto y las limitaciones.
+          Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of Wi-Fi networks, demonstrated results, impact and limitations. Distinguish
+          verified actions from pending work.'
+  - key: scope
+    content:
+      objectives:
+        es: 'TODO: El objetivo fue identificar y explotar vulnerabilidades en [aplicacion/red], determinando el
+          impacto real sobre confidencialidad, integridad y disponibilidad.'
+        en: 'TODO: The goal was to identify and exploit vulnerabilities in [application/network], assessing the
+          real impact on confidentiality, integrity and availability.'
+      assumptions:
+        es: 'TODO: Modalidad [grey/black/white]-box. Fuera de alcance: DoS, ingenieria social y terceros. Ventana:
+          [fechas/horario].'
+        en: 'TODO: [grey/black/white]-box. Out of scope: DoS, social engineering and third parties. Window: [dates/hours].'
+  - key: findings_summary
+    title:
+      es: Resumen de evaluación Wi-Fi
+      en: Wi-Fi Penetration Test Assessment Summary
+  - key: attack_narrative
+    title:
+      es: Ruta de compromiso de red
+      en: Network Compromise Walkthrough
+    content:
+      narrative:
+        es: 'TODO: Documenta la secuencia comprobada en redes Wi-Fi. Para cada paso, indica precondiciones, acción,
+          resultado y evidencia vinculada. No asumas acceso ni privilegios no demostrados.'
+        en: 'TODO: Document the verified sequence in Wi-Fi networks. For each step, record preconditions, action,
+          result and linked evidence. Do not assume unproven access or privileges.'
+  - key: remediation_plan
+    title:
+      es: Plan de remediación
+      en: Remediation Summary
+    content:
+      short_term:
+        es: 'TODO: Acciones inmediatas (dias).'
+        en: 'TODO: Immediate actions (days).'
+      medium_term:
+        es: 'TODO: Acciones a medio plazo (semanas).'
+        en: 'TODO: Medium-term actions (weeks).'
+      long_term:
+        es: 'TODO: Mejoras estructurales de la red (meses).'
+        en: 'TODO: Structural network improvements (months).'
+  - key: findings
+    title:
+      es: Detalle técnico de hallazgos
+      en: Technical Findings Details
+  - key: appendix_a
+    title:
+      es: 'Apéndice A: criterios de severidad'
+      en: Appendix A - Finding Severities
+    body:
+      es: 'TODO: Escala de severidad (CVSS) y criterios. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Severity scale (CVSS) and criteria. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_b
+    title:
+      es: 'Apéndice B: redes Wi-Fi y hosts'
+      en: Appendix B - Wi-Fi Networks & Hosts Discovery
+    body:
+      es: 'TODO: Redes Wi-Fi y hosts descubiertos. Sustituye esta guía por los datos del ejercicio o desactiva la
+        sección.'
+      en: 'TODO: Discovered Wi-Fi networks and hosts. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_c
+    title:
+      es: 'Apéndice C: inventario de subdominios'
+      en: Appendix C - Subdomain Discovery
+    body:
+      es: 'TODO: Subdominios y superficie descubierta. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Discovered subdomains and surface. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_d
+    title:
+      es: 'Apéndice D: objetivos y acceso demostrado'
+      en: Appendix D - Exploited Hosts
+    body:
+      es: 'TODO: Hosts comprometidos y via de acceso. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Compromised hosts and access path. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_e
+    title:
+      es: 'Apéndice E: cuentas y privilegios observados'
+      en: Appendix E - Compromised Users
+    body:
+      es: 'TODO: Cuentas comprometidas y su privilegio. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Compromised accounts and their privilege. Replace this guidance with exercise data or disable this
+        section.'
+  - key: appendix_f
+    title:
+      es: 'Apéndice F: cambios y limpieza'
+      en: Appendix F - Changes / Host Cleanup
+    body:
+      es: 'TODO: Cambios realizados y limpieza efectuada. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Changes made and cleanup performed. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_g
+    title:
+      es: 'Apéndice G: flags registradas'
+      en: Appendix G - Flags Discovered
+    body:
+      es: 'TODO: Flags recolectadas durante la evaluacion. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Flags collected during the assessment. Replace this guidance with exercise data or disable this
+        section.'
+- id: cjca
+  family: htb
+  cert_es: CJCA — Junior (pentest + SIEM)
+  cert_en: CJCA — Junior (pentest + SIEM)
+  name_es: Certificacion HTB (estilo CJCA / junior)
+  name_en: HTB certification (CJCA-style / junior)
+  desc_es: 'Junior con 2 fases: pentest grey-box de red + validacion y analisis de alertas SIEM. Incluye asignacion,
+    walkthrough, evidencia, remediacion y apendices. No oficial.'
+  desc_en: 'Junior, two phases: grey-box network pentest + SIEM alert validation and analysis. Includes assignment,
+    walkthrough, evidence, remediation and appendices. Unofficial.'
+  theme: htb
+  accent: '#5a8f2a'
+  sections:
+  - key: confidentiality
+    title:
+      es: Confidencialidad
+      en: Statement of Confidentiality
+  - key: contacts
+    title:
+      es: Contactos
+      en: Engagement Contacts
+  - key: executive_summary
+    title:
+      es: Resumen ejecutivo
+      en: Executive Summary
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de evaluación y análisis de alertas, los resultados demostrados, su impacto
+          y las limitaciones. Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of assessment and alert analysis, demonstrated results, impact and limitations.
+          Distinguish verified actions from pending work.'
+  - key: scope
+    title:
+      es: Objetivos y alcance
+      en: Assignment
+    content:
+      objectives:
+        es: 'TODO: Objetivo de la asignacion.'
+        en: 'TODO: Assignment objective.'
+      assumptions:
+        es: 'TODO: Vision general de la asignacion.'
+        en: 'TODO: Assignment overview.'
+  - key: methodology
+    title:
+      es: 'Fase 1: evaluación técnica'
+      en: 'Phase 1: Grey Box Penetration Test'
+    content:
+      approach:
+        es: 'TODO: Describe el método que se aplicó realmente, las herramientas utilizadas y la cobertura. Registra
+          por separado las limitaciones y el retest, si se realizó.'
+        en: 'TODO: Describe the method actually used, tools and coverage. Record limitations and any retest separately.'
+  - key: findings_summary
+    title:
+      es: Resumen de evaluación de red
+      en: Network Penetration Test Assessment Summary
+  - key: attack_narrative
+    title:
+      es: Ruta de compromiso de red
+      en: Internal Network Compromise Walkthrough
+    content:
+      narrative:
+        es: 'TODO: Documenta la secuencia comprobada en evaluación y análisis de alertas. Para cada paso, indica
+          precondiciones, acción, resultado y evidencia vinculada. No asumas acceso ni privilegios no demostrados.'
+        en: 'TODO: Document the verified sequence in assessment and alert analysis. For each step, record preconditions,
+          action, result and linked evidence. Do not assume unproven access or privileges.'
+  - key: remediation_plan
+    title:
+      es: Plan de remediación
+      en: Remediation Summary
+    content:
+      short_term:
+        es: 'TODO: Acciones inmediatas (dias).'
+        en: 'TODO: Immediate actions (days).'
+      medium_term:
+        es: 'TODO: Acciones a medio plazo (semanas).'
+        en: 'TODO: Medium-term actions (weeks).'
+      long_term:
+        es: 'TODO: Mejoras estructurales (meses).'
+        en: 'TODO: Structural improvements (months).'
+  - key: findings
+    title:
+      es: Detalle técnico de hallazgos
+      en: Technical Findings Details
+  - key: phase2
+    title:
+      es: 'Fase 2: validación y análisis de alertas SIEM'
+      en: 'Phase 2: SIEM Alert Validation and Analysis'
+    body:
+      es: 'TODO: Alcance, entregables, alertas SIEM y su validacion/analisis. Sustituye esta guía por los datos
+        del ejercicio o desactiva la sección.'
+      en: 'TODO: Scope, deliverables, SIEM alerts and their validation/analysis. Replace this guidance with exercise
+        data or disable this section.'
+  - key: appendix_a
+    title:
+      es: 'Apéndice A: criterios de severidad'
+      en: Appendix A - Finding Severities
+    body:
+      es: 'TODO: Escala de severidad (CVSS) y criterios. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Severity scale (CVSS) and criteria. Replace this guidance with exercise data or disable this section.'
+  - key: appendix_flags
+    title:
+      es: 'Apéndice: flags registradas'
+      en: Appendix - Flags Discovered
+    body:
+      es: 'TODO: Flags recolectadas durante la evaluacion. Sustituye esta guía por los datos del ejercicio o desactiva
+        la sección.'
+      en: 'TODO: Flags collected during the assessment. Replace this guidance with exercise data or disable this
+        section.'
+- id: cdsa
+  family: htb
+  cert_es: CDSA — Defensa / SOC
+  cert_en: CDSA — Defense / SOC
+  name_es: Certificacion HTB (estilo CDSA / SOC)
+  name_en: HTB certification (CDSA-style / SOC)
+  desc_es: 'Analista SOC / defensa: objetivos del examen, resumen ejecutivo, analisis tecnico por incidente y linea
+    de tiempo. No oficial.'
+  desc_en: 'SOC / defense analyst: exam objectives, executive summary, per-incident technical analysis and timeline.
+    Unofficial.'
+  theme: htb
+  accent: '#5a8f2a'
+  sections:
+  - key: confidentiality
+    title:
+      es: Confidencialidad
+      en: Statement of Confidentiality
+  - key: contacts
+    title:
+      es: Contactos
+      en: Engagement Contacts
+  - key: exam_objectives
+    title:
+      es: Objetivos y requisitos del ejercicio
+      en: Exam Objectives (Read Carefully)
+    body:
+      es: 'TODO: Objetivos y requisitos del examen. Leer con atencion antes de empezar. Sustituye esta guía por
+        los datos del ejercicio o desactiva la sección.'
+      en: 'TODO: Exam objectives and requirements. Read carefully before starting. Replace this guidance with exercise
+        data or disable this section.'
+  - key: executive_summary
+    title:
+      es: Resumen ejecutivo
+      en: Executive Summary
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de investigación de incidentes, los resultados demostrados, su impacto y
+          las limitaciones. Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of incident investigation, demonstrated results, impact and limitations. Distinguish
+          verified actions from pending work.'
+  - key: technical_analysis
+    title:
+      es: Análisis técnico
+      en: Technical Analysis
+    body:
+      es: 'TODO: Analisis tecnico por incidente:
 
-  - id: client
-    name_es: "Pentest para cliente"
-    name_en: "Client pentest"
-    desc_es: "Informe profesional: resumen ejecutivo, alcance, metodologia, hallazgos con CVSS y plan de remediacion."
-    desc_en: "Professional report: executive summary, scope, methodology, findings with CVSS and remediation plan."
-    theme: corporativo
-    accent: "#1f5fa8"
-    sections:
-      - {key: confidentiality}
-      - {key: contacts}
-      - key: executive_summary
-        content:
-          summary:
-            es: "Entre [fecha inicio] y [fecha fin] se realizo una evaluacion de seguridad de [alcance]. Se identificaron N hallazgos (X criticos, Y altos, Z medios). El riesgo principal es [describir]. Se recomienda priorizar la correccion de los hallazgos critico y alto de forma inmediata."
-            en: "Between [start date] and [end date] a security assessment of [scope] was performed. N findings were identified (X critical, Y high, Z medium). The main risk is [describe]. Prioritising the critical and high findings is recommended."
-      - key: scope
-        content:
-          objectives:
-            es: "El objetivo fue identificar y explotar vulnerabilidades en [aplicacion/red], determinando el impacto real sobre confidencialidad, integridad y disponibilidad."
-            en: "The goal was to identify and exploit vulnerabilities in [application/network], assessing the real impact on confidentiality, integrity and availability."
-          assumptions:
-            es: "Modalidad [grey/black/white]-box. Fuera de alcance: DoS, ingenieria social y terceros. Ventana: [fechas/horario]."
-            en: "[grey/black/white]-box. Out of scope: DoS, social engineering and third parties. Window: [dates/hours]."
-      - key: methodology
-        content:
-          approach:
-            es: "La evaluacion siguio un enfoque alineado con OWASP WSTG / PTES: reconocimiento, enumeracion, explotacion, post-explotacion y verificacion de la remediacion."
-            en: "The assessment followed an OWASP WSTG / PTES aligned approach: reconnaissance, enumeration, exploitation, post-exploitation and remediation verification."
-      - {key: findings_summary}
-      - {key: findings}
-      - key: remediation_plan
-        content:
-          overview:
-            es: "Plan de remediacion priorizado por riesgo. Corregir primero critico/alto."
-            en: "Risk-prioritised remediation plan. Fix critical/high first."
-      - {key: appendix}
 
-  - id: exam
-    name_es: "Examen de certificacion (estilo OSCP)"
-    name_en: "Certification exam (OSCP-style)"
-    desc_es: "Informe por host: resumen de alto nivel, metodologia (recopilacion, enumeracion, penetracion, mantenimiento de acceso, limpieza), hosts comprometidos con pasos y flags, y apendices. No oficial."
-    desc_en: "Host-based report: high-level summary, methodology (gathering, enumeration, penetration, maintaining access, cleanup), compromised hosts with steps and flags, and appendices. Unofficial."
-    theme: offsec
-    accent: "#1b3a5b"
-    sections:
-      - {key: confidentiality, title: "Statement of Confidentiality"}
-      - key: executive_summary
-        title: "High-Level Summary"
-        content:
-          summary:
-            es: "Introduccion, objetivo y requisitos del examen. Se obtuvo acceso inicial y escalada a administrador/root en [N] de [M] objetivos; las flags local.txt y proof.txt se recolectaron como evidencia."
-            en: "Exam introduction, objective and requirements. Initial access and escalation to administrator/root were achieved on [N] of [M] targets; local.txt and proof.txt flags were collected as evidence."
-      - key: methodology
-        title: "Methodologies"
-        content:
-          information_gathering: {es: "Recopilacion de informacion del objetivo.", en: "Target information gathering."}
-          enumeration: {es: "Enumeracion de servicios (nmap, servicios web/SMB, etc.).", en: "Service enumeration (nmap, web/SMB services, etc.)."}
-          exploitation: {es: "Penetracion: explotacion del vector para obtener shell inicial.", en: "Penetration: exploiting the vector to obtain an initial shell."}
-          post_exploitation: {es: "Mantenimiento de acceso y escalada de privilegios.", en: "Maintaining access and privilege escalation."}
-          cleanup: {es: "Limpieza: reversion de cambios realizados durante el examen.", en: "House cleaning: reverting changes made during the exam."}
-      - {key: findings, title: "Compromised Hosts"}
-      - key: appendix_flags
-        title: "Appendix - Proof and Local Flags"
-        body:
-          es: "Tabla de flags (local.txt / proof.txt) recolectadas por objetivo."
-          en: "Table of flags (local.txt / proof.txt) collected per target."
+        **Incidente 1: [titulo]** — deteccion, evidencia, IOCs y conclusion.
 
-  - id: cpts
-    family: htb
-    cert_es: "CPTS \u2014 Pentest de red"
-    cert_en: "CPTS \u2014 Network pentest"
-    name_es: "Certificacion HTB (estilo CPTS)"
-    name_en: "HTB certification (CPTS-style)"
-    desc_es: "Pentest de red: resumen ejecutivo, resumen de la evaluacion, walkthrough del compromiso, remediacion, detalle tecnico de hallazgos y apendices. No oficial."
-    desc_en: "Network pentest: executive summary, assessment summary, compromise walkthrough, remediation, technical findings details and appendices. Unofficial."
-    theme: htb
-    accent: "#5a8f2a"
-    sections:
-      - {key: confidentiality, title: "Statement of Confidentiality"}
-      - {key: contacts, title: "Engagement Contacts"}
-      - key: executive_summary
-        title: "Executive Summary"
-        content:
-          summary:
-            es: "Enfoque, alcance y vision general de la evaluacion. Se comprometieron [N] sistemas y se alcanzo [control del dominio] mediante [cadena de ataque]."
-            en: "Approach, scope and assessment overview. [N] systems were compromised and [domain control] was achieved via [attack chain]."
-      - {key: findings_summary, title: "Assessment Summary"}
-      - key: attack_narrative
-        title: "Internal Compromise Walkthrough"
-        content:
-          narrative:
-            es: "Walkthrough detallado del compromiso de extremo a extremo:\n1. [Foothold] via [vector].\n2. [Movimiento lateral] hacia [host].\n3. [Escalada de dominio] hasta [DA]."
-            en: "Detailed end-to-end compromise walkthrough:\n1. [Foothold] via [vector].\n2. [Lateral movement] to [host].\n3. [Domain escalation] to [DA]."
-      - key: remediation_plan
-        title: "Remediation Summary"
-        content:
-          short_term: {es: "Acciones inmediatas (dias).", en: "Immediate actions (days)."}
-          medium_term: {es: "Acciones a medio plazo (semanas).", en: "Medium-term actions (weeks)."}
-          long_term: {es: "Mejoras estructurales (meses).", en: "Structural improvements (months)."}
-      - {key: findings, title: "Technical Findings Details"}
-      - {key: appendix_a, title: "Appendix A - Finding Severities", body: {es: "Escala de severidad usada (CVSS) y criterios.", en: "Severity scale used (CVSS) and criteria."}}
-      - {key: appendix_b, title: "Appendix B - Exploited Hosts", body: {es: "Hosts comprometidos y via de acceso.", en: "Compromised hosts and access path."}}
-      - {key: appendix_c, title: "Appendix C - Compromised Users", body: {es: "Cuentas comprometidas y su privilegio.", en: "Compromised accounts and their privilege."}}
-      - {key: appendix_d, title: "Appendix D - Changes / Host Cleanup", body: {es: "Cambios realizados y limpieza efectuada.", en: "Changes made and cleanup performed."}}
-      - {key: appendix_e, title: "Appendix E - Domain Password Review", body: {es: "Analisis de contrasenas del dominio.", en: "Domain password review."}}
 
-  - id: cwes
-    family: htb
-    cert_es: "CWES \u2014 Explotacion web"
-    cert_en: "CWES \u2014 Web exploitation"
-    name_es: "Certificacion HTB (estilo CWES / web)"
-    name_en: "HTB certification (CWES-style / web)"
-    desc_es: "Explotacion web avanzada: resumen ejecutivo, resumen de la evaluacion web, detalle tecnico de hallazgos y flags. No oficial."
-    desc_en: "Advanced web exploitation: executive summary, web assessment summary, technical findings details and flags. Unofficial."
-    theme: htb
-    accent: "#5a8f2a"
-    sections:
-      - {key: confidentiality, title: "Statement of Confidentiality"}
-      - {key: contacts, title: "Engagement Contacts"}
-      - key: executive_summary
-        title: "Executive Summary"
-        content:
-          summary:
-            es: "Enfoque, alcance y vision general. Evaluacion de explotacion web de [app/URL]; se encadenaron [N] vulnerabilidades hasta [RCE / exfiltracion / toma de control]."
-            en: "Approach, scope and overview. Web exploitation assessment of [app/URL]; [N] vulnerabilities were chained up to [RCE / exfiltration / takeover]."
-      - {key: findings_summary, title: "Web Application Assessment Summary"}
-      - {key: findings, title: "Technical Findings Details"}
-      - {key: appendix_flags, title: "Appendix - Flags Discovered", body: {es: "Flags recolectadas durante la evaluacion.", en: "Flags collected during the assessment."}}
+        **Incidente 2: [titulo]** — deteccion, evidencia, IOCs y conclusion. Sustituye esta guía por los datos del
+        ejercicio o desactiva la sección.'
+      en: 'TODO: Per-incident technical analysis:
 
-  - id: cape
-    family: htb
-    cert_es: "CAPE \u2014 Active Directory"
-    cert_en: "CAPE \u2014 Active Directory"
-    name_es: "Certificacion HTB (estilo CAPE / AD)"
-    name_en: "HTB certification (CAPE-style / AD)"
-    desc_es: "Pentest de Active Directory: resumen ejecutivo, resumen de la evaluacion AD, walkthrough del compromiso del dominio, remediacion, detalle tecnico y apendices completos. No oficial."
-    desc_en: "Active Directory pentest: executive summary, AD assessment summary, domain compromise walkthrough, remediation, technical details and full appendices. Unofficial."
-    theme: htb
-    accent: "#5a8f2a"
-    sections:
-      - {key: confidentiality, title: "Statement of Confidentiality"}
-      - {key: contacts, title: "Engagement Contacts"}
-      - key: executive_summary
-        title: "Executive Summary"
-        content:
-          summary:
-            es: "Enfoque, alcance y recomendaciones. Se comprometio el dominio [dominio] mediante [cadena de ataque en AD], alcanzando [Domain Admin / control del bosque]."
-            en: "Approach, scope and recommendations. The [domain] domain was compromised via [AD attack chain], reaching [Domain Admin / forest control]."
-      - {key: findings_summary, title: "Active Directory Penetration Test Assessment Summary"}
-      - key: attack_narrative
-        title: "Active Directory Compromise Walkthrough"
-        content:
-          narrative:
-            es: "Walkthrough detallado del compromiso del dominio:\n1. [Acceso inicial] via [vector].\n2. [Movimiento lateral / abuso de ACL / Kerberos].\n3. [Escalada de dominio] hasta [DA / DC]."
-            en: "Detailed domain compromise walkthrough:\n1. [Initial access] via [vector].\n2. [Lateral movement / ACL / Kerberos abuse].\n3. [Domain escalation] to [DA / DC]."
-      - key: remediation_plan
-        title: "Remediation Summary"
-        content:
-          short_term: {es: "Acciones inmediatas (dias).", en: "Immediate actions (days)."}
-          medium_term: {es: "Acciones a medio plazo (semanas).", en: "Medium-term actions (weeks)."}
-          long_term: {es: "Mejoras estructurales de AD (meses).", en: "Structural AD improvements (months)."}
-      - {key: findings, title: "Technical Findings Details"}
-      - {key: appendix_a, title: "Appendix A - Finding Severities", body: {es: "Escala de severidad (CVSS) y criterios.", en: "Severity scale (CVSS) and criteria."}}
-      - {key: appendix_b, title: "Appendix B - Host & Service Discovery", body: {es: "Hosts y servicios descubiertos.", en: "Discovered hosts and services."}}
-      - {key: appendix_c, title: "Appendix C - Subdomain Discovery", body: {es: "Subdominios y superficie descubierta.", en: "Discovered subdomains and surface."}}
-      - {key: appendix_d, title: "Appendix D - Exploited Hosts", body: {es: "Hosts comprometidos y via de acceso.", en: "Compromised hosts and access path."}}
-      - {key: appendix_e, title: "Appendix E - Compromised Users", body: {es: "Cuentas comprometidas y su privilegio.", en: "Compromised accounts and their privilege."}}
-      - {key: appendix_f, title: "Appendix F - Changes / Host Cleanup", body: {es: "Cambios realizados y limpieza efectuada.", en: "Changes made and cleanup performed."}}
-      - {key: appendix_g, title: "Appendix G - Flags Discovered", body: {es: "Flags recolectadas durante la evaluacion.", en: "Flags collected during the assessment."}}
 
-  - id: coae
-    family: htb
-    cert_es: "COAE \u2014 Seguridad de IA/LLM"
-    cert_en: "COAE \u2014 AI/LLM security"
-    name_es: "Certificacion HTB (estilo COAE / IA)"
-    name_en: "HTB certification (COAE-style / AI)"
-    desc_es: "Seguridad de IA/LLM: resumen de la evaluacion, resumen de seguridad de IA, hallazgos por objetivo y flags. No oficial."
-    desc_en: "AI/LLM security: assessment overview, AI security summary, findings per target and flags. Unofficial."
-    theme: htb
-    accent: "#5a8f2a"
-    sections:
-      - {key: confidentiality, title: "Statement of Confidentiality"}
-      - {key: contacts, title: "Engagement Contacts"}
-      - key: executive_summary
-        title: "Assessment Overview"
-        content:
-          summary:
-            es: "Enfoque y alcance de la evaluacion de seguridad de IA/LLM sobre [objetivos]. Se identificaron [N] hallazgos, incluyendo [prompt injection / envenenamiento / evasion adversaria / RCE via herramientas]."
-            en: "Approach and scope of the AI/LLM security assessment against [targets]. [N] findings were identified, including [prompt injection / poisoning / adversarial evasion / tool-driven RCE]."
-      - {key: findings_summary, title: "AI Security Assessment Summary"}
-      - {key: findings, title: "Findings"}
-      - {key: appendix_flags, title: "Appendix - Flags Discovered", body: {es: "Flags recolectadas durante la evaluacion.", en: "Flags collected during the assessment."}}
+        **Incident 1: [title]** — detection, evidence, IOCs and conclusion.
 
-  - id: cwee
-    family: htb
-    cert_es: "CWEE \u2014 Wi-Fi"
-    cert_en: "CWEE \u2014 Wi-Fi"
-    name_es: "Certificacion HTB (estilo CWEE / Wi-Fi)"
-    name_en: "HTB certification (CWEE-style / Wi-Fi)"
-    desc_es: "Pentest de Wi-Fi: resumen ejecutivo, resumen de la evaluacion Wi-Fi, walkthrough del compromiso de red, remediacion, detalle tecnico y apendices. No oficial."
-    desc_en: "Wi-Fi pentest: executive summary, Wi-Fi assessment summary, network compromise walkthrough, remediation, technical details and appendices. Unofficial."
-    theme: htb
-    accent: "#5a8f2a"
-    sections:
-      - {key: confidentiality, title: "Statement of Confidentiality"}
-      - {key: contacts, title: "Engagement Contacts"}
-      - key: executive_summary
-        title: "Executive Summary"
-        content:
-          summary:
-            es: "Enfoque, alcance y recomendaciones. Evaluacion de seguridad Wi-Fi de [SSID/red]; se comprometio [acceso a la red interna] mediante [ataque Wi-Fi]."
-            en: "Approach, scope and recommendations. Wi-Fi security assessment of [SSID/network]; [internal network access] was achieved via [Wi-Fi attack]."
-      - {key: findings_summary, title: "Wi-Fi Penetration Test Assessment Summary"}
-      - key: attack_narrative
-        title: "Network Compromise Walkthrough"
-        content:
-          narrative:
-            es: "Walkthrough del compromiso de la red inalambrica:\n1. [Reconocimiento Wi-Fi] de [SSID].\n2. [Ataque] (WPA2/WPA3, Evil Twin, PMKID, etc.).\n3. [Acceso a la red interna] y movimiento posterior."
-            en: "Wireless network compromise walkthrough:\n1. [Wi-Fi recon] of [SSID].\n2. [Attack] (WPA2/WPA3, Evil Twin, PMKID, etc.).\n3. [Internal network access] and follow-on movement."
-      - key: remediation_plan
-        title: "Remediation Summary"
-        content:
-          short_term: {es: "Acciones inmediatas (dias).", en: "Immediate actions (days)."}
-          medium_term: {es: "Acciones a medio plazo (semanas).", en: "Medium-term actions (weeks)."}
-          long_term: {es: "Mejoras estructurales de la red (meses).", en: "Structural network improvements (months)."}
-      - {key: findings, title: "Technical Findings Details"}
-      - {key: appendix_a, title: "Appendix A - Finding Severities", body: {es: "Escala de severidad (CVSS) y criterios.", en: "Severity scale (CVSS) and criteria."}}
-      - {key: appendix_b, title: "Appendix B - Wi-Fi Networks & Hosts Discovery", body: {es: "Redes Wi-Fi y hosts descubiertos.", en: "Discovered Wi-Fi networks and hosts."}}
-      - {key: appendix_c, title: "Appendix C - Subdomain Discovery", body: {es: "Subdominios y superficie descubierta.", en: "Discovered subdomains and surface."}}
-      - {key: appendix_d, title: "Appendix D - Exploited Hosts", body: {es: "Hosts comprometidos y via de acceso.", en: "Compromised hosts and access path."}}
-      - {key: appendix_e, title: "Appendix E - Compromised Users", body: {es: "Cuentas comprometidas y su privilegio.", en: "Compromised accounts and their privilege."}}
-      - {key: appendix_f, title: "Appendix F - Changes / Host Cleanup", body: {es: "Cambios realizados y limpieza efectuada.", en: "Changes made and cleanup performed."}}
-      - {key: appendix_g, title: "Appendix G - Flags Discovered", body: {es: "Flags recolectadas durante la evaluacion.", en: "Flags collected during the assessment."}}
 
-  - id: cwpe
-    family: htb
-    cert_es: "CWPE \u2014 Web (basica)"
-    cert_en: "CWPE \u2014 Web (basic)"
-    name_es: "Certificacion HTB (estilo CWPE / web basica)"
-    name_en: "HTB certification (CWPE-style / basic web)"
-    desc_es: "Evaluacion de aplicacion web: resumen ejecutivo, alcance, resumen de la evaluacion web, detalle tecnico y flags. No oficial."
-    desc_en: "Web application assessment: executive summary, scope, web assessment summary, technical findings and flags. Unofficial."
-    theme: htb
-    accent: "#5a8f2a"
-    sections:
-      - {key: confidentiality, title: "Statement of Confidentiality"}
-      - {key: contacts, title: "Engagement Contacts"}
-      - key: executive_summary
-        title: "Executive Summary"
-        content:
-          summary:
-            es: "Enfoque de la evaluacion de la aplicacion web [app/URL]."
-            en: "Approach of the [app/URL] web application assessment."
-      - key: scope
-        title: "Scope"
-        content:
-          objectives: {es: "Alcance de la aplicacion web evaluada.", en: "Scope of the assessed web application."}
-      - {key: findings_summary, title: "Web Application Security Assessment Summary"}
-      - {key: findings, title: "Technical Findings Details"}
-      - {key: appendix_a, title: "Appendix A - Finding Severities", body: {es: "Escala de severidad (CVSS) y criterios.", en: "Severity scale (CVSS) and criteria."}}
-      - {key: appendix_flags, title: "Appendix - Flags Discovered", body: {es: "Flags recolectadas durante la evaluacion.", en: "Flags collected during the assessment."}}
-
-  - id: cjca
-    family: htb
-    cert_es: "CJCA \u2014 Junior (pentest + SIEM)"
-    cert_en: "CJCA \u2014 Junior (pentest + SIEM)"
-    name_es: "Certificacion HTB (estilo CJCA / junior)"
-    name_en: "HTB certification (CJCA-style / junior)"
-    desc_es: "Junior con 2 fases: pentest grey-box de red + validacion y analisis de alertas SIEM. Incluye asignacion, walkthrough, evidencia, remediacion y apendices. No oficial."
-    desc_en: "Junior, two phases: grey-box network pentest + SIEM alert validation and analysis. Includes assignment, walkthrough, evidence, remediation and appendices. Unofficial."
-    theme: htb
-    accent: "#5a8f2a"
-    sections:
-      - {key: confidentiality, title: "Statement of Confidentiality"}
-      - {key: contacts, title: "Engagement Contacts"}
-      - key: executive_summary
-        title: "Executive Summary"
-        content:
-          summary: {es: "Enfoque general de la evaluacion (dos fases).", en: "Overall approach of the assessment (two phases)."}
-      - key: scope
-        title: "Assignment"
-        content:
-          objectives: {es: "Objetivo de la asignacion.", en: "Assignment objective."}
-          assumptions: {es: "Vision general de la asignacion.", en: "Assignment overview."}
-      - key: methodology
-        title: "Phase 1: Grey Box Penetration Test"
-        content:
-          approach: {es: "Alcance, entregables y reglas de compromiso de la fase 1.", en: "Phase 1 scope, deliverables and rules of engagement."}
-      - {key: findings_summary, title: "Network Penetration Test Assessment Summary"}
-      - key: attack_narrative
-        title: "Internal Network Compromise Walkthrough"
-        content:
-          narrative: {es: "Walkthrough detallado y evidencia recolectada.", en: "Detailed walkthrough and collected evidence."}
-      - key: remediation_plan
-        title: "Remediation Summary"
-        content:
-          short_term: {es: "Acciones inmediatas (dias).", en: "Immediate actions (days)."}
-          medium_term: {es: "Acciones a medio plazo (semanas).", en: "Medium-term actions (weeks)."}
-          long_term: {es: "Mejoras estructurales (meses).", en: "Structural improvements (months)."}
-      - {key: findings, title: "Technical Findings Details"}
-      - {key: phase2, title: "Phase 2: SIEM Alert Validation and Analysis", body: {es: "Alcance, entregables, alertas SIEM y su validacion/analisis.", en: "Scope, deliverables, SIEM alerts and their validation/analysis."}}
-      - {key: appendix_a, title: "Appendix A - Finding Severities", body: {es: "Escala de severidad (CVSS) y criterios.", en: "Severity scale (CVSS) and criteria."}}
-      - {key: appendix_flags, title: "Appendix - Flags Discovered", body: {es: "Flags recolectadas durante la evaluacion.", en: "Flags collected during the assessment."}}
-
-  - id: cdsa
-    family: htb
-    cert_es: "CDSA \u2014 Defensa / SOC"
-    cert_en: "CDSA \u2014 Defense / SOC"
-    name_es: "Certificacion HTB (estilo CDSA / SOC)"
-    name_en: "HTB certification (CDSA-style / SOC)"
-    desc_es: "Analista SOC / defensa: objetivos del examen, resumen ejecutivo, analisis tecnico por incidente y linea de tiempo. No oficial."
-    desc_en: "SOC / defense analyst: exam objectives, executive summary, per-incident technical analysis and timeline. Unofficial."
-    theme: htb
-    accent: "#5a8f2a"
-    sections:
-      - {key: confidentiality, title: "Statement of Confidentiality"}
-      - {key: contacts, title: "Engagement Contacts"}
-      - {key: exam_objectives, title: "Exam Objectives (Read Carefully)", body: {es: "Objetivos y requisitos del examen. Leer con atencion antes de empezar.", en: "Exam objectives and requirements. Read carefully before starting."}}
-      - key: executive_summary
-        title: "Executive Summary"
-        content:
-          summary: {es: "Resumen de la investigacion: alcance, incidentes analizados y conclusiones de alto nivel.", en: "Investigation summary: scope, incidents analysed and high-level conclusions."}
-      - {key: technical_analysis, title: "Technical Analysis", body: {es: "Analisis tecnico por incidente:\n\n**Incidente 1: [titulo]** \u2014 deteccion, evidencia, IOCs y conclusion.\n\n**Incidente 2: [titulo]** \u2014 deteccion, evidencia, IOCs y conclusion.", en: "Per-incident technical analysis:\n\n**Incident 1: [title]** \u2014 detection, evidence, IOCs and conclusion.\n\n**Incident 2: [title]** \u2014 detection, evidence, IOCs and conclusion."}}
-      - {key: appendix_timeline, title: "Appendix - Technical Timeline", body: {es: "Linea de tiempo de la actividad observada (fecha/hora, evento, fuente).", en: "Timeline of observed activity (date/time, event, source)."}}
-
-  - id: ctf
-    name_es: "CTF / Maquina (estilo HTB)"
-    name_en: "CTF / Machine (HTB-style)"
-    desc_es: "Walkthrough minimalista: resumen breve, la maquina con ruta de ataque y fases, y flags. No oficial."
-    desc_en: "Minimal walkthrough: brief summary, the machine with attack path and phases, and flags. Unofficial."
-    theme: serio
-    accent: "#39ff14"
-    sections:
-      - key: executive_summary
-        content:
-          summary:
-            es: "Walkthrough de la maquina [nombre] ([dificultad], [SO]). Cadena: [enumeracion -> foothold -> escalada]. Flags user.txt y root.txt obtenidas."
-            en: "Walkthrough of the [name] machine ([difficulty], [OS]). Chain: [enumeration -> foothold -> privesc]. user.txt and root.txt flags obtained."
-      - {key: findings}
-      - {key: appendix}
+        **Incident 2: [title]** — detection, evidence, IOCs and conclusion. Replace this guidance with exercise
+        data or disable this section.'
+  - key: appendix_timeline
+    title:
+      es: 'Apéndice: cronología técnica'
+      en: Appendix - Technical Timeline
+    body:
+      es: 'TODO: Linea de tiempo de la actividad observada (fecha/hora, evento, fuente). Sustituye esta guía por
+        los datos del ejercicio o desactiva la sección.'
+      en: 'TODO: Timeline of observed activity (date/time, event, source). Replace this guidance with exercise data
+        or disable this section.'
+- id: ctf
+  name_es: CTF / Maquina (estilo HTB)
+  name_en: CTF / Machine (HTB-style)
+  desc_es: 'Walkthrough minimalista: resumen breve, la maquina con ruta de ataque y fases, y flags. No oficial.'
+  desc_en: 'Minimal walkthrough: brief summary, the machine with attack path and phases, and flags. Unofficial.'
+  theme: serio
+  accent: '#39ff14'
+  sections:
+  - key: executive_summary
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de máquina de laboratorio, los resultados demostrados, su impacto y las limitaciones.
+          Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of lab machine, demonstrated results, impact and limitations. Distinguish
+          verified actions from pending work.'
+  - key: findings
+  - key: appendix
+- id: executive
+  name_es: Ejecutivo editorial
+  name_en: Executive editorial
+  desc_es: Portada editorial clara, prioridades de negocio y detalle técnico completo.
+  desc_en: Light editorial cover, business priorities and complete technical detail.
+  theme: ejecutivo
+  accent: '#1c5965'
+  sections:
+  - key: confidentiality
+  - key: contacts
+  - key: executive_summary
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de evaluación autorizada, los resultados demostrados, su impacto y las limitaciones.
+          Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of authorized assessment, demonstrated results, impact and limitations. Distinguish
+          verified actions from pending work.'
+  - key: scope
+    content:
+      objectives:
+        es: 'TODO: El objetivo fue identificar y explotar vulnerabilidades en [aplicacion/red], determinando el
+          impacto real sobre confidencialidad, integridad y disponibilidad.'
+        en: 'TODO: The goal was to identify and exploit vulnerabilities in [application/network], assessing the
+          real impact on confidentiality, integrity and availability.'
+      assumptions:
+        es: 'TODO: Modalidad [grey/black/white]-box. Fuera de alcance: DoS, ingenieria social y terceros. Ventana:
+          [fechas/horario].'
+        en: 'TODO: [grey/black/white]-box. Out of scope: DoS, social engineering and third parties. Window: [dates/hours].'
+  - key: methodology
+    content:
+      approach:
+        es: 'TODO: Describe el método que se aplicó realmente, las herramientas utilizadas y la cobertura. Registra
+          por separado las limitaciones y el retest, si se realizó.'
+        en: 'TODO: Describe the method actually used, tools and coverage. Record limitations and any retest separately.'
+  - key: findings_summary
+  - key: findings
+  - key: remediation_plan
+    content:
+      overview:
+        es: 'TODO: Plan de remediacion priorizado por riesgo. Corregir primero critico/alto.'
+        en: 'TODO: Risk-prioritised remediation plan. Fix critical/high first.'
+  - key: appendix
+- id: laboratory
+  name_es: Cuaderno técnico de laboratorio
+  name_en: Technical lab notebook
+  desc_es: Diseño claro para procedimientos, comandos y evidencias. Adecuado para imprimir.
+  desc_en: Paper-first design for procedures, commands and evidence. Suitable for printing.
+  theme: laboratorio
+  accent: '#166956'
+  sections:
+  - key: executive_summary
+    content:
+      summary:
+        es: 'TODO: Describe el alcance de máquina de laboratorio, los resultados demostrados, su impacto y las limitaciones.
+          Distingue las acciones verificadas de las pendientes.'
+        en: 'TODO: Describe the scope of lab machine, demonstrated results, impact and limitations. Distinguish
+          verified actions from pending work.'
+  - key: scope
+    content:
+      objectives:
+        es: 'TODO: El objetivo fue identificar y explotar vulnerabilidades en [aplicacion/red], determinando el
+          impacto real sobre confidencialidad, integridad y disponibilidad.'
+        en: 'TODO: The goal was to identify and exploit vulnerabilities in [application/network], assessing the
+          real impact on confidentiality, integrity and availability.'
+      assumptions:
+        es: 'TODO: Modalidad [grey/black/white]-box. Fuera de alcance: DoS, ingenieria social y terceros. Ventana:
+          [fechas/horario].'
+        en: 'TODO: [grey/black/white]-box. Out of scope: DoS, social engineering and third parties. Window: [dates/hours].'
+  - key: findings
+  - key: appendix

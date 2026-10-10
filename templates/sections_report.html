@@ -11,18 +11,20 @@
 <title>{{ meta.report_title }}</title>
 <link rel="stylesheet" href="{{ theme_css }}">
 <style>
-  :root { --accent: {{ br.accent or '#39ff14' }}; }
+  {% if br.accent %}:root { --accent: {{ br.accent }}; }{% endif %}
   @page {
-    @top-left     { content: "{{ wordmark }}"; }
-    @top-center   { content: "{{ meta.report_title }}"; }
-    @top-right    { content: "{{ rhright }}"; }
-    @bottom-left  { content: "{{ byline }}"; }
-    @bottom-right { content: "{{ L.running.page }} " counter(page) " {{ L.running.of }} " counter(pages); }
+    @top-left     { content: {{ wordmark|css_string }}; }
+    @top-center   { content: {{ meta.report_title|css_string }}; }
+    @top-right    { content: {{ rhright|css_string }}; }
+    @bottom-left  { content: {{ byline|css_string }}; }
+    @bottom-right { content: {{ (L.running.page ~ " ")|css_string }} counter(page) {{ (" " ~ L.running.of ~ " ")|css_string }} counter(pages); }
   }
 </style>
+{% if profile_css %}<style>{{ profile_css|safe }}</style>{% endif %}
+{% if machine_graph_css %}<style>{{ machine_graph_css|safe }}</style>{% endif %}
 </head>
-<body>
-{% macro pm(key) %}{% if pagemarks %}<span class="pm">PGMK{{ key }}PGMK</span>{% endif %}{% endmacro %}
+<body class="density-{{ meta.report_density or 'comfortable' }}">
+{% macro pm(key) %}{% if pagemarks %}<span class="pm">PGMK{{ key|fragment }}PGMK</span>{% endif %}{% endmacro %}
 
 {% macro fields(sec) %}
   {% set multi = (sec.fields | selectattr('value') | list | length) > 1 %}
@@ -50,7 +52,7 @@
   <h2 class="sec-title">{{ L.labels.toc }}</h2>
   <ul class="toc-list">
   {% for s in rsections %}
-    <li><a href="#{{ s.key }}"><span class="t">{{ loop.index }}. {{ s.title }}</span><span class="leader"></span><span class="pg">{{ page_map.get(s.key,'') }}</span></a></li>
+    <li><a href="#{{ s.key|fragment }}"><span class="t">{{ loop.index }}. {{ s.title }}</span><span class="leader"></span><span class="pg">{{ page_map.get(s.key,'') }}</span></a></li>
   {% endfor %}
   </ul>
 </section>
@@ -76,24 +78,11 @@
       <tbody>{% for sc in meta.scope %}<tr><td><code>{{ sc.target }}</code></td><td>{{ sc.description }}</td></tr>{% endfor %}</tbody></table>{% endif %}
 
   {% elif s.special == 'summary' %}
-    {% set vulncount = sev_counts.values()|sum %}
-    {% set maxc = [sev_counts.values()|max, 1]|max %}
-    <p class="sum-lead">{{ L.summary.identified }} <b>{{ vulncount }}</b>
-      {{ L.summary.finding if vulncount == 1 else L.summary.findings }} {{ L.summary.rating }}
-      {%- set parts = [] %}{%- for sv in sev_order if sev_counts[sv] > 0 %}{% set _ = parts.append(sev_counts[sv] ~ ' ' ~ L.severity[sv]|lower) %}{% endfor %}
-      {{ parts|join(', ') if parts else L.summary.none }}{% if machine_count == 1 %} {{ L.summary.and_machines_one }}{% elif machine_count > 1 %} {{ L.summary.and_machines_many|replace('{n}', machine_count) }}{% endif %}.</p>
-    <div class="chart-wrap"><svg class="sevchart" viewBox="0 0 370 155" xmlns="http://www.w3.org/2000/svg">
-      <line class="axis" stroke="#d6dbe2" stroke-width="1" x1="14" y1="120" x2="354" y2="120"/>
-      {% for sv in sev_order %}{% set x = 20 + loop.index0 * 68 %}{% set hh = (100 * sev_counts[sv] / maxc)|round(0,'floor')|int %}{% set y = 120 - hh %}
-        {% if sev_counts[sv] > 0 %}<rect class="bar bar-{{ sv }}" fill="{{ chart_colors[sv] }}" x="{{ x }}" y="{{ y }}" width="40" height="{{ hh }}"/><text class="bar-val" font-size="9" font-family="sans-serif" fill="#263244" text-anchor="middle" x="{{ x+20 }}" y="{{ y-5 }}">{{ sev_counts[sv] }}</text>
-        {% else %}<line class="bar-zero" stroke="#d6dbe2" stroke-width="2" x1="{{ x }}" y1="120" x2="{{ x+40 }}" y2="120"/>{% endif %}
-        <text class="bar-lab" font-size="7" font-family="sans-serif" fill="#475569" text-anchor="middle" x="{{ x+20 }}" y="135">{{ L.severity[sv] }}</text>{% endfor %}
-    </svg></div>
-    {% if sum_findings %}<table class="sumtable"><thead><tr><th class="c-n">{{ L.labels.col_num }}</th><th class="c-sev">{{ L.labels.col_sev }}</th><th>{{ L.labels.col_finding }}</th><th class="c-pg">{{ L.labels.col_page }}</th></tr></thead>
-      <tbody>{% for f in sum_findings %}<tr><td class="c-n">{{ loop.index }}</td><td class="c-sev">{% if f.mode == 'machine' %}<span class="sev-chip sev-machine">{{ L.labels.machine }}</span>{% else %}<span class="sev-chip sev-{{ f.severity }}">{{ L.severity[f.severity] }}{% if f.cvss is defined and f.cvss is not none and f.cvss != "" %} <b>{{ f.cvss }}</b>{% endif %}</span>{% endif %}</td><td>{{ f.title }}</td><td class="c-pg">{{ page_map.get(f.id,'') }}</td></tr>{% endfor %}</tbody></table>{% endif %}
+    {% include 'summary_body.html' %}
 
   {% elif s.special == 'findings' %}
     {% for f in findings %}
+      {% set machine_graph = machine_graphs[loop.index0] if machine_graphs else none %}
       <div class="finding mode-{{ f.mode }}{% if f.severity %} sev-{{ f.severity }}{% endif %}" id="{{ f.id }}">
         {% if f.mode == 'machine' %}{% include 'finding_machine.html' %}{% else %}{% include 'finding_vuln.html' %}{% endif %}
       </div>

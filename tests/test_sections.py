@@ -65,6 +65,7 @@ def test_presets_load_and_resolve():
     # contenido base bilingue
     ctf_es = sections.preset_sections("ctf", "es")[0]
     ctf_en = sections.preset_sections("ctf", "en")[0]
-    assert "Walkthrough" in ctf_es.get("summary", "") and ctf_es["summary"] != ctf_en["summary"]
+    assert ctf_es.get("summary", "").startswith("TODO:") and ctf_es["summary"] != ctf_en["summary"]
+    assert "Flags user.txt y root.txt obtenidas" not in ctf_es["summary"]
     # preset inexistente -> default
     assert sections.preset_sections("nope", "es") == sections.default_enabled()

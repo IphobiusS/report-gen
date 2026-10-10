@@ -1,0 +1,67 @@
+meta:
+  lang: en
+  theme: ejecutivo
+  report_title: Security assessment
+  report_subtitle: OSCP / OSCP+ / Fictional sample
+  client: Aurora Lab
+  assessor: Example Analyst
+  date: '2026-10-03'
+  version: '1.0'
+  branding:
+    wordmark: AURORA LAB
+    confidential_text: CONFIDENTIAL
+  design:
+    id: offsec-oscp
+    name: OSCP / OSCP+
+    provider: OffSec
+    certificate: OSCP / OSCP+
+    accent: '#FF5500'
+    background: '#1C1822'
+    layout: rail
+    motif: network
+    schema: 1
+    variant: brand
+    base_theme: ejecutivo
+    guidance_id: offsec-oscp
+  email: analista@example.test
+  osid: LAB-042
+report:
+  sections:
+  - key: sample-summary
+    title: Work summary
+    body: 'This fictional sample demonstrates the report layout. No customer was assessed.
+      The scope is an isolated training environment. Replace this text with the demonstrated
+      results of your own work.
+
+
+      The example documents one permitted validation, the evidence collected and the
+      remaining verification. Technical conclusions require reproducible evidence
+      and explicit limitations.'
+  - key: sample-technical
+    title: Scope and rules
+    body: 'Record the test conditions, version and timestamp before comparing results.
+      In this example, the command inventories a local evidence directory without
+      contacting a target.
+
+
+      ```sh
+
+      find ./evidence -type f -print
+
+      sha256sum ./evidence/session.txt
+
+      ```
+
+
+      The example output is illustrative. Preserve the original files and connect
+      every conclusion to its evidence identifier.
+
+
+      | Evidence | Source | Status |
+
+      |---|---|---|
+
+      | EV-001 | Local session | Illustrative |
+
+      | EV-002 | Configuration snapshot | Illustrative |'
+findings: []
