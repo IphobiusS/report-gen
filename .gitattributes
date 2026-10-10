@@ -1,0 +1,4 @@
+# Content-addressed history uses exact bytes as object and fragment identities.
+# Never translate line endings, including during a Windows autocrlf checkout.
+**/history/objects/* -text
+**/history/fragments/* -text
