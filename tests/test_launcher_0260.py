@@ -148,8 +148,10 @@ def test_source_change_during_validation_stops_before_restoration(workspaces, mo
     assert tree(new) == before and not backups.exists()
 
 
-def test_activation_failure_retains_backup_and_source_for_recovery(workspaces, monkeypatch):
+@pytest.mark.parametrize('backup_name', ['plain', '{customer}'])
+def test_activation_failure_retains_backup_and_source_for_recovery(workspaces, monkeypatch, backup_name):
     old, new, backups = workspaces
+    backups = backups / backup_name
     before = tree(old)
     restore = migration.backup.restore_workspace
     def fail_target(blob, projects, findings, designs):
