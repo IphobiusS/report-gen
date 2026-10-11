@@ -5,7 +5,7 @@ from pathlib import Path
 import engine
 
 from .common import sev_label, cvss_label, summary_sev
-from .images import word_image, fit_width, figure_space
+from .images import word_image, fit_width, figure_space, align_inline_picture
 
 
 def _palette(meta, for_word=False):
@@ -312,7 +312,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             return
         img, size = word_image(fig["src"], engagement_dir)
         caption = f"{L['figure']} {fig.get('number','')}. " + (fig.get('caption') or '')
-        doc.add_picture(img, width=fit_width(doc, size, Cm(15), figure_space(doc, caption)))
+        align_inline_picture(doc.add_picture(img, width=fit_width(doc, size, Cm(15), figure_space(doc, caption))))
         doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
         doc.paragraphs[-1].paragraph_format.keep_with_next = True
         doc.inline_shapes[-1]._inline.docPr.set("descr", (fig.get("caption") or ""))
@@ -378,7 +378,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             with tempfile.TemporaryDirectory(prefix='rg-chart-') as tempdir:
                 chart = Path(tempdir) / 'severity.png'
                 _sev_chart_png(counts, hx, chart, L)
-                doc.add_picture(str(chart), width=Cm(9))
+                align_inline_picture(doc.add_picture(str(chart), width=Cm(9)))
                 doc.inline_shapes[-1]._inline.docPr.set("descr", "report-gen:severity-chart")
         if sumf:
             rows = [[i, summary_sev(L, f), f.get("title") or f.get("id", "")] for i, f in enumerate(sumf, 1)]

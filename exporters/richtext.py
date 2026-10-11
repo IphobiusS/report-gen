@@ -8,7 +8,7 @@ from docx.oxml.ns import qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from safe_markup import md, ordered_list_start
 from .pagination import keep_table_together
-from .images import word_image, fit_width, figure_space
+from .images import word_image, fit_width, figure_space, paragraph_width, align_inline_picture
 from report_layout import table_layout
 
 
@@ -21,17 +21,18 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
             return
         source, size = word_image(node.get("src"), root)
         paragraph = paragraph or document.add_paragraph()
-        width = min(available, Cm(15))
+        containing_width = paragraph_width(document, paragraph)
+        width = min(containing_width, Cm(15))
         requested = re.search(r"width:\s*([\d.]+)(%|cm|mm|in|px|pt)", node.get("style", ""))
         if requested:
             value, unit = float(requested[1]), requested[2]
-            factor = available / 100 if unit == "%" else Cm(1) * {"cm": 1, "mm": .1, "in": 2.54, "px": 2.54/96, "pt": 2.54/72}[unit]
+            factor = containing_width / 100 if unit == "%" else Cm(1) * {"cm": 1, "mm": .1, "in": 2.54, "px": 2.54/96, "pt": 2.54/72}[unit]
             # Clamp before integer conversion: valid decimal syntax can exceed
             # floating-point range, while the page width is always finite.
-            width = int(min(available, value * factor))
-        width = fit_width(document, size, width, figure_space(document, caption if caption is not None else node.get('alt', '')))
+            width = int(min(containing_width, value * factor))
+        width = fit_width(document, size, width, figure_space(document, caption if caption is not None else node.get('alt', ''), width=containing_width))
         run = paragraph.add_run()
-        shape = run.add_picture(source, width=max(Cm(.1), width))
+        shape = align_inline_picture(run.add_picture(source, width=max(Cm(.1), width)))
         if parent is not None: parent.append(run._r)
         shape._inline.docPr.set("descr", node.get("alt", ""))
         if href:

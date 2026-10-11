@@ -13,7 +13,7 @@
   --cover-subtitle:#1c5965; --cover-rule:#1c5965; --cover-wordmark:#182b3b;
   --cover-tag-fg:#1c5965; --cover-tag-border:#c7d5db; --cover-meta-border:#ced6dd;
 }
-.sec-title { font-family:var(--font-heading); font-size:17pt; border:0; padding-bottom:4mm; }
+.sec-title { font-family:var(--font-heading); font-size:17pt; border:0; padding-bottom:0; }
 .sec-num { font-size:12pt; font-family:var(--font-mono); }
 .f-title { font-family:var(--font-heading); }
 .f-head { background:#edf2f5; padding:10px 12px; }

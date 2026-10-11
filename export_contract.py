@@ -17,6 +17,8 @@ W = '{' + NS['w'] + '}'
 # PDFium calls in one process must not run concurrently. Release all native
 # objects inside this lock, including when extraction raises.
 _PDFIUM_LOCK = Lock()
+_PDF_CODE_MAX_STATES = 4096
+_PDF_CODE_MAX_RANGES = 1_000_000
 
 
 def normal(text):
@@ -780,10 +782,153 @@ def _pdf_code_line_pattern(line):
 def _pdf_code_multiplicity(codes, text):
     # Blocks may share individual lines. Count those lines globally so one
     # extracted occurrence cannot satisfy two different authored blocks.
+    # Different logical lines can also compete for the same physical lines:
+    # TOKEN\nAB cannot supply both TOKENAB and the separate TOKEN / AB lines.
     required = Counter(normal(line) for code in codes for line in code.splitlines() if normal(line))
-    for line, count in required.items():
-        if sum(1 for _ in _pdf_code_line_pattern(line).finditer(text)) < count:
-            raise ValueError(backend_message('Texto de código PDF ausente o alterado / Missing or changed PDF code text'))
+    candidates = []
+    candidate_count = 0
+    for line in required:
+        # Retain overlapping alternatives; a greedy finditer can discard the
+        # only occurrence compatible with another requested logical line.
+        pattern = re.compile('(?=(' + _pdf_code_line_pattern(line).pattern + '))', re.M)
+        ranges = []
+        for match in pattern.finditer(text):
+            candidate_count += 1
+            if candidate_count > _PDF_CODE_MAX_RANGES:
+                _pdf_code_check_incomplete()
+            ranges.append(match.span(1))
+        candidates.append(tuple(ranges))
+    if not _pdf_disjoint_code_ranges(tuple(required.values()), tuple(candidates)):
+        raise ValueError(backend_message('Texto de código PDF ausente o alterado / Missing or changed PDF code text'))
+
+
+def _pdf_code_check_incomplete():
+    raise ValueError(backend_message(
+        'No se pudo completar la verificación PDF: ajuste de líneas de código ambiguo. '
+        'La salida no se considera verificada.',
+        en='PDF verification could not be completed: ambiguous code line wrapping. '
+           'The output is not considered verified.'))
+
+
+def _pdf_disjoint_code_ranges(needs, options):
+    """Allocate global text occurrences without reusing physical characters.
+
+    Exact interval allocation, not a greedy choice: ambiguous wraps may have
+    several valid placements. Forced and independent types are discharged
+    first, so ordinary reports and large repeated blocks need no search.
+    This does not establish block association or global source order.
+    """
+    from bisect import bisect_left
+    from heapq import heappop, heappush
+    examined = 0
+
+    def budget(ranges=0, states=0):
+        nonlocal examined
+        examined += ranges
+        if examined > _PDF_CODE_MAX_RANGES or states > _PDF_CODE_MAX_STATES:
+            _pdf_code_check_incomplete()
+
+    def overlap(left, right):
+        return left[0] < right[1] and right[0] < left[1]
+
+    def capacity(ranges):
+        end = -1
+        count = 0
+        for start, stop in sorted(ranges, key=lambda span: (span[1], span[0])):
+            if start >= end:
+                count += 1
+                end = stop
+        return count
+
+    def reduce_state(needs, options):
+        while needs:
+            budget(sum(map(len, options)))
+            if any(capacity(ranges) < need for need, ranges in zip(needs, options)):
+                return None
+            forced = {i for i, (need, ranges) in enumerate(zip(needs, options))
+                      if need == len(ranges)}
+            if forced:
+                taken = sorted(span for i in forced for span in options[i])
+                if capacity(taken) < len(taken):
+                    return None
+                starts = [span[0] for span in taken]
+
+                def available(span):
+                    prior = bisect_left(starts, span[1]) - 1
+                    return prior < 0 or taken[prior][1] <= span[0]
+
+                options = tuple(tuple(span for span in ranges
+                                      if available(span))
+                                for i, ranges in enumerate(options) if i not in forced)
+                needs = tuple(need for i, need in enumerate(needs) if i not in forced)
+                continue
+            # Find types with no competing type. Their own maximum set of
+            # disjoint occurrences is sufficient; choosing it affects no one.
+            active = Counter()
+            ending = []
+            competing = set()
+            for start, end, kind in sorted((start, end, i) for i, ranges in enumerate(options)
+                                            for start, end in ranges):
+                while ending and ending[0][0] <= start:
+                    _, expired = heappop(ending)
+                    active[expired] -= 1
+                    if not active[expired]:
+                        del active[expired]
+                others = active.keys() - {kind}
+                if others:
+                    competing.update(others)
+                    competing.add(kind)
+                active[kind] += 1
+                heappush(ending, (end, kind))
+            if len(competing) == len(needs):
+                return needs, options
+            needs = tuple(need for i, need in enumerate(needs) if i in competing)
+            options = tuple(ranges for i, ranges in enumerate(options) if i in competing)
+        return (), ()
+
+    def branches(needs, options):
+        kind = min(range(len(needs)), key=lambda i: len(options[i]) - needs[i])
+        choices = sorted(options[kind], key=lambda span: (span[1] - span[0], span[0]))
+        for index, taken in enumerate(choices):
+            budget(sum(map(len, options)))
+            next_needs = []
+            next_options = []
+            for i, (need, ranges) in enumerate(zip(needs, options)):
+                if i == kind:
+                    need -= 1
+                    ranges = choices[index + 1:]
+                if need:
+                    next_needs.append(need)
+                    next_options.append(tuple(span for span in ranges if not overlap(span, taken)))
+            yield tuple(next_needs), tuple(next_options)
+
+    # Iterative depth-first search avoids Python recursion limits for a large
+    # collection of ambiguous lines. Generate alternatives lazily and retain
+    # only a bounded memo cache. An explicit work budget fails closed on
+    # adversarial ambiguity, reporting an incomplete check, not lost content.
+    stack = [iter([(needs, options)])]
+    seen = set()
+    states = 0
+    while stack:
+        try:
+            state = next(stack[-1])
+        except StopIteration:
+            stack.pop()
+            continue
+        if state in seen:
+            continue
+        states += 1
+        budget(states=states)
+        if len(seen) >= 2048:
+            seen.clear()
+        seen.add(state)
+        state = reduce_state(*state)
+        if state is None:
+            continue
+        if not state[0]:
+            return True
+        stack.append(branches(*state))
+    return False
 
 
 def _pdf_code_lines(code, text):

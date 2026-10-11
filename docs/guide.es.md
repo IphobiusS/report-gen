@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.32.0
+# Guía de uso de report-gen 0.32.1
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -112,7 +112,9 @@ Los enteros del proyecto deben estar entre −9.007.199.254.740.991 y 9.007.199.
 
 PDF comprueba presencia textual, incluidas celdas de tablas y elementos de listas, imágenes y destinos del índice. La comprobación textual es global: no prueba la posición ni asociación de una celda o elemento. Las envolturas de una línea de código se mantienen en una misma página; una línea que supera la altura imprimible se rechaza conservando la salida anterior. La extracción puede cambiar orden y espacios: no acredita indentación literal ni asociación de bloques. La ficha lo marca como revisión manual requerida. Ningún formato queda certificado visualmente por estos controles.
 
-En **Informe → Espaciado del informe** puedes elegir cómoda o compacta. Es independiente de la densidad visual del editor. El HTML portátil permite filtrar por tipo, severidad pendiente y texto, y restablecer los filtros.
+La verificación PDF reserva ocurrencias físicas independientes para cada línea de código. Si una combinación de saltos ambiguos supera el presupuesto de comprobación, informa que no pudo completar la verificación y conserva la entrega anterior; no acusa pérdida de contenido sin demostrarla.
+
+En **Informe → Espaciado del informe** puedes elegir cómoda o compacta. Es independiente de la densidad visual del editor. El HTML portátil permite filtrar por tipo, severidad pendiente y texto, y restablecer los filtros. PDF y HTML ajustan las URL literales al ancho disponible sin modificar su texto. LibreOffice puede adelantar algunos saltos de URL en DOCX; no se insertan saltos ni caracteres artificiales en el documento para ocultar esa limitación.
 
 Los anexos van exclusivamente en el paquete ZIP bajo `anexos/`, con su hash en `verificacion.json`. Se excluyen hasta que los revises y marques. No se censuran ni se limpian sus metadatos: carga copias ya redactadas. Un anexo seleccionado ausente o alterado bloquea la entrega. Declaraciones pendientes y exclusiones aparecen en los avisos. Al marcar **Obligatorio para entregar**, el paquete queda bloqueado hasta incluir una copia revisada e íntegra, incluso si aceptas los avisos.
 

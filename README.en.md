@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.32.0
+# report-gen 0.32.1
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -49,6 +49,12 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
+## Fixes in 0.32.1
+
+PDF headings use consistent spacing, and evidence frames follow the visible image size without artificial side gutters. Code blocks and literal URLs in PDF and portable HTML use the available line width without changing their text or link destinations. Word figures respect the actual width of lists and table cells.
+
+PDF verification prevents the same physical text fragment from supplying several different code lines. These checks do not replace visual review. In LibreOffice, some Word URLs still wrap before filling the line; no artificial characters or line breaks are inserted to conceal this. Native Microsoft Word review remains pending. [Details and limits](CHANGELOG.md).
+
 ## New in 0.32.0
 
 The library adds independent practice profiles for CRTO, CRTL, BTL1 and BTL2, plus business report structures for executive assurance, incident response and Purple Team validation. It now offers 29 specialized profiles and six general designs, with real Spanish and English samples. Personal sections with only one translation retain their content when the project language changes. [Catalog, references and limitations](docs/design-library.md).
@@ -90,7 +96,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.32.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.32.1 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

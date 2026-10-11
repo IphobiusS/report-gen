@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.32.0
+# report-gen 0.32.1
 
 <a id="qué-es"></a>
 
@@ -59,6 +59,12 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
+## Correcciones de 0.32.1
+
+Los títulos del PDF tienen una separación coherente con el texto y los marcos de evidencia siguen el tamaño visible de la imagen, sin bandas laterales artificiales. Los bloques de código y las URL literales del PDF y HTML portátil aprovechan el ancho de la línea sin modificar el texto ni el destino del enlace. Word limita las figuras al ancho real de listas y celdas.
+
+El verificador PDF impide reutilizar el mismo fragmento físico para justificar varias líneas de código distintas. Estas comprobaciones no sustituyen la revisión visual. En LibreOffice, algunas URL de Word siguen saltando antes de llenar la línea; no se insertan caracteres ni saltos artificiales para ocultarlo. La revisión en Microsoft Word nativo permanece pendiente. [Detalle y límites](CHANGELOG.md).
+
 ## Novedades de 0.32.0
 
 La biblioteca incorpora perfiles independientes de práctica para CRTO, CRTL, BTL1 y BTL2, además de estructuras empresariales para evaluación ejecutiva, respuesta a incidentes y validación Purple Team. Son 29 perfiles especializados y seis diseños generales, con muestras reales en español e inglés. Las secciones personales con una sola traducción conservan su contenido al cambiar el idioma del proyecto. [Catálogo, referencias y límites](docs/design-library.md).
@@ -105,7 +111,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.32.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.32.1 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

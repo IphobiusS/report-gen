@@ -310,12 +310,43 @@ def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=No
 
 
 def _pdf_code_layout(source):
-    """Keep one authored code line and its visual wraps on the same page.
+    """Keep code lines together and let literal URIs fill the available width.
 
     The transient PDF layout preserves every text character. Other export
     formats and the source markup retain their original code representation.
     """
     from lxml import html
+    uri = re.compile(r'\b(?:https?|ftps?)://[^\s<>"\'`]+', re.IGNORECASE)
+
+    def url_breaks(element, text):
+        # WeasyPrint still prefers a slash/hyphen before an overlong URI
+        # segment even with word-break:break-all. Optional HTML break points
+        # fill the available line without adding source text or hard breaks.
+        # Keep every non-ASCII run intact, including combining marks and ZWJ
+        # sequences; its native shaping/overflow handling remains in charge.
+        cursor = 0
+        tail = None
+
+        def append(value):
+            if tail is None:
+                element.text = (element.text or '') + value
+            else:
+                tail.tail = (tail.tail or '') + value
+
+        for match in uri.finditer(text):
+            append(text[cursor:match.start()])
+            token = match.group()
+            start = 0
+            for index in range(len(token) - 1):
+                if '\x21' <= token[index] <= '\x7e' and '\x21' <= token[index + 1] <= '\x7e':
+                    append(token[start:index + 1])
+                    tail = html.Element('wbr')
+                    element.append(tail)
+                    start = index + 1
+            append(token[start:])
+            cursor = match.end()
+        append(text[cursor:])
+
     tree = html.document_fromstring(source)
     changed = False
     for pre in tree.xpath('//pre'):
@@ -334,11 +365,30 @@ def _pdf_code_layout(source):
                 'class': 'rg-pdf-code-line',
                 'style': 'display:inline-block;width:100%;vertical-align:top;'
                          'break-inside:avoid;page-break-inside:avoid'})
-            span.text = line
+            url_breaks(span, line)
             span.tail = '\n' if index < len(parts) - 1 else ''
             content.append(span)
         pre.set('style', pre.get('style', '') +
                 ';break-inside:auto;page-break-inside:auto;orphans:4;widows:4')
+        changed = True
+
+    for element in tree.xpath('//code[not(ancestor::pre)] | //a[not(ancestor::pre)] | '
+                              '//ul[contains(concat(" ", normalize-space(@class), " "), " refs ")]/li'):
+        if len(element):
+            continue  # Nested inline code is handled separately; retain markup.
+        text = element.text or ''
+        if not uri.search(text):
+            continue
+        if element.tag != 'code' and not uri.fullmatch(text.strip()):
+            continue  # A human-readable label is prose, not a literal URI.
+        if element.tag == 'code':
+            # WeasyPrint does not reserve inline decoration when splitting
+            # these fragments: the border can overflow and push a preceding
+            # label onto its own line. Preserve the mono face/background, but
+            # omit the decorative inset only for PDF code containing a URI.
+            element.set('style', element.get('style', '') + ';padding:0;border:0')
+        element.text = None
+        url_breaks(element, text)
         changed = True
     return html.tostring(tree, encoding='unicode', method='html') if changed else source
 

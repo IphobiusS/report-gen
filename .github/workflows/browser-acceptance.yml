@@ -31,7 +31,7 @@ jobs:
         if: matrix.browser == 'chromium'
         run: |
           export REPORT_GEN_CHROMIUM="$(node -p "require('playwright').chromium.executablePath()")"
-          python -m pytest tests/test_portable_report_browser.py --junitxml=out/portable-chromium.xml
+          python -m pytest tests/test_portable_report_browser.py tests/test_portable_literal_wrap_0321.py --junitxml=out/portable-chromium.xml
       - name: Editor dialogs, import validation and mobile keyboard search
         if: matrix.browser == 'chromium'
         run: node tests/test_editor_browser_0213.cjs --output out/editor-chromium

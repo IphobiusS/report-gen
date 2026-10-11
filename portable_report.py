@@ -5,6 +5,7 @@ from html import escape
 from pathlib import Path
 from urllib.parse import unquote
 import mimetypes
+import re
 from lxml import html
 import engine
 import publication
@@ -75,6 +76,21 @@ table.report-fields{table-layout:fixed}
  .report-data td,.report-data th{min-width:0;font-size:inherit;overflow-wrap:anywhere}
 }
 '''
+
+# Literal commands and URLs have no prose word boundaries: use the available
+# line width instead of preferring slashes, hyphens or query separators. CSS
+# changes only visual wrapping, so copied text and link destinations stay exact.
+TEXT_FLOW_STYLE = '''
+pre,code,.report-literal-url{overflow-wrap:anywhere;word-break:break-all;line-break:anywhere}
+@media(max-width:600px){.steps{padding-inline-start:24px}pre{padding:12px}}
+'''
+
+
+def prepare_text_flow(tree):
+    """Mark literal URL labels without changing descriptive link wrapping."""
+    for node in tree.xpath('//a[@href]|//ul[contains(concat(" ",normalize-space(@class)," ")," refs ")]/li'):
+        if re.fullmatch(r'(?:https?|ftp)://\S+', ''.join(node.itertext()).strip(), re.IGNORECASE):
+            node.set('class', ' '.join([*(node.get('class') or '').split(), 'report-literal-url']))
 
 
 def prepare_tables(tree, en=False):
@@ -148,10 +164,11 @@ def build(directory):
         node.set('data-report-kind',finding.get('mode','vuln'))
         node.set('data-report-severity',finding.get('severity') or ('pending' if finding.get('mode')!='machine' else ''))
     prepare_tables(tree, en)
+    prepare_text_flow(tree)
     body=tree.find('body')
     contents=''.join(html.tostring(child,encoding='unicode') for child in body)
     font=b64encode((Path(__file__).parent/'themes/fonts/Carlito-Regular.ttf').read_bytes()).decode()
-    style=STYLE.replace('FONT',font) + TABLE_STYLE
+    style=STYLE.replace('FONT',font) + TABLE_STYLE + TEXT_FLOW_STYLE
     if data['meta'].get('design'):
         from design_render import palette, ink_on
         design=data['meta']['design'];pal=palette(design)

@@ -14,7 +14,7 @@
   --cover-subtitle:#166956; --cover-rule:#166956; --cover-wordmark:#166956;
   --cover-tag-fg:#166956; --cover-tag-border:#166956; --cover-meta-border:#c7d5d0;
 }
-.sec-title { font-size:14pt; border-bottom:1px solid var(--rule); padding-bottom:4mm; }
+.sec-title { font-size:14pt; border-bottom:1px solid var(--rule); }
 .f-head { background:#edf4f1; border-left-width:3px; }
 .f-title { font-family:var(--font-heading); }
 pre.cmd { border-left-width:2px; }

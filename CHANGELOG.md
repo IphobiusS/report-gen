@@ -1,3 +1,14 @@
+# Cambios 0.32.1 (2026-10-11)
+
+- El PDF normaliza el interlineado y la separación de los títulos de sección y los encabezados Markdown. Ejecutivo y Laboratorio dejan de sumar un relleno inferior desproporcionado al margen del título.
+- Los marcos de las figuras siguen la proporción y el tamaño visible de la imagen, incluso al alcanzar el límite de altura. Desaparecen las bandas vacías laterales sin recortar, recomprimir ni modificar la evidencia fuente.
+- El código y las URL literales del PDF disponen de oportunidades de ruptura visual para utilizar el ancho disponible. La preparación pertenece únicamente al renderizador PDF; conserva el texto fuente, los saltos explícitos y los destinos. Los grafemas Unicode no se separan.
+- El HTML portátil aplica el ajuste continuo a código y etiquetas que son URL literales; los enlaces con texto descriptivo conservan el ajuste normal de prosa. Las listas de pasos y el relleno del código mantienen un ancho útil en pantallas estrechas con texto ampliado.
+- Word calcula las figuras según la sangría de la lista y el ancho interior de la celda. Fija explícitamente las distancias de los dibujos en línea para evitar desplazamientos implícitos en LibreOffice. Las leyendas reservan espacio según su ancho real.
+- La verificación PDF exige ocurrencias físicas independientes para las líneas de código: una línea envuelta ya no puede justificar simultáneamente otro bloque ausente. Una búsqueda ambigua que agota su presupuesto de trabajo detiene la entrega con un error de verificación no completada y conserva la salida anterior. Conserva los límites de presencia global: no certifica asociación entre bloques, orden global ni espacios literales de PDF.
+- Las regresiones incluyen documentos realmente incompletos, URLs con puntuación, tablas y listas con imágenes anchas, conservación de imágenes y comprobaciones de texto copiado. La aceptación Chromium ejecuta también los nuevos casos de ajuste de enlaces.
+- Límite conocido: LibreOffice sigue adelantando algunos saltos de URL en DOCX. No se añaden caracteres invisibles ni saltos artificiales al contenido para simular un ajuste correcto. Microsoft Word nativo requiere su propia revisión.
+
 # Cambios 0.32.0 (2026-10-11)
 
 - La biblioteca añade cuatro perfiles de práctica e investigación para CRTO, CRTL, BTL1 y BTL2, y tres estructuras empresariales: evaluación ejecutiva, respuesta a incidentes y validación Purple Team. Cada perfil incluye orientación ES/EN, referencias y apartados propios. No se atribuyen requisitos de examen ni colores oficiales sin respaldo.
