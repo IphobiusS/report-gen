@@ -49,6 +49,30 @@ const server=spawn(process.env.RG_PYTHON||'python',[root+'/scripts/browser-serve
  await page.evaluate(async()=>{await doSave();});await page.waitForFunction(()=>$('#previewFreshness').dataset.stale==='false'&&$('#pdfPreview').contentDocument?.querySelector('[data-rg-preview-current] .f-title')?.textContent==='Newer local draft while preview loads');check('Saving the draft replaces the snapshot and keeps the selected finding aligned',(await aligned()).id===await page.evaluate(()=>S.data.findings[15].id));
  const previewBeforeHidden=previewRequests;await page.evaluate(()=>setPreviewVisible(false));await page.evaluate(()=>select('finding',10));await page.waitForTimeout(100);check('Toggled hidden preview produces no render request',previewRequests===previewBeforeHidden);
  await page.setViewportSize({width:390,height:844});await page.evaluate(()=>setPreviewVisible(true));await page.evaluate(()=>select('finding',11));await page.waitForTimeout(100);check('A pane hidden by mobile CSS produces no render request',previewRequests===previewBeforeHidden);
+ // An optional CVSS 4.0 context must survive both display and a base-control edit.
+ const contextualVector='CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:U/CR:L/IR:L/AR:L/MAV:P/S:N/AU:Y/R:U/V:C/RE:H/U:Red';
+ await page.evaluate(async vector=>{const f=S.data.findings[11],r=CVSS40.score(vector);Object.assign(f,{cvss_version:'4.0',cvss:String(r.score),cvss_vector:vector,severity:r.severity,macrovector:r.macrovector});scheduleSave();await doSave();select('finding',11);},contextualVector);
+ for(const language of ['es','en']){
+   await page.evaluate(language=>setUiLang(language),language);await page.locator('details.cvss-details>summary').click();
+   check(language+' CVSS 4.0 displays the complete saved 3.2 context, rather than base-only 10.0',await page.locator('.cvss-score-big').textContent()==='3.2'&&await page.locator('.cvss-vec').textContent()===contextualVector);
+ }
+ await page.locator('.cvssbox select').first().selectOption('A');await page.evaluate(async()=>{await doSave();await loadProject(S.slug);select('finding',11);});
+ check('Editing a CVSS 4.0 base control retains all optional metrics after a real save and reload',await page.evaluate(expected=>S.data.findings[11].cvss_vector===expected&&S.data.findings[11].cvss==='3.2',contextualVector.replace('/AV:N/','/AV:A/')));
+ await page.evaluate(()=>setUiLang('es'));
+ // Deliberately hold an actual validation response while its source changes.
+ async function holdValidation(change){
+   let release,received=false;const wait=new Promise(resolve=>release=resolve),pattern=base+'/api/validate?lang=*';
+   await context.route(pattern,async route=>{const response=await route.fetch();received=true;await wait;await route.fulfill({response});});
+   await page.evaluate(()=>{window.auditValidation=runValidation();});
+   for(let n=0;!received&&n<200;n++)await page.waitForTimeout(20);assert.ok(received,'Validation response held');
+   await change();release();await page.evaluate(()=>window.auditValidation);await context.unroute(pattern);
+ }
+ await holdValidation(()=>page.locator('[data-field="title"]').first().fill('Edited while validation responds'));
+ check('Validation for an older draft cannot publish a badge or dialog over newer edits',await page.evaluate(()=>!$('#validateBtn').matches('.ok,.has-err,.has-warn')&&!$('#validateModal')));
+ await page.evaluate(async()=>{await doSave();await requireOk(await api.post('/api/projects',{slug:'navigation-validation-other',title:'Other validation project',client:'Synthetic entity'}));await refreshProjects();});
+ await holdValidation(()=>page.evaluate(async()=>{await loadProject('navigation-validation-other');}));
+ check('Validation for the previous project cannot mark or interrupt the replacement project',await page.evaluate(()=>S.slug==='navigation-validation-other'&&!$('#validateBtn').matches('.ok,.has-err,.has-warn')&&!$('#validateModal')));
+ await page.evaluate(async()=>{await loadProject('navigation-fixture');select('finding',11);});
  await page.screenshot({path:out+'/finding-navigation-mobile.png',fullPage:true});
  await page.setViewportSize({width:320,height:844});
  const textGrowth=await page.evaluate(()=>{const button=document.querySelector('[data-finding-step="1"]'),before=parseFloat(getComputedStyle(button).fontSize);const sizes=[...document.querySelectorAll('*')].filter(el=>el instanceof HTMLElement).map(el=>[el,parseFloat(getComputedStyle(el).fontSize)]);sizes.forEach(([el,size])=>el.style.fontSize=size*2+'px');return {before,after:parseFloat(getComputedStyle(button).fontSize)};});

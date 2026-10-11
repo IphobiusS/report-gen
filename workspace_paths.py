@@ -21,6 +21,26 @@ ENVIRONMENT_KEY = 'REPORT_GEN_WORKSPACE'
 BROWSER_ID_FILE = '.report-gen-browser-id'
 
 
+def portable_project_slug(slug):
+    """Keep a normalized *new* project name usable on supported filesystems.
+
+    Windows device names also apply to directories, including COM/LPT followed
+    by a superscript digit. Reserve room for download suffixes and measure UTF-8
+    bytes as well as characters: supplementary-plane letters use four bytes.
+    Callers resolving an existing project must retain its original identity.
+    """
+    devices = {'con', 'prn', 'aux', 'nul',
+               *(prefix + number for prefix in ('com', 'lpt')
+                 for number in (*'123456789', '¹', '²', '³'))}
+    if slug.casefold() in devices:
+        slug += '-project'
+    truncated = False
+    while len(slug.encode('utf-8')) > 240:
+        slug = slug[:-1]
+        truncated = True
+    return (slug.rstrip('-') if truncated else slug) or 'engagement'
+
+
 @dataclass(frozen=True)
 class WorkspacePaths:
     root: Path

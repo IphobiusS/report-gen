@@ -1,3 +1,14 @@
+# Cambios 0.31.1 (2026-10-11)
+
+- El editor conserva métricas opcionales CVSS 4.0 al calcular, editar, guardar y recargar; evita mostrar una puntuación base diferente de la del vector completo.
+- Las respuestas de validación quedan ligadas al proyecto, revisión e idioma que las solicitaron. Editar o cambiar de proyecto retira resultados anteriores.
+- Los nombres de proyectos nuevos evitan dispositivos reservados de Windows y limitan bytes UTF-8, manteniendo el acceso a proyectos heredados. La restauración integral rechaza nombres no portables antes de activarlos.
+- Verificar el último respaldo conserva los avisos de retención todavía pendientes. La restauración de diseños personales valida revisiones, identidades únicas y metadatos antes de activarlos.
+- Markdown y DOCX conservan literalmente nombres de cliente y evaluador que contienen sintaxis Markdown. El verificador distingue encabezados dentro de un hallazgo, anclas de ejemplo en código y títulos visibles coincidentes sin permitir mover contenido entre hallazgos.
+- DOCX limita dimensiones de imagen extremas antes de convertirlas, evitando desbordamientos al exportar Markdown válido con atributos desmesurados.
+- Requisito mínimo corregido a Python 3.11 por las dependencias fijadas. Los lanzadores rechazan versiones anteriores antes de modificar el entorno; CI sigue validando Python 3.12.
+- Pruebas de regresión para cada defecto, incluidos nombres portables en Windows, métricas CVSS completas en ambos idiomas y exportaciones en los cuatro formatos. Word nativo y las sesiones humanas continúan pendientes.
+
 # Cambios 0.31.0 (2026-10-10)
 
 - Respaldo periódico local desactivado por defecto: destino externo explícito, frecuencia, retención de copias propias, verificación mediante restauración temporal y estado privado por workspace. Requiere mantener el servidor abierto; las copias no se cifran ni incluyen borradores del navegador.

@@ -66,7 +66,7 @@ def _md_sections(data, meta, L):
                 if f["type"] == "markdown":
                     W(v + "\n")
                 elif f["type"] == "text":
-                    W(v + "\n")
+                    W(md_text(v) + "\n")
                 elif f["type"] == "table":
                     cols = f.get("columns", [])
                     W("| " + " | ".join(c["label"] for c in cols) + " |")
@@ -76,11 +76,11 @@ def _md_sections(data, meta, L):
                     W("")
                 elif f["type"] == "list":
                     for it in v:
-                        W(f"- {it}")
+                        W(f"- {md_text(it)}")
                     W("")
             elif f.get("default_lang"):
                 for para in L["prose"][f["default_lang"]]:
-                    W(para.replace("{client}", client).replace("{assessor}", meta.get("assessor") or "") + "\n")
+                    W(md_text(para.replace("{client}", client).replace("{assessor}", meta.get("assessor") or "")) + "\n")
 
     for i, s in enumerate(rsecs, 1):
         W(anchor(s["key"]))
@@ -165,7 +165,7 @@ def to_markdown(data, meta, L, engagement_dir):
     else:
         client = (meta.get("client") or lab["client"]).rstrip(".")
         for para in L["prose"]["confidentiality"]:
-            W(para.replace("{client}", client) + "\n")
+            W(md_text(para.replace("{client}", client)) + "\n")
 
     # Contactos
     contacts = meta.get("contacts") or {}
@@ -189,7 +189,7 @@ def to_markdown(data, meta, L, engagement_dir):
     else:
         client = (meta.get("client") or lab["client"]).rstrip(".")
         for para in L["prose"]["approach"]:
-            W(para.replace("{assessor}", meta.get("assessor") or lab["team"]).replace("{client}", client) + "\n")
+            W(md_text(para.replace("{assessor}", meta.get("assessor") or lab["team"]).replace("{client}", client)) + "\n")
     if meta.get("scope"):
         W(f"### {lab['scope']}\n")
         W(f"| {lab['target']} | {lab['description']} |")
@@ -327,14 +327,41 @@ def anchor(identity):
 
 
 def parse_exported(source):
-    """Only consume the anchors emitted by this exporter; raw user HTML remains text."""
+    """Keep report boundaries separate from authored headings and literal code."""
     from safe_markup import md
     from lxml import html
     from html import unescape
+    from uuid import uuid4
+    prefix='RGEXPORTEDANCHOR'+uuid4().hex+'X'
+    while prefix in source:
+        prefix='RGEXPORTEDANCHOR'+uuid4().hex+'X'
+    markers={}
+    def protect(match):
+        marker=prefix+str(len(markers))+'X'
+        markers[marker]=(unescape(match[1]),match[0].removesuffix('\n'))
+        return marker+'\n'
     pattern=re.compile(r'^<a id="([^"<>]+)"></a>\n(?=\s*#{1,6} )',re.M)
-    ids=[unescape(m[1]) for m in pattern.finditer(source)]
+    tree=html.fragment_fromstring(str(md(pattern.sub(protect,source),img_base='')),create_parent='main')
+    ids=[]
+    # Protect escaped identities from inline Markdown parsing, then let the
+    # parser determine whether the marker is a boundary or literal code.
+    # Only standalone paragraphs immediately before headings are boundaries.
+    for node in list(tree):
+        following=node.getnext()
+        marker=markers.get(node.text or '')
+        if (node.tag=='p' and len(node)==0 and marker and following is not None
+                and following.tag in {'h1','h2','h3','h4','h5','h6'}):
+            ids.append(marker[0])
+            following.set('data-rg-anchor',marker[0])
+            tree.remove(node)
+    # A matching source line inside fenced/inline code stays exact text.
+    token=re.compile(re.escape(prefix)+r'\d+X')
+    def restore(value):
+        return token.sub(lambda match:markers[match[0]][1],value) if value else value
+    for node in tree.iter():
+        node.text=restore(node.text)
+        node.tail=restore(node.tail)
     if len(ids)!=len(set(ids)):raise ValueError(backend_message('Identificadores Markdown duplicados'))
-    tree=html.fragment_fromstring(str(md(pattern.sub('',source),img_base='')),create_parent='main')
     # Validate every internal destination against trusted emitted anchors.
     # Authored subsection links must target an explicit report section/finding.
     from urllib.parse import unquote

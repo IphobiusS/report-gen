@@ -1,4 +1,4 @@
-# report-gen 0.30.0 user guide
+# report-gen 0.31.1 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -6,7 +6,7 @@ Unless stated otherwise, run commands from the project root containing `start.py
 
 ## Install and launch
 
-Primary installation path: Linux/Kali with Python 3.10+. Windows compatibility tests do not replace document review in desktop Microsoft Word.
+Primary installation path: Linux/Kali with Python 3.11+. Windows compatibility tests do not replace document review in desktop Microsoft Word.
 
 Download and extract the ZIP from the [latest Release](https://github.com/IphobiusS/report-gen/releases/latest). From that directory:
 
@@ -15,7 +15,7 @@ python3 scripts/install.py --desktop --lang en
 ~/.local/bin/report-gen
 ```
 
-The first command installs dependencies into `.venv` using the audited constraints and creates `~/.local/bin/report-gen`. `--desktop` also adds an application-menu shortcut that opens a terminal. Installation needs connectivity, Python 3.10+ and venv support; it does not use `sudo` or install system packages. This is not a standalone executable: retain the extracted application directory and `.venv`. The shortcut points to that location and the chosen workspace; subsequent launches do not reinstall or download dependencies. If you move the application, rerun the installer from its new location.
+The first command installs dependencies into `.venv` using the audited constraints and creates `~/.local/bin/report-gen`. `--desktop` also adds an application-menu shortcut that opens a terminal. Installation needs connectivity, Python 3.11+ and venv support; it does not use `sudo` or install system packages. This is not a standalone executable: retain the extracted application directory and `.venv`. The shortcut points to that location and the chosen workspace; subsequent launches do not reinstall or download dependencies. If you move the application, rerun the installer from its new location.
 
 Workspace selection is `--workspace`, then `REPORT_GEN_WORKSPACE`, then `$XDG_DATA_HOME/report-gen` or `~/.local/share/report-gen`. For example, `python3 scripts/install.py --desktop --workspace /path/to/data --lang en` selects a specific external directory. Existing data is not migrated automatically: read the migration instructions before interpreting an empty list as lost projects.
 

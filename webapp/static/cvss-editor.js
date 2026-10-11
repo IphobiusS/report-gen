@@ -165,10 +165,18 @@ function cvss4Widget(f, sevSel) {
   if (!window.CVSS40) { c.append(h("p", { class: "cvss-vec" }, S.uiLang==="en"?"CVSS 4.0 calculator could not load":"No se pudo cargar la calculadora CVSS 4.0")); return c; }
   const C = window.CVSS40;
   const base = {};
-  if ((f.cvss_vector || "").startsWith("CVSS:4.0/")) {
-    try { const p = C.parseVector(f.cvss_vector); CVSS4_BASE.forEach(k => { base[k] = p[k]; }); } catch (_) { /* re-init */ }
+  // The controls edit base metrics, but the score and saved vector must retain
+  // every threat, environmental and supplemental metric supplied by the user.
+  if (f.cvss_vector) {
+    try { Object.assign(base, C.parseVector(f.cvss_vector)); }
+    catch (_) { c.append(h('p', {class:'cvss-paste-err', role:'status'}, t('cvss_paste_bad'))); }
   }
   CVSS4_BASE.forEach(k => { if (!base[k]) base[k] = CVSS4_OPTS[k][0][0]; });
+  if (Object.keys(base).some(k => !CVSS4_BASE.includes(k))) {
+    c.append(h('p', {class:'field-hint'}, S.uiLang === 'en'
+      ? 'Optional metrics in the pasted vector are included in the score and preserved when editing base metrics. Edit the full vector to change them.'
+      : 'Las métricas opcionales del vector pegado se incluyen en la puntuación y se conservan al editar las métricas base. Modifica el vector completo para cambiarlas.'));
+  }
   const bx = h("div", { class: "cvssbox" });
   const out = h("div", { class: "cvssout" });
   function draw(r) {

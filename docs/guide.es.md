@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.30.0
+# Guía de uso de report-gen 0.31.1
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -6,7 +6,7 @@ Todos los comandos se ejecutan desde la raíz del proyecto, donde está `start.p
 
 ## Instalar y abrir
 
-Ruta prioritaria: Linux/Kali con Python 3.10 o superior. Las pruebas de compatibilidad de Windows no sustituyen la revisión de documentos en Microsoft Word de escritorio.
+Ruta prioritaria: Linux/Kali con Python 3.11 o superior. Las pruebas de compatibilidad de Windows no sustituyen la revisión de documentos en Microsoft Word de escritorio.
 
 Descarga y descomprime el ZIP de la [última Release](https://github.com/IphobiusS/report-gen/releases/latest). Desde su carpeta:
 
@@ -15,7 +15,7 @@ python3 scripts/install.py --desktop
 ~/.local/bin/report-gen
 ```
 
-El primer comando instala las dependencias en `.venv` con las restricciones auditadas y crea `~/.local/bin/report-gen`. `--desktop` añade también un acceso al menú de aplicaciones que abre una terminal. La instalación necesita conexión, Python 3.10+ y soporte para venv; no usa `sudo` ni instala paquetes del sistema. No es un ejecutable autónomo: conserva la carpeta descomprimida y `.venv`. El acceso apunta a esa ubicación y al espacio de trabajo elegido; abrirlo después no reinstala ni descarga dependencias. Si mueves la aplicación, vuelve a ejecutar el instalador desde su nueva ubicación.
+El primer comando instala las dependencias en `.venv` con las restricciones auditadas y crea `~/.local/bin/report-gen`. `--desktop` añade también un acceso al menú de aplicaciones que abre una terminal. La instalación necesita conexión, Python 3.11+ y soporte para venv; no usa `sudo` ni instala paquetes del sistema. No es un ejecutable autónomo: conserva la carpeta descomprimida y `.venv`. El acceso apunta a esa ubicación y al espacio de trabajo elegido; abrirlo después no reinstala ni descarga dependencias. Si mueves la aplicación, vuelve a ejecutar el instalador desde su nueva ubicación.
 
 El instalador elige `--workspace` si lo proporcionas, después `REPORT_GEN_WORKSPACE`, y por último `$XDG_DATA_HOME/report-gen` o `~/.local/share/report-gen`. Por ejemplo, `python3 scripts/install.py --desktop --workspace /ruta/datos` prepara una carpeta externa concreta. No mueve datos heredados automáticamente: consulta la migración antes de interpretar una lista vacía como pérdida de proyectos.
 

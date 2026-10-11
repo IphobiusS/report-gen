@@ -172,7 +172,7 @@ def release_body(repo, metadata, receipts):
     return (f'<!-- report-gen-release-v1:{metadata["commit"]} -->\n'
             f'{match.group(1).strip()}\n\n'
             f'## Descarga verificada\n\nCommit: `{metadata["commit"]}`\n\n'
-            'El ZIP adjunto contiene las fuentes y el instalador local. Requiere Python 3.10+ '
+            'El ZIP adjunto contiene las fuentes y el instalador local. Requiere Python 3.11+ '
             '(validado con 3.12) y conexión para instalar dependencias; no es un ejecutable autónomo. '
             'En Linux/Kali: descomprime, entra en la carpeta y ejecuta '
             '`python3 scripts/install.py --desktop`. El instalador no ejecuta sudo ni instala paquetes del sistema. '

@@ -314,7 +314,9 @@ class BackupRoutine:
                 folder = self._directory(state)
                 self._restore_check(self._archive(folder, state['records'][-1]), folder)
                 state['last_verified'] = self.clock()
-                state['last_error'] = None
+                # Checking the newest copy does not resolve older archives that
+                # could not be rotated. Keep that pending work visible.
+                state['last_error'] = 'retention_pending' if len(state['records']) > state['retention'] else None
                 self._save(state)
                 self.transient_error = None
                 return self.status()

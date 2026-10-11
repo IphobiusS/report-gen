@@ -21,6 +21,7 @@ import finding_library
 import project_history as history
 from input_guard import load_json, MAX_DOCUMENT_BYTES
 from storage import atomic_write
+from workspace_paths import portable_project_slug
 
 MAX_ARCHIVE = history.MAX_ARCHIVE
 MAX_EXPANDED = history.MAX_EXPANDED
@@ -33,7 +34,8 @@ CLEANUP_WARNING = 'Restauración completada; queda limpieza privada pendiente. S
 def _slug(value):
     return (isinstance(value, str) and 1 <= len(value) <= 80
             and value == value.lower() and not value.startswith('-')
-            and all(c.isalnum() or c in '-_' for c in value))
+            and all(c.isalnum() or c in '-_' for c in value)
+            and portable_project_slug(value) == value)
 
 
 def _targets(projects, findings, designs):

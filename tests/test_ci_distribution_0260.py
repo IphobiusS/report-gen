@@ -1,12 +1,16 @@
 """Release reproducibility and proof that parallel CI cannot silently lose tests."""
 
 import importlib.util
+from importlib import metadata
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
+import tomllib
 import zipfile
 
+from packaging.specifiers import SpecifierSet
 import pytest
 
 
@@ -22,6 +26,26 @@ def load_script(name):
 
 ci = load_script("ci-pytest")
 release = load_script("build-release")
+
+
+def test_declared_python_floor_matches_audited_dependency_metadata():
+    project = tomllib.loads((ROOT / 'pyproject.toml').read_text(encoding='utf-8'))
+    minimum = re.fullmatch(r'>=(\d+\.\d+)', project['project']['requires-python'])
+    assert minimum, 'Keep an explicit supported Python floor'
+    version = minimum.group(1) + '.0'
+    checked = set()
+    for name in re.findall(r'^([A-Za-z0-9_.-]+)==',
+                           (ROOT / 'requirements-audited.txt').read_text(), re.M):
+        try:
+            package = metadata.distribution(name)
+        except metadata.PackageNotFoundError:
+            # Preview/signing extras are optional in a base test environment.
+            continue
+        requirement = package.metadata.get('Requires-Python')
+        assert not requirement or version in SpecifierSet(requirement), (
+            f'{name} {package.version} requires Python {requirement}, but report-gen promises {version}')
+        checked.add(name.lower())
+    assert {'markdown', 'fonttools'} <= checked
 
 
 def sample_receipts():

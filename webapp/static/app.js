@@ -158,6 +158,7 @@ function applyStaticI18n() {
   }
 }
 function setUiLang(lang) {
+  invalidateValidation();
   S.uiLang = lang;
   try { localStorage.setItem("rg.uiLang", lang); } catch (_) {}
   const b = document.getElementById("langToggle"); if (b) b.textContent = lang.toUpperCase();
@@ -220,6 +221,7 @@ const projectStore = new ProjectStore(appFetch, (state, error) => {
 });
 window.addEventListener("beforeunload", e => { if (projectStore.dirty) { e.preventDefault(); e.returnValue = t("unsaved"); } });
 function scheduleSave() {
+  invalidateValidation();
   if(typeof WorkbenchUI!=="undefined")WorkbenchUI.dirty();
   projectStore.data = S.data;
   projectStore.changed();
@@ -279,20 +281,33 @@ function toggleUiTheme() {
   const cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
   applyUiTheme(cur === "light" ? "dark" : "light");
 }
+let validationGeneration = 0;
+function invalidateValidation() {
+  validationGeneration++;
+  const badge = $("#validateBtn");
+  if (badge) { badge.classList.remove("has-err", "has-warn", "ok"); badge.textContent = "\u2713"; badge.removeAttribute('aria-busy'); }
+  const modal = $("#validateModal");
+  if (modal) { closeModal(modal); modal.remove(); }
+}
 async function runValidation() {
   if (!S.data) return;
-  const badge = $("#validateBtn");
+  const badge = $("#validateBtn"), generation = ++validationGeneration;
+  const slug = S.slug, data = S.data, revision = projectStore.revision, language = S.uiLang;
+  const current = () => generation === validationGeneration && slug === S.slug && data === S.data && revision === projectStore.revision && language === S.uiLang;
+  badge.setAttribute('aria-busy', 'true');
   try {
     const r = await appFetch("/api/validate?lang=" + (S.uiLang || "es"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(S.data) });
     await requireOk(r);
     const d = await r.json(); const issues = d.issues || [];
+    if (!current()) return;
     badge.classList.remove("has-err", "has-warn", "ok");
     if (!issues.length) { badge.classList.add("ok"); badge.textContent = "\u2713"; toast(t("validate_ok"), "ok"); return; }
     const errs = issues.filter(i => i.level === "error").length;
     badge.classList.add(errs ? "has-err" : "has-warn");
     badge.textContent = String(issues.length);
     showValidationPanel(issues);
-  } catch (error) { toast(error.message, "err"); }
+  } catch (error) { if (current()) toast(error.message, "err"); }
+  finally { if (current()) badge.removeAttribute('aria-busy'); }
 }
 function showValidationPanel(issues) {
   let m = document.getElementById("validateModal");
@@ -370,6 +385,7 @@ function renderProjectSelect() {
 }
 async function loadProject(slug) {
   if (projectStore.loading) return;
+  invalidateValidation();
   if(typeof WorkbenchUI!=="undefined")WorkbenchUI.position();
   invalidateLivePreview();
   busyProject(true);
@@ -582,6 +598,7 @@ function renderMain() {
 // Successful server mutations must advance the local revision too: otherwise
 // a cached preview could incorrectly keep its "Current revision" label.
 async function adoptSavedProject(data, etag) {
+  invalidateValidation();
   S.data=data;projectStore.data=data;projectStore.base=JSON.parse(JSON.stringify(data));projectStore.etag=etag;
   projectStore.revision++;projectStore.savedRevision=projectStore.revision;projectStore.lastSavedAt=new Date();projectStore.lastError=null;
   let draftCleanupFailed=false;

@@ -445,7 +445,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
                 elif f.get("default_lang"):
                     client = (meta.get("client") or lab["client"]).rstrip(".")
                     for para in L["prose"][f["default_lang"]]:
-                        add_markdown(para.replace("{client}", client).replace("{assessor}", meta.get("assessor") or ""))
+                        doc.add_paragraph(para.replace("{client}", client).replace("{assessor}", meta.get("assessor") or ""))
 
         for i, s in enumerate(rsecs, 1):
             if i > 1: newpage()
@@ -490,7 +490,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     else:
         client = (meta.get("client") or lab["client"]).rstrip(".")
         for para in L["prose"]["confidentiality"]:
-            add_markdown(para.replace("{client}", client))
+            doc.add_paragraph(para.replace("{client}", client))
 
     # Contactos
     contacts = meta.get("contacts") or {}
@@ -509,7 +509,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     else:
         client = (meta.get("client") or lab["client"]).rstrip(".")
         for para in L["prose"]["approach"]:
-            add_markdown(para.replace("{assessor}", meta.get("assessor") or lab["team"]).replace("{client}", client))
+            doc.add_paragraph(para.replace("{assessor}", meta.get("assessor") or lab["team"]).replace("{client}", client))
     if meta.get("scope"):
         heading(lab["scope"], 2)
         data_table([lab["target"], lab["description"]], [[s.get("target", ""), s.get("description", "")] for s in meta["scope"]])

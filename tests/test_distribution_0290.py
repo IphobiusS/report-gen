@@ -263,6 +263,16 @@ def test_default_workspace_is_stable_and_override_explicit(tmp_path):
         installer.default_workspace({'XDG_DATA_HOME': 'relative'})
 
 
+def test_installer_rejects_python_310_before_preparing_application(monkeypatch, capsys):
+    monkeypatch.setattr(installer.sys, 'platform', 'linux')
+    monkeypatch.setattr(installer.sys, 'version_info', (3, 10, 19))
+    monkeypatch.setattr(installer, 'install', lambda *args: pytest.fail('Unsupported Python must not install'))
+    with pytest.raises(SystemExit) as caught:
+        installer.main([])
+    assert caught.value.code == 2
+    assert 'Python 3.11+' in capsys.readouterr().err
+
+
 @pytest.mark.skipif(os.name != 'posix', reason='Linux shell launcher')
 def test_real_launcher_preserves_spaces_quotes_shell_symbols_and_arguments(tmp_path):
     root = tmp_path / "application with '$() and spaces"

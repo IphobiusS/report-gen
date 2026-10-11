@@ -84,7 +84,7 @@ def register(api):
     def import_project():
         file = request.files.get('file')
         if not file: abort(400, backend_message('Selecciona un respaldo ZIP de proyecto'))
-        slug = api.slugify(request.form.get('slug', '') or Path(file.filename or '').stem)
+        slug = api.slugify(request.form.get('slug', '') or Path(file.filename or '').stem, new=True)
         target = api.PROJECTS / slug
         if target.exists() or any(path.name.casefold() == slug.casefold() for path in api.PROJECTS.iterdir()):
             abort(409, backend_message('Ese proyecto ya existe o tiene un nombre equivalente en mayúsculas o Unicode. Usa otro nombre para importar una copia'))

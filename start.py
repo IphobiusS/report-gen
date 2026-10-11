@@ -157,8 +157,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not 1024 <= args.port <= 65535:
         parser.error('Port / Puerto: 1024–65535')
-    if sys.version_info < (3, 10):
-        parser.error('Python 3.10+ required / necesario; validated with 3.12')
+    if sys.version_info < (3, 11):
+        parser.error('Python 3.11+ required / necesario; validated with 3.12')
     if args.setup and (args.ready or args.upgrade_from):
         parser.error('--setup instala y termina / installs and stops; use --ready for the combined flow')
     if args.diagnose and (args.ready or args.upgrade_from):

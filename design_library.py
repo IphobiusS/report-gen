@@ -95,10 +95,18 @@ def guidance(data):
 def load_personal(path):
     path=Path(path)
     result=load_json_file(path) if path.is_file() else {'format':'report-gen-designs','version':1,'templates':[]}
-    if not isinstance(result,dict) or result.get('format')!='report-gen-designs' or result.get('version')!=1 or not isinstance(result.get('templates'),list) or len(result['templates'])>200:
+    if not isinstance(result,dict) or result.get('format')!='report-gen-designs' or type(result.get('version')) is not int or result['version']!=1 or not isinstance(result.get('templates'),list) or len(result['templates'])>200:
         raise ValueError(backend_message('Biblioteca de diseños inválida'))
+    seen = set()
     for p in result['templates']:
         if not isinstance(p,dict) or not re.fullmatch(r'custom-[a-f0-9]{32}',str(p.get('id',''))): raise ValueError(backend_message('Plantilla personal inválida'))
+        if p['id'] in seen: raise ValueError(backend_message('Plantilla personal inválida'))
+        seen.add(p['id'])
+        text(p.get('name'), 'Nombre')
+        # Older personal templates may omit the counter (the next edit starts
+        # at one); a present counter must be safe to increment after restore.
+        if 'revision' in p and (type(p['revision']) is not int or p['revision'] < 1):
+            raise ValueError(backend_message('Plantilla personal inválida'))
         validate_design(p.get('design'))
         validate_sections(p.get('sections'))
     return result

@@ -6,6 +6,7 @@ const path=require('node:path');
 const {JSDOM}=require('jsdom');
 const root=path.resolve(process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..'));
 const CVSS31=require(path.join(root,'webapp/static/cvss31.js'));
+const CVSS40=require(path.join(root,'webapp/static/cvss40.js'));
 const valid='CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H';
 const invalid=[
   'CVSS:3.1/AV:N', valid.replace('/S:U/','/S:Z/'), valid+'/AV:N',
@@ -45,6 +46,33 @@ function editor(language, finding){
 }
 
 for(const language of ['es','en']){
+  test(language+': CVSS 4.0 displays and preserves threat, environmental and supplemental metrics',()=>{
+    const vector='CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:U/CR:L/IR:L/AR:L/MAV:P/S:N/AU:Y/R:U/V:C/RE:H/U:Red';
+    const result=CVSS40.score(vector),finding={title:'Contextual score',cvss_version:'4.0',cvss:String(result.score),cvss_vector:vector,severity:result.severity,macrovector:result.macrovector};
+    const before=JSON.stringify(finding),dom=editor(language,finding);
+    try{
+      assert.equal(dom.window.document.querySelector('.cvss-score-big').textContent,result.score.toFixed(1));
+      assert.equal(dom.window.document.querySelector('.cvss-vec').textContent,vector);
+      assert.equal(JSON.stringify(finding),before);assert.equal(dom.window.state().saves,0);
+      const select=dom.window.document.querySelector('.cvssbox select');
+      select.value='A';select.dispatchEvent(new dom.window.Event('change'));
+      const expected=vector.replace('/AV:N/','/AV:A/'),updated=CVSS40.score(expected);
+      assert.equal(finding.cvss_vector,expected);assert.equal(finding.cvss,String(updated.score));
+      assert.equal(finding.severity,updated.severity);assert.equal(finding.macrovector,updated.macrovector);
+      assert.equal(dom.window.document.querySelector('.cvss-vec').textContent,expected);
+      assert.equal(dom.window.state().saves,1);
+    }finally{dom.window.close();}
+  });
+
+  test(language+': malformed CVSS 4.0 warns without rewriting the stored vector',()=>{
+    const finding={title:'Malformed contextual score',cvss_version:'4.0',cvss_vector:'CVSS:4.0/AV:N',severity:'low'};
+    const before=JSON.stringify(finding),dom=editor(language,finding);
+    try{
+      assert.equal(dom.window.document.querySelector('[role="status"]').textContent,'cvss_paste_bad');
+      assert.equal(JSON.stringify(finding),before);assert.equal(dom.window.state().saves,0);
+    }finally{dom.window.close();}
+  });
+
   test(language+': rejected pasted CVSS vectors preserve the entire finding and do not save',()=>{
     const finding={title:'Synthetic finding',cvss_version:'3.1',cvss:'9.8',cvss_vector:valid,severity:'critical'};
     const dom=editor(language,finding),before=JSON.stringify(finding),input=dom.window.document.querySelector('.cvss-paste');
@@ -72,3 +100,56 @@ for(const language of ['es','en']){
     }finally{dom.window.close();}
   });
 }
+
+function validationEditor(){
+  const dom=new JSDOM('<!doctype html><html><body><button id="validateBtn">✓</button></body></html>',{runScripts:'outside-only',url:'http://localhost/'});
+  const app=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8');
+  dom.window.requests=[];dom.window.toasts=[];dom.window.panels=[];
+  dom.window.eval(`
+    const $=s=>document.querySelector(s),S={slug:'alpha',data:{meta:{report_title:'Alpha'}},uiLang:'es'},projectStore={revision:0};
+    const t=key=>key,toast=(...args)=>window.toasts.push(args),requireOk=async response=>{if(!response.ok)throw Error('failed');return response;};
+    const appFetch=(url,options)=>new Promise((resolve,reject)=>window.requests.push({url,options,resolve,reject}));
+    const closeModal=modal=>modal.remove(),showValidationPanel=issues=>window.panels.push(issues);
+    ${app.slice(app.indexOf('let validationGeneration ='),app.indexOf('function showValidationPanel('))}
+    window.validation={run:runValidation,invalidate:invalidateValidation,state:S,store:projectStore};
+  `);
+  return dom;
+}
+const validationResponse=issues=>({ok:true,json:async()=>({issues})});
+
+test('validation discards older results after an edit, project replacement or UI language change',async()=>{
+  for(const change of ['edit','project','language']){
+    const dom=validationEditor(),{validation,requests,toasts,panels}=dom.window;
+    try{
+      const pending=validation.run();assert.equal(requests.length,1);
+      if(change==='edit')validation.store.revision++;
+      else if(change==='project'){validation.state.slug='beta';validation.state.data={meta:{report_title:'Beta'}};}
+      else validation.state.uiLang='en';
+      validation.invalidate();
+      requests[0].resolve(validationResponse([{level:'error',message:'Old finding'}]));await pending;
+      assert.equal(panels.length,0,change);assert.equal(toasts.length,0,change);
+      assert.equal(dom.window.document.querySelector('#validateBtn').className,'',change);
+      assert.equal(dom.window.document.querySelector('#validateBtn').hasAttribute('aria-busy'),false,change);
+    }finally{dom.window.close();}
+  }
+});
+
+test('only the latest validation request may publish a result and editing clears its old success',async()=>{
+  const dom=validationEditor(),{validation,requests,toasts,panels}=dom.window;
+  try{
+    const first=validation.run(),second=validation.run();
+    requests[1].resolve(validationResponse([]));await second;
+    assert.equal(dom.window.document.querySelector('#validateBtn').className,'ok');assert.equal(toasts.length,1);
+    requests[0].resolve(validationResponse([{level:'error',message:'Obsolete'}]));await first;
+    assert.equal(panels.length,0);assert.equal(dom.window.document.querySelector('#validateBtn').className,'ok');
+    validation.invalidate();assert.equal(dom.window.document.querySelector('#validateBtn').className,'');
+  }finally{dom.window.close();}
+});
+
+test('an obsolete failed validation cannot toast an error for the replacement project',async()=>{
+  const dom=validationEditor(),{validation,requests,toasts}=dom.window;
+  try{
+    const pending=validation.run();validation.invalidate();requests[0].reject(Error('Old failure'));await pending;
+    assert.equal(toasts.length,0);
+  }finally{dom.window.close();}
+});

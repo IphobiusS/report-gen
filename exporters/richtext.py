@@ -24,7 +24,10 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
         requested = re.search(r"width:\s*([\d.]+)(%|cm|mm|in|px|pt)", node.get("style", ""))
         if requested:
             value, unit = float(requested[1]), requested[2]
-            width = min(available, int(available * value / 100) if unit == "%" else int(Cm(value * {"cm": 1, "mm": .1, "in": 2.54, "px": 2.54/96, "pt": 2.54/72}[unit])))
+            factor = available / 100 if unit == "%" else Cm(1) * {"cm": 1, "mm": .1, "in": 2.54, "px": 2.54/96, "pt": 2.54/72}[unit]
+            # Clamp before integer conversion: valid decimal syntax can exceed
+            # floating-point range, while the page width is always finite.
+            width = int(min(available, value * factor))
         width = fit_width(document, size, width, Cm(2))
         run = paragraph.add_run()
         shape = run.add_picture(source, width=max(Cm(.1), width))

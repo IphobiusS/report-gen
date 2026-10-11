@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.31.0
+# report-gen 0.31.1
 
 <a id="qué-es"></a>
 
@@ -16,7 +16,7 @@
 
 ## Instalar y abrir
 
-Ruta principal: **Linux/Kali y Python 3.10+**. Descarga y descomprime la [última versión publicada](https://github.com/IphobiusS/report-gen/releases/latest), o clona el repositorio:
+Ruta principal: **Linux/Kali y Python 3.11+**. Descarga y descomprime la [última versión publicada](https://github.com/IphobiusS/report-gen/releases/latest), o clona el repositorio:
 
 ```bash
 git clone https://github.com/IphobiusS/report-gen.git
@@ -59,6 +59,10 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
+## Correcciones de 0.31.1
+
+La auditoría corrigió la conservación de métricas opcionales CVSS 4.0, resultados de validación atrasados, nombres de proyecto no portables y avisos de retención de respaldos. También revisó la exportación de nombres literales, encabezados dentro de hallazgos y dimensiones de imagen extremas. El mínimo de instalación es Python 3.11; CI utiliza 3.12. [Detalle de las correcciones](CHANGELOG.md).
+
 ## Novedades de 0.31.0
 
 - **Rutina de respaldo opcional:** elige una carpeta externa, frecuencia y copias que conservar. Mientras el servidor esté abierto, prepara respaldos privados sin cifrar y comprueba su restauración antes de rotar las copias propias. La pantalla muestra el último resultado y permite comprobar una copia manualmente. Los borradores del navegador no se incluyen.
@@ -95,7 +99,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.31.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.31.1 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

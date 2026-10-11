@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.31.0
+# report-gen 0.31.1
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -10,7 +10,7 @@
 
 ## Install and launch
 
-Primary path: **Linux/Kali and Python 3.10+**. Download and extract the [latest published release](https://github.com/IphobiusS/report-gen/releases/latest), or clone the repository:
+Primary path: **Linux/Kali and Python 3.11+**. Download and extract the [latest published release](https://github.com/IphobiusS/report-gen/releases/latest), or clone the repository:
 
 ```bash
 git clone https://github.com/IphobiusS/report-gen.git
@@ -49,6 +49,10 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
+## Fixes in 0.31.1
+
+The audit corrected optional CVSS 4.0 metric preservation, stale validation results, nonportable project names and backup retention warnings. It also reviewed literal names, headings inside findings and extreme image dimensions in exports. Installation requires Python 3.11 or later; CI uses 3.12. [Detailed changes](CHANGELOG.md).
+
 ## New in 0.31.0
 
 - **Optional backup routine:** choose an external destination, frequency and retained generations. While the local server is open, it creates private unencrypted backups and tests restoration before rotating its own copies. Review the latest result or verify a copy manually. Browser drafts are not included.
@@ -80,7 +84,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.31.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.31.1 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

@@ -3,7 +3,7 @@ name = "report-gen"
 dynamic = ["version"]
 description = "Generador propio de informes de pentesting: engagement.yaml como fuente de verdad, secciones canonicas activables, salida PDF/DOCX/MD/HTML consistente, editor local estilo SysReptor."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "Sebastian Latorre Munoz", email = "iphobiuss@proton.me" }]
 license = "MIT"
 dependencies = [

@@ -95,19 +95,22 @@ def _dom_scopes(tree, expected=None, markdown=False):
         scopes[''] = global_root
     else:
         scopes[''] = html.Element('div')
-        headings = {normal(s['id'] + ' ' + s['title']): s['id'] for s in expected.get('scopes', []) if s['id']}
+        headings = {s['id']: {normal(s['id'] + ' ' + s['title'])}
+                    for s in expected.get('scopes', []) if s['id']}
         # With no authored title, HTML uses the existing finding identity as its
         # accessible label while Markdown's heading already carries that ID.
-        headings.update({normal(s['id']): s['id'] for s in expected.get('scopes', [])
-                         if s['id'] and s['title'] == s['id']})
+        for scope in expected.get('scopes', []):
+            if scope['id'] and scope['title'] == scope['id']:
+                headings[scope['id']].add(normal(scope['id']))
         current = ''
         for node in root:
             title = normal(node.text_content())
-            if node.tag == 'h3' and title in headings:
-                current = headings[title]
+            anchor = node.get('data-rg-anchor')
+            if node.tag == 'h3' and anchor in headings and title in headings[anchor]:
+                current = anchor
                 if current in scopes: raise ValueError(backend_message('Hallazgo ambiguo en Markdown / Ambiguous Markdown finding'))
                 scopes[current] = html.Element('div')
-            elif node.tag in ('h1', 'h2'):
+            elif node.tag in ('h1', 'h2') and anchor is not None:
                 current = ''
             scopes[current].append(deepcopy(node))
     return scopes
@@ -196,7 +199,10 @@ def _word_scopes(path, expected):
         if matches:
             if len(matches) != 1 or matches[0] in groups: raise ValueError(backend_message('Hallazgo ambiguo en Word / Ambiguous Word finding'))
             current = matches[0]; groups[current] = []
-        elif node.xpath('./w:pPr/w:pStyle[@w:val="Heading1"]', namespaces=NS):
+        elif (node.xpath('./w:pPr/w:pStyle[@w:val="Heading1"]', namespaces=NS)
+              and any(name.startswith('rg_toc_') for name in bookmarks)):
+            # Only generated section headings have native TOC bookmarks.
+            # A user's # heading retains its current finding association.
             current = ''
         groups[current].append(node)
     profiles = {}

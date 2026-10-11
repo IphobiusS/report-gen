@@ -24,7 +24,7 @@ HERE = Path(__file__).resolve().parent
 REPORT_ROOT = HERE.parent
 sys.path.insert(0, str(REPORT_ROOT))
 
-from workspace_paths import select_workspace, browser_namespace  # noqa: E402
+from workspace_paths import select_workspace, browser_namespace, portable_project_slug  # noqa: E402
 WORKSPACE = select_workspace(REPORT_ROOT, create=True)
 PROJECTS = WORKSPACE.projects
 
@@ -225,11 +225,12 @@ def source_data(directory, final=False):
     return checked_data(data, final=final)
 
 
-def slugify(s):
+def slugify(s, *, new=False):
     s = str(s or "").strip().lower()
     s = "".join(c if c.isalnum() or c in "-_" else "-" for c in s)
     s = re.sub(r"-+", "-", s).strip("-") or "engagement"
-    return s[:80].strip("-") or "engagement"  # cap de longitud: evita OSError con slugs enormes
+    slug = s[:80].strip("-") or "engagement"
+    return portable_project_slug(slug) if new else slug
 
 
 def _json_dict():
@@ -362,7 +363,7 @@ def create_project():
     if any(value is not None and not isinstance(value, str) for value in body.values()):
         abort(400, backend_message('Los datos del proyecto deben ser texto'))
     model = MODELS.get(body.get("model", "corporativo-es")) or MODELS["corporativo-es"]
-    slug = slugify(body.get("slug") or body.get("title") or "engagement")
+    slug = slugify(body.get("slug") or body.get("title") or "engagement", new=True)
     d = PROJECTS / slug
     if d.exists() or (PROJECTS.exists() and any(path.name.casefold() == slug.casefold() for path in PROJECTS.iterdir())):
         abort(409, backend_message('Ya existe un proyecto con un nombre equivalente en mayúsculas o Unicode; usa otro nombre'))

@@ -112,6 +112,27 @@ def test_changed_old_archive_is_preserved_and_reported(setup):
     assert result['copies'] == 2 and result['last_error'] == 'retention_pending'
 
 
+def test_verifying_latest_keeps_unresolved_retention_visible(setup):
+    routine, body, clock = setup
+    routine.configure({**body, 'retention': 1})
+    first = routine.run()
+    old = Path(first['directory']) / first['latest_name']
+    old.write_bytes(b'USER_REPLACED_COPY')
+    clock[0] += 5
+    second = routine.run()
+    clock[0] += 5
+    checked = routine.verify_latest()
+    assert checked['last_verified'] == clock[0]
+    assert checked['latest_name'] == second['latest_name']
+    assert checked['last_error'] == 'retention_pending'
+    assert old.read_bytes() == b'USER_REPLACED_COPY'
+    # A later rotation can clear the warning once the missing older copy no
+    # longer needs removal; verification alone must never imply that cleanup.
+    old.unlink()
+    clock[0] += 5
+    assert routine.run()['last_error'] is None
+
+
 def test_directory_changes_never_rotate_previous_destination(setup, tmp_path):
     routine, body, clock = setup
     routine.configure({**body, 'retention': 1})

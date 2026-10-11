@@ -118,8 +118,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not sys.platform.startswith('linux'):
         parser.error('This installer targets Linux/Kali. On Windows/macOS, use python start.py --ready --workspace PATH.')
-    if sys.version_info < (3, 10):
-        parser.error('Python 3.10+ is required; validated with Python 3.12')
+    if sys.version_info < (3, 11):
+        parser.error('Python 3.11+ is required; validated with Python 3.12')
     try:
         desktop = None
         if args.desktop:

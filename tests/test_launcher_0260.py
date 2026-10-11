@@ -177,6 +177,17 @@ def test_plain_launch_diagnosis_and_upgrade_never_install_without_consent(tmp_pa
     assert not (tmp_path / '.venv').exists()
 
 
+@pytest.mark.parametrize('flag', [[], ['--setup'], ['--ready'], ['--diagnose']])
+def test_launcher_rejects_python_310_before_setup_or_child_process(monkeypatch, capsys, flag):
+    monkeypatch.setattr(start.sys, 'version_info', (3, 10, 19))
+    monkeypatch.setattr(start, '_install', lambda *args: pytest.fail('Unsupported Python must not install'))
+    monkeypatch.setattr(start, '_dependencies', lambda *args: pytest.fail('Unsupported Python must not launch'))
+    with pytest.raises(SystemExit) as caught:
+        start.main(flag)
+    assert caught.value.code == 2
+    assert 'Python 3.11+' in capsys.readouterr().err
+
+
 def test_ready_installs_diagnoses_and_launches_selected_venv(tmp_path, monkeypatch):
     monkeypatch.setattr(start, 'ROOT', tmp_path)
     events = []
