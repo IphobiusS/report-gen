@@ -1,4 +1,4 @@
-# report-gen 0.31.3 user guide
+# report-gen 0.31.4 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -69,6 +69,10 @@ CVSS expresses technical severity, not business risk by itself. **Risk Posture a
 **Library** recommends Serious as a general starting point. Compare the six general designs using the same sample page: cover, summary or technical page. An expandable specialized catalog retains the 22 certification profiles, Brand/Quiet variants and personal templates. If your project already uses a specialized design, the library opens in that context; browsing does not change its appearance.
 
 Every profile supports English and Spanish. Applying an appearance preserves findings. Word uses Calibri; PDF and HTML use compatible Carlito. Commands retain their monospaced font.
+
+The default WeasyPrint PDF export detects characters lacking a glyph in available fonts and stops before replacing the previous output. The error identifies codes such as `U+1F3E6`: install a font containing those characters or revise the text and export again. Extractable text alone does not prove that the symbol renders correctly. This check does not certify fonts or visual composition in the optional Chromium engine.
+
+On pages with custom font maps or right-to-left text, a line-ending hyphen can be ambiguous to the extractor. If this specific error appears, delivery stops without replacing the previous file: adjust that line break or use another format and review the result. The verifier does not invent a missing character.
 
 The sidebar groups capture/coverage and history/follow-up tools in expandable sections. Direct navigation to one of their pages expands the group to show your location. **More project tools** on Overview contains less frequent controls; existing functions and data remain available.
 

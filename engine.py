@@ -190,6 +190,37 @@ def css_string(value):
     ) + '"')
 
 
+def _tall_figure_image(path):
+    """Optional layout hint from bounded local metadata, never decoded pixels.
+
+    The upload boundary permits 12 MiB/25 MP. Larger files can still reach the
+    existing export validation, but this hint does not read or decode them.
+    Near-square evidence needs the same readable box as portrait evidence.
+    """
+    from io import BytesIO
+    from PIL import Image
+    limit = 12 * 1024 * 1024
+    try:
+        if path.stat().st_size > limit:
+            return False
+        with path.open('rb') as source:
+            blob = source.read(limit + 1)
+        if len(blob) > limit:
+            return False
+        with Image.open(BytesIO(blob)) as picture:
+            width, height = picture.size
+            if width * height > 25_000_000:
+                return False
+            # PNG's override calls load() to discover late EXIF chunks. Use
+            # only metadata already read by the container header, including
+            # JPEG orientation, without invoking a pixel decoder here.
+            if Image.Image.getexif(picture).get(274) in (5, 6, 7, 8):
+                width, height = height, width
+    except (OSError, ValueError, Image.DecompressionBombError):
+        return False
+    return height * 4 >= width * 3
+
+
 def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=None, img_base=None,
                 machine_graphs=False):
     from workflows import project_report, report_sections
@@ -236,20 +267,45 @@ def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=No
         ctx['provider_mark'] = provider_mark(meta['design'])
     from report_layout import prepare_html
     result = prepare_html(tpl.render(**ctx))
-    if img_base is None:
-        from lxml import html as html_parser
-        from resources import local_image
-        from urllib.parse import urlsplit, quote
-        from urllib.request import url2pathname
-        for image in html_parser.fromstring(result).xpath("//img[@src]"):
-            source = image.get("src")
+    from lxml import html as html_parser
+    from resources import local_image
+    from urllib.parse import urlsplit, quote
+    from urllib.request import url2pathname
+    tree = html_parser.document_fromstring(result)
+    layout_changed = False
+    image_layouts = {}
+    for image in tree.xpath("//img[@src]"):
+        source = image.get("src")
+        if img_base is None:
             parsed = urlsplit(source)
             if parsed.scheme == "file":
                 path = Path(url2pathname(parsed.path)).resolve()
                 if not path.is_relative_to(engagement_dir.resolve()):
                     raise ValueError(message("Imagen fuera del engagement"))
                 source = quote(path.relative_to(engagement_dir.resolve()).as_posix(), safe='/')
-            local_image(source, engagement_dir)
+            path = local_image(source, engagement_dir)
+        else:
+            # Preview URLs refer back to project files, never to a network
+            # resource. Preserve missing-image preview behavior; export still
+            # follows the strict local validation above.
+            if not source.startswith(img_base_val):
+                continue
+            try:
+                path = local_image(source[len(img_base_val):], engagement_dir)
+            except ValueError:
+                continue
+        figure = image.getparent()
+        if figure.tag != "figure":
+            continue
+        if path not in image_layouts:
+            image_layouts[path] = _tall_figure_image(path)
+        if image_layouts[path]:
+            classes = figure.get('class', '').split()
+            if 'rg-tall' not in classes:
+                figure.set('class', ' '.join([*classes, 'rg-tall']))
+                layout_changed = True
+    if layout_changed:
+        result = html_parser.tostring(tree, encoding='unicode', method='html', doctype='<!DOCTYPE html>')
     return result
 
 
@@ -258,7 +314,29 @@ def render_pdf_weasyprint(html, out_pdf, base_url):
     from pdf_pagination import verify_finding_tables
     document = HTML(string=html, base_url=str(base_url), url_fetcher=restricted_fetcher(base_url, THEMES)).render()
     verify_finding_tables(document)
-    document.write_pdf(str(out_pdf))
+    # WeasyPrint records unsupported code points while drawing the PDF, not
+    # during layout. A ToUnicode map may preserve their text even though the
+    # visible glyph is .notdef. Inspect the actual selected fonts after drawing
+    # and before touching the destination; textual extraction cannot prove
+    # that these characters were rendered.
+    payload = document.write_pdf()
+    missing = sorted({codepoint for font in document.fonts.values() for codepoint in font.missing})
+    if missing:
+        codes = ', '.join(f'U+{codepoint:04X}' for codepoint in missing[:16])
+        if len(missing) > 16:
+            codes += f' (+{len(missing) - 16})'
+        raise ValueError(message(
+            'PDF no generado: faltan glifos en las fuentes disponibles ({codes}). '
+            'Instala una fuente compatible y vuelve a exportar; revisa visualmente el PDF. '
+            'La salida anterior se conserva.',
+            en='PDF not generated: available fonts lack glyphs ({codes}). '
+               'Install a compatible font and export again; visually review the PDF. '
+               'The previous output is preserved.', codes=codes))
+    # Detect ambiguous extraction (notably RTL plus a wrapped hyphen) before
+    # replacing a prior export, using only the just-rendered PDF bytes.
+    from export_contract import pdf_text_pages
+    pdf_text_pages(payload)
+    Path(out_pdf).write_bytes(payload)
 
 
 def render_pdf_chromium(html, out_pdf, meta):

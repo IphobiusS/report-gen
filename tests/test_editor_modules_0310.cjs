@@ -22,6 +22,41 @@ function projectSearch(language, data){
 }
 
 for(const language of ['es','en']){
+  test(language+': search matches canonically equivalent accents and authored whitespace without mutating content',()=>{
+    const data={meta:{},report:{sections:[{key:'unicode',title:'Synthetic chapter',body:'La remediacio\u0301n conserva café y corrective\n\t action.',private_note:'PRIVATE_UNICODE_CANARY'}]},findings:[]};
+    const before=JSON.stringify(data),search=projectSearch(language,data);
+    for(const query of ['remediación','remediacio\u0301n','cafe\u0301','corrective action','corrective\n\t action']){
+      const matches=search(query);
+      assert.equal(matches.length,1,query);
+      assert.deepEqual(matches[0].nav,{type:'section',key:'unicode'});
+      assert.equal(matches[0].snippet.mid,query.normalize('NFC').replace(/\s+/g,' '));
+    }
+    assert.deepEqual(search('PRIVATE_UNICODE_CANARY'),[]);
+    assert.equal(JSON.stringify(data),before);
+  });
+
+  test(language+': search highlights original characters after expanding case conversion',()=>{
+    const search=projectSearch(language,{meta:{},report:{sections:[{key:'unicode',body:'İ before TARGET after İ'}]},findings:[]});
+    assert.equal(search('target')[0].snippet.mid,'TARGET');
+    assert.equal(search('İ')[0].snippet.mid,'İ');
+    assert.equal(search('i')[0].snippet.mid,'İ');
+  });
+
+  test(language+': search snippets preserve complete graphemes at all slice boundaries',()=>{
+    for(const [body,query,mid]of [
+      ['X😀'+'A'.repeat(29)+'TARGET tail','TARGET','TARGET'],
+      ['TARGET'+'A'.repeat(39)+'😀 tail','TARGET','TARGET'],
+      ['X👩‍💻'+'A'.repeat(29)+'TARGET tail','TARGET','TARGET'],
+      ['before 👩‍💻 after','👩','👩‍💻'],
+    ]){
+      const search=projectSearch(language,{meta:{},report:{sections:[{key:'unicode',body}]},findings:[]});
+      const snippet=search(query)[0].snippet;
+      assert.equal(snippet.mid,mid);
+      assert.ok(Object.values(snippet).every(part=>part.isWellFormed()));
+      assert.ok(!snippet.pre.startsWith('…\u200d'));
+    }
+  });
+
   test(language+': global search includes custom section title and body without indexing private fields',()=>{
     const data={meta:{},report:{sections:[{key:'bank-boundaries',title:'Bank boundaries',body:'Quorum evidence narrative.',private_note:'PRIVATE_SECTION_CANARY'}]},findings:[]};
     const before=JSON.stringify(data),search=projectSearch(language,data);

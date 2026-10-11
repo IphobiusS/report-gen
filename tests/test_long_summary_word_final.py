@@ -25,8 +25,11 @@ def test_long_summary_can_flow_by_row_without_linking_the_entire_inventory(tmp_p
     assert table.rows[0]._tr.get_or_add_trPr().find(qn('w:tblHeader')) is not None
     assert all(row._tr.get_or_add_trPr().find(qn('w:cantSplit')) is not None for row in table.rows)
     assert all(p.paragraph_format.keep_with_next for cell in table.rows[0].cells for p in cell.paragraphs)
-    assert not any(p.paragraph_format.keep_with_next for row in table.rows[1:]
+    assert not any(p.paragraph_format.keep_with_next for row in table.rows[1:-3]
                    for cell in row.cells for p in cell.paragraphs)
+    assert all(p.paragraph_format.keep_with_next for row in table.rows[-3:-1]
+               for cell in row.cells for p in cell.paragraphs)
+    assert not any(p.paragraph_format.keep_with_next for cell in table.rows[-1].cells for p in cell.paragraphs)
     assert table.rows[-1].cells[2].text=='Synthetic finding 100'
     delivery.inspect_export(output,'docx',captured)
     assert data==before

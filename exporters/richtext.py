@@ -1,5 +1,6 @@
 """Convert the shared, sanitized Markdown tree to native Word elements."""
 import re
+from copy import deepcopy
 from lxml import html
 from docx.shared import Cm, Pt
 from docx.oxml import OxmlElement
@@ -7,7 +8,7 @@ from docx.oxml.ns import qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from safe_markup import md, ordered_list_start
 from .pagination import keep_table_together
-from .images import word_image, fit_width
+from .images import word_image, fit_width, figure_space
 from report_layout import table_layout
 
 
@@ -15,7 +16,7 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
     tree = html.fragment_fromstring(str(md(text, img_base="")), create_parent="div")
     available = document.sections[-1].page_width - document.sections[-1].left_margin - document.sections[-1].right_margin
 
-    def picture(node, paragraph=None, parent=None):
+    def picture(node, paragraph=None, parent=None, caption=None):
         if not node.get("src"):
             return
         source, size = word_image(node.get("src"), root)
@@ -28,11 +29,12 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
             # Clamp before integer conversion: valid decimal syntax can exceed
             # floating-point range, while the page width is always finite.
             width = int(min(available, value * factor))
-        width = fit_width(document, size, width, Cm(2))
+        width = fit_width(document, size, width, figure_space(document, caption if caption is not None else node.get('alt', '')))
         run = paragraph.add_run()
         shape = run.add_picture(source, width=max(Cm(.1), width))
         if parent is not None: parent.append(run._r)
         shape._inline.docPr.set("descr", node.get("alt", ""))
+        paragraph.paragraph_format.keep_together = True
         paragraph.paragraph_format.keep_with_next = True
 
     def inline(node, paragraph, bold=False, italic=False, code=False, parent=None):
@@ -84,8 +86,30 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
         abstract.append(lvl); numbering.append(abstract)
         return numbering.add_num(abstract_id).numId
 
+    def paragraph_parts(node):
+        # The shared Markdown tree promotes images to block figures even
+        # inside sentences and list paragraphs. Preserve surrounding prose
+        # above/below the figure instead of on the portrait's baseline.
+        fragment = html.Element('p')
+        fragment.text = node.text
+        for child in node:
+            if child.tag == 'figure':
+                if fragment.text_content().strip() or len(fragment):
+                    yield fragment
+                yield child
+                fragment = html.Element('p')
+                fragment.text = child.tail
+            else:
+                fragment.append(deepcopy(child))
+        if fragment.text_content().strip() or len(fragment):
+            yield fragment
+
     def block(node, depth=0):
         tag = node.tag
+        if tag == 'p' and any(child.tag == 'figure' for child in node):
+            for part in paragraph_parts(node):
+                block(part, depth)
+            return
         if tag in {"ul", "ol"}:
             number_id = list_numbering(tag == "ol", ordered_list_start(node) if tag == 'ol' else 1)
             for item in node:
@@ -103,8 +127,13 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
                     if child.tag in {"ul", "ol"}:
                         block(child, depth+1); current = None; started = True
                     elif child.tag == "p":
-                        target = p if not started else continuation()
-                        inline(child, target); started = True; current = None
+                        for part in paragraph_parts(child):
+                            if part.tag == 'figure':
+                                block(part, depth+1)
+                            else:
+                                target = p if not started else continuation()
+                                inline(part, target)
+                            started = True; current = None
                     elif child.tag in {'pre', 'table', 'blockquote', 'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'}:
                         block(child, depth+1); current = None; started = True
                     else:
@@ -139,10 +168,12 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
         elif tag == "figure":
             if retest and document.paragraphs:
                 document.paragraphs[-1].paragraph_format.keep_with_next = True
+            caption = ' '.join(node.xpath('./figcaption//text()'))
             for child in node:
-                if child.tag == "img": picture(child)
+                if child.tag == "img": picture(child, caption=caption)
                 elif child.tag == "figcaption":
                     p = document.add_paragraph(style="Caption"); inline(child, p)
+                    p.paragraph_format.keep_together = True
         elif tag == "img": picture(node)
         elif tag == "blockquote":
             for child in node: block(child, depth)

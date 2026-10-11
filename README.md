@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.31.3
+# report-gen 0.31.4
 
 <a id="qué-es"></a>
 
@@ -59,9 +59,9 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Correcciones de 0.31.3
+## Correcciones de 0.31.4
 
-La prueba de un informe bancario sintético extenso corrige la paginación de narrativas largas, la conservación del original al censurar evidencias importadas y la búsqueda por identificador y capítulos personalizados. También mantiene unidas las etiquetas de severidad en Word, distingue hallazgos pendientes de valoración en el resumen y adapta los controles del HTML portátil al texto ampliado. Se conservan las guardas de tablas y la revisión visual sigue siendo necesaria. [Detalle de las correcciones](CHANGELOG.md).
+La segunda prueba bancaria corrige la búsqueda de acentos equivalentes y frases partidas entre líneas, además del resaltado de caracteres Unicode. Word mantiene las leyendas largas junto a sus figuras, ordena las imágenes insertadas dentro de párrafos y evita filas finales aisladas en tablas largas cuando caben juntas. Su tabla de retest da más espacio a los responsables. El PDF amplía las evidencias verticales o casi cuadradas para facilitar su lectura. El verificador PDF interpreta correctamente mapas de fuentes Unicode y el motor predeterminado avisa de glifos ausentes antes de reemplazar un archivo. Continúan las correcciones de informes extensos de 0.31.3 y la revisión visual sigue siendo necesaria. [Detalle de las correcciones](CHANGELOG.md).
 
 ## Novedades de 0.31.0
 
@@ -99,7 +99,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.31.3 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.31.4 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

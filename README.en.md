@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.31.3
+# report-gen 0.31.4
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -49,9 +49,9 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
-## Fixes in 0.31.3
+## Fixes in 0.31.4
 
-An extensive synthetic banking report exposed and helped correct long-narrative pagination, original-image retention when redacting imported evidence, and search by finding ID and custom chapters. Severity labels stay together in Word, the summary distinguishes findings awaiting assessment, and portable HTML controls adapt to enlarged text. Table safeguards remain in place and visual review is still required. [Detailed changes](CHANGELOG.md).
+The second banking exercise corrects searches for equivalent accents and phrases split across lines, together with Unicode highlighting. Word keeps long captions with their figures, arranges images inserted inside paragraphs and prevents isolated final table rows when the tail fits together. Its retest table gives owners more space. PDF gives portrait and nearly square evidence more space for readability. PDF verification reads Unicode font maps correctly, and the default engine reports missing glyphs before replacing a file. The extensive-report fixes from 0.31.3 remain available and visual review is still required. [Detailed changes](CHANGELOG.md).
 
 ## New in 0.31.0
 
@@ -84,7 +84,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.31.3 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.31.4 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

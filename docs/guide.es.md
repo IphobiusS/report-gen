@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.31.3
+# Guía de uso de report-gen 0.31.4
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -65,6 +65,10 @@ CVSS expresa severidad técnica, no el riesgo empresarial por sí solo. **Postur
 **Biblioteca** recomienda Serio como punto de partida general. Los seis diseños generales se comparan con la misma página de muestra: portada, resumen o página técnica. El catálogo especializado conserva los 22 perfiles de certificación, las variantes Marca/Sobria y tus plantillas personales en un apartado desplegable. Si tu proyecto ya tiene un diseño especializado, la biblioteca abre ese contexto; navegar no cambia su apariencia.
 
 Todos los perfiles permiten español e inglés. Cambiar apariencia no reemplaza los hallazgos. Word usa Calibri; PDF y HTML emplean Carlito como fuente compatible. Los comandos conservan su monoespaciada.
+
+La exportación PDF predeterminada con WeasyPrint detecta caracteres sin glifo en las fuentes disponibles y detiene la entrega antes de sustituir la salida anterior. El error identifica códigos como `U+1F3E6`: instala una fuente que contenga esos caracteres o corrige el texto y vuelve a exportar. La presencia de texto extraíble no demuestra que el símbolo se vea correctamente. Esta comprobación no certifica fuentes ni composición visual del motor Chromium opcional.
+
+En páginas con mapas de fuentes personalizados o texto de derecha a izquierda, un guion de final de línea puede resultar ambiguo para la extracción. Si aparece ese error específico, la entrega se detiene sin sustituir el archivo anterior: ajusta ese salto o usa otro formato y revisa el resultado. El verificador no inventa el carácter que falta.
 
 El lateral agrupa **Registro y cobertura** y **Historial y seguimiento** en desplegables. Al abrir directamente una de sus secciones, el grupo se expande para mostrar dónde estás. En Inicio, **Más herramientas del proyecto** reúne controles menos frecuentes; las funciones y los datos existentes se conservan.
 

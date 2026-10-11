@@ -497,20 +497,47 @@ function searchTargets() {
   });
   return out;
 }
+function searchText(text) {
+  return String(text).normalize("NFC").replace(/\s+/g, " ");
+}
+function searchSpan(text, folded, query) {
+  const index = folded.indexOf(query);
+  if (index < 0) return null;
+  if (text.length === folded.length) return { start: index, end: index + query.length };
+  // Some case conversions expand a character (for example, İ becomes i + dot).
+  // Translate the folded offsets back before slicing the displayed text.
+  let position = 0, offset = 0, start = 0;
+  for (const character of text) {
+    const next = offset + character.toLowerCase().length;
+    if (offset <= index && index < next) start = position;
+    position += character.length;
+    if (next >= index + query.length) return { start, end: position };
+    offset = next;
+  }
+  return null;
+}
 function searchSnippet(text, i, len) {
-  const s = Math.max(0, i - 30), e = Math.min(text.length, i + len + 40);
-  return { pre: (s > 0 ? "\u2026" : "") + text.slice(s, i), mid: text.slice(i, i + len), post: text.slice(i + len, e) + (e < text.length ? "\u2026" : "") };
+  const segments = new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text);
+  const start = segments.containing(i).index, last = segments.containing(i + len - 1);
+  const end = last.index + last.segment.length;
+  const s = segments.containing(Math.max(0, start - 30)).index;
+  const tail = segments.containing(Math.min(text.length - 1, end + 39));
+  const e = tail.index + tail.segment.length;
+  return { pre: (s > 0 ? "\u2026" : "") + text.slice(s, start), mid: text.slice(start, end), post: text.slice(end, e) + (e < text.length ? "\u2026" : "") };
 }
 function searchProject(q) {
-  q = (q || "").trim().toLowerCase();
+  q = searchText(q || "").trim().toLowerCase();
   if (!q) return [];
   const res = [];
   // A stable ID is a navigation target even when it is never mentioned in the
   // prose. Exact ID matches must survive a long report's cross-reference limit.
-  const targets = searchTargets(), exact = tg => tg.findingId && tg.text.toLowerCase() === q;
+  const targets = searchTargets().map(tg => {
+    const text = searchText(tg.text);
+    return { ...tg, text, folded: text.toLowerCase() };
+  }), exact = tg => tg.findingId && tg.folded === q;
   for (const tg of [...targets.filter(exact), ...targets.filter(tg => !exact(tg))]) {
-    const i = tg.text.toLowerCase().indexOf(q);
-    if (i >= 0) { res.push({ nav: tg.nav, where: tg.where, snippet: searchSnippet(tg.text.replace(/\s+/g, " "), tg.text.replace(/\s+/g, " ").toLowerCase().indexOf(q), q.length) }); if (res.length >= 40) break; }
+    const span = searchSpan(tg.text, tg.folded, q);
+    if (span) { res.push({ nav: tg.nav, where: tg.where, snippet: searchSnippet(tg.text, span.start, span.end - span.start) }); if (res.length >= 40) break; }
   }
   return res;
 }

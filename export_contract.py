@@ -9,10 +9,14 @@ from copy import deepcopy
 import re
 import unicodedata
 import zipfile
+from threading import Lock
 from lxml import etree, html
 
 NS = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
 W = '{' + NS['w'] + '}'
+# PDFium calls in one process must not run concurrently. Release all native
+# objects inside this lock, including when extraction raises.
+_PDFIUM_LOCK = Lock()
 
 
 def normal(text):
@@ -232,11 +236,74 @@ def _word_scopes(path, expected):
     return profiles
 
 
+def pdf_text_pages(source):
+    """Read the PDF, retaining the established extractor for ordinary fonts.
+
+    PDFium handles custom CMaps and RTL correctly, but dehyphenates both hard
+    and soft hyphens to the same marker. Never guess which original was used.
+    """
+    from io import BytesIO
+    from pypdf import PdfReader
+    from pypdf.generic import StreamObject
+
+    def resolved(value):
+        return value.get_object() if hasattr(value, 'get_object') else value
+
+    def custom_cmap(resources, seen):
+        resources = resolved(resources)
+        if id(resources) in seen:
+            return False
+        seen.add(id(resources))
+        for font in resolved(resources.get('/Font', {})).values():
+            encoding = font.get_object().get('/Encoding')
+            if encoding is not None and isinstance(encoding.get_object(), StreamObject):
+                return True
+        for obj in resolved(resources.get('/XObject', {})).values():
+            nested = obj.get_object().get('/Resources')
+            if nested is not None and custom_cmap(nested, seen):
+                return True
+        return False
+
+    reader = PdfReader(BytesIO(source) if isinstance(source, bytes) else source)
+    raw_pages = []
+    alternate = []
+    for index, page in enumerate(reader.pages):
+        special = custom_cmap(page.get('/Resources', {}), set())
+        text = '' if special else page.extract_text() or ''
+        if special or any(unicodedata.bidirectional(char) in ('R', 'AL') for char in text):
+            alternate.append(index)
+        raw_pages.append(text)
+    if alternate:
+        import pypdfium2
+        with _PDFIUM_LOCK, pypdfium2.PdfDocument(source) as document:
+            for index in alternate:
+                page = document[index]
+                try:
+                    textpage = page.get_textpage()
+                    try:
+                        # Bounded extraction supports full Unicode (unlike
+                        # UCS-2 range extraction), custom font CMaps and logical
+                        # RTL order. Read only the file, never expected content.
+                        text = textpage.get_text_bounded(errors='strict')
+                    finally:
+                        textpage.close()
+                finally:
+                    page.close()
+                if '\x02' in text or '\ufffe' in text:
+                    raise ValueError(backend_message(
+                        'Extracción PDF ambigua en un guion partido de la página {page}. '
+                        'Ajusta el ancho o el salto de línea de ese texto y vuelve a exportar. '
+                        'La salida anterior se conserva.',
+                        en='Ambiguous PDF text extraction at a wrapped hyphen on page {page}. '
+                           'Adjust the width or line break of that text and export again. '
+                           'The previous output is preserved.', page=index + 1))
+                raw_pages[index] = text
+    return [unicodedata.normalize('NFC', text).replace('\u00ad', '') for text in raw_pages]
+
+
 def _profiles(path, fmt, expected):
     if fmt == 'pdf':
-        from pypdf import PdfReader
-        raw_pages = [unicodedata.normalize('NFC', page.extract_text() or '').replace('\u00ad', '')
-                     for page in PdfReader(path).pages]
+        raw_pages = pdf_text_pages(path)
         pages = [normal(text) for text in raw_pages]
         return {'': dict(text=normal(' '.join(pages)), pages=pages,
                          raw_text='\n'.join(raw_pages), codes=[], table_rows=[], list_items=[])}

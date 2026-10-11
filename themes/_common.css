@@ -168,6 +168,12 @@ figcaption b { color: var(--ink-soft); font-family: var(--font-mono); font-weigh
 figure.mdfig { margin: 10px 0; text-align: center; }
 figure.mdfig img { display: inline-block; width: auto; max-width: 100%; max-height: 215mm; object-fit: contain; border: 1px solid var(--rule, #ddd); border-radius: 3px; }
 figure.mdfig figcaption { font-size: 8.5pt; color: var(--muted, #666); margin-top: 4px; font-style: italic; }
+/* Portrait/near-square evidence needs room beyond the landscape's 62 mm strip.
+   A4 offers 259 mm inside the margins. Reserve 69 mm for the preceding label,
+   a substantial caption and spacing, keeping the complete figure together.
+   Inline author widths retain precedence; no image data is resized/cropped. */
+figure.rg-tall { text-align: center; }
+figure.rg-tall img { display: inline-block; width: auto; height: auto; max-width: 100%; max-height: 190mm; }
 .sev-chip.sev-machine { background: var(--panel); color: var(--ink-soft); border: 1px solid var(--rule); }
 
 /* Markdown tables occur in findings and in the generated workflow sections. */

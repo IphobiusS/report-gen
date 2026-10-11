@@ -180,7 +180,7 @@ def test_long_markdown_table_flows_by_rows_and_preserves_header_and_command(blan
     for index, row in enumerate(table.rows):
         assert row._tr.get_or_add_trPr().find(qn("w:cantSplit")) is not None
         assert all(p.paragraph_format.keep_together for cell in row.cells for p in cell.paragraphs)
-        assert all(bool(p.paragraph_format.keep_with_next) == (index == 0)
+        assert all(bool(p.paragraph_format.keep_with_next) == (index == 0 or len(table.rows)-3 <= index < len(table.rows)-1)
                    for cell in row.cells for p in cell.paragraphs)
     command = next(p for p in document.paragraphs if "COMANDO_LITERAL_WORD_0270" in p.text)
     assert command.text == "COMANDO_LITERAL_WORD_0270 --documento ejemplo --salida local"

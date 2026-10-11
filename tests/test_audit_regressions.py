@@ -130,7 +130,7 @@ def test_word_portrait_figure_fits_page_and_keeps_caption(tmp_path):
 
 def test_workflow_word_tables_can_span_pages():
     doc = Document()
-    write_markdown(doc, '| A | B |\n| --- | --- |\n| first | row |\n| second | row |',
+    write_markdown(doc, '| A | B |\n| --- | --- |\n| first | row |\n| second | row |\n| third | row |\n| fourth | row |',
                    ROOT, lambda _: None, keep_tables=False)
     table = doc.tables[0]
     assert not table.cell(1, 0).paragraphs[0].paragraph_format.keep_with_next

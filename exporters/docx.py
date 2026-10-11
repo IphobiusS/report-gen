@@ -5,7 +5,7 @@ from pathlib import Path
 import engine
 
 from .common import sev_label, cvss_label, summary_sev
-from .images import word_image, fit_width
+from .images import word_image, fit_width, figure_space
 
 
 def _palette(meta, for_word=False):
@@ -183,6 +183,11 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     def add_markdown(text, keep_tables=True, retest=False, workflow_key=None):
         from .richtext import write_markdown
         columns = WORKFLOW_COLUMNS.get(workflow_key)
+        if workflow_key == 'rg_retest':
+            # Word's body face needs room for ordinary owner names such as
+            # Authentication. Retain enough width for the Spanish status
+            # labels and ISO dates without changing the web/PDF layout.
+            columns = [34, 16, 20, 15, 15]
         write_markdown(doc, text, engagement_dir, code_block, keep_tables=keep_tables,
                        retest=retest, column_weights=columns)
 
@@ -305,11 +310,13 @@ def to_docx(data, meta, L, engagement_dir, out_path):
         if not fig or not fig.get("src"):
             return
         img, size = word_image(fig["src"], engagement_dir)
-        doc.add_picture(img, width=fit_width(doc, size, Cm(15), Cm(2)))
+        caption = f"{L['figure']} {fig.get('number','')}. " + (fig.get('caption') or '')
+        doc.add_picture(img, width=fit_width(doc, size, Cm(15), figure_space(doc, caption)))
         doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
         doc.paragraphs[-1].paragraph_format.keep_with_next = True
         doc.inline_shapes[-1]._inline.docPr.set("descr", (fig.get("caption") or ""))
         cap = doc.add_paragraph()
+        cap.paragraph_format.keep_together = True
         rc = cap.add_run(f"{L['figure']} {fig.get('number','')}. "); rc.bold = True; rc.italic = True; rc.font.size = Pt(9); rc.font.color.rgb = INK_S
         rr = cap.add_run((fig.get("caption") or "")); rr.italic = True; rr.font.size = Pt(9); rr.font.color.rgb = MUTED
 

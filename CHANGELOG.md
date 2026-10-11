@@ -1,3 +1,16 @@
+# Cambios 0.31.4 (2026-10-11)
+
+- La búsqueda compara texto Unicode normalizado y espacios coherentes: los acentos equivalentes y las frases partidas entre líneas se encuentran sin alterar el contenido guardado.
+- El resaltado traduce los índices de la comparación a los caracteres mostrados y recorta por grafemas completos. Evita desplazar coincidencias tras letras cuya minúscula cambia de longitud o partir emojis y secuencias combinadas.
+- Las figuras de Word reservan espacio según su leyenda y la mantienen unida a la imagen. Las imágenes insertadas en párrafos Markdown separan texto anterior, figura y continuación, también dentro de listas, sin dejar la prosa pegada al borde inferior.
+- Las tablas largas de Word conservan juntas sus tres últimas filas cuando su altura estimada cabe en la página, sin encadenar todo el inventario ni forzar colas demasiado altas.
+- El seguimiento de retest de Word redistribuye sus columnas para conservar completos nombres de responsables, estados traducidos y fechas ISO habituales.
+- Las figuras verticales o casi cuadradas del PDF disponen de más altura para conservar legibilidad; las panorámicas mantienen su tamaño habitual. La clasificación usa recursos locales permitidos y no modifica las imágenes fuente.
+- El contrato PDF conserva la extracción habitual para páginas ordinarias y usa PDFium bajo exclusión mutua cuando detecta mapas de fuentes personalizados o texto RTL. Mantiene los guiones de fin de línea, cierra los recursos nativos y sigue rechazando cambios reales de portada, prosa y código. Los casos especiales cuya extracción de guiones resulte ambigua se rechazan de forma explícita.
+- El motor WeasyPrint detecta glifos ausentes antes de escribir el archivo. Indica sus códigos Unicode y conserva la salida anterior, en lugar de producir cuadrados de sustitución o un error engañoso de portada. Requiere WeasyPrint 70 o posterior; PDFium queda declarado como dependencia directa, ya fijada en las dependencias auditadas.
+- Las regresiones conservan la prioridad de los identificadores exactos y la exclusión de notas privadas.
+- La segunda prueba bancaria verifica contenido complejo en español e inglés, incluidos inventarios, seguimiento de correcciones, tablas largas y recuperación de originales. La inspección nativa en Microsoft Word continúa pendiente.
+
 # Cambios 0.31.3 (2026-10-11)
 
 - Las descripciones, impactos, remediaciones y referencias extensas fluyen entre páginas del PDF y del HTML; solo la cabecera y los metadatos breves forman el bloque inicial protegido. Las tablas reales conservan sus guardas de tamaño y paginación.
