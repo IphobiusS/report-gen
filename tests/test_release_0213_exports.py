@@ -191,7 +191,7 @@ def test_linked_evidence_preserves_caption_destination_and_inline_styles(tmp_pat
         rid = next(n.get('Id') for n in relations if n.get('Target') == 'https://example.test')
         ns = dict(export_contract.NS, r='http://schemas.openxmlformats.org/officeDocument/2006/relationships')
         link = tree.xpath('//w:hyperlink[@r:id=$rid]', namespaces=ns, rid=rid)[0]
-        assert link.xpath('.//w:drawing', namespaces=ns)
+        assert tree.xpath('//*[local-name()="docPr"]/*[local-name()="hlinkClick"][@r:id=$rid]', namespaces=ns, rid=rid)
         assert link.xpath('.//w:r[w:t="negrita"]/w:rPr/w:b', namespaces=ns)
         assert link.xpath('.//w:r[w:t="literal"]/w:rPr/w:rFonts[@w:ascii="DejaVu Sans Mono"]', namespaces=ns)
 

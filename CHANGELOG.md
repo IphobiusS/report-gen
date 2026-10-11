@@ -1,3 +1,17 @@
+# Cambios 0.31.5 (2026-10-11)
+
+- Al deshacer un hallazgo eliminado, el editor conserva sus evidencias y retests pero descarta referencias a activos o grupos que se borraron después; informa del ajuste.
+- Duplicar o importar hallazgos JSON crea una identidad abierta y sin verificar, sin heredar retests ni comunicaciones de corrección del original. Conserva responsable y plazo como datos de planificación. Los respaldos completos mantienen sus estados e historial.
+- Recuperar un borrador conserva el hallazgo seleccionado por UID aunque cambie de posición. Si desaparece el hallazgo o el capítulo abierto, vuelve al informe.
+- Word separa figuras, leyendas y prosa dentro de enlaces, énfasis, citas y listas. Conserva formato, tamaño y destinos nativos de la imagen y de la leyenda. Los enlaces que cruzan una figura se verifican mediante sus fragmentos originales, en orden y sin contenido interpuesto.
+- Las listas de Word conservan el marcador y la sangría cuando un ítem comienza con una figura. La verificación reconstruye sus continuaciones desde la estructura original, incluidas varias figuras enlazadas, sin aceptar traslados entre ítems ni pérdida de texto.
+- El PDF mantiene en una página las envolturas de cada línea lógica de código y evita dividir transcripciones cortas de hasta cuatro líneas. Los bloques largos continúan en páginas posteriores. Una línea más alta que la página imprimible se rechaza antes de reemplazar la salida anterior.
+- La cabecera PDF reserva columnas y separación para marca, título y metadatos en los seis temas; permite ajustar líneas sin recortar el contenido ni cambiar los márgenes del cuerpo.
+- La verificación PDF incluye presencia y multiplicidad de celdas de tablas y elementos de listas, que antes podían quedar fuera del contrato textual. Los límites de palabra evitan coincidencias dentro de otra palabra. La presencia sigue siendo global y no certifica asociación de bloques, geometría ni significado.
+- En mapas Unicode explícitos compatibles, el lector PDF recupera un guion ASCII de final de línea sólo si los códigos reales del archivo, su mapa y un segundo lector corroboran todos los caracteres. No toma caracteres del texto esperado. Guiones blandos, mapas no admitidos o lecturas divergentes mantienen un rechazo explícito.
+- La comprobación de portada usa la geometría textual de la primera página para separar títulos y subtítulos largos. El contenido de páginas posteriores no puede suplir metadatos alterados de la portada.
+- Las regresiones incluyen archivos realmente alterados, conservación de la salida anterior, listas y tablas extensas, enlaces con figuras y recorridos del editor con almacenamiento fallido y recuperación. La inspección visual de las entregas sigue siendo necesaria.
+
 # Cambios 0.31.4 (2026-10-11)
 
 - La búsqueda compara texto Unicode normalizado y espacios coherentes: los acentos equivalentes y las frases partidas entre líneas se encuentran sin alterar el contenido guardado.

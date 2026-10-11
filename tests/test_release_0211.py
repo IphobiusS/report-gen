@@ -251,12 +251,14 @@ def test_legacy_overview_keeps_default_assessment_team(tmp_path,fmt):
 
 def test_pdf_page_join_does_not_drop_source_words_or_skip_a_page():
     unit='First part remains. Second part remains.'
-    assert export_contract._pdf_across_pages(unit,['First part remains. footer','header Second part remains.'])
-    assert not export_contract._pdf_across_pages(unit,['First part remains. footer','header Second remains.'])
-    assert not export_contract._pdf_across_pages(unit,['First part remains.','unrelated','Second part remains.'])
+    found=export_contract._pdf_occurrences(unit,['First part remains. footer','header Second part remains.'])
+    assert found == [((0, 0, 19), (1, 7, 27))]
+    assert not export_contract._pdf_occurrences(unit,['First part remains. footer','header Second remains.'])
+    assert not export_contract._pdf_occurrences(unit,['First part remains.','unrelated','Second part remains.'])
     assert not export_contract._pdf_pattern('A B').search('AB')
 
 
 def test_pdf_long_paragraph_can_span_three_consecutive_pages():
-    assert export_contract._pdf_across_pages('Alpha beta gamma delta epsilon zeta.',
+    found=export_contract._pdf_occurrences('Alpha beta gamma delta epsilon zeta.',
         ['Alpha beta footer','header gamma delta footer','header epsilon zeta.'])
+    assert found == [((0, 0, 10), (1, 7, 18), (2, 7, 20))]

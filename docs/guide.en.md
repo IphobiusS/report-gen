@@ -1,4 +1,4 @@
-# report-gen 0.31.4 user guide
+# report-gen 0.31.5 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -72,7 +72,7 @@ Every profile supports English and Spanish. Applying an appearance preserves fin
 
 The default WeasyPrint PDF export detects characters lacking a glyph in available fonts and stops before replacing the previous output. The error identifies codes such as `U+1F3E6`: install a font containing those characters or revise the text and export again. Extractable text alone does not prove that the symbol renders correctly. This check does not certify fonts or visual composition in the optional Chromium engine.
 
-On pages with custom font maps or right-to-left text, a line-ending hyphen can be ambiguous to the extractor. If this specific error appears, delivery stops without replacing the previous file: adjust that line break or use another format and review the result. The verifier does not invent a missing character.
+On pages with custom font maps or right-to-left text, the reader recovers a line-ending ASCII hyphen only when the PDF’s explicit codes and maps and a second reader agree character by character. A soft hyphen, unsupported map or divergent reading can still be ambiguous. If this specific error appears, delivery stops without replacing the previous file: adjust that line break or use another format and review the result. The verifier does not invent a missing character.
 
 The sidebar groups capture/coverage and history/follow-up tools in expandable sections. Direct navigation to one of their pages expands the group to show your location. **More project tools** on Overview contains less frequent controls; existing functions and data remain available.
 
@@ -112,7 +112,7 @@ Annexes are excluded until individually reviewed and selected. Only the combined
 
 The annex scanner searches the first MiB of UTF-8 text or counts image metadata. That annex scan does not perform OCR or inspect PDF contents. The Publication inspector offers a separate optional local OCR action for published images. Results include scope and limitations, never matched secret values.
 
-Structured export checks compare paragraphs, literal code, metadata, native tables, links and evidence placement within their finding. Only code line endings are normalized. Missing internal destinations block publication. Static HTML visibility checks do not certify geometry, occlusion, conditional CSS or dynamic states. PDF checks text presence, image counts and index destinations; literal whitespace, block association and layout require manual review. Markdown intentionally omits the severity chart and its scope caption; that difference is recorded.
+Structured export checks compare paragraphs, literal code, metadata, native tables, links and evidence placement within their finding. Only code line endings are normalized. Missing internal destinations block publication. Static HTML visibility checks do not certify geometry, occlusion, conditional CSS or dynamic states. PDF checks text presence, including table cells and list items, image counts and index destinations. Text presence is global and does not prove the location or association of a cell or item. Wrapped parts of a logical code line stay on one page; a line taller than the printable page is rejected while preserving the previous output. In PDF, literal whitespace, block association and layout require manual review. Markdown intentionally omits the severity chart and its scope caption; that difference is recorded.
 
 Project integers must be within −9,007,199,254,740,991 to 9,007,199,254,740,991 to preserve their value in the browser editor. Store larger documentary values or identifiers as quoted text in YAML/JSON. Out-of-range inputs are rejected with the field path rather than silently rounded or replaced with `null`. Report numbered lists use counters from 0 to 2,147,483,647, compatible with browser and Word consumers. An initial or final ordinal above that limit is rejected, preserving any previous output file.
 

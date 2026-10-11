@@ -263,6 +263,90 @@ function draftRecoveryEditor(){
 }
 const remoteDraft={data:{meta:{report_title:'Alpha on disk'},report:{sections:[]}},etag:'a2'};
 const acceptDraft=request=>request.resolve({ok:true,json:async()=>({data:JSON.parse(request.options.body)})});
+for(const change of ['reorder','remove'])test('draft recovery preserves finding identity when accepted draft will '+change,async()=>{
+  const dom=draftRecoveryEditor(),{recovery,requests}=dom.window;
+  try{
+    const rows=[{id:'F1',uid:'first',title:'First finding'},{id:'F2',uid:'selected',title:'Selected finding'},{id:'F3',uid:'last',title:'Last finding'}];
+    recovery.state.data.findings=rows;recovery.state.sel={type:'finding',idx:1};
+    recovery.store.base=JSON.parse(JSON.stringify(recovery.state.data));
+    const candidate={workspace_id:'workspace',slug:'alpha',base:JSON.parse(JSON.stringify(recovery.state.data)),data:JSON.parse(JSON.stringify(recovery.state.data))};
+    candidate.data.findings=change==='reorder'?[rows[1],rows[2],rows[0]]:[rows[0],rows[2]];
+    const open=recovery.run(candidate);requests[0].resolve({data:JSON.parse(JSON.stringify(recovery.store.base)),etag:'a1'});await open;
+    [...dom.window.document.querySelectorAll('dialog button')].find(b=>b.textContent==='Apply choices and save').click();
+    acceptDraft(requests[1]);await settle();
+    assert.equal(dom.window.saved.length,1);
+    if(change==='reorder')assert.equal(recovery.state.data.findings[recovery.state.sel.idx]?.uid,'selected');
+    else assert.deepEqual(JSON.parse(JSON.stringify(recovery.state.sel)),{type:'report',idx:-1});
+    assert.deepEqual(JSON.parse(JSON.stringify(dom.window.saved[0].data.findings)),candidate.data.findings);
+  }finally{dom.window.close();}
+});
+test('draft recovery exits a deleted custom chapter instead of rendering detached fields',async()=>{
+  const dom=draftRecoveryEditor(),{recovery,requests}=dom.window;
+  try{
+    recovery.state.data.report.sections=[{key:'keep',title:'Kept chapter',body:'Unchanged'},{key:'remove',title:'Removed chapter',body:'Old text'}];recovery.state.sel={type:'section',key:'remove'};
+    recovery.store.base=JSON.parse(JSON.stringify(recovery.state.data));
+    const candidate={workspace_id:'workspace',slug:'alpha',base:JSON.parse(JSON.stringify(recovery.state.data)),data:JSON.parse(JSON.stringify(recovery.state.data))};candidate.data.report.sections.pop();
+    const open=recovery.run(candidate);requests[0].resolve({data:JSON.parse(JSON.stringify(recovery.store.base)),etag:'a1'});await open;
+    [...dom.window.document.querySelectorAll('dialog button')].find(b=>b.textContent==='Apply choices and save').click();acceptDraft(requests[1]);await settle();
+    assert.deepEqual(JSON.parse(JSON.stringify(recovery.state.sel)),{type:'report',idx:-1});assert.deepEqual(JSON.parse(JSON.stringify(dom.window.saved[0].data.report.sections)),candidate.data.report.sections);
+  }finally{dom.window.close();}
+});
+
+function findingActionEditor(data){
+  const dom=new JSDOM('<!doctype html><html><body><header class="topbar"></header><main id="editor" tabindex="-1"></main></body></html>',{runScripts:'outside-only',url:'http://localhost/'});
+  const app=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8'),workbench=fs.readFileSync(path.join(root,'webapp/static/workbench.js'),'utf8');
+  dom.window.inputData=JSON.parse(JSON.stringify(data));dom.window.toasts=[];
+  dom.window.eval(app.slice(0,app.indexOf('// ---- shared transport'))+`
+    const scopedResourceURL=value=>value,S={slug:'alpha',uiLang:'en',data:window.inputData,sel:{type:'finding',idx:0}};
+    const projectBusyCount=0,t=key=>key,toast=message=>window.toasts.push(message),scheduleSave=()=>{},renderSidebar=()=>{},renderMain=()=>{},ensureFindingIds=()=>{};
+    const requestedFindingId=()=> 'F99',select=(type,idx)=>{S.sel={type,idx};},saveToLibrary=()=>{};
+    const projectStore={revision:0,etag:'a1'},nextFid=()=> 'F99';
+    const appFetch=async(url,options)=>({ok:true,json:async()=>({data:JSON.parse(options.body)})}),requireOk=async response=>response;
+    const WorkflowUI={uid:()=> 'new-finding',findingPanel:()=>document.createElement('section')};
+    const WorkbenchUI={findingWorkspace:()=>{},findingNavigation:()=>{}};
+    const vulnEditor=()=>document.createElement('section');
+  `+workbench.slice(0,workbench.indexOf('const WorkbenchUI'))+'\n'+app.slice(app.indexOf('function findingEditor('),app.indexOf('function parseCweId('))+'\n'+app.slice(app.indexOf('async function importFindings('),app.indexOf('function addFinding('))+`
+    window.actions={state:S,undo:UndoUI.undo,remove:()=>UndoUI.remove(S.data.findings,0),render:()=>document.querySelector('#editor').append(findingEditor(S.data.findings[0])),importFile:file=>importFindings({target:{files:[file]}})};
+  `);return dom;
+}
+for(const removeGroup of [false,true])test('undo removed finding retains only live asset links'+(removeGroup?' and omits deleted group':''),()=>{
+  const original={uid:'finding',id:'F1',title:'Preserved finding',root_cause_uid:'group',asset_uids:['kept','deleted'],evidence_uids:['evidence'],retests:[{uid:'retest',notes_md:'Historical verification'}]};
+  const dom=findingActionEditor({meta:{client:'Original client'},findings:[original],assets:[{uid:'kept'},{uid:'deleted'}],root_cause_groups:[{uid:'group'}]});
+  try{
+    const {actions}=dom.window;actions.remove();actions.state.data.assets.splice(1,1);if(removeGroup)actions.state.data.root_cause_groups=[];
+    actions.state.data.meta.client='New unrelated edit';actions.undo();
+    const restored=JSON.parse(JSON.stringify(actions.state.data.findings[0]));
+    assert.deepEqual(restored.asset_uids,['kept']);assert.deepEqual(restored.evidence_uids,original.evidence_uids);assert.deepEqual(restored.retests,original.retests);
+    assert.equal(restored.root_cause_uid,removeGroup?undefined:'group');assert.equal(restored.uid,original.uid);assert.equal(restored.title,original.title);
+    assert.equal(actions.state.data.meta.client,'New unrelated edit');assert.equal(actions.state.data.assets.length,1);
+    assert.match(dom.window.toasts.at(-1),/restored|undone/i);
+  }finally{dom.window.close();}
+});
+test('duplicate finding drops original remediation correspondence while retaining independent authored content',()=>{
+  const original={uid:'original',id:'F1',mode:'vuln',title:'Original',owner:'Planned owner',due_date:'2026-11-30',status:'reported_fixed',verification:'confirmed',reported_remediation:'Received only for the original finding',retests:[{uid:'retest',result:'partial'}],walkthrough:[{text_md:'Original nested text'}],asset_uids:['asset'],evidence_uids:['evidence']};
+  const dom=findingActionEditor({findings:[original]});
+  try{
+    const {actions,document}=dom.window;actions.render();[...document.querySelectorAll('button')].find(b=>b.textContent==='duplicate_finding').click();
+    const [source,copy]=actions.state.data.findings;
+    assert.equal(copy.id,'F99');assert.equal(copy.uid,'new-finding');assert.equal(copy.reported_remediation,undefined);assert.equal(copy.retests,undefined);
+    assert.equal(copy.status,'open');assert.equal(copy.verification,'unverified');assert.deepEqual(JSON.parse(JSON.stringify(source)),original);
+    assert.equal(copy.owner,original.owner);assert.equal(copy.due_date,original.due_date);
+    copy.walkthrough[0].text_md='Copy edit';assert.equal(source.walkthrough[0].text_md,'Original nested text');
+    assert.deepEqual(JSON.parse(JSON.stringify(copy.asset_uids)),original.asset_uids);assert.deepEqual(JSON.parse(JSON.stringify(copy.evidence_uids)),original.evidence_uids);
+  }finally{dom.window.close();}
+});
+test('JSON finding import resets identity-bound outcomes while preserving owner and due date plans',async()=>{
+  const imported={uid:'prior-identity',id:'F1',mode:'vuln',title:'Reusable authored content',owner:'Planned owner',due_date:'2026-11-30',status:'verified_fixed',verification:'confirmed',reported_remediation:'Original correspondence',retests:[{uid:'old-retest',result:'fixed'}],import_source:{reviewed:true},description_md:'Keep this authored explanation.'};
+  const before=JSON.stringify(imported),dom=findingActionEditor({findings:[]});
+  try{
+    await dom.window.actions.importFile(new dom.window.File(['['+before+']'],'findings.json',{type:'application/json'}));
+    const rows=dom.window.actions.state.data.findings;assert.equal(rows.length,1);
+    const copy=rows[0];assert.notEqual(copy.uid,imported.uid);assert.notEqual(copy.id,imported.id);
+    assert.equal(copy.status,'open');assert.equal(copy.verification,'unverified');assert.equal(copy.reported_remediation,undefined);assert.equal(copy.retests,undefined);assert.equal(copy.import_source.reviewed,false);
+    assert.equal(copy.owner,imported.owner);assert.equal(copy.due_date,imported.due_date);assert.equal(copy.description_md,imported.description_md);assert.equal(JSON.stringify(imported),before);
+  }finally{dom.window.close();}
+});
+
 for(const change of ['project','edit','reload','revision'])test('draft recovery rejects a remote response after '+change,async()=>{
   const dom=draftRecoveryEditor(),{recovery,requests}=dom.window;
   try{

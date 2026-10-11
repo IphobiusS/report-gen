@@ -32,17 +32,23 @@ const UndoUI = (() => {
     if(a.slug!==S.slug||!contains(S.data,a.array)){clear();toast(S.uiLang==='en'?'The project was reloaded. Use Versions to recover older changes.':'El proyecto se recargó. Usa Versiones para recuperar cambios anteriores.','err');return;}
     stack.pop();
     if(a.kind==='move'){const i=a.array.indexOf(a.value);if(i<0){update();return;}a.array.splice(i,1);}
-    // A removed finding can outlive its group's deletion in the undo stack.
-    // Restore its evidence and retests, but never resurrect a dangling group.
-    const lostRootCause=a.kind==='remove'&&a.array===S.data.findings&&a.value?.root_cause_uid&&!(S.data.root_cause_groups||[]).some(group=>group.uid===a.value.root_cause_uid);
+    // Removed findings can outlive asset/group deletion in the undo stack.
+    // Retain evidence and retests without reviving links deleted meanwhile.
+    const restoringFinding=a.kind==='remove'&&a.array===S.data.findings;
+    const lostRootCause=restoringFinding&&a.value?.root_cause_uid&&!(S.data.root_cause_groups||[]).some(group=>group.uid===a.value.root_cause_uid);
     if(lostRootCause)delete a.value.root_cause_uid;
+    let lostAssets=false;
+    if(restoringFinding&&a.value?.asset_uids?.length){
+      const assets=new Set((S.data.assets||[]).map(asset=>asset.uid)),kept=a.value.asset_uids.filter(uid=>assets.has(uid));
+      lostAssets=kept.length!==a.value.asset_uids.length;if(lostAssets)a.value.asset_uids=kept;
+    }
     const next=a.array.indexOf(a.after),prev=a.array.indexOf(a.before);
     a.array.splice(next>=0?next:prev>=0?prev+1:Math.min(a.index,a.array.length),0,a.value);
     const selected=S.sel.type==='finding'?S.data.findings[S.sel.idx]?.uid:null;
     ensureFindingIds();
     if(a.array===S.data.findings){const idx=S.data.findings.findIndex(f=>f.uid===(a.value?.uid||selected));S.sel={type:idx>=0?'finding':'report',idx};}
     scheduleSave();renderSidebar();renderMain();update();document.querySelector('#editor').focus({preventScroll:true});
-    toast(lostRootCause?(S.uiLang==='en'?'Finding restored without the deleted group. Evidence and retests are retained.':'Hallazgo recuperado sin el grupo eliminado. Se conservan evidencias y retests.'):(S.uiLang==='en'?'Action undone. Other edits are preserved.':'Acción deshecha. Se conservan las demás ediciones.'),'ok');
+    toast(lostRootCause||lostAssets?(S.uiLang==='en'?'Finding restored without deleted asset or group links. Evidence and retests are retained.':'Hallazgo recuperado sin vínculos con activos o grupos eliminados. Se conservan evidencias y retests.'):(S.uiLang==='en'?'Action undone. Other edits are preserved.':'Acción deshecha. Se conservan las demás ediciones.'),'ok');
   }
   return {remove,move,undo,clear,update};
 })();

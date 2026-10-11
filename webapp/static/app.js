@@ -987,7 +987,7 @@ function findingEditor(f) {
   head.append(modeSel);
   head.append(h("button", { class: "btn sm", style: "float:right;margin-left:8px", onclick: () => {
     const id=requestedFindingId(); if (!id) return;
-    const copy = JSON.parse(JSON.stringify(f)); copy.id = id; copy.uid = WorkflowUI.uid(); delete copy.retests; copy.status = "open"; copy.verification = "unverified"; if(copy.import_source)copy.import_source.reviewed=false;
+    const copy = JSON.parse(JSON.stringify(f)); copy.id = id; copy.uid = WorkflowUI.uid(); delete copy.retests; delete copy.reported_remediation; copy.status = "open"; copy.verification = "unverified"; if(copy.import_source)copy.import_source.reviewed=false;
     S.data.findings.splice(S.sel.idx + 1, 0, copy); ensureFindingIds(); scheduleSave(); select("finding", S.sel.idx + 1);
   } }, t("duplicate_finding")));
   head.append(h("button", { class: "btn sm", style: "float:right;margin-left:8px", onclick: () => saveToLibrary(f) }, t("save_to_lib")));
@@ -1208,7 +1208,8 @@ async function importFindings(ev) {
     const candidate=JSON.parse(snapshot);
     for (const f of arr) {
       const g=JSON.parse(JSON.stringify(f));g.id='F'+nextFid(candidate).slice(1).padStart(2,'0');g.uid=WorkflowUI.uid();g.mode ??= 'vuln';
-      delete g.__name;delete g.asset_uids;delete g.evidence_uids;delete g.retests;delete g.root_cause_uid;candidate.findings.push(g);
+      delete g.__name;delete g.asset_uids;delete g.evidence_uids;delete g.retests;delete g.root_cause_uid;delete g.reported_remediation;
+      g.status='open';g.verification='unverified';if(g.import_source)g.import_source.reviewed=false;candidate.findings.push(g);
     }
     if (!unchanged()) throw Error(S.uiLang === "en" ? "The project changed. Import the file again." : "El proyecto cambió. Importa el archivo otra vez.");
     const response=await requireOk(await appFetch('/api/projects/'+encodeURIComponent(slug)+'/draft-check',{method:'POST',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(candidate)}));

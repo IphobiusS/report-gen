@@ -23,7 +23,12 @@ async function resolveDraft(candidate){
     const checked=await requireOk(await appFetch('/api/projects/'+encodeURIComponent(slug)+'/draft-check',{method:'POST',headers:{'Content-Type':'application/json','If-Match':remote.etag},body:JSON.stringify(merged)}));
     const accepted=(await checked.json()).data;stale();if(!d.open||!d.isConnected)return;
     accepted.report||={sections:[]};accepted.report.sections||=[];
+    const selectedFinding=S.sel?.type==='finding'?S.data.findings[S.sel.idx]?.uid:null;
     invalidateValidation();projectStore.adopt(accepted,remote);S.data=projectStore.data;
+    if(S.sel?.type==='finding'){
+      const idx=selectedFinding?(S.data.findings||[]).findIndex(f=>f.uid===selectedFinding):-1;
+      S.sel=idx>=0?{type:'finding',idx}:{type:'report',idx:-1};
+    }else if(S.sel?.type==='section'&&!S.data.report.sections.some(section=>section.key===S.sel.key))S.sel={type:'report',idx:-1};
     const saved=await doSave();renderSidebar();renderMain();
     if(saved&&candidate?.id){await projectStore.journal?.removeUnchanged(candidate);projectStore.recovery=projectStore.recovery.filter(x=>x.id!==candidate.id);}
     d.close();

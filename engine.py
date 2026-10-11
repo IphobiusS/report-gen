@@ -309,11 +309,68 @@ def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=No
     return result
 
 
+def _pdf_code_layout(source):
+    """Keep one authored code line and its visual wraps on the same page.
+
+    The transient PDF layout preserves every text character. Other export
+    formats and the source markup retain their original code representation.
+    """
+    from lxml import html
+    tree = html.document_fromstring(source)
+    changed = False
+    for pre in tree.xpath('//pre'):
+        content = pre
+        if len(pre):
+            if len(pre) != 1 or pre[0].tag != 'code' or len(pre[0]):
+                continue
+            content = pre[0]
+        text = content.text or ''
+        content.text = None
+        parts = text.split('\n')
+        for index, line in enumerate(parts):
+            if index == len(parts) - 1 and not line:
+                continue  # Preserve the preceding terminal LF without a new box.
+            span = html.Element('span', {
+                'class': 'rg-pdf-code-line',
+                'style': 'display:inline-block;width:100%;vertical-align:top;'
+                         'break-inside:avoid;page-break-inside:avoid'})
+            span.text = line
+            span.tail = '\n' if index < len(parts) - 1 else ''
+            content.append(span)
+        pre.set('style', pre.get('style', '') +
+                ';break-inside:auto;page-break-inside:auto;orphans:4;widows:4')
+        changed = True
+    return html.tostring(tree, encoding='unicode', method='html') if changed else source
+
+
+def _verify_pdf_code_lines(document):
+    """Reject an indivisible line taller than the available printed page."""
+    for page in document.pages:
+        root = page._page_box
+        bottom = root.content_box_y() + root.height
+
+        def walk(box):
+            node = getattr(box, 'element', None)
+            if (type(box).__name__ == 'InlineBlockBox' and node is not None
+                    and 'rg-pdf-code-line' in node.get('class', '').split()
+                    and (box.height > root.height + 2 or box.position_y + box.height > bottom + 2)):
+                raise ValueError(message(
+                    'PDF no generado: una línea de código es más alta que la página imprimible. '
+                    'Divide esa línea explícitamente y vuelve a exportar. La salida anterior se conserva.',
+                    en='PDF not generated: one code line is taller than the printable page. '
+                       'Split that line explicitly and export again. The previous output is preserved.'))
+            for child in box.all_children():
+                walk(child)
+
+        walk(root)
+
+
 def render_pdf_weasyprint(html, out_pdf, base_url):
     from weasyprint import HTML
     from pdf_pagination import verify_finding_tables
-    document = HTML(string=html, base_url=str(base_url), url_fetcher=restricted_fetcher(base_url, THEMES)).render()
+    document = HTML(string=_pdf_code_layout(html), base_url=str(base_url), url_fetcher=restricted_fetcher(base_url, THEMES)).render()
     verify_finding_tables(document)
+    _verify_pdf_code_lines(document)
     # WeasyPrint records unsupported code points while drawing the PDF, not
     # during layout. A ToUnicode map may preserve their text even though the
     # visible glyph is .notdef. Inspect the actual selected fonts after drawing

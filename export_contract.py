@@ -42,6 +42,21 @@ def list_lead(node):
     return normal(''.join(parts))
 
 
+def _list_figure_parts(node):
+    """Retain authored block boundaries in this list's lead only."""
+    from export_semantics import _figure_link_parts
+    lead = html.Element('div')
+    lead.text = node.text
+    for child in node:
+        if child.tag in ('ul', 'ol', 'pre', 'table'): break
+        lead.append(deepcopy(child))
+        if child.tag == 'p': break
+    parts = _figure_link_parts(lead)
+    if parts and normal(''.join(part['text'] for part in parts)) == list_lead(node):
+        return dict(label=list_lead(node), parts=parts)
+    return None
+
+
 def _code(node, markdown=False):
     text = literal(node.text_content())
     # A fenced Markdown block has one syntactic terminal newline. Commands
@@ -58,9 +73,26 @@ def _dom_paragraph_nodes(root):
             and not (n.tag == 'figcaption' and n.xpath('ancestor::p|ancestor::a'))]
 
 
+def _paragraph_text(node):
+    # A figure is a block even when a Markdown link surrounds it without
+    # source spaces. Word must put the surrounding prose in separate visible
+    # paragraphs. Preserve that block boundary in paragraph units only; link
+    # labels and the DOM itself remain unchanged and are checked separately.
+    parts = [node.text or '']
+    for child in node:
+        if not isinstance(child.tag, str):
+            pass  # Comment text is not part of the visible paragraph.
+        elif child.tag == 'figure':
+            parts.extend(('\n', _paragraph_text(child), '\n'))
+        else:
+            parts.append(_paragraph_text(child))
+        parts.append(child.tail or '')
+    return ''.join(parts)
+
+
 def _dom_units(root, markdown=False):
-    paragraphs = [normal(n.text_content()) for n in _dom_paragraph_nodes(root)
-                  if normal(n.text_content())]
+    paragraphs = [normal(_paragraph_text(n)) for n in _dom_paragraph_nodes(root)
+                  if normal(_paragraph_text(n))]
     # Actual paragraph order is used below, with block boundaries retained as spaces.
     text = normal(root.text_content())
     codes = [_code(n, markdown) for n in root.xpath('.//pre')]
@@ -164,15 +196,19 @@ def from_tree(tree, image_digests=None, docx_image_digests=None):
         # other lists. Retain DOM order too, including nested list items;
         # concatenating groups would place a parent's later sibling before
         # its nested children and reject a faithful nested procedure.
-        list_sequence = [list_lead(node) for node in root.xpath('.//li')
-                         if not any(any(has_class(a, c) for c in ('steps', 'toc-list', 'toc'))
-                                    for a in node.iterancestors())]
+        authored_items = [node for node in root.xpath('.//li')
+                          if not any(any(has_class(a, c) for c in ('steps', 'toc-list', 'toc'))
+                                     for a in node.iterancestors())]
+        list_sequence = [list_lead(node) for node in authored_items]
+        list_figure_parts = [dict(parts, index=index) for index, node in enumerate(authored_items)
+                             if (parts := _list_figure_parts(node))]
         semantic=dom(root, lambda src: image_digests[unquote(src)], severity_label=severity_label)
         for image in semantic['images']:
             image['docx_sha256'] = (docx_image_digests or {}).get(image['sha256'], image['sha256'])
         scopes.append(dict(id=key, semantic=semantic, title=normal(titles[0].text_content()) if titles else '',
                            headings=[normal(n.text_content()) for n in root.xpath('.//*[@data-rg-authored-heading="true"]')],
-                           paragraphs=units['paragraphs'], paragraphs_md=[normal(n.text_content()) for n in _dom_paragraph_nodes(root) if not has_class(n,'chart-scope') and normal(n.text_content())], codes=units['codes'], table_rows=rows, tables=tables, lists=lists, list_sequence=list_sequence))
+                           paragraphs=units['paragraphs'], paragraphs_md=[normal(_paragraph_text(n)) for n in _dom_paragraph_nodes(root) if not has_class(n,'chart-scope') and normal(_paragraph_text(n))], codes=units['codes'], table_rows=rows, tables=tables, lists=lists, list_sequence=list_sequence,
+                           list_figure_parts=list_figure_parts))
     return dict(version=3, scopes=scopes, severity_label=severity_label, cover_units=_cover_units(tree),
                 titles=[s['title'] for s in scopes if s['id']],
                 code_lines=[line for s in scopes for code in s['codes'] for line in code.splitlines() if line],
@@ -190,6 +226,65 @@ def _word_text(node):
         elif child.tag == W + 'tab': parts.append('\t')
         elif child.tag in (W + 'br', W + 'cr'): parts.append('\n')
     return ''.join(parts)
+
+
+def _word_numbered(paragraph):
+    return bool(paragraph.xpath('./w:pPr/w:numPr|./w:pPr/w:pStyle[starts-with(@w:val,"List")]', namespaces=NS))
+
+
+def _word_list_flows(paragraphs):
+    """Observe physical siblings; never bridge another item, table or scope."""
+    allowed = set(paragraphs)
+    flows = []
+    for first in paragraphs:
+        if not _word_numbered(first): continue
+        records = []; paragraph = first
+        while (paragraph is not None and paragraph.tag == W+'p' and paragraph in allowed
+               and (paragraph is first or not _word_numbered(paragraph))):
+            style = paragraph.find('./'+W+'pPr/'+W+'pStyle')
+            records.append(dict(text=normal(_word_text(paragraph)),
+                                style=style.get(W+'val', '') if style is not None else '',
+                                images=len(paragraph.xpath('.//w:drawing', namespaces=NS))))
+            paragraph = paragraph.getnext()
+        flows.append(records)
+    return flows
+
+
+def _word_figure_list_matches(parts, flow):
+    cursor = 0
+    for part in parts:
+        if cursor >= len(flow): return False
+        record = flow[cursor]
+        if part['kind'] == 'figure':
+            # The numbered paragraph may itself contain the first drawing.
+            # Every caption must immediately follow its own drawing, with no
+            # intervening prose or list marker. Images/links have their own
+            # digest, destination and order checks in export_semantics.
+            if record['text'] or record['images'] != 1: return False
+            cursor += 1
+            if cursor >= len(flow): return False
+            record = flow[cursor]
+            if record['style'] != 'Caption' or record['images']: return False
+        elif part['kind'] != 'text' or record['images'] or record['style'] == 'Caption':
+            return False
+        if record['text'] != normal(part['text']): return False
+        cursor += 1
+    return True
+
+
+def _word_list_items(scope, actual):
+    """Verify a source-defined block lead, without joining ordinary list items."""
+    items = list(actual['list_items'])
+    for index, flow in enumerate(actual.get('list_flows', [])):
+        for source in scope.get('list_figure_parts', []):
+            parts = source['parts']
+            if (normal(''.join(part['text'] for part in parts)) == source['label']
+                    and _word_figure_list_matches(parts, flow)):
+                # Each observed fragment has already matched exactly, and the
+                # source supplies only its authored inter-block boundaries.
+                items[index] = source['label']
+                break
+    return items
 
 
 def _word_scopes(path, expected):
@@ -230,17 +325,145 @@ def _word_scopes(path, expected):
                       and not p.findall('./' + W + 'bookmarkStart')],
             codes=[literal(_word_text(p)) for p in paras if p.xpath('./w:pPr/w:pStyle[@w:val="ReportGenCode"]', namespaces=NS)],
             paragraphs=[normal(_word_text(p)) for p in paras], table_rows=rows, tables=tables,
-            list_items=[normal(_word_text(p)) for p in paras if p.xpath('./w:pPr/w:numPr|./w:pPr/w:pStyle[starts-with(@w:val,"List")]', namespaces=NS)])
+            list_items=[normal(_word_text(p)) for p in paras if _word_numbered(p)],
+            list_flows=_word_list_flows(paras))
     cover=tree.find(W+'body/'+W+'tbl')
     profiles['']['cover_text']=normal(' '.join(_word_text(p) for p in cover.findall('.//'+W+'p'))) if cover is not None else ''
     return profiles
 
 
-def pdf_text_pages(source):
+def _pdf_hyphen_donor(page, reader):
+    """Read fixed-width source codes through their explicit ToUnicode map.
+
+    This deliberately small subset is only a corroborating reader for PDFium
+    hyphen markers. It never supplies spaces or replaces the primary text.
+    Unsupported mappings retain the explicit ambiguous-extraction rejection.
+    """
+    from pypdf.generic import (ByteStringObject, ContentStream, NameObject,
+                               StreamObject, TextStringObject)
+
+    def resolved(value):
+        return value.get_object() if hasattr(value, 'get_object') else value
+
+    def codespace(stream):
+        data = re.sub(rb'%[^\r\n]*', b'', stream.get_data())
+        if '/UseCMap' in stream or re.search(rb'\busecmap\b', data):
+            raise ValueError('Inherited CMap is not corroborated')
+        blocks = re.findall(rb'\b(\d+)\s+begincodespacerange\s*(.*?)\s*endcodespacerange\b', data, re.S)
+        pair = (re.fullmatch(rb'\s*<([\da-fA-F]{4})>\s*<([\da-fA-F]{4})>\s*', blocks[0][1])
+                if len(blocks) == 1 and int(blocks[0][0]) == 1 else None)
+        if pair is None:
+            raise ValueError('CMap is not fixed two-byte')
+        lo, hi = (int(value, 16) for value in pair.groups())
+        if lo > hi:
+            raise ValueError('Invalid codespace')
+        return lo, hi, data
+
+    resources = resolved(page.get('/Resources', {}))
+    for ref in resolved(resources.get('/XObject', {})).values():
+        if resolved(ref).get('/Subtype') != '/Image':
+            raise ValueError('Form text is not corroborated')
+    mappings = {}
+    fonts = {}
+    for name, ref in resolved(resources.get('/Font', {})).items():
+        font = resolved(ref)
+        if font.get('/Subtype') != '/Type0':
+            raise ValueError('Font is not Type0')
+        encoding = resolved(font.get('/Encoding'))
+        if isinstance(encoding, StreamObject):
+            lo, hi, data = codespace(encoding)
+            if encoding.get('/WMode', 0) != 0 or re.search(rb'/WMode\s+1\b', data):
+                raise ValueError('Vertical encoding is not corroborated')
+        elif encoding == '/Identity-H':
+            lo, hi = 0, 65535
+        else:
+            raise ValueError('Named encoding is not corroborated')
+        unicode_map = resolved(font.get('/ToUnicode'))
+        if not isinstance(unicode_map, StreamObject):
+            raise ValueError('Missing ToUnicode map')
+        tlo, thi, data = codespace(unicode_map)
+        if b'beginbfrange' in data:
+            raise ValueError('Range mappings are not corroborated')
+        mapping = {}
+        for count, block in re.findall(rb'\b(\d+)\s+beginbfchar\s*(.*?)\s*endbfchar\b', data, re.S):
+            pair_pattern = rb'<([\da-fA-F]{4})>\s*<([\da-fA-F]+)>'
+            pairs = re.findall(pair_pattern, block)
+            if re.sub(pair_pattern, b'', block).strip() or int(count) != len(pairs):
+                raise ValueError('Malformed Unicode mapping')
+            for code, value in pairs:
+                code = int(code, 16)
+                if code in mapping or not (lo <= code <= hi and tlo <= code <= thi):
+                    raise ValueError('Ambiguous Unicode mapping')
+                mapping[code] = bytes.fromhex(value.decode('ascii')).decode('utf-16-be', errors='strict')
+        if not mapping:
+            raise ValueError('Empty explicit mapping')
+        mappings[name] = mapping
+        fonts[id(font)] = font
+    selected = None
+    stack = []
+    for operands, operator in ContentStream(page.get_contents(), reader).operations:
+        if operator == b'q':
+            stack.append(selected)
+        elif operator == b'Q':
+            if not stack:
+                raise ValueError('Unbalanced graphics state')
+            selected = stack.pop()
+        elif operator == b'Tf':
+            selected = operands[0]
+        elif operator in (b'TJ', b'Tj', b"'", b'"'):
+            values = operands[0] if operator == b'TJ' else [operands[-1]]
+            for value in values:
+                if not isinstance(value, (ByteStringObject, TextStringObject)):
+                    continue
+                blob = value.original_bytes if isinstance(value, TextStringObject) else bytes(value)
+                if len(blob) % 2 or selected not in mappings:
+                    raise ValueError('Unproved text encoding')
+                if any(int.from_bytes(blob[i:i+2], 'big') not in mappings[selected] for i in range(0, len(blob), 2)):
+                    raise ValueError('Source code missing explicit Unicode mapping')
+    # Only the reader-local decoding width changes. ToUnicode remains intact:
+    # source character codes need not equal CIDs (non-identity CMaps work too).
+    originals = [(font, font.get('/Encoding')) for font in fonts.values()]
+    try:
+        for font, _ in originals:
+            font[NameObject('/Encoding')] = NameObject('/Identity-H')
+        return unicodedata.normalize('NFC', page.extract_text() or '')
+    finally:
+        for font, encoding in originals:
+            font[NameObject('/Encoding')] = encoding
+
+
+def _pdf_proved_hyphens(page, reader, textpage, primary):
+    """Recover only a real ASCII hyphen corroborated by independent PDF text."""
+    import pypdfium2.raw as raw
+    chars = [raw.FPDFText_GetUnicode(textpage, i) for i in range(textpage.count_chars())]
+    if ''.join(map(chr, chars)) != primary or '\ufffe' in primary:
+        raise ValueError('Native character sequence differs')
+    for index, char in enumerate(chars):
+        if char == 2 and (raw.FPDFText_IsHyphen(textpage, index) != 1
+                          or raw.FPDFText_HasUnicodeMapError(textpage, index) != 0):
+            raise ValueError('Marker lacks native hyphen proof')
+    donor = [char for char in _pdf_hyphen_donor(page, reader) if not char.isspace()]
+    primary = unicodedata.normalize('NFC', primary)
+    actual = [char for char in primary if not char.isspace()]
+    if len(actual) != len(donor) or any(a != b and not (a == '\x02' and b == '-') for a, b in zip(actual, donor)):
+        raise ValueError('Independent PDF text diverges')
+    confirmed = iter(donor)
+    result = []
+    for char in primary:
+        if char.isspace():
+            result.append(char)
+        else:
+            mapped = next(confirmed)
+            result.append(mapped if char == '\x02' else char)
+    return ''.join(result)
+
+
+def pdf_text_pages(source, *, geometry_pages=()):
     """Read the PDF, retaining the established extractor for ordinary fonts.
 
-    PDFium handles custom CMaps and RTL correctly, but dehyphenates both hard
-    and soft hyphens to the same marker. Never guess which original was used.
+    PDFium dehyphenates both hard and soft hyphens to the same marker. Recover
+    an ASCII hyphen only when native metadata and an independent, strictly
+    mapped PDF text sequence corroborate it. Never infer from expected text.
     """
     from io import BytesIO
     from pypdf import PdfReader
@@ -268,7 +491,7 @@ def pdf_text_pages(source):
     raw_pages = []
     alternate = []
     for index, page in enumerate(reader.pages):
-        special = custom_cmap(page.get('/Resources', {}), set())
+        special = index in geometry_pages or custom_cmap(page.get('/Resources', {}), set())
         text = '' if special else page.extract_text() or ''
         if special or any(unicodedata.bidirectional(char) in ('R', 'AL') for char in text):
             alternate.append(index)
@@ -285,6 +508,11 @@ def pdf_text_pages(source):
                         # UCS-2 range extraction), custom font CMaps and logical
                         # RTL order. Read only the file, never expected content.
                         text = textpage.get_text_bounded(errors='strict')
+                        if '\x02' in text or '\ufffe' in text:
+                            try:
+                                text = _pdf_proved_hyphens(reader.pages[index], reader, textpage, text)
+                            except (ValueError, TypeError, AttributeError, KeyError, IndexError):
+                                pass  # Keep the marker and fail safely below.
                     finally:
                         textpage.close()
                 finally:
@@ -303,9 +531,14 @@ def pdf_text_pages(source):
 
 def _profiles(path, fmt, expected):
     if fmt == 'pdf':
-        raw_pages = pdf_text_pages(path)
+        # The generated cover is the first page. Its title/subtitle can be
+        # separate visible blocks that pypdf concatenates without a space.
+        # Use PDFium's actual geometric text boundaries there, not separators
+        # reconstructed from any expected metadata values.
+        raw_pages = pdf_text_pages(path, geometry_pages=(0,) if expected.get('cover_units') else ())
         pages = [normal(text) for text in raw_pages]
         return {'': dict(text=normal(' '.join(pages)), pages=pages,
+                         cover_text=pages[0] if pages else '',
                          raw_text='\n'.join(raw_pages), codes=[], table_rows=[], list_items=[])}
     if fmt == 'docx': return _word_scopes(path, expected)
     from export_semantics import dom, html_digest, visible_copy
@@ -376,28 +609,113 @@ def _pdf_pattern(unit):
     # A PDF extractor may insert spaces inside a wrapped word/URL or next to
     # inline spans. Source whitespace remains REQUIRED. This is presence only;
     # inserted whitespace is not certified as a faithful literal rendering.
-    words=normal(unit).split(' ')
-    return re.compile(r'\s+'.join(r'\s*'.join(re.escape(c) for c in word) for word in words))
+    unit = normal(unit)
+    words = unit.split(' ')
+    # "Approved" must not be supplied by "NotApproved", in prose, cells or
+    # metadata. These word edges do not prove paragraph/table ownership.
+    before = r'(?<!\w)' if unit and re.match(r'\w', unit[0]) else ''
+    after = r'(?!\w)' if unit and re.match(r'\w', unit[-1]) else ''
+    pattern = r'\s+'.join(r'\s*'.join(re.escape(c) for c in word) for word in words)
+    return re.compile(before + pattern + after)
 
 
-def _pdf_across_pages(unit, pages):
-    # PDF painting order can put a table/header after the final paragraph of
-    # a page. Match contiguous fragments on consecutive pages, consuming every
-    # source word. This remains text presence, never proof of visual layout.
-    words=normal(unit).split(' ')
-    for first in range(len(pages)-1):
-        cursor=0
-        for page in pages[first:]:
-            lo,hi,best=1,len(words)-cursor,0
-            while lo<=hi:
-                size=(lo+hi)//2
-                if _pdf_pattern(' '.join(words[cursor:cursor+size])).search(page):
-                    best=size;lo=size+1
-                else:hi=size-1
-            if not best:break  # No skipping unrelated pages.
-            cursor+=best
-            if cursor==len(words):return True
-    return False
+def _pdf_occurrences(unit, pages):
+    """Count text chains using real, non-reusable ranges on adjacent pages.
+
+    Headers/footers can interrupt a paragraph. Consume the longest verified
+    source-word prefix on each consecutive page, retaining alternate starts.
+    This is global textual presence, not a proof of block association.
+    """
+    from functools import lru_cache
+    words = normal(unit).split()
+    if not words:
+        return []
+
+    @lru_cache(maxsize=2048)
+    def pattern(first, size):
+        return _pdf_pattern(' '.join(words[first:first + size]))
+
+    def longest(first, page, start):
+        lo, hi, best = 1, len(words) - first, None
+        while lo <= hi:
+            size = (lo + hi) // 2
+            match = pattern(first, size).search(page, start)
+            if match is not None:
+                best = size, match.span()
+                lo = size + 1
+            else:
+                hi = size - 1
+        return best
+
+    candidates = []
+    carry = {}
+    for page_index, page in enumerate(pages):
+        cursor = 0
+        while True:
+            progressed = {}
+            completed = []
+            for first, ranges in [(0, ()), *carry.items()]:
+                fragment = longest(first, page, cursor)
+                if fragment is None:
+                    continue  # A chain cannot skip a page with no fragment.
+                size, (start, end) = fragment
+                next_ranges = ranges + ((page_index, start, end),)
+                consumed = first + size
+                if consumed == len(words):
+                    completed.append(next_ranges)
+                else:
+                    previous = progressed.get(consumed)
+                    if previous is None or (end, next_ranges[0]) < (previous[-1][2], previous[0]):
+                        progressed[consumed] = next_ranges
+            if not completed:
+                carry = progressed
+                break
+            chosen = min(completed, key=lambda ranges: (ranges[-1][2], ranges[0]))
+            candidates.append(chosen)
+            cursor = chosen[-1][2]
+            carry = {}
+
+    # Preserve directly contiguous matches too, including a token physically
+    # wrapped across a page with no intervening header/footer. Their offsets
+    # are mapped back to pages and merged, never added as duplicate counts.
+    offsets = []
+    offset = 0
+    for page in pages:
+        offsets.append(offset)
+        offset += len(page) + 1
+    for match in _pdf_pattern(unit).finditer(' '.join(pages)):
+        ranges = []
+        for index, (page, offset) in enumerate(zip(pages, offsets)):
+            start, end = max(match.start() - offset, 0), min(match.end() - offset, len(page))
+            if end > start:
+                ranges.append((index, start, end))
+        if (ranges and all(pages[p][a:b].strip() for p, a, b in ranges)
+                and all(b[0] == a[0] + 1 for a, b in zip(ranges, ranges[1:]))):
+            candidates.append(tuple(ranges))
+    found = []
+    previous = (-1, 0)
+    for ranges in sorted(set(candidates), key=lambda r: (r[-1][0], r[-1][2], r[0])):
+        if (ranges[0][0], ranges[0][1]) >= previous:
+            found.append(ranges)
+            previous = ranges[-1][0], ranges[-1][2]
+    return found
+
+
+def _pdf_present(units, actual, label_es, label_en):
+    """Require visible text occurrences, without claiming PDF block geometry."""
+    counts = Counter(unit for unit in units if unit)
+    across = 0
+    for unit, count in counts.items():
+        pattern = _pdf_pattern(unit)
+        if sum(len(pattern.findall(page)) for page in actual['pages']) < count:
+            ranges = _pdf_occurrences(unit, actual['pages'])
+            if len(ranges) >= count:
+                across += sum(len(occurrence) > 1 for occurrence in ranges[:count])
+                continue
+            raise ValueError(backend_message(
+                f'Texto de {label_es} PDF ausente o alterado',
+                en=f'Missing or changed PDF {label_en} text'))
+    return sum(counts.values()), across
 
 
 def _pdf_code_lines(code, text):
@@ -432,18 +750,27 @@ def inspect(path, fmt, expected):
     observed = profile(path, fmt, expected)
     content = 0; structure = 0; paragraphs = 0; codes = 0; page_break_paragraphs = 0; wrapped_code_lines = 0
     metadata = 0; links = 0; placements = 0; tables_checked = 0; list_order_checked = 0; headings_checked = 0
-    cover_text=observed['']['text'] if fmt=='pdf' else observed[''].get('cover_text','')
+    pdf_table_cells = 0; pdf_list_items = 0
+    cover_text = observed[''].get('cover_text', '')
     for unit in expected['cover_units']:
         if fmt=='pdf':
             if not _pdf_pattern(unit).search(cover_text): raise ValueError(backend_message('Metadato de portada PDF alterado / Cover metadata changed'))
         elif unit not in cover_text: raise ValueError(backend_message('Metadato de portada alterado / Cover metadata changed'))
         metadata+=1
     if fmt == 'pdf':
-        prose=Counter(p for scope in expected['scopes'] for p in scope['paragraphs'])
-        for unit,count in prose.items():
-            if len(_pdf_pattern(unit).findall(observed['']['text']))<count:
-                if count==1 and _pdf_across_pages(unit,observed['']['pages']):page_break_paragraphs+=1
-                else:raise ValueError(backend_message('Párrafo PDF ausente o alterado / PDF paragraph missing or changed'))
+        # Table cells and plain li elements need not contain a paragraph.
+        # Their text must not silently fall outside the PDF presence contract.
+        # Count repetitions globally; PDF order, boundaries and finding
+        # association remain explicitly outside this textual check.
+        pdf_table_cells, _ = _pdf_present(
+            (cell for scope in expected['scopes'] for row in scope.get('table_rows', []) for cell in row),
+            observed[''], 'tabla', 'table')
+        pdf_list_items, _ = _pdf_present(
+            (item for scope in expected['scopes'] for item in scope.get('list_sequence', [])),
+            observed[''], 'lista', 'list')
+        _, page_break_paragraphs = _pdf_present(
+            (paragraph for scope in expected['scopes'] for paragraph in scope['paragraphs']),
+            observed[''], 'párrafo', 'paragraph')
     for scope in expected['scopes']:
         key = '' if fmt == 'pdf' else scope['id']
         if key not in observed: raise ValueError(backend_message('Falta el hallazgo {p0} / Finding missing', p0=scope['id']))
@@ -505,19 +832,24 @@ def inspect(path, fmt, expected):
                           if actual['tables'][i] == table), None)
             if found is None: raise ValueError(backend_message('Tabla alterada o tablas desordenadas / Table changed or tables reordered'))
             table_cursor = found + 1; tables_checked += 1
-        counts=Counter(actual['list_items'])
+        list_items = _word_list_items(scope, actual) if fmt == 'docx' else actual['list_items']
+        counts=Counter(list_items)
         for item,count in Counter(x for items in scope['lists'] for x in items).items():
             if counts[item]<count:raise ValueError(backend_message('Lista alterada / List changed'))
         for items in scope['lists']:
             cursor = 0
             for item in items:
-                found = next((i for i in range(cursor, len(actual['list_items'])) if actual['list_items'][i] == item), None)
+                found = next((i for i in range(cursor, len(list_items)) if list_items[i] == item), None)
                 if found is None: raise ValueError(backend_message('Lista alterada / List changed'))
                 cursor = found + 1; structure += 1
         cursor = 0
-        for item in scope.get('list_sequence', []):
-            found = next((i for i in range(cursor, len(actual['list_items']))
-                          if actual['list_items'][i] == item), None)
+        source_list_parts = {record['index']: record['parts'] for record in scope.get('list_figure_parts', [])}
+        flows = actual.get('list_flows', [])
+        for item_index, item in enumerate(scope.get('list_sequence', [])):
+            found = next((i for i in range(cursor, len(list_items))
+                          if list_items[i] == item
+                          and (fmt != 'docx' or item_index not in source_list_parts
+                               or (i < len(flows) and _word_figure_list_matches(source_list_parts[item_index], flows[i])))), None)
             if found is None: raise ValueError(backend_message('Lista alterada o listas desordenadas / List changed or lists reordered'))
             cursor = found + 1; list_order_checked += 1
     return dict(content_units_checked=content, structure_units_checked=structure,
@@ -527,6 +859,8 @@ def inspect(path, fmt, expected):
                 static_visibility_checked=fmt=='html', evidence_association_checked=fmt!='pdf',
                 pdf_page_break_paragraphs=page_break_paragraphs,
                 pdf_wrapped_code_lines=wrapped_code_lines,
+                pdf_table_cells_checked=pdf_table_cells,
+                pdf_list_items_checked=pdf_list_items,
                 authored_tables_checked=tables_checked,
                 authored_headings_checked=headings_checked,
                 authored_list_items_order_checked=list_order_checked,

@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.31.4
+# Guía de uso de report-gen 0.31.5
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -68,7 +68,7 @@ Todos los perfiles permiten español e inglés. Cambiar apariencia no reemplaza 
 
 La exportación PDF predeterminada con WeasyPrint detecta caracteres sin glifo en las fuentes disponibles y detiene la entrega antes de sustituir la salida anterior. El error identifica códigos como `U+1F3E6`: instala una fuente que contenga esos caracteres o corrige el texto y vuelve a exportar. La presencia de texto extraíble no demuestra que el símbolo se vea correctamente. Esta comprobación no certifica fuentes ni composición visual del motor Chromium opcional.
 
-En páginas con mapas de fuentes personalizados o texto de derecha a izquierda, un guion de final de línea puede resultar ambiguo para la extracción. Si aparece ese error específico, la entrega se detiene sin sustituir el archivo anterior: ajusta ese salto o usa otro formato y revisa el resultado. El verificador no inventa el carácter que falta.
+En páginas con mapas de fuentes personalizados o texto de derecha a izquierda, el lector sólo recupera un guion ASCII de final de línea cuando los códigos y mapas explícitos del PDF y un segundo lector concuerdan carácter por carácter. Un guion blando, un mapa no admitido o una lectura divergente aún pueden resultar ambiguos. Si aparece ese error específico, la entrega se detiene sin sustituir el archivo anterior: ajusta ese salto o usa otro formato y revisa el resultado. El verificador no inventa el carácter que falta.
 
 El lateral agrupa **Registro y cobertura** y **Historial y seguimiento** en desplegables. Al abrir directamente una de sus secciones, el grupo se expande para mostrar dónde estás. En Inicio, **Más herramientas del proyecto** reúne controles menos frecuentes; las funciones y los datos existentes se conservan.
 
@@ -110,7 +110,7 @@ Los IDs existentes, como `F10`, no se renumeran al editar la lista. Los nuevos r
 
 Los enteros del proyecto deben estar entre −9.007.199.254.740.991 y 9.007.199.254.740.991 para conservar su valor al editar en el navegador. Guarda identificadores o valores documentales mayores como texto entre comillas en YAML/JSON. Las entradas que exceden ese rango se rechazan con la ruta del campo; no se redondean ni sustituyen por `null`.
 
-PDF comprueba presencia textual, imágenes y destinos del índice. La extracción puede cambiar orden y espacios: no acredita indentación literal ni asociación de bloques. La ficha lo marca como revisión manual requerida. Ningún formato queda certificado visualmente por estos controles.
+PDF comprueba presencia textual, incluidas celdas de tablas y elementos de listas, imágenes y destinos del índice. La comprobación textual es global: no prueba la posición ni asociación de una celda o elemento. Las envolturas de una línea de código se mantienen en una misma página; una línea que supera la altura imprimible se rechaza conservando la salida anterior. La extracción puede cambiar orden y espacios: no acredita indentación literal ni asociación de bloques. La ficha lo marca como revisión manual requerida. Ningún formato queda certificado visualmente por estos controles.
 
 En **Informe → Espaciado del informe** puedes elegir cómoda o compacta. Es independiente de la densidad visual del editor. El HTML portátil permite filtrar por tipo, severidad pendiente y texto, y restablecer los filtros.
 

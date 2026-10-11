@@ -155,24 +155,27 @@ def test_soft_hyphen_does_not_authorize_removing_a_visible_hyphen(tmp_path):
         export_contract.inspect(target, 'pdf', expected)
 
 
-def test_custom_cmap_wrapped_hyphen_is_explicitly_ambiguous(tmp_path):
+def test_custom_cmap_wrapped_hyphen_is_proved_from_pdf_text(tmp_path):
     initial, target = tmp_path / 'plain.pdf', tmp_path / 'cmap.pdf'
     engine.render_pdf_weasyprint(narrow_text('recovery-assurance'), initial, tmp_path)
     explicit_identity_cmap(initial, target)
     before = target.read_bytes()
-    with language_scope('en'), pytest.raises(ValueError, match='Ambiguous PDF text extraction'):
-        export_contract.pdf_text_pages(target)
+    expected = export_contract.from_tree(html.document_fromstring(narrow_text('recovery-assurance')))
+    assert 'recovery-assurance' in export_contract.pdf_text_pages(target)[0]
+    export_contract.inspect(target, 'pdf', expected)
     assert target.read_bytes() == before
 
 
 @pytest.mark.parametrize('language', ['en', 'es'])
-def test_rtl_wrapped_hyphen_rejects_before_replacing_output(tmp_path, language):
+def test_rtl_wrapped_hyphen_preserves_supported_content(tmp_path, language):
     target = tmp_path / 'prior.pdf'
     target.write_bytes(b'previous verified output')
     document = narrow_text('recovery-assurance', '<p>Latin العربية suffix.</p>')
-    with language_scope(language), pytest.raises(ValueError, match='[Aa]mbigu'):
+    expected = export_contract.from_tree(html.document_fromstring(document))
+    with language_scope(language):
         engine.render_pdf_weasyprint(document, target, tmp_path)
-    assert target.read_bytes() == b'previous verified output'
+    export_contract.inspect(target, 'pdf', expected)
+    assert 'recovery-assurance' in export_contract.pdf_text_pages(target)[0]
 
 
 def test_blank_page_without_resources_is_valid(tmp_path):

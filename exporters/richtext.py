@@ -16,7 +16,7 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
     tree = html.fragment_fromstring(str(md(text, img_base="")), create_parent="div")
     available = document.sections[-1].page_width - document.sections[-1].left_margin - document.sections[-1].right_margin
 
-    def picture(node, paragraph=None, parent=None, caption=None):
+    def picture(node, paragraph=None, parent=None, caption=None, href=None):
         if not node.get("src"):
             return
         source, size = word_image(node.get("src"), root)
@@ -34,6 +34,14 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
         shape = run.add_picture(source, width=max(Cm(.1), width))
         if parent is not None: parent.append(run._r)
         shape._inline.docPr.set("descr", node.get("alt", ""))
+        if href:
+            if href.startswith('#'):
+                from urllib.parse import unquote
+                from .navigation import reference_name
+                href = '#' + reference_name(unquote(href[1:]))
+            link = OxmlElement('a:hlinkClick')
+            link.set(qn('r:id'), paragraph.part.relate_to(href, RT.HYPERLINK, is_external=True))
+            shape._inline.docPr.append(link)
         paragraph.paragraph_format.keep_together = True
         paragraph.paragraph_format.keep_with_next = True
 
@@ -86,27 +94,43 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
         abstract.append(lvl); numbering.append(abstract)
         return numbering.add_num(abstract_id).numId
 
-    def paragraph_parts(node):
+    figure_wrappers = {}
+
+    def paragraph_parts(node, wrappers=()):
         # The shared Markdown tree promotes images to block figures even
-        # inside sentences and list paragraphs. Preserve surrounding prose
-        # above/below the figure instead of on the portrait's baseline.
-        fragment = html.Element('p')
+        # inside links/emphasis in sentences and list paragraphs. Split at any
+        # inline depth, retaining formatting on either side and on the caption.
+        fragment = html.Element(node.tag, dict(node.attrib))
         fragment.text = node.text
         for child in node:
             if child.tag == 'figure':
                 if fragment.text_content().strip() or len(fragment):
                     yield fragment
+                figure_wrappers[child] = wrappers
                 yield child
-                fragment = html.Element('p')
+                fragment = html.Element(node.tag, dict(node.attrib))
                 fragment.text = child.tail
+            elif child.xpath('.//figure'):
+                for part in paragraph_parts(child, wrappers + (child,)):
+                    if part.tag == 'figure':
+                        if fragment.text_content().strip() or len(fragment):
+                            yield fragment
+                        yield part
+                        fragment = html.Element(node.tag, dict(node.attrib))
+                    else:
+                        fragment.append(part)
+                if len(fragment):
+                    fragment[-1].tail = (fragment[-1].tail or '') + (child.tail or '')
+                else:
+                    fragment.text = (fragment.text or '') + (child.tail or '')
             else:
                 fragment.append(deepcopy(child))
         if fragment.text_content().strip() or len(fragment):
             yield fragment
 
-    def block(node, depth=0):
+    def block(node, depth=0, list_paragraph=None):
         tag = node.tag
-        if tag == 'p' and any(child.tag == 'figure' for child in node):
+        if tag == 'p' and node.xpath('.//figure'):
             for part in paragraph_parts(node):
                 block(part, depth)
             return
@@ -129,13 +153,24 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
                     elif child.tag == "p":
                         for part in paragraph_parts(child):
                             if part.tag == 'figure':
-                                block(part, depth+1)
+                                block(part, depth+1, p if not started else None)
                             else:
                                 target = p if not started else continuation()
                                 inline(part, target)
                             started = True; current = None
                     elif child.tag in {'pre', 'table', 'blockquote', 'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'}:
-                        block(child, depth+1); current = None; started = True
+                        block(child, depth+1, p if child.tag == 'figure' and not started else None)
+                        current = None; started = True
+                    elif child.xpath('.//figure'):
+                        wrapper = html.Element('p')
+                        wrapper.append(deepcopy(child)); wrapper[0].tail = None
+                        for part in paragraph_parts(wrapper):
+                            if part.tag == 'figure':
+                                block(part, depth+1, p if not started else None); current = None
+                            else:
+                                if current is None: current = continuation()
+                                inline(part, current)
+                            started = True
                     else:
                         if current is None: current = continuation()
                         wrapper = html.Element("span"); wrapper.append(html.fromstring(html.tostring(child, with_tail=False)))
@@ -169,11 +204,25 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
             if retest and document.paragraphs:
                 document.paragraphs[-1].paragraph_format.keep_with_next = True
             caption = ' '.join(node.xpath('./figcaption//text()'))
+            wrappers = figure_wrappers.get(node, ())
+            href = next((part.get('href') for part in reversed(wrappers)
+                         if part.tag == 'a' and part.get('href')), None)
             for child in node:
-                if child.tag == "img": picture(child, caption=caption)
+                if child.tag == "img":
+                    picture_paragraph = list_paragraph or document.add_paragraph()
+                    if depth:
+                        picture_paragraph.paragraph_format.left_indent = Cm(.65 * depth)
+                    picture(child, picture_paragraph, caption=caption, href=href)
                 elif child.tag == "figcaption":
-                    p = document.add_paragraph(style="Caption"); inline(child, p)
+                    contents = deepcopy(child)
+                    for wrapper in reversed(wrappers):
+                        outer = html.Element(wrapper.tag, dict(wrapper.attrib))
+                        outer.text = contents.text
+                        for nested in list(contents): outer.append(nested)
+                        contents = html.Element('span'); contents.append(outer)
+                    p = document.add_paragraph(style="Caption"); inline(contents, p)
                     p.paragraph_format.keep_together = True
+                    if depth: p.paragraph_format.left_indent = Cm(.65 * depth)
         elif tag == "img": picture(node)
         elif tag == "blockquote":
             for child in node: block(child, depth)
