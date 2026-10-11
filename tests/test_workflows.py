@@ -211,9 +211,11 @@ def test_imported_evidence_without_original_retains_first_pixels_across_edits_an
     assert {p.relative_to(directory): p.read_bytes() for p in directory.rglob('*') if p.is_file()} == before_first
     first = post(c, edit_path, {'operations': [operation]})
     assert first.status_code == 200, first.get_json()
-    original = c.get(original_path)
-    assert original.status_code == 200
-    assert original.data == png()
+    # Close send_file responses before a later transaction replaces the project
+    # directory; Windows correctly prevents renaming an open downloaded file.
+    with c.get(original_path) as original:
+        assert original.status_code == 200
+        assert original.data == png()
     first_data = first.get_json()['data']
     first_entry = first_data['evidence'][0]
     assert first_entry['original'].startswith('originals/')
@@ -228,14 +230,16 @@ def test_imported_evidence_without_original_retains_first_pixels_across_edits_an
     second_entry = second.get_json()['data']['evidence'][0]
     assert second_entry['src'] != first_entry['src']
     assert second_entry['original'] == first_entry['original']
-    assert c.get(original_path).data == png()
+    with c.get(original_path) as original:
+        assert original.data == png()
     assert not (directory / first_entry['src']).exists()
 
     restored = post(c, '/history/' + checkpoint.get_json()['id'] + '/restore', {})
     assert restored.status_code == 200, restored.get_json()
     assert restored.get_json()['data'] == first_data
     assert (directory / first_entry['src']).read_bytes() == first_pixels
-    assert c.get(original_path).data == png()
+    with c.get(original_path) as original:
+        assert original.data == png()
     assert not (directory / second_entry['src']).exists()
 
     before = {p.relative_to(directory): p.read_bytes() for p in directory.rglob('*') if p.is_file()}
