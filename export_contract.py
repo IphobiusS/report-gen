@@ -3,7 +3,7 @@
 PDF extraction is a textual presence check, never a proof of literal whitespace,
 block association or pixel layout. Its limitations travel with the check record.
 """
-from error_messages import message as backend_message
+from error_messages import current_language, message as backend_message
 from collections import Counter
 from copy import deepcopy
 import re
@@ -348,55 +348,63 @@ def _pdf_hyphen_donor(page, reader):
     def codespace(stream):
         data = re.sub(rb'%[^\r\n]*', b'', stream.get_data())
         if '/UseCMap' in stream or re.search(rb'\busecmap\b', data):
-            raise ValueError('Inherited CMap is not corroborated')
+            raise ValueError(backend_message('No se puede corroborar el CMap heredado',
+                                             en='Inherited CMap is not corroborated'))
         blocks = re.findall(rb'\b(\d+)\s+begincodespacerange\s*(.*?)\s*endcodespacerange\b', data, re.S)
         pair = (re.fullmatch(rb'\s*<([\da-fA-F]{4})>\s*<([\da-fA-F]{4})>\s*', blocks[0][1])
                 if len(blocks) == 1 and int(blocks[0][0]) == 1 else None)
         if pair is None:
-            raise ValueError('CMap is not fixed two-byte')
+            raise ValueError(backend_message('El CMap no usa códigos fijos de dos bytes',
+                                             en='CMap is not fixed two-byte'))
         lo, hi = (int(value, 16) for value in pair.groups())
         if lo > hi:
-            raise ValueError('Invalid codespace')
+            raise ValueError(backend_message('Intervalo de códigos inválido', en='Invalid codespace'))
         return lo, hi, data
 
     resources = resolved(page.get('/Resources', {}))
     for ref in resolved(resources.get('/XObject', {})).values():
         if resolved(ref).get('/Subtype') != '/Image':
-            raise ValueError('Form text is not corroborated')
+            raise ValueError(backend_message('No se puede corroborar el texto del objeto Form',
+                                             en='Form text is not corroborated'))
     mappings = {}
     fonts = {}
     for name, ref in resolved(resources.get('/Font', {})).items():
         font = resolved(ref)
         if font.get('/Subtype') != '/Type0':
-            raise ValueError('Font is not Type0')
+            raise ValueError(backend_message('La fuente no es Type0', en='Font is not Type0'))
         encoding = resolved(font.get('/Encoding'))
         if isinstance(encoding, StreamObject):
             lo, hi, data = codespace(encoding)
             if encoding.get('/WMode', 0) != 0 or re.search(rb'/WMode\s+1\b', data):
-                raise ValueError('Vertical encoding is not corroborated')
+                raise ValueError(backend_message('No se puede corroborar la codificación vertical',
+                                                 en='Vertical encoding is not corroborated'))
         elif encoding == '/Identity-H':
             lo, hi = 0, 65535
         else:
-            raise ValueError('Named encoding is not corroborated')
+            raise ValueError(backend_message('No se puede corroborar la codificación con nombre',
+                                             en='Named encoding is not corroborated'))
         unicode_map = resolved(font.get('/ToUnicode'))
         if not isinstance(unicode_map, StreamObject):
-            raise ValueError('Missing ToUnicode map')
+            raise ValueError(backend_message('Falta el mapa ToUnicode', en='Missing ToUnicode map'))
         tlo, thi, data = codespace(unicode_map)
         if b'beginbfrange' in data:
-            raise ValueError('Range mappings are not corroborated')
+            raise ValueError(backend_message('No se pueden corroborar las asignaciones por intervalos',
+                                             en='Range mappings are not corroborated'))
         mapping = {}
         for count, block in re.findall(rb'\b(\d+)\s+beginbfchar\s*(.*?)\s*endbfchar\b', data, re.S):
             pair_pattern = rb'<([\da-fA-F]{4})>\s*<([\da-fA-F]+)>'
             pairs = re.findall(pair_pattern, block)
             if re.sub(pair_pattern, b'', block).strip() or int(count) != len(pairs):
-                raise ValueError('Malformed Unicode mapping')
+                raise ValueError(backend_message('Asignación Unicode mal formada',
+                                                 en='Malformed Unicode mapping'))
             for code, value in pairs:
                 code = int(code, 16)
                 if code in mapping or not (lo <= code <= hi and tlo <= code <= thi):
-                    raise ValueError('Ambiguous Unicode mapping')
+                    raise ValueError(backend_message('Asignación Unicode ambigua',
+                                                     en='Ambiguous Unicode mapping'))
                 mapping[code] = bytes.fromhex(value.decode('ascii')).decode('utf-16-be', errors='strict')
         if not mapping:
-            raise ValueError('Empty explicit mapping')
+            raise ValueError(backend_message('Asignación explícita vacía', en='Empty explicit mapping'))
         mappings[name] = mapping
         fonts[id(font)] = font
     selected = None
@@ -406,7 +414,8 @@ def _pdf_hyphen_donor(page, reader):
             stack.append(selected)
         elif operator == b'Q':
             if not stack:
-                raise ValueError('Unbalanced graphics state')
+                raise ValueError(backend_message('Estado gráfico desequilibrado',
+                                                 en='Unbalanced graphics state'))
             selected = stack.pop()
         elif operator == b'Tf':
             selected = operands[0]
@@ -417,9 +426,11 @@ def _pdf_hyphen_donor(page, reader):
                     continue
                 blob = value.original_bytes if isinstance(value, TextStringObject) else bytes(value)
                 if len(blob) % 2 or selected not in mappings:
-                    raise ValueError('Unproved text encoding')
+                    raise ValueError(backend_message('Codificación de texto sin corroborar',
+                                                     en='Unproved text encoding'))
                 if any(int.from_bytes(blob[i:i+2], 'big') not in mappings[selected] for i in range(0, len(blob), 2)):
-                    raise ValueError('Source code missing explicit Unicode mapping')
+                    raise ValueError(backend_message('El código fuente no tiene una asignación Unicode explícita',
+                                                     en='Source code missing explicit Unicode mapping'))
     # Only the reader-local decoding width changes. ToUnicode remains intact:
     # source character codes need not equal CIDs (non-identity CMaps work too).
     originals = [(font, font.get('/Encoding')) for font in fonts.values()]
@@ -437,16 +448,19 @@ def _pdf_proved_hyphens(page, reader, textpage, primary):
     import pypdfium2.raw as raw
     chars = [raw.FPDFText_GetUnicode(textpage, i) for i in range(textpage.count_chars())]
     if ''.join(map(chr, chars)) != primary or '\ufffe' in primary:
-        raise ValueError('Native character sequence differs')
+        raise ValueError(backend_message('La secuencia nativa de caracteres difiere',
+                                         en='Native character sequence differs'))
     for index, char in enumerate(chars):
         if char == 2 and (raw.FPDFText_IsHyphen(textpage, index) != 1
                           or raw.FPDFText_HasUnicodeMapError(textpage, index) != 0):
-            raise ValueError('Marker lacks native hyphen proof')
+            raise ValueError(backend_message('El marcador no tiene corroboración nativa de guion',
+                                             en='Marker lacks native hyphen proof'))
     donor = [char for char in _pdf_hyphen_donor(page, reader) if not char.isspace()]
     primary = unicodedata.normalize('NFC', primary)
     actual = [char for char in primary if not char.isspace()]
     if len(actual) != len(donor) or any(a != b and not (a == '\x02' and b == '-') for a, b in zip(actual, donor)):
-        raise ValueError('Independent PDF text diverges')
+        raise ValueError(backend_message('El texto PDF independiente difiere',
+                                         en='Independent PDF text diverges'))
     confirmed = iter(donor)
     result = []
     for char in primary:
@@ -713,8 +727,9 @@ def _pdf_present(units, actual, label_es, label_en):
                 across += sum(len(occurrence) > 1 for occurrence in ranges[:count])
                 continue
             raise ValueError(backend_message(
-                f'Texto de {label_es} PDF ausente o alterado',
-                en=f'Missing or changed PDF {label_en} text'))
+                'Texto de {label} PDF ausente o alterado',
+                en='Missing or changed PDF {label} text',
+                label=label_en if current_language() == 'en' else label_es))
     return sum(counts.values()), across
 
 

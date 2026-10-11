@@ -10,6 +10,7 @@
 - La verificación PDF incluye presencia y multiplicidad de celdas de tablas y elementos de listas, que antes podían quedar fuera del contrato textual. Los límites de palabra evitan coincidencias dentro de otra palabra. La presencia sigue siendo global y no certifica asociación de bloques, geometría ni significado.
 - En mapas Unicode explícitos compatibles, el lector PDF recupera un guion ASCII de final de línea sólo si los códigos reales del archivo, su mapa y un segundo lector corroboran todos los caracteres. No toma caracteres del texto esperado. Guiones blandos, mapas no admitidos o lecturas divergentes mantienen un rechazo explícito.
 - La comprobación de portada usa la geometría textual de la primera página para separar títulos y subtítulos largos. El contenido de páginas posteriores no puede suplir metadatos alterados de la portada.
+- Los diagnósticos internos nuevos del PDF y la plantilla de texto ausente usan el sistema bilingüe de mensajes; se conservan las condiciones de rechazo y los valores informados.
 - Las regresiones incluyen archivos realmente alterados, conservación de la salida anterior, listas y tablas extensas, enlaces con figuras y recorridos del editor con almacenamiento fallido y recuperación. La inspección visual de las entregas sigue siendo necesaria.
 
 # Cambios 0.31.4 (2026-10-11)
