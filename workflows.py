@@ -271,13 +271,19 @@ def review(data, directory, lang="es"):
         if row.get('asset_uid') and row['asset_uid'] not in assets: add('error', backend_message('Cobertura vinculada a un activo inexistente', language=lang), f'coverage[{i}].asset_uid')
         if row.get('status', 'pending') in ('pending', 'blocked'):
             add('warning', backend_message('Prueba pendiente o bloqueada: {p0}', language=lang, p0=row.get('test', '')), f'coverage[{i}].status')
+    # The report language describes authored content; the review UI language
+    # only translates warnings. In Spanish, ordinary "todo"/"Todo" are words,
+    # while the explicit uppercase editorial marker remains actionable.
+    content_language = (data.get('meta') or {}).get('lang') or 'en'
+    todo_marker = r'TODO' if content_language == 'es' else r'(?i:TODO)'
+    placeholder = re.compile(r'\b' + todo_marker + r'\b|(?i:\b(?:TBD|FIXME|pendiente de completar|lorem ipsum)\b|\{\{[^}]+\}\}|<COMPLETAR>)')
     for path, value in strings(data):
         # Optional reasoning/review is private author material. In particular a
         # comment containing a placeholder must not leak into the client-facing
         # delivery verification warning. Its editorial rules have a separate
         # read-only view; audience projections select presentation text explicitly.
         if path.startswith(('capture_inbox', 'insights')): continue
-        match = re.search(r'\b(TODO|TBD|FIXME|pendiente de completar|lorem ipsum)\b|\{\{[^}]+\}\}|<COMPLETAR>', value, re.I)
+        match = placeholder.search(value)
         uid = None
         fm = re.match(r'findings\[(\d+)\]', path)
         if fm: uid = data['findings'][int(fm[1])].get('uid')

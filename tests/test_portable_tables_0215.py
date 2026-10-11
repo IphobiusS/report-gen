@@ -30,7 +30,8 @@ def report(tmp_path, request):
     data = {'meta': {'report_title': 'Portable tables contract', 'theme': 'serio', 'lang': language,
                      'client': 'Entidad sintética', 'assessor': 'Analista sintético'},
             'findings': [{'id': 'F01', 'mode': 'vuln', 'title': 'Autoaprobación de pagos por el preparador',
-                          'severity': 'info', 'cvss': 0, 'description_md': description,
+                          'severity': 'info', 'cvss': 0, 'cwe': 'CWE-862',
+                          'affected': 'srv.example.test', 'description_md': description,
                           'impact_md': 'Información sintética para verificar la distribución de columnas.',
                           'remediation_md': 'Comprobar el contrato de lectura.',
                           'walkthrough': [{'command': "printf 'SIMULACION\\n'"}]}]}

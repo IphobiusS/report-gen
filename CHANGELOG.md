@@ -1,3 +1,16 @@
+# Cambios 0.31.3 (2026-10-11)
+
+- Las descripciones, impactos, remediaciones y referencias extensas fluyen entre páginas del PDF y del HTML; solo la cabecera y los metadatos breves forman el bloque inicial protegido. Las tablas reales conservan sus guardas de tamaño y paginación.
+- Las tablas de resumen y de secciones conservan juntas sus tres últimas filas al paginar, evitando continuaciones con una sola fila sin convertir la tabla completa en un bloque indivisible.
+- La búsqueda incluye el identificador propio del hallazgo y prioriza su coincidencia exacta. También encuentra el título y contenido públicos de capítulos personalizados, sin indexar notas privadas.
+- La primera edición de una imagen importada sin campo de original conserva su archivo fuente dentro de la transacción recuperable. Las ediciones posteriores mantienen ese original y la publicación excluye las copias privadas.
+- Las etiquetas de severidad de Word permanecen completas al cambiar de línea. Los rótulos anteriores a imágenes coinciden con los de otros formatos para mantener verificable la asociación de evidencia.
+- En escritorio, enfocar el buscador cierra el menú «Más» que podía cubrir los resultados; en móvil conserva el menú que contiene ese buscador.
+- La revisión de informes en español distingue el pronombre «todo» del marcador editorial explícito TODO, conservando los demás avisos de contenido pendiente.
+- El resumen utiliza un desglose neutral cuando hay hallazgos pendientes de valoración, sin afirmar que todos tienen severidad asignada.
+- Los filtros del HTML portátil se adaptan al texto ampliado en pantallas estrechas, conservando legible la opción seleccionada.
+- README y guías de ambos idiomas indican la misma versión. Las regresiones incluyen informes largos en español e inglés; la revisión en Microsoft Word nativo permanece pendiente.
+
 # Cambios 0.31.2 (2026-10-11)
 
 - La recuperación de borradores queda ligada al proyecto, revisión y diálogo que la inició; las respuestas atrasadas no adoptan contenido después de cancelar o navegar. Las vistas previas de Markdown y el inspector de publicación descartan respuestas de ediciones anteriores.

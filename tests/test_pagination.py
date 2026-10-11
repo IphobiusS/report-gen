@@ -45,12 +45,17 @@ def page_of(pages, text):
 
 @pytest.mark.parametrize("theme", ["serio", "corporativo", "offsec", "htb", "ejecutivo", "laboratorio"])
 @pytest.mark.parametrize("sections", [True, False])
-def test_short_findings_share_page_without_splitting_tables(tmp_path, theme, sections):
+def test_short_findings_share_page_with_attached_metadata_and_complete_prose(tmp_path, theme, sections):
     _, pages = render(example(theme, sections), tmp_path)
-    # The legacy summary also contains titles; use unique detail-cell text.
+    # Narrative is ordinary prose, not one indivisible layout table. Multiple
+    # short findings still share a page; metadata stay with the first body line.
     assert page_of(pages, "START1") == page_of(pages, "START2")
     for i in range(1, 4):
-        assert page_of(pages, f"START{i}") == page_of(pages, f"END{i}")
+        assert page_of(pages, f"START{i}") == page_of(pages, f"test{i}.example.test")
+        assert page_of(pages, f"START{i}") <= page_of(pages, f"END{i}")
+        text = "\n".join(pages)
+        assert text.count(f"START{i}") == text.count(f"END{i}") == 1
+        assert text.index(f"START{i}") < text.index(f"END{i}")
 
 
 def test_main_table_and_its_heading_move_together_with_page_marker(tmp_path):
@@ -82,7 +87,8 @@ def test_markdown_table_moves_whole_to_next_page(tmp_path):
 def test_oversized_table_stops_pdf_without_replacing_previous_output(tmp_path):
     data = example()
     data["findings"] = data["findings"][:1]
-    data["findings"][0]["description_md"] = "\n\n".join("Long description. " * 15 for _ in range(40))
+    data["findings"][0]["description_md"] = "| Evidence | Result |\n| --- | --- |\n" + "\n".join(
+        f"| Oversized row {i} | This authored table cannot fit on one page |" for i in range(120))
     out = tmp_path / "pagination.pdf"
     out.write_bytes(b"previous report")
     with pytest.raises(ValueError, match="Hallazgo F1: una tabla no cabe"):
@@ -140,7 +146,8 @@ def test_api_returns_actionable_error_for_oversized_table_without_saving(tmp_pat
     assert client.post('/api/projects', json={'slug': 'pagination', 'title': 'Original'}).status_code == 200
     original = client.get('/api/projects/pagination').get_json()
     data = example()
-    data['findings'][0]['description_md'] = '\n\n'.join('Oversized table. ' * 15 for _ in range(40))
+    data['findings'][0]['description_md'] = '| Evidence | Result |\n| --- | --- |\n' + '\n'.join(
+        f'| Oversized row {i} | This authored table cannot fit on one page |' for i in range(120))
     response = client.post('/api/projects/pagination/export/pdf', json=data)
     assert response.status_code == 422
     assert 'Hallazgo F1' in response.get_json()['error']

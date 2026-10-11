@@ -132,7 +132,8 @@ def summary_text(findings, L):
     if pending:
         parts.append(words["pending_one" if pending == 1 else "pending_many"].replace("{n}", str(pending)))
     if parts:
-        text += f" {words['rating']} " + ", ".join(parts)
+        rating_label = words.get("rating_pending", words["rating"]) if pending else words["rating"]
+        text += f" {rating_label} " + ", ".join(parts)
     machines = machine_count(findings)
     if machines:
         text += " " + words["and_machines_one" if machines == 1 else "and_machines_many"].replace("{n}", str(machines))

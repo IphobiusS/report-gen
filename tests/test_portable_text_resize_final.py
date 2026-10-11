@@ -19,7 +19,8 @@ def test_portable_field_columns_reflow_at_large_root_and_actual_text_sizes(tmp_p
     data={'meta':{'report_title':'Actual text resize contract','theme':'corporativo','lang':language},
           'findings':[{'id':'F01','mode':'vuln','title':'Synthetic account authorization',
                        'severity':'high','cvss':8.1,'cvss_vector':'CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N',
-                       'description_md':'SOURCE-PROSE-END remains readable in a field table.\n\n'
+                       'cwe':'CWE-862','affected':'srv.example.test',
+                       'description_md':'SOURCE-PROSE-END remains readable in its narrative section.\n\n'
                        '| Phase | Value | Decision |\n| --- | --- | --- |\n| 01 | 4×4=16 | PENDING-DECISION-END |',
                        'impact_md':'No real client or execution.',
                        'remediation_md':'Keep every field available.'}]}

@@ -12,6 +12,7 @@ assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+
 assert.equal(await p.locator('#F01').isVisible(),true);
 assert.equal(await p.locator('#F01 table.meta').getAttribute('role'),'table');
 assert.ok(await p.getByRole('rowheader').count()>=3);
+assert.equal(await p.locator('#F01 .finding-field').first().evaluate(el=>!!el.closest('table')),false);
 assert.ok((await p.locator('#F01').innerText()).includes('SOURCE-PROSE-END'));
 assert.ok((await p.locator('#F01').innerText()).includes('PENDING-DECISION-END'));
 const regions=await p.locator('.report-table-region').evaluateAll(es=>es.map(e=>({label:e.getAttribute('aria-label'),tab:e.tabIndex,x:getComputedStyle(e).overflowX})));assert.ok(regions.length>=1);assert.ok(regions.every(e=>e.label&&e.tab===0&&e.x==='auto'));

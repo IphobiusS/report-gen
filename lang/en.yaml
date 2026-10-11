@@ -62,6 +62,7 @@ summary:
   finding: "finding"
   findings: "findings"
   rating: "with a security severity rating:"
+  rating_pending: "including:"
   none: "none"
   pending_one: "1 pending assessment"
   pending_many: "{n} pending assessment"

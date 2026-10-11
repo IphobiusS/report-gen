@@ -7,18 +7,35 @@
   {% if f.severity %}<span class="sev-chip sev-{{ f.severity }}">{{ L.severity[f.severity] }}{% if f.cvss is defined and f.cvss is not none and f.cvss != "" %} <b>{{ f.cvss }}</b>{% endif %}</span>{% endif %}
 </header>
 
+{% set _cv = f.cvss_vector or "" %}{% set _has_score = f.cvss is defined and f.cvss is not none and f.cvss != "" %}
+{% if f.cwe or _has_score or _cv or f.affected %}
 <table class="meta">
   <tbody>
   {% if f.cwe %}<tr><th>{{ L.labels.cwe }}</th><td>{{ f.cwe }}</td></tr>{% endif %}
-  {% set _cv = f.cvss_vector or "" %}{% set _has_score = f.cvss is defined and f.cvss is not none and f.cvss != "" %}{% if _has_score or _cv %}<tr><th>{{ L.labels.cvss }}{{ " 4.0" if _cv.startswith("CVSS:4.0") else (" 3.1" if _cv.startswith("CVSS:3.1") else "") }}</th><td>{% if _has_score %}<span class="score">{{ f.cvss }}</span>{% endif %}{% if _cv %}{% if _has_score %} {% endif %}<code class="vector">{{ _cv }}</code>{% endif %}</td></tr>{% endif %}
-  {% if f.description_md %}<tr><th>{{ L.labels.desc_root }}</th><td>{{ f.description_md|md }}</td></tr>{% endif %}
-  {% if f.impact_md %}<tr><th>{{ L.labels.impact }}</th><td>{{ f.impact_md|md }}</td></tr>{% endif %}
+  {% if _has_score or _cv %}<tr><th>{{ L.labels.cvss }}{{ " 4.0" if _cv.startswith("CVSS:4.0") else (" 3.1" if _cv.startswith("CVSS:3.1") else "") }}</th><td>{% if _has_score %}<span class="score">{{ f.cvss }}</span>{% endif %}{% if _cv %}{% if _has_score %} {% endif %}<code class="vector">{{ _cv }}</code>{% endif %}</td></tr>{% endif %}
   {% if f.affected %}<tr><th>{{ L.labels.affected }}</th><td><code>{{ f.affected }}</code></td></tr>{% endif %}
-  {% if f.remediation_md %}<tr><th>{{ L.labels.remediation }}</th><td>{{ f.remediation_md|md }}</td></tr>{% endif %}
-  {% if f.references %}<tr><th>{{ L.labels.references }}</th><td><ul class="refs">{% for r in f.references %}<li>{{ r }}</li>{% endfor %}</ul></td></tr>{% endif %}
   </tbody>
 </table>
+{% endif %}
 </div>
+
+{# Narrative is not tabular data. Keep the compact identity block together,
+   while long prose flows across pages and authored Markdown tables retain
+   their independent pagination protection. #}
+{% for key, label in [("description_md", L.labels.desc_root), ("impact_md", L.labels.impact), ("remediation_md", L.labels.remediation)] %}
+{% if f[key] %}
+<div class="finding-field">
+  <h3>{{ label }}</h3>
+  {{ f[key]|md }}
+</div>
+{% endif %}
+{% endfor %}
+{% if f.references %}
+<div class="finding-field">
+  <h3>{{ L.labels.references }}</h3>
+  <ul class="refs">{% for r in f.references %}<li>{{ r }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
 
 {% if f.walkthrough %}
 <h3>{{ L.labels.walkthrough }}</h3>

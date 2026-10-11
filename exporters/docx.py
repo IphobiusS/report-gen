@@ -226,7 +226,12 @@ def to_docx(data, meta, L, engagement_dir, out_path):
         if level == 1 or toc:
             navigation.append((p, p.text, 1 if level == 1 else 2))
         if sev:
-            sp = p.add_run("   " + sev_label(L, sev)); sp.bold = True
+            # Keep the entire shaded label together when a long title wraps.
+            # Ordinary spaces inside the shaded run can be left on the old
+            # line as an empty colored box, especially in LibreOffice.
+            p.add_run(" ")
+            label = sev_label(L, sev).replace(" ", "\u00a0")
+            sp = p.add_run("\u00a0" + label + "\u00a0"); sp.bold = True
             sp.font.color.rgb = C("sev-chip-ink", "FFFFFF"); run_shade(sp, SEV.get(sev, "888888"))
         if anchor:
             from .navigation import add_reference
@@ -406,7 +411,9 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             if rows: kv_table(rows, keep_next=True)
             for key, lbl in [("description_md", lab["desc_root"]), ("impact_md", lab["impact"]), ("remediation_md", lab["remediation"])]:
                 if f.get(key):
-                    p = doc.add_paragraph(); p.paragraph_format.keep_with_next = True; rb = p.add_run(lbl + ". "); rb.bold = True
+                    # Match the generated HTML/Markdown field heading exactly:
+                    # a leading image binds to this visible text in every format.
+                    p = doc.add_paragraph(); p.paragraph_format.keep_with_next = True; rb = p.add_run(lbl); rb.bold = True
                     add_markdown(f[key])
             if f.get("references"):
                 heading(lab["references"], 3)

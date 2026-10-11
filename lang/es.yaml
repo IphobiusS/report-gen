@@ -62,6 +62,7 @@ summary:
   finding: "hallazgo"
   findings: "hallazgos"
   rating: "con la siguiente clasificación de severidad:"
+  rating_pending: "con el siguiente desglose:"
   none: "ninguno"
   pending_one: "1 pendiente de valoración"
   pending_many: "{n} pendientes de valoración"

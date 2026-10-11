@@ -98,7 +98,7 @@ async function streamingContract() {
     });
     assert.equal(titleRects,1,`${name}: mobile heading splits Autoaprobación inside the word at ${width}`);
     const dimensions = await p.locator('#F01 table.meta').evaluate(table => {
-      const row=[...table.tBodies[0].rows].find(r=>r.cells[1]?.querySelector('p'));
+      const row=[...table.tBodies[0].rows].find(r=>r.cells[1]?.textContent.includes('srv.example.test'));
       const label=row.cells[0].getBoundingClientRect(),value=row.cells[1].getBoundingClientRect();
       return {table:table.getBoundingClientRect().width,label:{width:label.width,bottom:label.bottom},
               value:{width:value.width,top:value.top},role:table.getAttribute('role'),
@@ -115,6 +115,15 @@ async function streamingContract() {
     assert.equal(dimensions.scope,'row');assert.equal(dimensions.labelRole,'rowheader');
     assert.ok(await p.getByRole('table').count()>=2,'table remains in the accessibility tree');
     assert.ok(await p.getByRole('rowheader').count()>=2,'row labels remain accessible');
+    const narrative=await p.locator('#F01 .finding-field').first().evaluate(el=>{
+      const finding=el.closest('.finding'),style=getComputedStyle(finding);
+      return {nestedInTable:!!el.closest('table'),width:el.getBoundingClientRect().width,
+        findingWidth:finding.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight),
+        prose:el.querySelector('p')?.textContent,heading:el.querySelector('h3')?.textContent};});
+    assert.equal(narrative.nestedInTable,false,'narrative is not an indivisible metadata row');
+    assert.ok(narrative.width>=narrative.findingWidth-2,'narrative uses the available finding width');
+    assert.ok(narrative.prose?.includes('Descripción con una tabla comparativa.'));
+    assert.ok(narrative.heading?.trim(),'narrative retains its visible field heading');
     assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'no page overflow');
    }
   } else if (scenario === 'comparison') {

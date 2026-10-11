@@ -37,6 +37,37 @@ let browser;
       assert.ok(layout.overflow.every(value => value !== 'hidden' && value !== 'clip'), 'reflow must not clip report content');
     }
     assert.ok((await page.locator('#F01 pre').textContent()).includes('C'.repeat(900)), 'long literal command retained');
+  } else if (scenario === 'control_text') {
+    for (const width of [320, 390]) for (const scale of [1, 2]) {
+      await page.setViewportSize({width, height: 850});await open();
+      if (scale !== 1) await page.evaluate(scale => {
+        const elements = [...document.querySelectorAll('body,body *')];
+        const sizes = elements.map(el => getComputedStyle(el).fontSize);
+        elements.forEach((el, index) => {el.style.fontSize = (parseFloat(sizes[index]) * scale) + 'px';});
+      }, scale);
+      await settle(page);
+      for (const id of ['view', 'kind', 'severity']) {
+        await page.locator('#clear-filters').click();
+        const values = await page.locator('#' + id + ' option').evaluateAll(options => options.map(option => option.value));
+        for (const value of values) {
+          await page.locator('#' + id).selectOption(value);
+          const text = await page.locator('#' + id).evaluate(el => {
+            const style = getComputedStyle(el), context = document.createElement('canvas').getContext('2d');
+            context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+            // Native selects do not expose their painted text box. Reserve a
+            // font-sized arrow area in addition to the actual inline padding.
+            return {selected: el.selectedOptions[0].textContent,
+              required: context.measureText(el.selectedOptions[0].textContent).width,
+              available: el.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - parseFloat(style.fontSize),
+              left: el.getBoundingClientRect().left, right: el.getBoundingClientRect().right};
+          });
+          assert.ok(text.required <= text.available + 1,
+            `selected option clipped at ${width}px/text ${scale * 100}% (${id}): ${JSON.stringify(text)}`);
+          assert.ok(text.left >= 0 && text.right <= width, 'control stays within viewport');
+        }
+      }
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), width);
+    }
   } else if (scenario === 'same_hash') {
     const link = page.locator('.sumlink[href="#F01"]');
     await link.click();await settle(page);

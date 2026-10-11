@@ -189,6 +189,67 @@ def test_redaction_changes_pixels_removes_metadata_and_preserves_original(projec
         assert b'SENSITIVE ORIGINAL' not in z.read(processed)
 
 
+@pytest.mark.parametrize('original_field', [None, ''])
+def test_imported_evidence_without_original_retains_first_pixels_across_edits_and_restore(project, original_field):
+    c, directory = project
+    source = 'img/imported.png'
+    (directory / source).write_bytes(png())
+    entry = {'uid': wf.new_uid(), 'title': 'Imported evidence', 'src': source}
+    if original_field is not None:
+        entry['original'] = original_field
+    data, _ = get(c)
+    data['evidence'] = [entry]
+    data['findings'] = [dict(finding(), evidence_uids=[entry['uid']],
+                             walkthrough=[{'figure': {'src': source}}])]
+    save(c, data)
+    edit_path = '/evidence/' + entry['uid'] + '/edit'
+    original_path = '/api/projects/workflow/evidence/' + entry['uid'] + '/original'
+    operation = dict(type='redact', x=.1, y=.1, w=.2, h=.2)
+    before_first = {p.relative_to(directory): p.read_bytes() for p in directory.rglob('*') if p.is_file()}
+    rejected_first = post(c, edit_path, {'operations': [dict(operation, x=-1)]})
+    assert rejected_first.status_code == 422
+    assert {p.relative_to(directory): p.read_bytes() for p in directory.rglob('*') if p.is_file()} == before_first
+    first = post(c, edit_path, {'operations': [operation]})
+    assert first.status_code == 200, first.get_json()
+    original = c.get(original_path)
+    assert original.status_code == 200
+    assert original.data == png()
+    first_data = first.get_json()['data']
+    first_entry = first_data['evidence'][0]
+    assert first_entry['original'].startswith('originals/')
+    assert (directory / first_entry['original']).read_bytes() == png()
+    assert not (directory / source).exists()
+    checkpoint = post(c, '/history', {'label': 'After first redaction', 'stage': 'draft'})
+    assert checkpoint.status_code == 200
+    first_pixels = (directory / first_entry['src']).read_bytes()
+
+    second = post(c, edit_path, {'operations': [dict(operation, x=.5)]})
+    assert second.status_code == 200, second.get_json()
+    second_entry = second.get_json()['data']['evidence'][0]
+    assert second_entry['src'] != first_entry['src']
+    assert second_entry['original'] == first_entry['original']
+    assert c.get(original_path).data == png()
+    assert not (directory / first_entry['src']).exists()
+
+    restored = post(c, '/history/' + checkpoint.get_json()['id'] + '/restore', {})
+    assert restored.status_code == 200, restored.get_json()
+    assert restored.get_json()['data'] == first_data
+    assert (directory / first_entry['src']).read_bytes() == first_pixels
+    assert c.get(original_path).data == png()
+    assert not (directory / second_entry['src']).exists()
+
+    before = {p.relative_to(directory): p.read_bytes() for p in directory.rglob('*') if p.is_file()}
+    rejected = post(c, edit_path, {'operations': [dict(operation, x=-1)]})
+    assert rejected.status_code == 422
+    assert {p.relative_to(directory): p.read_bytes() for p in directory.rglob('*') if p.is_file()} == before
+
+    md = c.post('/api/projects/workflow/export/md')
+    assert md.status_code == 200, md.get_json()
+    with zipfile.ZipFile(BytesIO(md.data)) as package:
+        assert not any(name.startswith('originals/') for name in package.namelist())
+        assert b'SENSITIVE ORIGINAL' not in package.read(first_entry['src'])
+
+
 @pytest.mark.parametrize('operation', [dict(type='redact',x=-1,y=0,w=1,h=1), dict(type='box',x=0,y=0,w=2,h=1), dict(type='blur',x=0,y=0,w=1,h=1), dict(type='redact',x='0',y=0,w=1,h=1), dict(type='redact',x=0,y=0,w=float('nan'),h=1)])
 def test_bad_annotation_does_not_change_project(project, operation):
     c, d = project; e = upload(c); before = (d / 'engagement.yaml').read_bytes()

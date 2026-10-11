@@ -96,10 +96,10 @@ a { color:var(--cyan-ink); overflow-wrap:anywhere; }
 .sumlink { color: var(--ink); text-decoration: none; }
 
 /* Finding */
-/* Findings flow naturally. Keep the heading and its main table together,
-   while long walkthroughs may continue on subsequent pages. */
+/* Findings flow naturally. Keep the heading and compact metadata together,
+   while narrative and walkthroughs may continue on subsequent pages. */
 .finding + .finding { margin-top: 8mm; }
-.finding-intro { position: relative; break-inside: avoid; page-break-inside: avoid; }
+.finding-intro { position: relative; break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
 .finding table { break-inside: avoid; page-break-inside: avoid; }
 .finding tr { break-inside: avoid; page-break-inside: avoid; }
 .finding thead { display: table-header-group; }
@@ -181,6 +181,12 @@ figure.mdfig figcaption { font-size: 8.5pt; color: var(--muted, #666); margin-to
 .md-table th { background: var(--panel); text-align: left; font-weight: 700; border-bottom: 1.2px solid var(--ink-soft); }
 .md-table thead { display: table-header-group; }
 .md-table tr, .scope tr, .contacts tr, .sumtable tr { break-inside: avoid; }
+/* Flow long summary/workflow tables, but keep their final three rows together
+   so a repeated header is not followed by a single stranded closing row. */
+.sumtable > tbody > tr:nth-last-child(3),
+.sumtable > tbody > tr:nth-last-child(2),
+.frontsec > table > tbody > tr:nth-last-child(3),
+.frontsec > table > tbody > tr:nth-last-child(2) { break-after: avoid; page-break-after: avoid; }
 .sect-rg_retest > .md-table td:nth-child(4),
 .sect-rg_retest > .md-table td:nth-child(5) { white-space: nowrap; }
 .retest-entry { break-inside: avoid; }

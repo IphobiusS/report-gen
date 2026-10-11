@@ -15,6 +15,54 @@ const invalid=[
   valid.replace('3.1','9.9'), 'anything', '', null, 31,
 ];
 
+function projectSearch(language, data){
+  const app=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8');
+  const source=app.slice(app.indexOf('function searchTargets()'),app.indexOf('function navTo(nav)'));
+  return new Function('S',source+'\nreturn searchProject;')({uiLang:language,data,catBy:{}});
+}
+
+for(const language of ['es','en']){
+  test(language+': global search includes custom section title and body without indexing private fields',()=>{
+    const data={meta:{},report:{sections:[{key:'bank-boundaries',title:'Bank boundaries',body:'Quorum evidence narrative.',private_note:'PRIVATE_SECTION_CANARY'}]},findings:[]};
+    const before=JSON.stringify(data),search=projectSearch(language,data);
+    for(const query of ['Bank boundaries','Quorum evidence']){
+      const matches=search(query);
+      assert.equal(matches.length,1);
+      assert.deepEqual(matches[0].nav,{type:'section',key:'bank-boundaries'});
+      assert.equal(matches[0].where,'Bank boundaries');
+    }
+    assert.deepEqual(search('PRIVATE_SECTION_CANARY'),[]);
+    assert.equal(JSON.stringify(data),before);
+  });
+
+  test(language+': global search finds a finding by its stable ID without a prose mention',()=>{
+    const data={meta:{},findings:Array.from({length:18},(_,i)=>({id:'F'+(i+1),title:'Banking control '+(i+1),description_md:'Synthetic control description.'}))};
+    const before=JSON.stringify(data),search=projectSearch(language,data);
+    const matches=search(' f18 ');
+    assert.equal(matches[0]?.nav.type,'finding');
+    assert.equal(matches[0]?.nav.idx,17);
+    assert.match(matches[0]?.where,/^F18 /);
+    assert.equal(matches[0]?.snippet.mid,'F18');
+    assert.equal(search('Banking control 18')[0]?.nav.idx,17);
+    assert.deepEqual(search('F180'),[]);
+    assert.equal(JSON.stringify(data),before);
+  });
+
+  test(language+': exact finding ID outranks many cross-references before the result limit',()=>{
+    const data={meta:{report_title:'Review F18'},findings:Array.from({length:55},(_,i)=>({id:'F'+(i+1),title:'Banking control '+(i+1),description_md:'See F18 for related context.',impact_md:'See F18 again.',remediation_md:'Coordinate with F18.'}))};
+    // Manual order differs from numeric order: the target is deliberately last.
+    data.findings.push(data.findings.splice(17,1)[0]);
+    const before=JSON.stringify(data),search=projectSearch(language,data),matches=search('F18');
+    assert.equal(matches[0]?.nav.type,'finding');
+    assert.equal(matches[0]?.nav.idx,54);
+    assert.equal(matches[0]?.snippet.mid,'F18');
+    assert.equal(matches.length,40);
+    assert.ok(matches.some(row=>row.nav.type==='report'));
+    assert.equal(search('banking control 55')[0]?.nav.idx,53);
+    assert.equal(JSON.stringify(data),before);
+  });
+}
+
 test('CVSS module validates complete vectors without altering its defaults or caller metrics',()=>{
   const metrics=CVSS31.parse(valid),before=JSON.stringify(metrics);
   assert.equal(CVSS31.compute(metrics).score,9.8);

@@ -47,6 +47,23 @@ def test_summary_retains_pending_and_does_not_assign_severity():
     assert data == before
 
 
+@pytest.mark.parametrize('lang', ['es', 'en'])
+@pytest.mark.parametrize('mixed', [False, True])
+def test_summary_does_not_claim_every_pending_finding_has_a_rating(lang, mixed):
+    data = pending_report(lang)
+    if mixed:
+        data['findings'].append({'id': 'F03', 'title': 'Rated finding', 'severity': 'high'})
+    before = deepcopy(data)
+    text = engine.summary_text(data['findings'], engine.load_lang(lang))
+    expected = 'including:' if lang == 'en' else 'con el siguiente desglose:'
+    assert expected in text
+    assert ('2 pending assessment' if lang == 'en' else '2 pendientes de valoración') in text
+    total = 3 if mixed else 2
+    noun = 'findings' if lang == 'en' else 'hallazgos'
+    assert f'{total} {noun}' in text
+    assert data == before
+
+
 @pytest.mark.parametrize('section_based', [False, True])
 @pytest.mark.parametrize('lang', ['es', 'en'])
 def test_pending_findings_are_visible_in_every_summary(tmp_path, section_based, lang):

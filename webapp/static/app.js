@@ -474,10 +474,14 @@ function searchTargets() {
   (m.scope || []).forEach(s => out.push({ nav: { type: "section", key: "scope" }, where: w("Alcance", "Scope"), text: [s.target, s.description].filter(Boolean).join(" ") }));
   ((d.report && d.report.sections) || []).forEach(sec => {
     const schema = S.catBy[sec.key] || {};
-    (schema.fields || []).forEach(f => { const v = sec[f.key]; if (typeof v === "string" && v) out.push({ nav: { type: "section", key: sec.key }, where: (schema["title_" + (S.uiLang || "es")] || schema.title_es || sec.key), text: v }); });
+    const nav = { type: "section", key: sec.key }, where = sec.title || schema["title_" + (S.uiLang || "es")] || schema.title_es || sec.key;
+    if (sec.title) out.push({ nav, where, text: sec.title });
+    const fields = S.catBy[sec.key] ? (schema.fields || []) : [{key: "body"}];
+    fields.forEach(f => { const v = sec[f.key]; if (typeof v === "string" && v) out.push({ nav, where, text: v }); });
   });
   (d.findings || []).forEach((f, idx) => {
     const nav = { type: "finding", idx }, location = f.id + (f.title ? " " + f.title : "");
+    if (f.id) out.push({ nav, where: location + " \u00b7 ID", text: String(f.id), findingId: true });
     [["title", w("Título", "Title")], ["cwe", "CWE"], ["affected", "Host"], ["description_md", w("Descripción", "Description")], ["impact_md", w("Impacto", "Impact")], ["remediation_md", w("Remediación", "Remediation")]]
       .forEach(([k, lab]) => { if (f[k]) out.push({ nav, where: location + " \u00b7 " + lab, text: String(f[k]) }); });
     (f.references || []).forEach(r => { if (r) out.push({ nav, where: location + " \u00b7 Ref", text: r }); });
@@ -501,7 +505,10 @@ function searchProject(q) {
   q = (q || "").trim().toLowerCase();
   if (!q) return [];
   const res = [];
-  for (const tg of searchTargets()) {
+  // A stable ID is a navigation target even when it is never mentioned in the
+  // prose. Exact ID matches must survive a long report's cross-reference limit.
+  const targets = searchTargets(), exact = tg => tg.findingId && tg.text.toLowerCase() === q;
+  for (const tg of [...targets.filter(exact), ...targets.filter(tg => !exact(tg))]) {
     const i = tg.text.toLowerCase().indexOf(q);
     if (i >= 0) { res.push({ nav: tg.nav, where: tg.where, snippet: searchSnippet(tg.text.replace(/\s+/g, " "), tg.text.replace(/\s+/g, " ").toLowerCase().indexOf(q), q.length) }); if (res.length >= 40) break; }
   }
@@ -1320,7 +1327,12 @@ function bindUI() {
     si.addEventListener("input", e => { clearTimeout(st); st = setTimeout(() => renderSearch(e.target.value), 120); });
     si.addEventListener("keydown", e => { if (e.key === "Escape") { si.value = ""; renderSearch(""); si.blur(); } });
     si.addEventListener("blur", () => setTimeout(() => {if(!$(".search-wrap").contains(document.activeElement))$("#searchResults").classList.remove("open");}, 150));
-    si.addEventListener("focus", e => { if (e.target.value) renderSearch(e.target.value); });
+    si.addEventListener("focus", e => {
+      // Desktop search sits outside More; dismiss the overlapping menu before
+      // showing results. Mobile search lives inside it and must stay visible.
+      const more = $("#studioMore"); if (more && !more.contains(si)) more.open = false;
+      if (e.target.value) renderSearch(e.target.value);
+    });
   }
   $("#previewBtn").addEventListener("click", () => S.previewMode === "live" ? refreshLivePreview() : renderPdf(false));
   $("#previewToggle").addEventListener("click", () => setPreviewVisible(!S.previewVisible));

@@ -77,3 +77,7 @@ def test_portable_keyboard_filters_nojs_and_print_contract(portable_html):
 
 def test_portable_search_matches_canonically_equivalent_unicode(portable_html):
     check_browser(portable_html, 'unicode')
+
+
+def test_portable_selected_options_remain_readable_with_mobile_text_resize(portable_html):
+    check_browser(portable_html, 'control_text')

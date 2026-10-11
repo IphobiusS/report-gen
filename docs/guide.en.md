@@ -1,4 +1,4 @@
-# report-gen 0.31.2 user guide
+# report-gen 0.31.3 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 

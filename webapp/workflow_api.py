@@ -142,6 +142,13 @@ def register(api):
         with history.transaction(d) as staged:
             history.checkpoint(staged)
             old = entry['src']; old_path = local_image(old, staged)
+            # Valid imported/legacy evidence may not have an original yet.
+            # Preserve its first pixels before replacing the current derivative;
+            # subsequent annotations must keep the same private original.
+            if not entry.get('original'):
+                original = 'originals/' + workflows.new_uid() + old_path.suffix.lower()
+                atomic_write(staged / original, old_path.read_bytes())
+                entry['original'] = original
             new = evidence_lib.edit_image(staged, old, body.get('operations'))
             data = evidence_lib.replace_references(data, old, new)
             # Refuse an unsupported alias before changing the visible project.
