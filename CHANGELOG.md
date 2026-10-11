@@ -1,3 +1,16 @@
+# Cambios 0.32.0 (2026-10-11)
+
+- La biblioteca añade cuatro perfiles de práctica e investigación para CRTO, CRTL, BTL1 y BTL2, y tres estructuras empresariales: evaluación ejecutiva, respuesta a incidentes y validación Purple Team. Cada perfil incluye orientación ES/EN, referencias y apartados propios. No se atribuyen requisitos de examen ni colores oficiales sin respaldo.
+- Los filtros de familias se generan desde el catálogo. Los perfiles sin un recurso de marca incluido conservan su identidad textual sin intentar cargar un logotipo inexistente.
+- Las secciones personales con una sola traducción conservan su título y contenido al crear un informe en el otro idioma, tanto en el backend como en la biblioteca.
+- Actualizadas las referencias de entrega de HTB para indicar inglés y el límite consultado de CWEE, junto con su paso de cifrado externo. El catálogo distingue prácticas, informes y referencias históricas; la guía vigente de cada proveedor prevalece.
+- La verificación PDF exige líneas lógicas completas de código, admite su envoltura física y comprueba su multiplicidad global. Rechaza prefijos, sufijos y líneas repetidas ausentes que antes podían pasar como coincidencias parciales.
+- HTML, Word y Markdown comparan las unidades completas y ordenadas de portada: título, subtítulo y pares de etiqueta y valor. Una subcadena o el contenido de otro campo ya no puede suplir un metadato alterado.
+- La portada Word separa marca y clasificación en columnas cuando su anchura medida no permite compartir una línea. Las continuaciones de una clasificación larga mantienen su alineación y no caen bajo la marca. Las portadas habituales conservan su estructura.
+- Las transcripciones Word cuya altura estimada supera una página permiten continuaciones entre páginas; evitan desplazar el bloque completo y dejar su título aislado. Los fragmentos cortos conservan la instrucción de mantenerse juntos.
+- Las muestras inglesas de los seis diseños generales muestran nombres traducidos; las miniaturas se generan desde las exportaciones reales.
+- Las pruebas de regresión incluyen archivos alterados, conservación de exportaciones válidas y recorridos de creación, aplicación y personalización de plantillas. Los controles PDF siguen sin certificar asociación entre bloques, orden global ni maquetación; estas comprobaciones requieren revisión independiente.
+
 # Cambios 0.31.5 (2026-10-11)
 
 - Al deshacer un hallazgo eliminado, el editor conserva sus evidencias y retests pero descarta referencias a activos o grupos que se borraron después; informa del ajuste.

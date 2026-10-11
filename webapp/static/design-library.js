@@ -1,7 +1,7 @@
 /* Report appearances are independent of report content. All mutations use revisions. */
 const DesignLibraryUI=(()=>{
   const w=(es,en)=>S.uiLang==='en'?en:es;
-  const local=v=>typeof v==='object'?(v[S.uiLang]||v.es||''):v;
+  const local=(v,lang=S.uiLang)=>v&&typeof v==='object'?(v[lang]||v.es||v.en||''):v;
   const layouts={rail:['Banda lateral','Side rail'],split:['Dos zonas','Split cover'],frame:['Marco','Frame'],band:['Franja central','Center band'],timeline:['Cronología','Timeline']};
   const generalNames={serio:['Serio','Serious'],corporativo:['Corporativo','Corporate'],offsec:['OffSec (general)','OffSec (general)'],htb:['HTB (general)','HTB (general)'],ejecutivo:['Ejecutivo','Executive'],laboratorio:['Laboratorio','Laboratory']};
   const generalNotes={serio:['Lectura sobria y estructura general. Recomendado para empezar.','Restrained presentation and a general structure. Recommended starting point.'],corporativo:['Presentación para clientes con identidad corporativa.','Client reports with corporate branding.'],offsec:['Estética técnica inspirada en laboratorios.','Technical appearance inspired by labs.'],htb:['Estética de laboratorio con acento verde.','Lab appearance with a green accent.'],ejecutivo:['Presentación orientada a la lectura de resultados.','Presentation focused on reading results.'],laboratorio:['Presentación técnica para documentar ejercicios.','Technical presentation for documenting exercises.']};
@@ -36,8 +36,8 @@ const DesignLibraryUI=(()=>{
     const filters=h('div',{class:'design-filters','aria-label':w('Familias','Families')});
     const search=h('input',{type:'search',placeholder:w('Buscar certificación o curso','Search certificate or course'),'aria-label':w('Buscar plantillas','Search designs')});
     const listing=h('div',{class:'design-cards'}),detail=h('div',{class:'design-detail'}),count=h('p',{role:'status',class:'wf-hint'});
-    const allFamilies=['General','OffSec','HTB','Personal','Históricas'];
-    const familyName=x=>({General:w('Generales','General'),Personal:w('Mis plantillas','My designs'),'Históricas':w('Históricas','Historical')})[x]||x;
+    const allFamilies=['General',...new Set(catalog.profiles.map(p=>p.provider)),'Personal','Históricas'];
+    const familyName=x=>({General:w('Generales','General'),Enterprise:w('Empresariales','Enterprise'),Personal:w('Mis plantillas','My designs'),'Históricas':w('Históricas','Historical')})[x]||x;
     for(const f of allFamilies){const b=btn(familyName(f),()=>{family=f;selected=null;renderList();renderDetail();});b.dataset.family=f;filters.append(b);}
     search.addEventListener('input',()=>{query=search.value.trim().toLowerCase();renderList();});
     const comparison=h('select',{'data-design-compare-page':'','aria-label':w('Comparar la misma página','Compare the same page')},[['cover','Portada','Cover'],['summary','Resumen','Summary'],['technical','Técnica','Technical']].map(([value,es,en])=>h('option',{value},w(es,en))));
@@ -80,7 +80,7 @@ const DesignLibraryUI=(()=>{
       }));
       detail.insertBefore(actions,samples);
       detail.insertBefore(h('p',{class:'wf-hint'},w('Crear incorpora la estructura en un proyecto nuevo. Aplicar apariencia conserva las secciones, hallazgos y evidencias del proyecto abierto.','Create adds the structure to a new project. Apply appearance preserves the sections, findings and evidence of the open project.')),actions);
-      if(p.sections){const list=h('ol');p.sections.forEach(s=>list.append(h('li',{},(typeof s.title==='object'?s.title[sampleLang]:s.title)||w('Hallazgos','Findings'))));detail.append(h('details',{},h('summary',{},w('Estructura inicial','Starter structure')),list));}
+      if(p.sections){const list=h('ol');p.sections.forEach(s=>list.append(h('li',{},local(s.title,sampleLang)||w('Hallazgos','Findings'))));detail.append(h('details',{},h('summary',{},w('Estructura inicial','Starter structure')),list));}
       if(p.guidance)detail.append(guideBox({...p.guidance,note:local(p.guidance.note)}));
     }
     renderList();renderDetail();

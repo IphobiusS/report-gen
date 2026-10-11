@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.31.5
+# report-gen 0.32.0
 
 <a id="qué-es"></a>
 
@@ -59,6 +59,12 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
+## Novedades de 0.32.0
+
+La biblioteca incorpora perfiles independientes de práctica para CRTO, CRTL, BTL1 y BTL2, además de estructuras empresariales para evaluación ejecutiva, respuesta a incidentes y validación Purple Team. Son 29 perfiles especializados y seis diseños generales, con muestras reales en español e inglés. Las secciones personales con una sola traducción conservan su contenido al cambiar el idioma del proyecto. [Catálogo, referencias y límites](docs/design-library.md).
+
+Las comprobaciones de entrega rechazan comandos PDF alterados por prefijos o sufijos y detectan líneas repetidas que faltan. En HTML, Word y Markdown comparan completos el título, el subtítulo y los campos de portada: otro campo o una coincidencia parcial no puede sustituirlos. La revisión visual y técnica del informe sigue siendo necesaria.
+
 ## Correcciones de 0.31.5
 
 La tercera prueba bancaria corrige la recuperación de hallazgos y borradores: deshacer descarta vínculos a activos eliminados, las copias no heredan resultados de corrección del original y la recuperación conserva la selección por su identidad. Word separa figura, leyenda y prosa dentro de enlaces o énfasis, conservando sus destinos. El PDF mantiene juntas las envolturas de una misma línea de código y comprueba también el texto de las listas y las celdas. Si una línea es más alta que la página, detiene la exportación y conserva el archivo anterior. Se mantienen las correcciones de búsqueda Unicode, leyendas y tablas extensas de 0.31.4. [Detalle y límites](CHANGELOG.md).
@@ -99,7 +105,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.31.5 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.32.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

@@ -197,7 +197,8 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             doc.styles.add_style("ReportGenCode", WD_STYLE_TYPE.PARAGRAPH).base_style = doc.styles["Normal"]
         text = text.replace("\r\n", "\n").replace("\r", "\n")
         p = doc.add_paragraph(style="ReportGenCode"); par_bg(p, CODE_BG); par_border(p, ACC_HEX, ("left",), sz=18, space=4)
-        p.paragraph_format.keep_together = True
+        from .pagination import code_fits_page
+        p.paragraph_format.keep_together = code_fits_page(doc, text)
         p.paragraph_format.keep_with_next = False
         p.paragraph_format.left_indent = Cm(0.2); p.paragraph_format.space_before = Pt(3); p.paragraph_format.space_after = Pt(3)
         lines = text.split("\n")

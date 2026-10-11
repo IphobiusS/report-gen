@@ -1,4 +1,4 @@
-# report-gen 0.31.5 user guide
+# report-gen 0.32.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -66,7 +66,7 @@ Suggestions support writing without requiring a fabricated finding or screenshot
 
 CVSS expresses technical severity, not business risk by itself. **Risk Posture and Business Impact** and **Strategic Recommendations** let you document the context, priorities and risk appetite agreed with the organization. Enable these sections under **Manage sections**. You author the conclusions; selecting a design does not calculate or approve them.
 
-**Library** recommends Serious as a general starting point. Compare the six general designs using the same sample page: cover, summary or technical page. An expandable specialized catalog retains the 22 certification profiles, Brand/Quiet variants and personal templates. If your project already uses a specialized design, the library opens in that context; browsing does not change its appearance.
+**Library** recommends Serious as a general starting point. Compare the six general designs using the same sample page: cover, summary or technical page. An expandable specialized catalog retains 26 certification and practice profiles plus three business report structures, Brand/Quiet variants and personal templates. If your project already uses a specialized design, the library opens in that context; browsing does not change its appearance.
 
 Every profile supports English and Spanish. Applying an appearance preserves findings. Word uses Calibri; PDF and HTML use compatible Carlito. Commands retain their monospaced font.
 

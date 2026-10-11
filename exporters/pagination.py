@@ -3,6 +3,32 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt
 from math import ceil
+from functools import lru_cache
+from pathlib import Path
+
+
+@lru_cache(maxsize=1)
+def _code_font():
+    from PIL import ImageFont
+    return ImageFont.truetype(str(Path(__file__).resolve().parents[1] / 'themes' / 'fonts' / 'DejaVuSansMono.ttf'), 100)
+
+
+def code_fits_page(document, text, size=9):
+    """Do not ask Word to keep a code paragraph larger than a page together.
+
+    Count hard breaks and wrapped monospace lines, reserving the code inset,
+    paragraph spacing and a preceding heading. Word remains the final layout
+    engine; this conservative bound only controls the keep-lines instruction.
+    """
+    section = document.sections[-1]
+    width = (section.page_width - section.left_margin - section.right_margin) / Pt(1) - 14
+    height = (section.page_height - section.top_margin - section.bottom_margin) / Pt(1)
+    if width <= 0:
+        return False
+    font = _code_font()
+    lines = sum(max(1, ceil(font.getlength(line.expandtabs(8)) * size / 100 / width))
+                for line in text.split('\n'))
+    return lines * size * 1.4 + 6 + 4 * size <= height
 
 
 def _tail_fits(table, start):

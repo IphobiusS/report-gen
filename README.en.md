@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.31.5
+# report-gen 0.32.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -49,6 +49,12 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
+## New in 0.32.0
+
+The library adds independent practice profiles for CRTO, CRTL, BTL1 and BTL2, plus business report structures for executive assurance, incident response and Purple Team validation. It now offers 29 specialized profiles and six general designs, with real Spanish and English samples. Personal sections with only one translation retain their content when the project language changes. [Catalog, references and limitations](docs/design-library.md).
+
+Delivery checks reject PDF commands altered by prefixes or suffixes and detect missing repeated lines. HTML, Word and Markdown compare complete cover titles, subtitles and metadata fields: another field or a partial match cannot supply a changed value. Visual and technical review of the report remains necessary.
+
 ## Fixes in 0.31.5
 
 The third banking exercise fixes finding and draft recovery: undo discards links to deleted assets, copies do not inherit the original’s remediation results, and recovery preserves selection by identity. Word separates figures, captions and prose inside links or emphasis while retaining their destinations. PDF keeps the wrapped parts of a logical code line together and also checks text in list items and table cells. If one line exceeds the printable page height, export stops and preserves the previous file. Unicode search, caption and long-table fixes from 0.31.4 remain in place. [Details and limits](CHANGELOG.md).
@@ -84,7 +90,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.31.5 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.32.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.31.5
+# Guía de uso de report-gen 0.32.0
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -62,7 +62,7 @@ La sugerencia orienta la escritura, sin exigir que inventes un hallazgo o una ca
 
 CVSS expresa severidad técnica, no el riesgo empresarial por sí solo. **Postura de riesgo e impacto de negocio** y **Recomendaciones estratégicas** permiten documentar el contexto, las prioridades y el apetito de riesgo que acuerdes con la organización. Puedes activar estos apartados desde **Gestionar secciones**. Sus conclusiones las redactas tú; seleccionar un diseño no las calcula ni las aprueba.
 
-**Biblioteca** recomienda Serio como punto de partida general. Los seis diseños generales se comparan con la misma página de muestra: portada, resumen o página técnica. El catálogo especializado conserva los 22 perfiles de certificación, las variantes Marca/Sobria y tus plantillas personales en un apartado desplegable. Si tu proyecto ya tiene un diseño especializado, la biblioteca abre ese contexto; navegar no cambia su apariencia.
+**Biblioteca** recomienda Serio como punto de partida general. Los seis diseños generales se comparan con la misma página de muestra: portada, resumen o página técnica. El catálogo especializado conserva 26 perfiles de certificación y práctica y tres estructuras empresariales, las variantes Marca/Sobria y tus plantillas personales en un apartado desplegable. Si tu proyecto ya tiene un diseño especializado, la biblioteca abre ese contexto; navegar no cambia su apariencia.
 
 Todos los perfiles permiten español e inglés. Cambiar apariencia no reemplaza los hallazgos. Word usa Calibri; PDF y HTML emplean Carlito como fuente compatible. Los comandos conservan su monoespaciada.
 

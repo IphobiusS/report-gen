@@ -4,6 +4,7 @@ Uses the public export facade and synthetic, explicitly labelled sample data.
 """
 import argparse
 import json
+import re
 from pathlib import Path
 import sys
 import yaml
@@ -13,7 +14,7 @@ from PIL import Image,ImageDraw,ImageFont
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT))
 import design_library as lib
-from design_samples import sample_data
+from design_samples import sample_data, general_sample_name
 from report_designs import THEMES
 import export
 
@@ -31,7 +32,7 @@ for p,variant in jobs:
     data=sample_data(lib.profile('offsec-oscp') if p.get('general') else p,variant,args.lang)
     if p.get('general'):
         data['meta'].pop('design');data['meta']['theme']=ident
-        data['meta']['report_subtitle']=ident+' / '+('Fictional sample' if args.lang=='en' else 'Muestra ficticia')
+        data['meta']['report_subtitle']=general_sample_name(ident,args.lang)+' / '+('Fictional sample' if args.lang=='en' else 'Muestra ficticia')
     source=folder/'engagement.yaml';source.write_text(yaml.safe_dump(data,allow_unicode=True,sort_keys=False))
     pdf=export.export(source,'pdf',folder/'muestra.pdf')
     docx=export.export(source,'docx',folder/'muestra.docx')
@@ -54,8 +55,9 @@ for p,variant in jobs:
 (out/'generation.json').write_text(json.dumps(results,indent=2)+'\n')
 # Contact sheets are review aids; every thumbnail derives from an actual exported PDF.
 font=ImageFont.truetype(str(ROOT/'exporters/fonts/DejaVuSans.ttf'),16)
-for group in ('offsec','htb','general'):
-    ids=[p['id'] for p in lib.catalog()['profiles'] if p['provider'].lower()==group] if group!='general' else sorted(THEMES)
+for provider in dict.fromkeys([p['provider'] for p in lib.catalog()['profiles']]+['General']):
+    group=re.sub(r'[^a-z0-9]+','-',provider.lower()).strip('-')
+    ids=[p['id'] for p in lib.catalog()['profiles'] if p['provider']==provider] if group!='general' else sorted(THEMES)
     for variant in ('brand','quiet') if group!='general' else ('brand',):
         available=[(ident,previews/ident/('en' if args.lang=='en' else '')/(variant+'-cover.webp')) for ident in ids if (previews/ident/('en' if args.lang=='en' else '')/(variant+'-cover.webp')).exists()]
         if not available:continue

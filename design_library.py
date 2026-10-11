@@ -20,7 +20,9 @@ def catalog():
 
 
 def localized(value, lang='es'):
-    return value.get(lang, value.get('es', '')) if isinstance(value, dict) else value
+    # Personal templates may intentionally provide just one language. Preserve
+    # that authored text when the report language has no translation yet.
+    return value.get(lang, value.get('es', value.get('en', ''))) if isinstance(value, dict) else value
 
 
 def text(value, name, limit=160):

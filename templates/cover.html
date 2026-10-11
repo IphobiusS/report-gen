@@ -10,7 +10,7 @@
 <section class="cover{% if meta.design %} profile-cover layout-{{ meta.design.layout }}{% endif %}{% if b.cover_image %} has-illustration{% endif %}">
   <div class="cover-header">
     <div class="cover-top"><span class="cv-wordmark">{{ wordmark }}</span><span class="cv-tag">{{ conf }}</span></div>
-    {% if meta.design %}<div class="profile-identity"><span class="profile-certificate">{{ provider_mark.provider }} / {{ meta.design.certificate }}</span><span class="provider-logo" role="img" aria-label="{{ provider_mark.name }}">{{ provider_mark.svg|safe }}</span></div>{% endif %}
+    {% if meta.design %}<div class="profile-identity"><span class="profile-certificate">{{ provider_mark.provider }} / {{ meta.design.certificate }}</span>{% if provider_mark.svg %}<span class="provider-logo" role="img" aria-label="{{ provider_mark.name }}">{{ provider_mark.svg|safe }}</span>{% endif %}</div>{% endif %}
     {% if b.logo or b.client_logo %}<div class="cv-logos">
       {% if b.logo %}<img class="cv-logo" src="{{ engagement_dir }}{{ b.logo }}" alt="">{% endif %}
       {% if b.client_logo %}<img class="cv-logo cv-logo-client" src="{{ engagement_dir }}{{ b.client_logo }}" alt="">{% endif %}

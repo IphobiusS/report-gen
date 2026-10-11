@@ -287,6 +287,31 @@ def _word_list_items(scope, actual):
     return items
 
 
+def _word_cover_units(cover):
+    if cover is None: return []
+    units = []
+    title = cover.xpath('.//w:p[w:pPr/w:pStyle[@w:val="Title"]]', namespaces=NS)
+    if title:
+        units.append(normal(_word_text(title[0])))
+        subtitle = title[0].getnext()
+        if subtitle is not None and subtitle.tag == W+'p' and normal(_word_text(subtitle)):
+            units.append(normal(_word_text(subtitle)))
+    # Only the lower cover zone holds metadata. A long brand/classification
+    # may use its own nested header table, which is not a label/value ledger.
+    for table in cover.xpath('./w:tr[last()]/w:tc[last()]/w:tbl', namespaces=NS):
+        for row in table.findall('./'+W+'tr'):
+            cells = [[normal(_word_text(p)) for p in cell.findall('./'+W+'p')]
+                     for cell in row.findall('./'+W+'tc')]
+            # Grid metadata puts each label/value pair in one cell; ledger
+            # metadata uses one row for the pair. Preserve full unit boundaries.
+            if any(len(values) > 1 for values in cells):
+                units.extend(normal(' '.join(values)) for values in cells if any(values))
+            else:
+                unit = normal(' '.join(value for values in cells for value in values))
+                if unit: units.append(unit)
+    return units
+
+
 def _word_scopes(path, expected):
     from exporters.navigation import reference_name
     with zipfile.ZipFile(path) as package:
@@ -329,6 +354,7 @@ def _word_scopes(path, expected):
             list_flows=_word_list_flows(paras))
     cover=tree.find(W+'body/'+W+'tbl')
     profiles['']['cover_text']=normal(' '.join(_word_text(p) for p in cover.findall('.//'+W+'p'))) if cover is not None else ''
+    profiles['']['cover_units'] = _word_cover_units(cover)
     return profiles
 
 
@@ -571,11 +597,18 @@ def _profiles(path, fmt, expected):
         for label in cover.xpath('.//li/strong'):
             if label.text and label.text.endswith(':'): label.text=label.text[:-1]
         cover_text=normal(cover.text_content())
+        cover_units = [normal(n.text_content()) for n in cover if n.tag == 'h1']
+        title = cover.find('h1')
+        subtitle = title.getnext() if title is not None else None
+        if subtitle is not None and subtitle.tag == 'p' and subtitle.find('em') is not None:
+            cover_units.append(normal(subtitle.text_content()))
+        cover_units.extend(normal(n.text_content()) for n in cover.xpath('.//li'))
         for _ in range(len(cover)): tree.remove(tree[0])
     else:
         tree = visible_copy(html.document_fromstring(path.read_text(encoding='utf-8')))
         cover=tree.xpath('//*[contains(concat(" ",normalize-space(@class)," ")," cover ")]')
         cover_text=' '.join(_cover_units(tree)) if cover else ''
+        cover_units = _cover_units(tree)
         mains=tree.xpath('//main')
         if not mains: raise ValueError(backend_message('Informe oculto o ausente / Report hidden or missing'))
         tree=mains[0]
@@ -585,6 +618,7 @@ def _profiles(path, fmt, expected):
         result[key]=_dom_units(root,fmt=='md')
         result[key]['semantic']=dom(root,image_digest,fmt=='md',expected.get('severity_label', 'Severidad'))
     result['']['cover_text']=cover_text
+    result['']['cover_units']=cover_units
     return result
 
 
@@ -733,6 +767,25 @@ def _pdf_present(units, actual, label_es, label_en):
     return sum(counts.values()), across
 
 
+def _pdf_code_line_pattern(line):
+    physical_wrap = r'(?:\r?\n[ \t]*)?'
+    words = normal(line).split()
+    body = r'\s+'.join(physical_wrap.join(re.escape(char) for char in word) for word in words)
+    # A logical command occupies complete physical lines. Matching only an
+    # interior substring would accept changed identifiers, option suffixes,
+    # prefixes or an additional command on the same line.
+    return re.compile(r'^[ \t]*' + body + r'[ \t]*\r?$', re.M)
+
+
+def _pdf_code_multiplicity(codes, text):
+    # Blocks may share individual lines. Count those lines globally so one
+    # extracted occurrence cannot satisfy two different authored blocks.
+    required = Counter(normal(line) for code in codes for line in code.splitlines() if normal(line))
+    for line, count in required.items():
+        if sum(1 for _ in _pdf_code_line_pattern(line).finditer(text)) < count:
+            raise ValueError(backend_message('Texto de código PDF ausente o alterado / Missing or changed PDF code text'))
+
+
 def _pdf_code_lines(code, text):
     # Preserve the extractor's physical line endings. A long token can wrap in
     # the PDF without acquiring a literal space; normal() would erase that
@@ -743,13 +796,10 @@ def _pdf_code_lines(code, text):
     cursor = 0
     checked = 0
     wrapped = 0
-    physical_wrap = r'(?:\r?\n[ \t]*)?'
     for line in code.splitlines():
-        words = normal(line).split()
-        if not words:
+        if not normal(line):
             continue
-        pattern = re.compile(r'\s+'.join(
-            physical_wrap.join(re.escape(char) for char in word) for word in words))
+        pattern = _pdf_code_line_pattern(line)
         match = pattern.search(text, cursor)
         if match is None:
             raise ValueError(backend_message('Texto de código PDF ausente o alterado / Missing or changed PDF code text'))
@@ -767,10 +817,11 @@ def inspect(path, fmt, expected):
     metadata = 0; links = 0; placements = 0; tables_checked = 0; list_order_checked = 0; headings_checked = 0
     pdf_table_cells = 0; pdf_list_items = 0
     cover_text = observed[''].get('cover_text', '')
+    if fmt != 'pdf' and expected['cover_units'] != observed[''].get('cover_units', []):
+        raise ValueError(backend_message('Metadato de portada alterado / Cover metadata changed'))
     for unit in expected['cover_units']:
         if fmt=='pdf':
             if not _pdf_pattern(unit).search(cover_text): raise ValueError(backend_message('Metadato de portada PDF alterado / Cover metadata changed'))
-        elif unit not in cover_text: raise ValueError(backend_message('Metadato de portada alterado / Cover metadata changed'))
         metadata+=1
     if fmt == 'pdf':
         # Table cells and plain li elements need not contain a paragraph.
@@ -786,6 +837,9 @@ def inspect(path, fmt, expected):
         _, page_break_paragraphs = _pdf_present(
             (paragraph for scope in expected['scopes'] for paragraph in scope['paragraphs']),
             observed[''], 'párrafo', 'paragraph')
+        _pdf_code_multiplicity(
+            (code for scope in expected['scopes'] for code in scope['codes']),
+            observed['']['raw_text'])
     for scope in expected['scopes']:
         key = '' if fmt == 'pdf' else scope['id']
         if key not in observed: raise ValueError(backend_message('Falta el hallazgo {p0} / Finding missing', p0=scope['id']))

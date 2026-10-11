@@ -52,7 +52,7 @@ def test_minimal_personal_design_preview_and_stored_variant(client, sections):
     assert changed.status_code==200 and changed.get_json()['data']['meta']['design']['variant']=='brand'
 
 
-@pytest.mark.parametrize('p',lib.catalog()['profiles'],ids=lambda p:p['id'])
+@pytest.mark.parametrize('p',[p for p in lib.catalog()['profiles'] if p['provider'] in ('OffSec','HTB')],ids=lambda p:p['id'])
 @pytest.mark.parametrize('variant',lib.VARIANTS)
 def test_every_profile_embeds_correct_offline_logo_without_mutating_content(p,variant,tmp_path):
     data=sample_data(p,variant);before=deepcopy(data)

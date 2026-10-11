@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "checked": "2026-10-03",
+  "checked": "2026-10-11",
   "profiles": [
     {
       "id": "offsec-oscp",
@@ -930,9 +930,9 @@
     },
     {
       "id": "offsec-oscc-sec",
-      "name": "OSCC SEC",
+      "name": "OSCC-SEC",
       "provider": "OffSec",
-      "certificate": "OSCC SEC",
+      "certificate": "OSCC-SEC",
       "course": "SEC-100",
       "accent": "#FFDF00",
       "background": "#1C1822",
@@ -1014,9 +1014,9 @@
     },
     {
       "id": "offsec-oscc-sjd",
-      "name": "OSCC SJD",
+      "name": "OSCC-SJD",
       "provider": "OffSec",
-      "certificate": "OSCC SJD",
+      "certificate": "OSCC-SJD",
       "course": "SJD-100",
       "accent": "#5B9EB3",
       "background": "#1C1822",
@@ -1254,14 +1254,14 @@
       ],
       "guidance": {
         "note": {
-          "es": "La guía consultada indica PDF o ZIP sin cifrar de hasta 20 MB. Revisa idioma, nombre y requisitos de evidencia en tu guía de examen. El paquete de report-gen incluye archivos auxiliares; selecciona los documentos solicitados antes de subirlos.",
-          "en": "The reviewed guide specifies unencrypted PDF or ZIP up to 20 MB. Check language, naming and evidence requirements in your exam guide. The report-gen package includes auxiliary files; select the requested documents before uploading."
+          "es": "La guía consultada indica PDF o ZIP sin cifrar de hasta 20 MB. Revisa idioma, nombre y requisitos de evidencia en tu guía de examen. El paquete de report-gen incluye archivos auxiliares; selecciona los documentos solicitados antes de subirlos. La guía consultada exige el informe en inglés.",
+          "en": "The reviewed guide specifies unencrypted PDF or ZIP up to 20 MB. Check language, naming and evidence requirements in your exam guide. The report-gen package includes auxiliary files; select the requested documents before uploading. The reviewed guide requires reports in English."
         },
         "formats": [
           "pdf"
         ],
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
-        "checked": "2026-10-03"
+        "checked": "2026-10-11"
       },
       "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
     },
@@ -1339,14 +1339,14 @@
       ],
       "guidance": {
         "note": {
-          "es": "La guía consultada indica PDF o ZIP sin cifrar de hasta 20 MB. Revisa idioma, nombre y requisitos de evidencia en tu guía de examen. El paquete de report-gen incluye archivos auxiliares; selecciona los documentos solicitados antes de subirlos.",
-          "en": "The reviewed guide specifies unencrypted PDF or ZIP up to 20 MB. Check language, naming and evidence requirements in your exam guide. The report-gen package includes auxiliary files; select the requested documents before uploading."
+          "es": "La guía consultada indica PDF o ZIP sin cifrar de hasta 20 MB. Revisa idioma, nombre y requisitos de evidencia en tu guía de examen. El paquete de report-gen incluye archivos auxiliares; selecciona los documentos solicitados antes de subirlos. La guía consultada exige el informe en inglés.",
+          "en": "The reviewed guide specifies unencrypted PDF or ZIP up to 20 MB. Check language, naming and evidence requirements in your exam guide. The report-gen package includes auxiliary files; select the requested documents before uploading. The reviewed guide requires reports in English."
         },
         "formats": [
           "pdf"
         ],
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
-        "checked": "2026-10-03"
+        "checked": "2026-10-11"
       },
       "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
     },
@@ -1424,14 +1424,14 @@
       ],
       "guidance": {
         "note": {
-          "es": "La guía de HTB indica Markdown sin procesar en un ZIP protegido con la contraseña del examen. Exporta Markdown y crea después el archivo protegido siguiendo esa guía. report-gen no cifra el ZIP.",
-          "en": "HTB guidance specifies raw Markdown in a ZIP protected with the exam password. Export Markdown, then create the protected archive following that guide. report-gen does not encrypt the ZIP."
+          "es": "La guía de HTB indica Markdown sin procesar en un ZIP protegido con la contraseña del examen. Exporta Markdown y crea después el archivo protegido siguiendo esa guía. report-gen no cifra el ZIP. La guía consultada exige el informe en inglés. El límite indicado es 20 MB.",
+          "en": "HTB guidance specifies raw Markdown in a ZIP protected with the exam password. Export Markdown, then create the protected archive following that guide. report-gen does not encrypt the ZIP. The reviewed guide requires reports in English. The stated limit is 20 MB."
         },
         "formats": [
           "md"
         ],
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
-        "checked": "2026-10-03"
+        "checked": "2026-10-11"
       },
       "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
     },
@@ -1509,14 +1509,14 @@
       ],
       "guidance": {
         "note": {
-          "es": "La guía consultada indica PDF o ZIP sin cifrar de hasta 20 MB. Revisa idioma, nombre y requisitos de evidencia en tu guía de examen. El paquete de report-gen incluye archivos auxiliares; selecciona los documentos solicitados antes de subirlos.",
-          "en": "The reviewed guide specifies unencrypted PDF or ZIP up to 20 MB. Check language, naming and evidence requirements in your exam guide. The report-gen package includes auxiliary files; select the requested documents before uploading."
+          "es": "La guía consultada indica PDF o ZIP sin cifrar de hasta 20 MB. Revisa idioma, nombre y requisitos de evidencia en tu guía de examen. El paquete de report-gen incluye archivos auxiliares; selecciona los documentos solicitados antes de subirlos. La guía consultada exige el informe en inglés.",
+          "en": "The reviewed guide specifies unencrypted PDF or ZIP up to 20 MB. Check language, naming and evidence requirements in your exam guide. The report-gen package includes auxiliary files; select the requested documents before uploading. The reviewed guide requires reports in English."
         },
         "formats": [
           "pdf"
         ],
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
-        "checked": "2026-10-03"
+        "checked": "2026-10-11"
       },
       "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
     },
@@ -1594,14 +1594,14 @@
       ],
       "guidance": {
         "note": {
-          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
-          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento. La guía consultada exige el informe en inglés.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance. The reviewed guide requires reports in English."
         },
         "formats": [
           "pdf"
         ],
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
-        "checked": "2026-10-03"
+        "checked": "2026-10-11"
       },
       "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
     },
@@ -1676,14 +1676,14 @@
       ],
       "guidance": {
         "note": {
-          "es": "La guía consultada indica PDF o ZIP sin cifrar de hasta 20 MB. Revisa idioma, nombre y requisitos de evidencia en tu guía de examen. El paquete de report-gen incluye archivos auxiliares; selecciona los documentos solicitados antes de subirlos.",
-          "en": "The reviewed guide specifies unencrypted PDF or ZIP up to 20 MB. Check language, naming and evidence requirements in your exam guide. The report-gen package includes auxiliary files; select the requested documents before uploading."
+          "es": "La guía consultada indica PDF o ZIP sin cifrar de hasta 20 MB. Revisa idioma, nombre y requisitos de evidencia en tu guía de examen. El paquete de report-gen incluye archivos auxiliares; selecciona los documentos solicitados antes de subirlos. La guía consultada exige el informe en inglés.",
+          "en": "The reviewed guide specifies unencrypted PDF or ZIP up to 20 MB. Check language, naming and evidence requirements in your exam guide. The report-gen package includes auxiliary files; select the requested documents before uploading. The reviewed guide requires reports in English."
         },
         "formats": [
           "pdf"
         ],
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
-        "checked": "2026-10-03"
+        "checked": "2026-10-11"
       },
       "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
     },
@@ -1758,14 +1758,14 @@
       ],
       "guidance": {
         "note": {
-          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
-          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento. La guía consultada exige el informe en inglés.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance. The reviewed guide requires reports in English."
         },
         "formats": [
           "pdf"
         ],
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
-        "checked": "2026-10-03"
+        "checked": "2026-10-11"
       },
       "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
     },
@@ -1843,16 +1843,713 @@
       ],
       "guidance": {
         "note": {
-          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento.",
-          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance."
+          "es": "Guía de trabajo independiente. Verifica la guía vigente de tu examen antes de entregar; el diseño no acredita cumplimiento. La guía consultada exige el informe en inglés.",
+          "en": "Independent writing aid. Check your current exam guide before submission; this design does not certify compliance. The reviewed guide requires reports in English."
         },
         "formats": [
           "pdf"
         ],
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
-        "checked": "2026-10-03"
+        "checked": "2026-10-11"
       },
       "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+    },
+    {
+      "id": "zeropoint-crto",
+      "name": "CRTO / Red Team Operator",
+      "provider": "Zero-Point Security",
+      "certificate": "CRTO / Red Team Operator",
+      "course": "Red Team Ops",
+      "accent": "#96394F",
+      "background": "#172B3B",
+      "layout": "rail",
+      "motif": "network",
+      "domain": "red-team",
+      "purpose": "study",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen y límites",
+            "en": "Summary and limitations"
+          },
+          "body": {
+            "es": "TODO: Distingue los resultados demostrados, las hipótesis y lo no evaluado. Identifica el destinatario y las decisiones pendientes.",
+            "en": "TODO: Distinguish demonstrated results, hypotheses and unassessed areas. Identify the audience and pending decisions."
+          }
+        },
+        {
+          "key": "operation-rules",
+          "title": {
+            "es": "Objetivos y reglas de operación",
+            "en": "Objectives and rules of engagement"
+          },
+          "body": {
+            "es": "TODO: Define objetivos autorizados, sistemas, ventanas, responsables, acciones prohibidas y condiciones de interrupción.",
+            "en": "TODO: Define authorized objectives, systems, windows, owners, prohibited actions and stop conditions."
+          }
+        },
+        {
+          "key": "operator-log",
+          "title": {
+            "es": "Bitácora y objetivos",
+            "en": "Operator log and objectives"
+          },
+          "body": {
+            "es": "TODO: Relaciona cada paso autorizado con su objetivo, precondiciones, identidad utilizada, evidencia y resultado observado; conserva también los intentos fallidos.",
+            "en": "TODO: Link every authorized step to its objective, preconditions, identity used, evidence and observed result; also preserve unsuccessful attempts."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "operator-telemetry",
+          "title": {
+            "es": "Telemetría y detección",
+            "en": "Telemetry and detection"
+          },
+          "body": {
+            "es": "TODO: Describe qué actividad fue visible, qué alertas se produjeron y qué fuentes se consultaron. Ausencia de alerta no demuestra invisibilidad.",
+            "en": "TODO: Describe visible activity, alerts raised and consulted sources. Absence of an alert does not prove invisibility."
+          }
+        },
+        {
+          "key": "operation-closeout",
+          "title": {
+            "es": "Limpieza y cierre",
+            "en": "Cleanup and closeout"
+          },
+          "body": {
+            "es": "TODO: Inventaría los cambios introducidos, su reversión y su comprobación. Registra pendientes y responsables; no declares eliminación sin evidencia.",
+            "en": "TODO: Inventory introduced changes, their reversal and verification. Record outstanding items and owners; do not claim removal without evidence."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Trazabilidad de evidencias",
+            "en": "Evidence traceability"
+          },
+          "body": {
+            "es": "TODO: Registra origen, fecha con zona horaria, identificador, hash, custodio y restricciones de cada evidencia. Relaciona cada conclusión con su fuente.",
+            "en": "TODO: Record source, timestamp with time zone, identifier, hash, custodian and restrictions for each evidence item. Link every conclusion to its source."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Cuaderno independiente de práctica. No presupone que el examen solicite un informe. Los formatos propuestos son opciones de trabajo; consulta las instrucciones vigentes del proveedor.",
+          "en": "Independent practice notebook. Does not assume the exam requires a report. Suggested formats are working options; check the provider’s current instructions."
+        },
+        "formats": [
+          "pdf",
+          "docx",
+          "md"
+        ],
+        "source": "https://www.zeropointsecurity.co.uk/course/red-team-ops",
+        "checked": "2026-10-11"
+      },
+      "color_source": "Original report-gen palette; not an official provider color."
+    },
+    {
+      "id": "zeropoint-crtl",
+      "name": "CRTL / Red Team Lead",
+      "provider": "Zero-Point Security",
+      "certificate": "CRTL / Red Team Lead",
+      "course": "Red Team Ops II",
+      "accent": "#82452F",
+      "background": "#172B3B",
+      "layout": "band",
+      "motif": "code",
+      "domain": "red-team",
+      "purpose": "study",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen y límites",
+            "en": "Summary and limitations"
+          },
+          "body": {
+            "es": "TODO: Distingue los resultados demostrados, las hipótesis y lo no evaluado. Identifica el destinatario y las decisiones pendientes.",
+            "en": "TODO: Distinguish demonstrated results, hypotheses and unassessed areas. Identify the audience and pending decisions."
+          }
+        },
+        {
+          "key": "operation-rules",
+          "title": {
+            "es": "Objetivos y reglas de operación",
+            "en": "Objectives and rules of engagement"
+          },
+          "body": {
+            "es": "TODO: Define objetivos autorizados, sistemas, ventanas, responsables, acciones prohibidas y condiciones de interrupción.",
+            "en": "TODO: Define authorized objectives, systems, windows, owners, prohibited actions and stop conditions."
+          }
+        },
+        {
+          "key": "control-hypotheses",
+          "title": {
+            "es": "Hipótesis de control y OPSEC",
+            "en": "Control hypotheses and OPSEC"
+          },
+          "body": {
+            "es": "TODO: Documenta controles presentes, hipótesis, señales esperadas y criterios medibles de éxito o interrupción para cada prueba autorizada.",
+            "en": "TODO: Document existing controls, hypotheses, expected signals and measurable success or stop criteria for each authorized test."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "control-outcomes",
+          "title": {
+            "es": "Resultados y límites de generalización",
+            "en": "Outcomes and limits of generalization"
+          },
+          "body": {
+            "es": "TODO: Distingue bloqueo, detección, ausencia de telemetría y prueba no ejecutada. Vincula resultados con versiones y configuración sin generalizar fuera del entorno.",
+            "en": "TODO: Distinguish blocking, detection, missing telemetry and unexecuted tests. Link results to versions and configuration without generalizing beyond the environment."
+          }
+        },
+        {
+          "key": "operation-closeout",
+          "title": {
+            "es": "Limpieza y cierre",
+            "en": "Cleanup and closeout"
+          },
+          "body": {
+            "es": "TODO: Inventaría los cambios introducidos, su reversión y su comprobación. Registra pendientes y responsables; no declares eliminación sin evidencia.",
+            "en": "TODO: Inventory introduced changes, their reversal and verification. Record outstanding items and owners; do not claim removal without evidence."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Trazabilidad de evidencias",
+            "en": "Evidence traceability"
+          },
+          "body": {
+            "es": "TODO: Registra origen, fecha con zona horaria, identificador, hash, custodio y restricciones de cada evidencia. Relaciona cada conclusión con su fuente.",
+            "en": "TODO: Record source, timestamp with time zone, identifier, hash, custodian and restrictions for each evidence item. Link every conclusion to its source."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Cuaderno independiente de práctica. No presupone que el examen solicite un informe. Los formatos propuestos son opciones de trabajo; consulta las instrucciones vigentes del proveedor.",
+          "en": "Independent practice notebook. Does not assume the exam requires a report. Suggested formats are working options; check the provider’s current instructions."
+        },
+        "formats": [
+          "pdf",
+          "docx",
+          "md"
+        ],
+        "source": "https://www.zeropointsecurity.co.uk/course/red-team-ops-ii",
+        "checked": "2026-10-11"
+      },
+      "color_source": "Original report-gen palette; not an official provider color."
+    },
+    {
+      "id": "centri-btl1",
+      "name": "BTL1",
+      "provider": "Centri",
+      "certificate": "BTL1",
+      "course": "Blue Team Level 1",
+      "accent": "#286C97",
+      "background": "#172B3B",
+      "layout": "timeline",
+      "motif": "events",
+      "domain": "defense",
+      "purpose": "study",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen y límites",
+            "en": "Summary and limitations"
+          },
+          "body": {
+            "es": "TODO: Distingue los resultados demostrados, las hipótesis y lo no evaluado. Identifica el destinatario y las decisiones pendientes.",
+            "en": "TODO: Distinguish demonstrated results, hypotheses and unassessed areas. Identify the audience and pending decisions."
+          }
+        },
+        {
+          "key": "alert-triage",
+          "title": {
+            "es": "Triaje y prioridades",
+            "en": "Triage and priorities"
+          },
+          "body": {
+            "es": "TODO: Registra alerta de origen, fuentes disponibles, impacto aparente, hipótesis alternativas y criterio de escalamiento.",
+            "en": "TODO: Record the originating alert, available sources, apparent impact, alternative hypotheses and escalation criteria."
+          }
+        },
+        {
+          "key": "incident-timeline",
+          "title": {
+            "es": "Cronología y alcance afectado",
+            "en": "Timeline and affected scope"
+          },
+          "body": {
+            "es": "TODO: Correlaciona eventos por activo e identidad con fecha y zona horaria. Separa eventos observados de tiempos inferidos y registra lagunas de telemetría.",
+            "en": "TODO: Correlate events by asset and identity with timestamp and time zone. Separate observed events from inferred timing and record telemetry gaps."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "analysis-queries",
+          "title": {
+            "es": "Consultas y análisis reproducible",
+            "en": "Queries and reproducible analysis"
+          },
+          "body": {
+            "es": "TODO: Conserva consultas, intervalo temporal, filtros, versión de herramientas y resultados. Distingue indicadores observados de ejemplos y falsos positivos.",
+            "en": "TODO: Preserve queries, time range, filters, tool versions and results. Distinguish observed indicators from examples and false positives."
+          }
+        },
+        {
+          "key": "response-actions",
+          "title": {
+            "es": "Respuesta y comunicación",
+            "en": "Response and communication"
+          },
+          "body": {
+            "es": "TODO: Propón acciones con responsable y dependencias. Separa propuestas, aprobaciones, ejecución y comprobación; documenta las comunicaciones autorizadas.",
+            "en": "TODO: Propose actions with owners and dependencies. Separate proposals, approvals, execution and verification; document authorized communications."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Trazabilidad de evidencias",
+            "en": "Evidence traceability"
+          },
+          "body": {
+            "es": "TODO: Registra origen, fecha con zona horaria, identificador, hash, custodio y restricciones de cada evidencia. Relaciona cada conclusión con su fuente.",
+            "en": "TODO: Record source, timestamp with time zone, identifier, hash, custodian and restrictions for each evidence item. Link every conclusion to its source."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Cuaderno independiente de práctica. No presupone que el examen solicite un informe. Los formatos propuestos son opciones de trabajo; consulta las instrucciones vigentes del proveedor.",
+          "en": "Independent practice notebook. Does not assume the exam requires a report. Suggested formats are working options; check the provider’s current instructions."
+        },
+        "formats": [
+          "pdf",
+          "docx",
+          "md"
+        ],
+        "source": "https://www.centri.org/certifications/blue-team-level-1",
+        "checked": "2026-10-11"
+      },
+      "color_source": "Original report-gen palette; not an official provider color."
+    },
+    {
+      "id": "centri-btl2",
+      "name": "BTL2",
+      "provider": "Centri",
+      "certificate": "BTL2",
+      "course": "Blue Team Level 2",
+      "accent": "#315E80",
+      "background": "#172B3B",
+      "layout": "timeline",
+      "motif": "events",
+      "domain": "hunt",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen y límites",
+            "en": "Summary and limitations"
+          },
+          "body": {
+            "es": "TODO: Distingue los resultados demostrados, las hipótesis y lo no evaluado. Identifica el destinatario y las decisiones pendientes.",
+            "en": "TODO: Distinguish demonstrated results, hypotheses and unassessed areas. Identify the audience and pending decisions."
+          }
+        },
+        {
+          "key": "hunt-plan",
+          "title": {
+            "es": "Hipótesis y cobertura",
+            "en": "Hypotheses and coverage"
+          },
+          "body": {
+            "es": "TODO: Define hipótesis de investigación, activos, fuentes y límites de retención. Registra criterios de descarte y preguntas sin resolver.",
+            "en": "TODO: Define investigation hypotheses, assets, sources and retention limits. Record rejection criteria and unresolved questions."
+          }
+        },
+        {
+          "key": "incident-timeline",
+          "title": {
+            "es": "Cronología y alcance afectado",
+            "en": "Timeline and affected scope"
+          },
+          "body": {
+            "es": "TODO: Correlaciona eventos por activo e identidad con fecha y zona horaria. Separa eventos observados de tiempos inferidos y registra lagunas de telemetría.",
+            "en": "TODO: Correlate events by asset and identity with timestamp and time zone. Separate observed events from inferred timing and record telemetry gaps."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "artifact-analysis",
+          "title": {
+            "es": "Análisis de artefactos e indicadores",
+            "en": "Artifact and indicator analysis"
+          },
+          "body": {
+            "es": "TODO: Relaciona análisis estático o dinámico con hashes, entorno aislado, indicadores y nivel de confianza. No equipares una coincidencia con atribución.",
+            "en": "TODO: Link static or dynamic analysis to hashes, isolated environment, indicators and confidence level. Do not equate a match with attribution."
+          }
+        },
+        {
+          "key": "detection-validation",
+          "title": {
+            "es": "Validación y mejoras de detección",
+            "en": "Detection validation and improvements"
+          },
+          "body": {
+            "es": "TODO: Registra consultas, señales esperadas y observadas, falsos positivos, cobertura ausente y próximos ensayos. Separa validación ejecutada de propuesta.",
+            "en": "TODO: Record queries, expected and observed signals, false positives, missing coverage and next trials. Separate executed validation from proposed validation."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Trazabilidad de evidencias",
+            "en": "Evidence traceability"
+          },
+          "body": {
+            "es": "TODO: Registra origen, fecha con zona horaria, identificador, hash, custodio y restricciones de cada evidencia. Relaciona cada conclusión con su fuente.",
+            "en": "TODO: Record source, timestamp with time zone, identifier, hash, custodian and restrictions for each evidence item. Link every conclusion to its source."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Estructura independiente de investigación avanzada, no plantilla oficial de examen. El curso incluye redacción de informes. Confirma en tu guía privada el formato y los requisitos de entrega; las exportaciones propuestas no los sustituyen.",
+          "en": "Independent advanced investigation structure, not an official exam template. The course includes report writing. Confirm submission format and requirements in your private guide; suggested exports do not replace them."
+        },
+        "formats": [
+          "pdf",
+          "docx",
+          "md"
+        ],
+        "source": "https://www.centri.org/certifications/blue-team-level-2",
+        "checked": "2026-10-11"
+      },
+      "color_source": "Original report-gen palette; not an official provider color."
+    },
+    {
+      "id": "enterprise-assurance",
+      "name": "Corporate Assurance",
+      "provider": "Enterprise",
+      "certificate": "Corporate Assurance",
+      "course": "Executive risk review",
+      "accent": "#285B68",
+      "background": "#172B3B",
+      "layout": "split",
+      "motif": "blocks",
+      "domain": "assurance",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen y límites",
+            "en": "Summary and limitations"
+          },
+          "body": {
+            "es": "TODO: Distingue los resultados demostrados, las hipótesis y lo no evaluado. Identifica el destinatario y las decisiones pendientes.",
+            "en": "TODO: Distinguish demonstrated results, hypotheses and unassessed areas. Identify the audience and pending decisions."
+          }
+        },
+        {
+          "key": "assurance-scope",
+          "title": {
+            "es": "Alcance, criterios y limitaciones",
+            "en": "Scope, criteria and limitations"
+          },
+          "body": {
+            "es": "TODO: Define servicios de negocio, activos, período, método de muestreo, criterios acordados y exclusiones. No extrapoles la muestra a toda la organización.",
+            "en": "TODO: Define business services, assets, period, sampling method, agreed criteria and exclusions. Do not extrapolate the sample to the whole organization."
+          }
+        },
+        {
+          "key": "executive-decisions",
+          "title": {
+            "es": "Decisiones para dirección",
+            "en": "Management decisions"
+          },
+          "body": {
+            "es": "TODO: Relaciona riesgos demostrados con servicio afectado, prioridad, decisión solicitada y responsable. Distingue impacto técnico de impacto financiero estimado.",
+            "en": "TODO: Link demonstrated risks to affected services, priority, requested decision and owner. Distinguish technical impact from estimated financial impact."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "action-roadmap",
+          "title": {
+            "es": "Plan de acción y aceptación",
+            "en": "Action plan and acceptance"
+          },
+          "body": {
+            "es": "TODO: Registra acción, responsable, fecha objetivo, dependencias y evidencia necesaria para cerrar cada riesgo. Distingue corrección, aceptación y riesgo residual.",
+            "en": "TODO: Record action, owner, target date, dependencies and evidence required to close each risk. Distinguish remediation, acceptance and residual risk."
+          }
+        },
+        {
+          "key": "governance-review",
+          "title": {
+            "es": "Aprobaciones y seguimiento",
+            "en": "Approvals and follow-up"
+          },
+          "body": {
+            "es": "TODO: Identifica quién revisa y acepta el informe, los cambios de alcance y la próxima revisión. Los estados pendientes permanecen explícitos.",
+            "en": "TODO: Identify who reviews and accepts the report, scope changes and the next review. Keep pending states explicit."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Trazabilidad de evidencias",
+            "en": "Evidence traceability"
+          },
+          "body": {
+            "es": "TODO: Registra origen, fecha con zona horaria, identificador, hash, custodio y restricciones de cada evidencia. Relaciona cada conclusión con su fuente.",
+            "en": "TODO: Record source, timestamp with time zone, identifier, hash, custodian and restrictions for each evidence item. Link every conclusion to its source."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Plantilla empresarial original para decisiones y seguimiento de riesgos. La referencia ofrece contexto; este documento no certifica cumplimiento ni reemplaza criterios contractuales o regulatorios.",
+          "en": "Original enterprise template for risk decisions and follow-up. The reference provides context; this document does not certify compliance or replace contractual or regulatory criteria."
+        },
+        "formats": [
+          "pdf",
+          "docx",
+          "md"
+        ],
+        "source": "https://www.nist.gov/cyberframework",
+        "checked": "2026-10-11"
+      },
+      "color_source": "Original report-gen palette; not an official provider color."
+    },
+    {
+      "id": "enterprise-incident",
+      "name": "Incident Response",
+      "provider": "Enterprise",
+      "certificate": "Incident Response",
+      "course": "Incident investigation and recovery",
+      "accent": "#286D62",
+      "background": "#172B3B",
+      "layout": "timeline",
+      "motif": "events",
+      "domain": "incident",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen y límites",
+            "en": "Summary and limitations"
+          },
+          "body": {
+            "es": "TODO: Distingue los resultados demostrados, las hipótesis y lo no evaluado. Identifica el destinatario y las decisiones pendientes.",
+            "en": "TODO: Distinguish demonstrated results, hypotheses and unassessed areas. Identify the audience and pending decisions."
+          }
+        },
+        {
+          "key": "incident-command",
+          "title": {
+            "es": "Clasificación y coordinación",
+            "en": "Classification and coordination"
+          },
+          "body": {
+            "es": "TODO: Registra clasificación, criterios, responsables, autorizaciones, canales y cadencia de comunicación. Deja explícitos los datos aún no confirmados.",
+            "en": "TODO: Record classification, criteria, owners, authorizations, channels and communication cadence. Make unconfirmed information explicit."
+          }
+        },
+        {
+          "key": "incident-timeline",
+          "title": {
+            "es": "Cronología y alcance afectado",
+            "en": "Timeline and affected scope"
+          },
+          "body": {
+            "es": "TODO: Correlaciona eventos por activo e identidad con fecha y zona horaria. Separa eventos observados de tiempos inferidos y registra lagunas de telemetría.",
+            "en": "TODO: Correlate events by asset and identity with timestamp and time zone. Separate observed events from inferred timing and record telemetry gaps."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "containment-record",
+          "title": {
+            "es": "Contención, erradicación y recuperación",
+            "en": "Containment, eradication and recovery"
+          },
+          "body": {
+            "es": "TODO: Distingue acciones propuestas, aprobadas, ejecutadas y verificadas. Para cada una registra impacto, reversibilidad, responsable y evidencia de recuperación.",
+            "en": "TODO: Distinguish proposed, approved, executed and verified actions. For each action record impact, reversibility, owner and recovery evidence."
+          }
+        },
+        {
+          "key": "lessons-and-readiness",
+          "title": {
+            "es": "Lecciones y preparación futura",
+            "en": "Lessons and future readiness"
+          },
+          "body": {
+            "es": "TODO: Documenta causas sustentadas, limitaciones de la investigación, mejoras de preparación y criterios para cerrar o reabrir el incidente.",
+            "en": "TODO: Document supported causes, investigation limitations, preparedness improvements and criteria for closing or reopening the incident."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Trazabilidad de evidencias",
+            "en": "Evidence traceability"
+          },
+          "body": {
+            "es": "TODO: Registra origen, fecha con zona horaria, identificador, hash, custodio y restricciones de cada evidencia. Relaciona cada conclusión con su fuente.",
+            "en": "TODO: Record source, timestamp with time zone, identifier, hash, custodian and restrictions for each evidence item. Link every conclusion to its source."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Estructura original de respuesta a incidentes con NIST SP 800-61 Rev. 3 como referencia de contexto. No es una plantilla oficial ni una declaración de conformidad. Ajusta el proceso a tu organización.",
+          "en": "Original incident response structure with NIST SP 800-61 Rev. 3 as contextual reference. Not an official template or statement of conformity. Adapt the process to your organization."
+        },
+        "formats": [
+          "pdf",
+          "docx",
+          "md"
+        ],
+        "source": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+        "checked": "2026-10-11"
+      },
+      "color_source": "Original report-gen palette; not an official provider color."
+    },
+    {
+      "id": "enterprise-purple-team",
+      "name": "Purple Team",
+      "provider": "Enterprise",
+      "certificate": "Purple Team",
+      "course": "Detection validation",
+      "accent": "#655287",
+      "background": "#172B3B",
+      "layout": "frame",
+      "motif": "network",
+      "domain": "purple-team",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "profile-summary",
+          "title": {
+            "es": "Resumen y límites",
+            "en": "Summary and limitations"
+          },
+          "body": {
+            "es": "TODO: Distingue los resultados demostrados, las hipótesis y lo no evaluado. Identifica el destinatario y las decisiones pendientes.",
+            "en": "TODO: Distinguish demonstrated results, hypotheses and unassessed areas. Identify the audience and pending decisions."
+          }
+        },
+        {
+          "key": "operation-rules",
+          "title": {
+            "es": "Objetivos y reglas de operación",
+            "en": "Objectives and rules of engagement"
+          },
+          "body": {
+            "es": "TODO: Define objetivos autorizados, sistemas, ventanas, responsables, acciones prohibidas y condiciones de interrupción.",
+            "en": "TODO: Define authorized objectives, systems, windows, owners, prohibited actions and stop conditions."
+          }
+        },
+        {
+          "key": "validation-matrix",
+          "title": {
+            "es": "Matriz de validación",
+            "en": "Validation matrix"
+          },
+          "body": {
+            "es": "TODO: Para cada caso registra objetivo, técnica y versión de la referencia, prerrequisitos, sensor, consulta y señal esperada. No confundas una técnica planificada con cobertura probada.",
+            "en": "TODO: For each case record objective, technique and reference version, prerequisites, sensor, query and expected signal. Do not confuse a planned technique with tested coverage."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "observations-and-gaps",
+          "title": {
+            "es": "Observaciones y brechas",
+            "en": "Observations and gaps"
+          },
+          "body": {
+            "es": "TODO: Relaciona ejecución y hora con telemetría, alerta, respuesta y evidencia. Separa bloqueado, detectado, no observado y no ejecutado. Indica límites de visibilidad.",
+            "en": "TODO: Link execution and time to telemetry, alert, response and evidence. Separate blocked, detected, not observed and not executed. State visibility limits."
+          }
+        },
+        {
+          "key": "detection-backlog",
+          "title": {
+            "es": "Mejoras y repetición",
+            "en": "Improvements and repeat validation"
+          },
+          "body": {
+            "es": "TODO: Asigna responsables y criterios de aceptación. Conserva resultados antes y después con condiciones comparables y explica cualquier diferencia.",
+            "en": "TODO: Assign owners and acceptance criteria. Preserve before-and-after results under comparable conditions and explain any differences."
+          }
+        },
+        {
+          "key": "operation-closeout",
+          "title": {
+            "es": "Limpieza y cierre",
+            "en": "Cleanup and closeout"
+          },
+          "body": {
+            "es": "TODO: Inventaría los cambios introducidos, su reversión y su comprobación. Registra pendientes y responsables; no declares eliminación sin evidencia.",
+            "en": "TODO: Inventory introduced changes, their reversal and verification. Record outstanding items and owners; do not claim removal without evidence."
+          }
+        },
+        {
+          "key": "profile-evidence",
+          "title": {
+            "es": "Trazabilidad de evidencias",
+            "en": "Evidence traceability"
+          },
+          "body": {
+            "es": "TODO: Registra origen, fecha con zona horaria, identificador, hash, custodio y restricciones de cada evidencia. Relaciona cada conclusión con su fuente.",
+            "en": "TODO: Record source, timestamp with time zone, identifier, hash, custodian and restrictions for each evidence item. Link every conclusion to its source."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Plantilla original de validación colaborativa. ATT&CK se usa como vocabulario de referencia, no como porcentaje automático de cobertura ni certificación. Relaciona toda conclusión con pruebas ejecutadas y fuentes disponibles.",
+          "en": "Original collaborative validation template. ATT&CK is reference vocabulary, not an automatic coverage percentage or certification. Link every conclusion to executed tests and available sources."
+        },
+        "formats": [
+          "pdf",
+          "docx",
+          "md"
+        ],
+        "source": "https://attack.mitre.org/resources/",
+        "checked": "2026-10-11"
+      },
+      "color_source": "Original report-gen palette; not an official provider color."
     }
   ],
   "historical": [

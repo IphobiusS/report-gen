@@ -1,4 +1,7 @@
 """Native Word cover with independent header, title and lower metadata zones."""
+from functools import lru_cache
+from pathlib import Path
+
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_ROW_HEIGHT_RULE, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.oxml import OxmlElement
@@ -6,6 +9,23 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
 
 from .images import word_image
+
+
+@lru_cache(maxsize=2)
+def _identity_font(bold=False):
+    from PIL import ImageFont
+    # Carlito is the bundled metric-compatible substitute for Word's Calibri.
+    name = 'Carlito-Bold.ttf' if bold else 'Carlito-Regular.ttf'
+    return ImageFont.truetype(str(Path(__file__).resolve().parents[1] / 'themes' / 'fonts' / name), 100)
+
+
+def _identity_needs_columns(wordmark, classification, width):
+    """Keep short covers identical; isolate text that cannot share one line."""
+    if '\n' in wordmark + classification or '\r' in wordmark + classification:
+        return True
+    points = (_identity_font(True).getlength(wordmark) * 15 / 100
+              + _identity_font().getlength(classification) * 8 / 100)
+    return points + Cm(.5) / Pt(1) > width / Pt(1)
 
 
 def add_cover(doc, meta, labels, engagement_dir, hx):
@@ -118,11 +138,36 @@ def add_cover(doc, meta, labels, engagement_dir, hx):
         shade(middle, '14213D'); border(middle, start=('1F5FA8',96)); title_color='FFFFFF'
 
     hp = paragraph(header, first=True)
-    hp.paragraph_format.tab_stops.clear_all()
-    hp.paragraph_format.tab_stops.add_tab_stop(Cm(15.6 if theme=='laboratorio' else 16.2), WD_TAB_ALIGNMENT.RIGHT)
-    run(hp, branding.get('wordmark', 'iphobiuss'), 15, hx('cover-wordmark','182b3b'), True)
-    hp.add_run('\t')
-    run(hp, branding.get('confidential_text','CONFIDENTIAL'), 8, hx('cover-tag-fg','566777'))
+    identity_width = Cm(15.6 if theme=='laboratorio' else 16.2)
+    wordmark = branding.get('wordmark', 'iphobiuss')
+    classification = branding.get('confidential_text','CONFIDENTIAL')
+    wordmark = '' if wordmark is None else str(wordmark)
+    classification = '' if classification is None else str(classification)
+    if _identity_needs_columns(wordmark, classification, identity_width):
+        # A right tab only aligns the first line. Separate cells also keep
+        # continuation lines of the classification in their own right column.
+        identity = header.add_table(rows=1, cols=2)
+        identity.autofit = False
+        identity.alignment = WD_TABLE_ALIGNMENT.LEFT
+        for column, cell, fraction in zip(identity.columns, identity.rows[0].cells, (.55, .45)):
+            column.width = cell.width = int(identity_width * fraction)
+            margins(cell)
+            cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
+        left, right = identity.rows[0].cells
+        margins(left, end=5)
+        run(paragraph(left, first=True), wordmark, 15, hx('cover-wordmark','182b3b'), True)
+        run(paragraph(right, first=True, align=WD_ALIGN_PARAGRAPH.RIGHT), classification, 8, hx('cover-tag-fg','566777'))
+        header._tc.remove(hp._p)
+        tail = header.paragraphs[-1]
+        tail.paragraph_format.line_spacing = Pt(1)
+        tail.paragraph_format.space_after = Pt(0)
+        run(tail, '', 1)
+    else:
+        hp.paragraph_format.tab_stops.clear_all()
+        hp.paragraph_format.tab_stops.add_tab_stop(identity_width, WD_TAB_ALIGNMENT.RIGHT)
+        run(hp, wordmark, 15, hx('cover-wordmark','182b3b'), True)
+        hp.add_run('\t')
+        run(hp, classification, 8, hx('cover-tag-fg','566777'))
     if design:
         p=paragraph(header);p.paragraph_format.space_before=Pt(16)
         from provider_branding import provider_mark
@@ -130,9 +175,10 @@ def add_cover(doc, meta, labels, engagement_dir, hx):
         p.paragraph_format.tab_stops.clear_all()
         p.paragraph_format.tab_stops.add_tab_stop(Cm(16.2), WD_TAB_ALIGNMENT.RIGHT)
         run(p,mark['provider']+' / '+design['certificate'],10,hx('cover-mark-ink','182B3B'))
-        p.add_run('\t')
-        shape=p.add_run().add_picture(str(mark['png']),width=Cm(4.2))
-        shape._inline.docPr.set('descr',mark['name'])
+        if mark['png'] is not None:
+            p.add_run('\t')
+            shape=p.add_run().add_picture(str(mark['png']),width=Cm(4.2))
+            shape._inline.docPr.set('descr',mark['name'])
     if branding.get('logo') or branding.get('client_logo'):
         p = paragraph(header); p.paragraph_format.space_before=Pt(10 if design else 16)
         for key in ('logo','client_logo'):

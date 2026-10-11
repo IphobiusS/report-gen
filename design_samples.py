@@ -2,6 +2,13 @@
 from design_library import new_report, localized
 
 
+def general_sample_name(theme, lang='es'):
+    """English gallery exports use the same readable names as the gallery."""
+    english = {'serio': 'Serious', 'corporativo': 'Corporate', 'offsec': 'OffSec',
+               'htb': 'HTB', 'ejecutivo': 'Executive', 'laboratorio': 'Laboratory'}
+    return english[theme] if lang == 'en' else theme
+
+
 def sample_data(profile,variant='brand',lang='es'):
     en=lang=='en'
     data=new_report(profile,'Security assessment' if en else 'Evaluación de seguridad',lang,variant)
