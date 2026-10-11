@@ -55,6 +55,8 @@ def verify(receipts):
     if not receipts:
         raise ValueError("No shard receipts")
     first = receipts[0]
+    if first.get("schema") != 2:
+        raise ValueError("Shard receipts must identify the tests actually executed")
     count = first["shard_count"]
     if len(receipts) != count or sorted(r["index"] for r in receipts) != list(range(1, count + 1)):
         raise ValueError("Missing or duplicate shard receipts")
@@ -66,6 +68,8 @@ def verify(receipts):
                 raise ValueError(f"Shard collections disagree: {key}")
         if receipt.get("executed_count") != len(receipt["nodeids"]):
             raise ValueError("A shard did not execute its complete selection")
+        if receipt.get("executed_sha256") != fingerprint(receipt["nodeids"]):
+            raise ValueError("Executed tests differ from the shard selection")
     combined = [nodeid for receipt in receipts for nodeid in receipt["nodeids"]]
     if len(combined) != len(set(combined)):
         raise ValueError("Duplicate tests across shards")
@@ -83,7 +87,7 @@ class ShardPlugin:
     def pytest_collection_modifyitems(self, config, items):
         nodeids = [item.nodeid for item in items]
         groups = partition(nodeids, self.args.count, json.loads(WEIGHTS.read_text()))
-        self.data = {"schema": 1, "shard_count": self.args.count,
+        self.data = {"schema": 2, "shard_count": self.args.count,
                      "collection_count": len(nodeids), "collection_sha256": fingerprint(nodeids)}
         if self.args.plan:
             self.data["groups"] = groups
@@ -105,6 +109,9 @@ class ShardPlugin:
         if self.data is not None:
             self.data["exit_code"] = int(exitstatus)
             self.data["executed_count"] = sum(self.executed.values())
+            # Include identities and multiplicity: an extra execution must not
+            # compensate for an omitted test merely because totals agree.
+            self.data["executed_sha256"] = fingerprint(list(self.executed.elements()))
             self.args.output.parent.mkdir(parents=True, exist_ok=True)
             self.args.output.write_text(json.dumps(self.data, indent=2) + "\n", encoding="utf-8")
 

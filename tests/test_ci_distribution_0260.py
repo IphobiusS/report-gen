@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 import tomllib
+from types import SimpleNamespace
 import zipfile
 
 from packaging.specifiers import SpecifierSet
@@ -51,9 +52,10 @@ def test_declared_python_floor_matches_audited_dependency_metadata():
 def sample_receipts():
     nodes = [f"tests/test_{module}.py::test_{case}" for module in range(8) for case in range(5)]
     groups = ci.partition(nodes, 4, {"modules": {}})
-    receipts = [{**group, "schema": 1, "shard_count": 4, "collection_count": len(nodes),
+    receipts = [{**group, "schema": 2, "shard_count": 4, "collection_count": len(nodes),
                  "collection_sha256": ci.fingerprint(nodes), "exit_code": 0,
-                 "executed_count": len(group["nodeids"])} for group in groups]
+                 "executed_count": len(group["nodeids"]),
+                 "executed_sha256": ci.fingerprint(group["nodeids"])} for group in groups]
     return nodes, receipts
 
 
@@ -73,6 +75,34 @@ def test_complete_shard_receipts_prove_exact_union():
     nodes, receipts = sample_receipts()
     assert ci.verify(receipts) == {"tests": len(nodes), "shards": 4,
                                    "collection_sha256": ci.fingerprint(nodes)}
+
+
+@pytest.mark.parametrize('executed', [
+    ['tests/test_small.py::test_a', 'tests/test_small.py::test_a'],
+    ['tests/test_small.py::test_a', 'tests/test_other.py::test_c'],
+])
+def test_actual_execution_identity_cannot_be_replaced_by_an_equal_count(tmp_path, executed):
+    nodes = ['tests/test_small.py::test_a', 'tests/test_small.py::test_b']
+    output = tmp_path / 'receipt.json'
+    plugin = ci.ShardPlugin(SimpleNamespace(count=1, index=1, plan=False, output=output))
+    config = SimpleNamespace(hook=SimpleNamespace(pytest_deselected=lambda **kwargs: None))
+    plugin.pytest_collection_modifyitems(config, [SimpleNamespace(nodeid=node) for node in nodes])
+    for node in executed:
+        plugin.pytest_runtest_logreport(SimpleNamespace(nodeid=node, when='call', outcome='passed'))
+    plugin.pytest_sessionfinish(None, 0)
+    receipt = json.loads(output.read_text())
+    assert receipt['executed_count'] == len(nodes)
+    with pytest.raises(ValueError, match='Executed tests differ'):
+        ci.verify([receipt])
+
+
+def test_legacy_count_only_receipt_cannot_claim_exact_execution():
+    _, receipts = sample_receipts()
+    for receipt in receipts:
+        receipt['schema'] = 1
+        receipt.pop('executed_sha256')
+    with pytest.raises(ValueError, match='actually executed'):
+        ci.verify(receipts)
 
 
 def test_actual_pytest_shards_execute_their_entire_partition(tmp_path):
@@ -97,6 +127,22 @@ def test_actual_pytest_shards_execute_their_entire_partition(tmp_path):
         assert result.returncode == 0, result.stdout + result.stderr
         receipts.append(json.loads(receipt.read_text()))
     assert ci.verify(receipts)["tests"] == 8
+
+
+def test_setup_skip_is_accounted_for_without_counting_teardown_twice(tmp_path):
+    nodes = ['tests/test_small.py::test_a', 'tests/test_small.py::test_b']
+    output = tmp_path / 'receipt.json'
+    plugin = ci.ShardPlugin(SimpleNamespace(count=1, index=1, plan=False, output=output))
+    config = SimpleNamespace(hook=SimpleNamespace(pytest_deselected=lambda **kwargs: None))
+    plugin.pytest_collection_modifyitems(config, [SimpleNamespace(nodeid=node) for node in nodes])
+    for node, phase, outcome in [
+        (nodes[0], 'setup', 'passed'), (nodes[0], 'call', 'passed'),
+        (nodes[0], 'teardown', 'passed'), (nodes[1], 'setup', 'skipped'),
+        (nodes[1], 'teardown', 'passed'),
+    ]:
+        plugin.pytest_runtest_logreport(SimpleNamespace(nodeid=node, when=phase, outcome=outcome))
+    plugin.pytest_sessionfinish(None, 0)
+    assert ci.verify([json.loads(output.read_text())])['tests'] == 2
 
 
 @pytest.mark.parametrize("mutation", ["missing", "repeated", "failed", "different_collection", "omission",

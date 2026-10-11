@@ -5,6 +5,7 @@ from html import escape
 import re
 import markdown
 from markdown.preprocessors import Preprocessor
+from markdown.treeprocessors import Treeprocessor
 from markdown.inlinepatterns import ImageInlineProcessor, IMAGE_LINK_RE
 import nh3
 from markupsafe import Markup
@@ -63,6 +64,21 @@ class _ProseWhitespace(Preprocessor):
         return re.sub(r'(?<=\n) +\n', '\n', source).split('\n')
 
 
+class _NestingLimit(Treeprocessor):
+    def run(self, root):
+        # libxml's recovery parser silently discards nodes beyond its nesting
+        # limit. Reject deeply nested authored structure before serializing it,
+        # leaving room for report wrappers and preserving source text on disk.
+        pending = [(root, 0)]
+        while pending:
+            node, depth = pending.pop()
+            if depth > 128:
+                raise ValueError(backend_message(
+                    'Markdown: demasiados niveles de anidación; reduce las citas o listas anidadas',
+                    en='Markdown: too many nesting levels; reduce nested quotes or lists'))
+            pending.extend((child, depth + 1) for child in node)
+
+
 def _parsed(text):
     parser = markdown.Markdown(extensions=['fenced_code', 'tables', 'sane_lists', 'nl2br'], output_format='html5')
     # Raw HTML is text. Let Markdown itself identify fenced, indented and
@@ -75,6 +91,7 @@ def _parsed(text):
     parser.preprocessors.register(_SourceControls(parser), 'source_controls', 40)
     parser.preprocessors.register(_ProseWhitespace(parser), 'normalize_whitespace', 30)
     parser.inlinePatterns.register(_WidthImage(IMAGE_LINK_RE, parser), 'image_link', 150)
+    parser.treeprocessors.register(_NestingLimit(parser), 'nesting_limit', 5)
     return parser.convert(str(text or '').replace('\r\n', '\n').replace('\r', '\n'))
 
 
@@ -171,6 +188,11 @@ def md(text, img_base=None):
             link_rel='noopener noreferrer', strip_comments=True)
         from lxml import html
         root = html.fragment_fromstring(cleaned, create_parent='div')
+        # These markers originate in the shared parser, not in accepted HTML.
+        # Delivery checks use them to distinguish authored headings from the
+        # report's generated titles and verify that they survive every export.
+        for heading in root.xpath('.//h1|.//h2|.//h3|.//h4|.//h5|.//h6'):
+            heading.set('data-rg-authored-heading', 'true')
         for ordered in root.xpath('.//ol'):
             start = ordered_list_start(ordered)
             # WeasyPrint ignores HTML presentational hints by default. This

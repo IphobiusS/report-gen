@@ -41,7 +41,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run test:editor-modules
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -m pytest tests/test_progress_0170.py tests/test_workflows.py tests/test_workspace_0160.py tests/test_workbench_0180.py tests/test_release_0200.py tests/test_release_0202.py tests/test_release_0210.py tests/test_release_0211.py tests/test_launcher_0260.py tests/test_checkout_integrity_0260.py tests/test_workspace_paths_0290.py tests/test_browser_workspace_0290.py tests/test_project_catalog_0290.py tests/test_remediation_return_0290.py tests/test_backup_routine_0310.py tests/test_project_names_portable_0311.py tests/test_design_restore_metadata_0311.py tests/test_export_boundary_audit.py --junitxml=windows-results.xml
+          python -m pytest tests/test_progress_0170.py tests/test_workflows.py tests/test_workspace_0160.py tests/test_workbench_0180.py tests/test_release_0200.py tests/test_release_0202.py tests/test_release_0210.py tests/test_release_0211.py tests/test_launcher_0260.py tests/test_checkout_integrity_0260.py tests/test_workspace_paths_0290.py tests/test_browser_workspace_0290.py tests/test_project_catalog_0290.py tests/test_remediation_return_0290.py tests/test_backup_routine_0310.py tests/test_project_names_portable_0311.py tests/test_design_restore_metadata_0311.py tests/test_export_boundary_audit.py tests/test_storage_boundaries_round2.py tests/test_history_input_0312.py --junitxml=windows-results.xml
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Real browser on Windows
         run: |

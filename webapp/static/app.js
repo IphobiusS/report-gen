@@ -822,8 +822,9 @@ function mdEditor(label, obj, key, opts = {}) {
   const ta = h("textarea", { rows: opts.rows || 10, class: "grow", "aria-label":label });
   ta.id = "markdown-" + WorkflowUI.uid(); ta.value = obj[key] || ""; ta.dataset.field = key;
   const prev = h("div", { class: "mded-prev", style: "display:none" });
+  let previewGeneration = 0;
 
-  function apply() { obj[key] = ta.value; autoGrow(ta); scheduleSave(); }
+  function apply() { previewGeneration++; obj[key] = ta.value; autoGrow(ta); scheduleSave(); }
   ta.addEventListener("input", apply);
   setTimeout(() => autoGrow(ta), 0);
 
@@ -877,14 +878,17 @@ function mdEditor(label, obj, key, opts = {}) {
     fileInp
   );
   const wTab = bar.querySelector('[data-role="w"]'), pTab = bar.querySelector('[data-role="p"]');
-  wTab.addEventListener("click", () => { ta.style.display = ""; prev.style.display = "none"; wTab.classList.add("active"); pTab.classList.remove("active"); });
+  wTab.addEventListener("click", () => { previewGeneration++; ta.style.display = ""; prev.style.display = "none"; wTab.classList.add("active"); pTab.classList.remove("active"); });
   pTab.addEventListener("click", async () => {
+    const generation = ++previewGeneration, text = ta.value, slug = S.slug;
+    const current = () => generation === previewGeneration && ta.value === text && S.slug === slug && box.isConnected;
     prev.innerHTML = "…";
     ta.style.display = "none"; prev.style.display = ""; pTab.classList.add("active"); wTab.classList.remove("active");
     try {
-      const r = await api.post("/api/md", { text: ta.value, slug: S.slug }).then(requireOk).then(x => x.json());
+      const r = await api.post("/api/md", { text, slug }).then(requireOk).then(x => x.json());
+      if (!current()) return;
       prev.innerHTML = r.html || "<em>" + w("(vacío)", "(empty)") + "</em>";
-    } catch (_) { prev.innerHTML = "<em>" + w("error al renderizar", "rendering failed") + "</em>"; }
+    } catch (_) { if (current()) prev.innerHTML = "<em>" + w("error al renderizar", "rendering failed") + "</em>"; }
   });
   const box = h("div", { class: "mded" }, bar, ta, prev);
   return h("div", { class: "mdedlabel" }, h("label", { for: ta.id }, label), box);

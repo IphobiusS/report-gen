@@ -153,3 +153,115 @@ test('an obsolete failed validation cannot toast an error for the replacement pr
     assert.equal(toasts.length,0);
   }finally{dom.window.close();}
 });
+
+// Async editor boundaries use the complete UI modules and controlled responses.
+const settle=()=>new Promise(resolve=>setImmediate(resolve));
+function draftRecoveryEditor(){
+  const dom=new JSDOM('<!doctype html><html><body><main id="editor" tabindex="-1"></main></body></html>',{runScripts:'outside-only',url:'http://localhost/'});
+  dom.window.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+  dom.window.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new dom.window.Event('close'));};
+  dom.window.requests=[];dom.window.toasts=[];dom.window.saved=[];
+  const app=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8');
+  dom.window.eval(app.slice(0,app.indexOf('// ---- shared transport'))+`
+    const scopedResourceURL=value=>value,S={slug:'alpha',uiLang:'en',data:{meta:{report_title:'Alpha'},report:{sections:[]}}};
+    const BrowserWorkspace={current:()=> 'workspace'},toast=message=>window.toasts.push(message),invalidateValidation=()=>{};
+    const projectStore={slug:'alpha',data:S.data,base:JSON.parse(JSON.stringify(S.data)),revision:0,etag:'a1',recovery:[],
+      remote:()=>new Promise((resolve,reject)=>window.requests.push({kind:'remote',slug:S.slug,resolve,reject})),
+      adopt(data,remote){this.data=data;this.etag=remote.etag;this.revision++;}};
+    const appFetch=(url,options)=>new Promise((resolve,reject)=>window.requests.push({kind:'check',url,options,resolve,reject}));
+    const api={get:url=>new Promise((resolve,reject)=>window.requests.push({kind:'inspection',url,resolve,reject}))};
+    const requireOk=async response=>{if(!response.ok)throw Error('rejected');return response;};
+    const doSave=async()=>{window.saved.push({slug:S.slug,data:JSON.parse(JSON.stringify(S.data))});return true;};
+    const renderSidebar=()=>{},renderMain=()=>{};
+  `+fs.readFileSync(path.join(root,'webapp/static/drafts.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'webapp/static/studio.js'),'utf8')+`
+    window.recovery={run:StudioUI.resolveDraft,inspect:StudioUI.inspector,state:S,store:projectStore};
+  `);
+  return dom;
+}
+const remoteDraft={data:{meta:{report_title:'Alpha on disk'},report:{sections:[]}},etag:'a2'};
+const acceptDraft=request=>request.resolve({ok:true,json:async()=>({data:JSON.parse(request.options.body)})});
+for(const change of ['project','edit','reload','revision'])test('draft recovery rejects a remote response after '+change,async()=>{
+  const dom=draftRecoveryEditor(),{recovery,requests}=dom.window;
+  try{
+    const pending=recovery.run(),result=assert.rejects(pending,/project changed/i);
+    if(change==='project'){recovery.state.slug='beta';recovery.state.data={meta:{report_title:'Beta'}};}
+    else if(change==='edit')recovery.store.revision++;
+    else if(change==='reload')recovery.state.data=JSON.parse(JSON.stringify(recovery.state.data));
+    else recovery.store.etag='new-revision';
+    requests[0].resolve(remoteDraft);await result;
+    assert.equal(dom.window.document.querySelectorAll('dialog').length,0);
+    assert.equal(dom.window.saved.length,0);
+  }finally{dom.window.close();}
+});
+
+test('latest draft recovery wins when two remote reads finish out of order',async()=>{
+  const dom=draftRecoveryEditor(),{recovery,requests}=dom.window;
+  try{
+    const first=recovery.run(),obsolete=assert.rejects(first,/project changed/i),second=recovery.run();
+    requests[1].resolve(remoteDraft);await second;requests[0].resolve(remoteDraft);await obsolete;
+    assert.equal(dom.window.document.querySelectorAll('dialog[open]').length,1);
+  }finally{dom.window.close();}
+});
+
+for(const change of ['cancel','project','edit'])test('draft-check completion cannot adopt after '+change,async()=>{
+  const dom=draftRecoveryEditor(),{recovery,requests}=dom.window;
+  try{
+    const open=recovery.run();requests[0].resolve(remoteDraft);await open;
+    const dialog=dom.window.document.querySelector('dialog');
+    [...dialog.querySelectorAll('button')].find(b=>b.textContent==='Apply choices and save').click();
+    assert.equal(requests[1].kind,'check');
+    if(change==='cancel')dialog.close();
+    else if(change==='project'){dialog.close();recovery.state.slug='beta';recovery.state.data={meta:{report_title:'Beta'}};}
+    else {recovery.state.data.meta.report_title='Newer local edit';recovery.store.revision++;}
+    const before=JSON.stringify(recovery.state.data);acceptDraft(requests[1]);await settle();
+    assert.equal(JSON.stringify(recovery.state.data),before);assert.equal(dom.window.saved.length,0);
+  }finally{dom.window.close();}
+});
+
+test('an unchanged recovery still saves the reviewed merge to its original project',async()=>{
+  const dom=draftRecoveryEditor(),{recovery,requests}=dom.window;
+  try{
+    const open=recovery.run();requests[0].resolve(remoteDraft);await open;
+    [...dom.window.document.querySelectorAll('dialog button')].find(b=>b.textContent==='Apply choices and save').click();
+    acceptDraft(requests[1]);await settle();
+    assert.equal(dom.window.saved.length,1);assert.equal(dom.window.saved[0].slug,'alpha');
+    assert.equal(dom.window.saved[0].data.meta.report_title,'Alpha on disk');
+  }finally{dom.window.close();}
+});
+
+function markdownEditor(){
+  const dom=new JSDOM('<!doctype html><html><body><main></main></body></html>',{runScripts:'outside-only',url:'http://localhost/'});
+  const app=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8');dom.window.requests=[];
+  dom.window.eval(app.slice(0,app.indexOf('// ---- shared transport'))+`
+    const scopedResourceURL=value=>value,S={slug:'alpha',uiLang:'en'},WorkflowUI={uid:()=> 'fixture'};
+    const autoGrow=()=>{},scheduleSave=()=>{},requireOk=async r=>{if(!r.ok)throw Error('failed');return r;};
+    const api={post:(url,body)=>new Promise((resolve,reject)=>window.requests.push({url,body,resolve,reject}))};
+  `+app.slice(app.indexOf('function mdEditor('),app.indexOf('function reportEditor('))+`
+    document.querySelector('main').append(mdEditor('Notes',{body:'Older paragraph'},'body'));
+    window.editorState=S;
+  `);
+  return dom;
+}
+const rendered=text=>({ok:true,json:async()=>({html:'<p>'+text+'</p>'})});
+for(const result of ['success','failure'])test('an obsolete Markdown '+result+' cannot replace the latest preview',async()=>{
+  const dom=markdownEditor(),{document,requests}=dom.window;
+  try{
+    document.querySelector('[data-role="p"]').click();document.querySelector('[data-role="w"]').click();
+    const textarea=document.querySelector('textarea');textarea.value='Newer paragraph';textarea.dispatchEvent(new dom.window.Event('input'));
+    document.querySelector('[data-role="p"]').click();requests[1].resolve(rendered('Newer paragraph'));await settle();
+    if(result==='success')requests[0].resolve(rendered('Older paragraph'));else requests[0].reject(Error('Old failed request'));
+    await settle();assert.equal(document.querySelector('.mded-prev').textContent,'Newer paragraph');
+  }finally{dom.window.close();}
+});
+
+for(const change of ['edit','save','reload'])test('publication inspector discards a snapshot after '+change,async()=>{
+  const dom=draftRecoveryEditor(),{recovery,requests}=dom.window;
+  try{
+    const pending=recovery.inspect();await settle();assert.equal(requests[0].kind,'inspection');
+    if(change==='edit'){recovery.state.data.meta.report_title='New secret';recovery.store.revision++;}
+    else if(change==='save')recovery.store.etag='new-saved-revision';
+    else recovery.state.data=JSON.parse(JSON.stringify(recovery.state.data));
+    requests[0].resolve({revision:'old-revision',alerts:[],images:[],text:'Previously inspected text',private_captures:0});
+    await pending;assert.equal(dom.window.document.querySelectorAll('dialog').length,0);
+  }finally{dom.window.close();}
+});

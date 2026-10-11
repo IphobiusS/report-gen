@@ -1,2 +1,2 @@
 """Single version source for CLI, editor and delivery manifests."""
-__version__ = "0.31.1"
+__version__ = "0.31.2"

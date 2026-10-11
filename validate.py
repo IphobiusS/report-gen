@@ -240,12 +240,6 @@ def validate(data, known_section_keys=None, lang=None):
     return issues
 
 
-def format_issues(issues):
-    if not issues:
-        return "sin problemas"
-    return "\n".join(f"[{lvl}] {msg}" for lvl, msg in issues)
-
-
 # A draft may omit content; containers and typed fields must still be valid.
 _TEXT = (str, int, float, date, datetime)
 

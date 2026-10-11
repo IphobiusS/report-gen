@@ -9,6 +9,49 @@ from workflows import md_text
 from .common import sev_label, cvss_label, summary_sev
 
 
+def authored(text):
+    """Escape literal anchor examples without changing fenced/inline code.
+
+    The shared renderer treats raw HTML as text. Leaving report-like anchors
+    unescaped in the Markdown export instead made its inspector mistake an
+    authored example for a generated boundary (or a duplicate finding).
+    """
+    pattern = re.compile(r'^<a id="[^"<>]+"></a>\n(?=\s*#{1,6} )', re.M)
+    matches = list(pattern.finditer(text))
+    if not matches:
+        return text
+    from safe_markup import _parsed
+    from lxml import html
+    from uuid import uuid4
+    prefix = 'RGANCHOREXAMPLE' + uuid4().hex + 'X'
+    while prefix in text:
+        prefix = 'RGANCHOREXAMPLE' + uuid4().hex + 'X'
+    markers = {prefix + str(i) + 'X': i for i in range(len(matches))}
+    parts = []; cursor = 0
+    for marker, i in markers.items():
+        match = matches[i]
+        parts.extend((text[cursor:match.start()], marker + '\n'))
+        cursor = match.end()
+    probe = ''.join(parts) + text[cursor:]
+    tree = html.fragment_fromstring(_parsed(probe), create_parent='div')
+    token = re.compile(re.escape(prefix) + r'\d+X')
+    prose = set()
+    for node in tree.iter():
+        for value, context in ((node.text, node), (node.tail, node.getparent())):
+            if value and context is not None and not any(
+                    element.tag in {'pre', 'code'} for element in [context, *context.iterancestors()]):
+                prose.update(markers[match[0]] for match in token.finditer(value))
+    parts = []; cursor = 0
+    for i, match in enumerate(matches):
+        parts.extend((text[cursor:match.start()], '&lt;' + match[0][1:] if i in prose else match[0]))
+        cursor = match.end()
+    result = ''.join(parts) + text[cursor:]
+    if _parsed(result) != _parsed(text):
+        raise ValueError(backend_message('No se puede preservar el ejemplo de ancla Markdown',
+                                         en='Cannot preserve the Markdown anchor example'))
+    return result
+
+
 def _row(*values):
     return "| " + " | ".join(md_text(value) for value in values) + " |"
 
@@ -64,7 +107,7 @@ def _md_sections(data, meta, L):
                 if multi:
                     W(f"### {f['label']}\n")
                 if f["type"] == "markdown":
-                    W(v + "\n")
+                    W(authored(v) + "\n")
                 elif f["type"] == "text":
                     W(md_text(v) + "\n")
                 elif f["type"] == "table":
@@ -161,7 +204,7 @@ def to_markdown(data, meta, L, engagement_dir):
     # Confidencialidad
     W(anchor("sec-conf") + f"## {lab['confidentiality']}\n")
     if meta.get("confidentiality_md"):
-        W(meta["confidentiality_md"] + "\n")
+        W(authored(meta["confidentiality_md"]) + "\n")
     else:
         client = (meta.get("client") or lab["client"]).rstrip(".")
         for para in L["prose"]["confidentiality"]:
@@ -185,7 +228,7 @@ def to_markdown(data, meta, L, engagement_dir):
     W(anchor("sec-overview") + f"## {lab['overview']}\n")
     W(f"### {lab['approach']}\n")
     if meta.get("overview", {}).get("approach_md"):
-        W(meta["overview"]["approach_md"] + "\n")
+        W(authored(meta["overview"]["approach_md"]) + "\n")
     else:
         client = (meta.get("client") or lab["client"]).rstrip(".")
         for para in L["prose"]["approach"]:
@@ -230,14 +273,14 @@ def to_markdown(data, meta, L, engagement_dir):
         W("")
 
     for extra in report_sections(data):
-        W(anchor(extra["key"]) + "\n## " + extra["title"] + "\n\n" + extra["body"] + "\n")
+        W(anchor(extra["key"]) + "\n## " + extra["title"] + "\n\n" + authored(extra["body"]) + "\n")
     return "\n".join(out).rstrip() + "\n"
 
 
 def _md_step(W, s, L):
     lead = f"**{md_text(s['lead'])}** " if s.get("lead") else ""
     if s.get("text_md"):
-        W((lead.rstrip() + '\n\n' if lead else '') + s['text_md'] + '\n')
+        W((lead.rstrip() + '\n\n' if lead else '') + authored(s['text_md']) + '\n')
     elif lead:
         W(lead + "\n")
     if s.get("command"):
@@ -268,11 +311,11 @@ def _md_vuln(W, f, L, lab):
         W(f"- **{k}:** {md_text(v)}")
     W("")
     if f.get("description_md"):
-        W(f"**{lab['desc_root']}.**\n\n{f['description_md']}\n")
+        W(f"**{lab['desc_root']}.**\n\n{authored(f['description_md'])}\n")
     if f.get("impact_md"):
-        W(f"**{lab['impact']}.**\n\n{f['impact_md']}\n")
+        W(f"**{lab['impact']}.**\n\n{authored(f['impact_md'])}\n")
     if f.get("remediation_md"):
-        W(f"**{lab['remediation']}.**\n\n{f['remediation_md']}\n")
+        W(f"**{lab['remediation']}.**\n\n{authored(f['remediation_md'])}\n")
     if f.get("references"):
         W(f"**{lab['references']}:**")
         W("")
@@ -288,7 +331,7 @@ def _md_vuln(W, f, L, lab):
         W(f"#### {lab['rem_summary']}\n")
         for key, lbl in [("short_md", lab["short_term"]), ("medium_md", lab["medium_term"]), ("long_md", lab["long_term"])]:
             if rs.get(key):
-                W(f"**{lbl}:**\n\n{rs[key]}\n")
+                W(f"**{lbl}:**\n\n{authored(rs[key])}\n")
         W("")
 
 
@@ -307,7 +350,7 @@ def _md_machine(W, f, L, lab):
         W(f"- **{k}:** {md_text(v)}")
     W("")
     if f.get("summary_md"):
-        W(f"**{lab['attack_path']}.**\n\n{f['summary_md']}\n")
+        W(f"**{lab['attack_path']}.**\n\n{authored(f['summary_md'])}\n")
     for ph in f.get("phases", []):
         W(f"#### {md_text(ph.get('name',''))}\n")
         for s in ph.get("steps", []):

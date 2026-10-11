@@ -1,3 +1,14 @@
+# Cambios 0.31.2 (2026-10-11)
+
+- La recuperación de borradores queda ligada al proyecto, revisión y diálogo que la inició; las respuestas atrasadas no adoptan contenido después de cancelar o navegar. Las vistas previas de Markdown y el inspector de publicación descartan respuestas de ediciones anteriores.
+- Las rutas del proyecto rechazan alias simbólicos antes de resolver la identidad. La subida de imágenes rechaza carpetas enlazadas para evitar escrituras fuera del proyecto ante un workspace alterado localmente.
+- Guardado, restauración e importación registran su preparación antes de copiar datos; al reiniciar, la recuperación puede retirar preparaciones interrumpidas con registro válido sin borrar carpetas desconocidas.
+- Los respaldos comprueban tamaños y presupuestos antes de leer recursos, snapshots e historial; las entradas desmesuradas se rechazan de forma controlada.
+- La exportación distingue citas, encabezados redactados y ejemplos de anclas de los límites del informe. Las comprobaciones de HTML, Markdown y Word detectan texto perdido o alterado y cambios de orden entre encabezados dentro de cada hallazgo; mantienen el rechazo de contenido movido entre hallazgos. No certifican el nivel visual del encabezado ni su posición respecto de párrafos. La anidación Markdown desmesurada se rechaza antes de que el parser HTML pueda truncar contenido.
+- Crear una versión con una etapa de tipo incorrecto devuelve un error de validación sin modificar el proyecto ni su historial.
+- El recibo de pytest verifica las identidades ejecutadas y su multiplicidad: ejecutar un caso dos veces ya no puede compensar otro omitido.
+- Retiradas funciones y un listener vacíos sin consumidores. Se conservan las herramientas manuales de auditoría y la documentación de uso, seguridad y licencias.
+
 # Cambios 0.31.1 (2026-10-11)
 
 - El editor conserva métricas opcionales CVSS 4.0 al calcular, editar, guardar y recargar; evita mostrar una puntuación base diferente de la del vector completo.

@@ -95,7 +95,8 @@ def dom(root, image_digest, markdown=False, severity_label='Severidad'):
             if not (has_class(table, 'meta') or has_class(table, 'hostbox')): continue
             for row in table.xpath('./tbody/tr|./tr'):
                 cells = row.xpath('./th|./td')
-                if len(cells) == 2 and not cells[1].xpath('./p|./ul|./ol|./table|./pre|./figure'):
+                if len(cells) == 2 and not cells[1].xpath(
+                        './p|./ul|./ol|./table|./pre|./figure|./blockquote|./hr|./h1|./h2|./h3|./h4|./h5|./h6'):
                     fields.append([normal(cells[0].text_content()), normal(cells[1].text_content())])
         chips = root.xpath('.//header//*[contains(concat(" ", normalize-space(@class), " "), " sev-chip ")]')
         severity = normal(chips[0].text or '') if chips else ''

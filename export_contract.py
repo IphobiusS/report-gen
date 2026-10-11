@@ -66,6 +66,8 @@ def _dom_units(root, markdown=False):
                for row in table.xpath('./tr|./thead/tr|./tbody/tr|./tfoot/tr')]
               for table in root.xpath('.//table')]
     return dict(text=text, paragraphs=paragraphs, codes=codes, table_rows=rows, tables=tables,
+                headings=[normal(n.text_content()) for n in root.xpath('.//h1|.//h2|.//h3|.//h4|.//h5|.//h6')
+                          if (n.get('data-rg-anchor') is None if markdown else n.get('data-rg-authored-heading') == 'true')],
                 list_items=[list_lead(n) for n in root.xpath('.//li')])
 
 
@@ -165,6 +167,7 @@ def from_tree(tree, image_digests=None, docx_image_digests=None):
         for image in semantic['images']:
             image['docx_sha256'] = (docx_image_digests or {}).get(image['sha256'], image['sha256'])
         scopes.append(dict(id=key, semantic=semantic, title=normal(titles[0].text_content()) if titles else '',
+                           headings=[normal(n.text_content()) for n in root.xpath('.//*[@data-rg-authored-heading="true"]')],
                            paragraphs=units['paragraphs'], paragraphs_md=[normal(n.text_content()) for n in _dom_paragraph_nodes(root) if not has_class(n,'chart-scope') and normal(n.text_content())], codes=units['codes'], table_rows=rows, tables=tables, lists=lists, list_sequence=list_sequence))
     return dict(version=3, scopes=scopes, severity_label=severity_label, cover_units=_cover_units(tree),
                 titles=[s['title'] for s in scopes if s['id']],
@@ -218,6 +221,9 @@ def _word_scopes(path, expected):
             def read(self,name): return blobs[name]
         semantic=word(nodes,Parts())
         profiles[key] = dict(semantic=semantic, text=normal(' '.join(_word_text(p) for p in paras)),
+            headings=[normal(_word_text(p)) for p in paras
+                      if p.xpath('./w:pPr/w:pStyle[starts-with(@w:val,"Heading")]', namespaces=NS)
+                      and not p.findall('./' + W + 'bookmarkStart')],
             codes=[literal(_word_text(p)) for p in paras if p.xpath('./w:pPr/w:pStyle[@w:val="ReportGenCode"]', namespaces=NS)],
             paragraphs=[normal(_word_text(p)) for p in paras], table_rows=rows, tables=tables,
             list_items=[normal(_word_text(p)) for p in paras if p.xpath('./w:pPr/w:numPr|./w:pPr/w:pStyle[starts-with(@w:val,"List")]', namespaces=NS)])
@@ -358,7 +364,7 @@ def inspect(path, fmt, expected):
     if expected.get('version') != 3: raise ValueError(backend_message('Contrato de exportación antiguo: vuelve a generarlo / Regenerate old export contract'))
     observed = profile(path, fmt, expected)
     content = 0; structure = 0; paragraphs = 0; codes = 0; page_break_paragraphs = 0; wrapped_code_lines = 0
-    metadata = 0; links = 0; placements = 0; tables_checked = 0; list_order_checked = 0
+    metadata = 0; links = 0; placements = 0; tables_checked = 0; list_order_checked = 0; headings_checked = 0
     cover_text=observed['']['text'] if fmt=='pdf' else observed[''].get('cover_text','')
     for unit in expected['cover_units']:
         if fmt=='pdf':
@@ -375,6 +381,22 @@ def inspect(path, fmt, expected):
         key = '' if fmt == 'pdf' else scope['id']
         if key not in observed: raise ValueError(backend_message('Falta el hallazgo {p0} / Finding missing', p0=scope['id']))
         actual = observed[key]; text = actual['text']
+        # Authored headings are content too. They previously fell between the
+        # paragraph and generated-title checks, allowing silent loss/changes.
+        heading_cursor = 0
+        for heading in scope.get('headings', []):
+            if not heading:
+                continue
+            if fmt == 'pdf':
+                if not _pdf_pattern(heading).search(text):
+                    raise ValueError(backend_message('Encabezado ausente o alterado', en='Missing or changed heading'))
+            else:
+                found = next((i for i in range(heading_cursor, len(actual['headings']))
+                              if actual['headings'][i] == heading), None)
+                if found is None:
+                    raise ValueError(backend_message('Encabezado ausente o alterado', en='Missing or changed heading'))
+                heading_cursor = found + 1
+            headings_checked += 1
         if scope['title']:
             _ordered([scope['title']], text, 'Título'); content += 1
         # Repeated paragraphs consume separate occurrences and cannot move to
@@ -439,6 +461,7 @@ def inspect(path, fmt, expected):
                 pdf_page_break_paragraphs=page_break_paragraphs,
                 pdf_wrapped_code_lines=wrapped_code_lines,
                 authored_tables_checked=tables_checked,
+                authored_headings_checked=headings_checked,
                 authored_list_items_order_checked=list_order_checked,
                 manual_review_required=True,
                 format_specific_omissions=(sum(len(s['paragraphs'])-len(s['paragraphs_md']) for s in expected['scopes']) if fmt=='md' else 0),

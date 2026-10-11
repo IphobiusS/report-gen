@@ -17,7 +17,7 @@ import zlib
 import yaml
 from storage import atomic_write
 from workflows import new_uid, safe_member, normalize
-from input_guard import load_yaml, load_yaml_file, load_json
+from input_guard import load_yaml, load_yaml_file, load_json, load_json_file
 from resources import local_image, referenced_images, project_image_member
 
 MAX_ARCHIVE = 256 * 1024 * 1024
@@ -56,7 +56,7 @@ def _recover_commit(journal):
         paths.append(path)
     target, previous, stage = paths
     if (len(set(paths)) != 3 or not previous.name.startswith('.previous-')
-            or not stage.name.startswith(('.transaction-', '.restore-'))
+            or not stage.name.startswith(('.transaction-', '.restore-', '.import-'))
             or _journal_for(stage) != journal):
         raise ValueError(backend_message('Identidad de recuperación inválida'))
     if target.exists() and previous.exists() and stage.exists():
@@ -81,13 +81,25 @@ def recover_transactions(parent):
         _recover_commit(journal)
 
 
-def _activate(stage, directory):
+def _prepare_commit(stage, directory):
+    """Register an exclusively reserved stage before filling it with data.
+
+    Recovery may discard only stages named by a valid journal. The tiny gap
+    between reserving an empty directory and persisting its journal cannot be
+    made atomic across filesystems; unregistered directories remain untouched.
+    """
     previous = directory.with_name('.previous-' + new_uid())
     journal = _journal_for(stage)
-    # The journal is fsynced by atomic_write before either directory moves.
     atomic_write(journal, dumps(dict(format='report-gen-commit-1',
                  target=directory.name, previous=previous.name, stage=stage.name,
                  had_target=directory.exists())))
+    return previous, journal
+
+
+def _activate(stage, directory):
+    # Refresh the activation record before either directory moves. Preparation
+    # has its own record so a killed writer is recoverable before this point.
+    previous, journal = _prepare_commit(stage, directory)
     try:
         if directory.exists(): directory.rename(previous)
         stage.rename(directory)
@@ -115,6 +127,7 @@ def transaction(directory):
     stage = Path(tempfile.mkdtemp(prefix='.transaction-', dir=directory.parent))
     token = None
     try:
+        _prepare_commit(stage, directory)
         if directory.exists():
             if any(path.is_symlink() for path in directory.rglob('*')):
                 raise ValueError(backend_message('El proyecto contiene enlaces simbólicos'))
@@ -129,7 +142,10 @@ def transaction(directory):
         _activate(stage, directory)
     finally:
         if token is not None: _STAGING.reset(token)
-        if stage.exists() and not _journal_for(stage).exists(): shutil.rmtree(stage)
+        if _journal_for(stage).exists():
+            _recover_commit(_journal_for(stage))
+        elif stage.exists():
+            shutil.rmtree(stage)
 
 
 def now():
@@ -158,22 +174,48 @@ def validate_image_blob(name, blob):
         raise ValueError(backend_message('Imagen inválida: {p0}', p0=name)) from exc
 
 
+def _read_project_file(path, maximum):
+    """Reject oversized inputs before allocating their contents.
+
+    Read against the opened file's size, with one extra byte to detect growth.
+    A changed file is not a coherent backup and must be retried, not truncated.
+    """
+    with path.open('rb') as source:
+        size = os.fstat(source.fileno()).st_size
+        if size > maximum:
+            raise ValueError(backend_message('El proyecto excede el límite del respaldo portable (512 MiB / 20000 archivos)'))
+        blob = source.read(size + 1)
+    if len(blob) != size:
+        raise ValueError(backend_message('Un archivo cambió durante la lectura; vuelve a intentar el respaldo',
+                                        en='A file changed while being read; retry the backup'))
+    return blob
+
+
 def project_files(directory, document='engagement.yaml', *, data=None):
     directory = Path(directory)
     seen = set()
+    total = 0
+
+    def read_member(name, path):
+        nonlocal total
+        if len(seen) >= MAX_FILES:
+            raise ValueError(backend_message('El proyecto excede el límite del respaldo portable (512 MiB / 20000 archivos)'))
+        blob = _read_project_file(path, MAX_EXPANDED - total)
+        total += len(blob)
+        seen.add(name)
+        return blob
+
     for name in ('engagement.yaml', 'img', 'originals', 'attachments'):
         root = directory / (document if name == 'engagement.yaml' else name)
         if root.is_symlink(): raise ValueError(backend_message('El proyecto contiene enlaces simbólicos'))
         if root.is_file():
-            seen.add(name)
-            yield name, root.read_bytes()
+            yield name, read_member(name, root)
         elif root.is_dir():
             for path in sorted(root.rglob('*')):
                 if path.is_symlink(): raise ValueError(backend_message('El proyecto contiene enlaces simbólicos'))
                 if path.is_file():
                     name = path.relative_to(directory).as_posix()
-                    seen.add(name)
-                    yield name, path.read_bytes()
+                    yield name, read_member(name, path)
     # Legacy CLI projects may keep logos or diagrams outside img/. Preserve
     # every existing referenced resource in versions and portable backups.
     for source in sorted(referenced_images(load_yaml_file(directory / document) if data is None else data)):
@@ -183,8 +225,7 @@ def project_files(directory, document='engagement.yaml', *, data=None):
             continue  # A draft may intentionally have a missing/invalid reference.
         name = path.relative_to(directory.resolve()).as_posix()
         if name not in seen:
-            seen.add(name)
-            yield name, path.read_bytes()
+            yield name, read_member(name, path)
 
 
 def history(directory):
@@ -195,7 +236,7 @@ def history(directory):
     records = []
     for path in root.glob('*.json'):
         if path.is_symlink(): raise ValueError(backend_message('Enlace simbólico en el historial'))
-        try: record = load_json(path.read_bytes())
+        try: record = load_json_file(path)
         except (ValueError, UnicodeDecodeError) as exc: raise ValueError(backend_message('Historial inválido')) from exc
         if (not isinstance(record, dict) or not isinstance(record.get('id'), str) or not UID.fullmatch(record['id'])
                 or path.stem != record['id'] or not isinstance(record.get('label'), str) or len(record['label']) > 200
@@ -209,7 +250,8 @@ def history(directory):
 
 
 def checkpoint(directory, label='Autoguardado', stage='auto', force=False, *, yaml_parts=None, metrics=None, yaml_data=None):
-    if stage not in STAGES or not isinstance(label, str) or len(label) > 200: raise ValueError(backend_message('Nombre o etapa de versión inválidos'))
+    if not isinstance(stage, str) or stage not in STAGES or not isinstance(label, str) or len(label) > 200:
+        raise ValueError(backend_message('Nombre o etapa de versión inválidos'))
     directory = Path(directory)
     files = {}
     for name, blob in project_files(directory, data=yaml_data):
@@ -273,7 +315,7 @@ def get_snapshot(directory, sid):
     from incremental_save import require_unlinked
     require_unlinked(path)
     if not path.is_file(): raise ValueError(backend_message('Versión inexistente'))
-    return load_json(path.read_bytes())
+    return load_json_file(path)
 
 
 def snapshot_blobs(directory, record):
@@ -308,6 +350,7 @@ def restore(directory, sid):
     checkpoint(directory, 'Antes de restaurar', 'draft')
     staging = Path(tempfile.mkdtemp(prefix='.restore-', dir=directory.parent))
     try:
+        _prepare_commit(staging, directory)
         shutil.copytree(directory / 'history', staging / 'history')
         for name, blob in blobs.items(): atomic_write(staging / name, blob)
         atomic_write(staging / 'engagement.yaml.bak', (directory / 'engagement.yaml').read_bytes())
@@ -323,12 +366,16 @@ def restore(directory, sid):
         checkpoint(staging, 'Restaurada: ' + record['label'][:160], 'draft', force=True)
         _activate(staging, directory)
     finally:
-        if staging.exists() and not _journal_for(staging).exists(): shutil.rmtree(staging)
+        if _journal_for(staging).exists():
+            _recover_commit(_journal_for(staging))
+        elif staging.exists():
+            shutil.rmtree(staging)
 
 
 def export_bundle(directory):
     directory = Path(directory)
     files = dict(project_files(directory))
+    size = sum(map(len, files.values()))
     records = history(directory)
     object_names = {key: name for record in records for name, key in record['files'].items()}
     for path in (directory / 'history').rglob('*'):
@@ -338,12 +385,19 @@ def export_bundle(directory):
             # Version-1 portable backups carry materialized legacy objects;
             # implementation fragments are local storage, not extra inputs.
             if name.startswith('history/fragments/'): continue
+            if len(files) >= MAX_FILES:
+                raise ValueError(backend_message('El proyecto excede el límite del respaldo portable (512 MiB / 20000 archivos)'))
             if name.startswith('history/objects/'):
                 from incremental_save import read_object
                 kind = object_names.get(path.name)
                 document = None if kind is None else kind == 'engagement.yaml'
-                files[name] = read_object(directory, path.name, document=document)
-            else: files[name] = path.read_bytes()
+                value = read_object(directory, path.name, document=document)
+            else:
+                value = _read_project_file(path, MAX_EXPANDED - size)
+            size += len(value)
+            if size > MAX_EXPANDED:
+                raise ValueError(backend_message('El proyecto excede el límite del respaldo portable (512 MiB / 20000 archivos)'))
+            files[name] = value
     # A pre-history installation can have its only preceding state in .bak.
     # Turn that recovery copy into an ordinary portable snapshot in memory;
     # exporting must neither migrate nor checkpoint the source installation.
@@ -406,10 +460,11 @@ def export_bundle(directory):
 def import_bundle(blob, target):
     """No extractall: allowlisted entries, hashes, total size, duplicates and links."""
     target = Path(target)
-    if target.exists(): raise ValueError(backend_message('El destino ya existe'))
+    if target.exists() or target.is_symlink(): raise ValueError(backend_message('El destino ya existe'))
     if len(blob) > MAX_ARCHIVE: raise ValueError(backend_message('Respaldo mayor que 256 MiB'))
     staging = Path(tempfile.mkdtemp(prefix='.import-', dir=target.parent))
     try:
+        _prepare_commit(staging, target)
         with zipfile.ZipFile(BytesIO(blob)) as archive:
             entries = archive.infolist()
             if len(entries) > MAX_FILES + 1 or sum(x.file_size for x in entries) > MAX_EXPANDED: raise ValueError(backend_message('Respaldo demasiado grande'))
@@ -463,9 +518,12 @@ def import_bundle(blob, target):
             save(staging, data, checkpoint_current=False)
         finally:
             _STAGING.reset(token)
-        staging.rename(target)
+        _activate(staging, target)
     except (zipfile.BadZipFile, KeyError, TypeError, json.JSONDecodeError, yaml.YAMLError,
             RuntimeError, EOFError, zlib.error) as exc:
         raise ValueError(backend_message('Respaldo inválido')) from exc
     finally:
-        if staging.exists(): shutil.rmtree(staging)
+        if _journal_for(staging).exists():
+            _recover_commit(_journal_for(staging))
+        elif staging.exists():
+            shutil.rmtree(staging)

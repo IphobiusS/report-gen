@@ -24,7 +24,7 @@ HERE = Path(__file__).resolve().parent
 REPORT_ROOT = HERE.parent
 sys.path.insert(0, str(REPORT_ROOT))
 
-from workspace_paths import select_workspace, browser_namespace, portable_project_slug  # noqa: E402
+from workspace_paths import select_workspace, browser_namespace, portable_project_slug, _no_links  # noqa: E402
 WORKSPACE = select_workspace(REPORT_ROOT, create=True)
 PROJECTS = WORKSPACE.projects
 
@@ -247,8 +247,13 @@ def _json_dict():
 
 
 def proj_dir(slug):
+    # Resolving first would hide an internal alias and permit editing/deleting
+    # the aliased project under a different identity. Check lexical components
+    # (including Windows reparse points) before following any path.
+    candidate = PROJECTS / slugify(slug)
+    _no_links(candidate)
     base = PROJECTS.resolve()
-    d = (PROJECTS / slugify(slug)).resolve()
+    d = candidate.resolve()
     # defensa en profundidad: el resultado debe quedar dentro de projects/
     if base != d.parent:
         abort(404, backend_message('proyecto no encontrado'))
@@ -508,6 +513,7 @@ def upload_image(slug):
     if not stem or stem in (".", ".."):
         stem = f"img_{uuid.uuid4().hex[:8]}"
     name = stem[:80] + "_" + uuid.uuid4().hex[:12] + IMAGE_EXT[fmt]
+    _no_links(d / "img")
     (d / "img").mkdir(exist_ok=True)
     atomic_write(d / "img" / name, blob)
     return jsonify({"src": f"img/{name}"})

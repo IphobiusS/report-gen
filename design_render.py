@@ -1,5 +1,4 @@
 """Bounded palette and original geometric marks shared by PDF and Word covers."""
-from io import BytesIO
 from design_library import validate_design
 
 
@@ -99,14 +98,3 @@ def svg(design):
         if kind=='line': out.append(f'<line x1="{a}" y1="{b}" x2="{c}" y2="{e}" stroke="{color}" stroke-width="1.5"/>')
         else: out.append(f'<rect x="{a}" y="{b}" width="{c-a}" height="{e-b}" stroke="{color}" fill="none" stroke-width="1.5"/>')
     return ''.join(out)+'</svg>'
-
-
-def motif_png(design):
-    from PIL import Image,ImageDraw
-    d=validate_design(design); color=palette(d)['--cover-mark-ink']; scale=4
-    im=Image.new('RGBA',(160*scale,48*scale)); draw=ImageDraw.Draw(im)
-    for kind,v in primitives(d['motif']):
-        coords=tuple(x*scale for x in v)
-        if kind=='line': draw.line(coords,fill=color,width=6)
-        else: draw.rectangle(coords,outline=color,width=6)
-    out=BytesIO();im.save(out,format='PNG');out.seek(0);return out

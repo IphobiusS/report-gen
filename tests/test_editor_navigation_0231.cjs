@@ -89,5 +89,40 @@ const server=spawn(process.env.RG_PYTHON||'python',[root+'/scripts/browser-serve
  await page.evaluate(async()=>{await requireOk(await api.post('/api/projects',{slug:'navigation-other',title:'Other synthetic project',client:'Other synthetic entity'}));await refreshProjects();await loadProject('navigation-other');S.data.findings=[{id:'F900',uid:WorkflowUI.uid(),mode:'vuln',title:'Other project finding',description_md:'Other synthetic content'}];S.data.finding_sequence=900;scheduleSave();await doSave();select('finding',0);});releaseOld();await page.waitForFunction(()=>$('#pdfPreview').contentDocument?.querySelector('[data-rg-preview-current]')?.id==='F900');await context.unroute(routePattern);await page.waitForTimeout(100);check('An old project response cannot replace the current project preview',(await aligned()).id==='F900');
  const raw=await page.evaluate(async()=>{const response=await appFetch('/api/projects/'+S.slug+'/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(S.data)});return await response.text();});check('Runtime highlighting is absent from the generated report HTML',!raw.includes('data-rg-preview-current')&&!raw.includes('rg-preview-selection-style'));
  await page.evaluate(()=>S.data.findings.splice(0,1));await page.locator('[data-finding-step="1"]').evaluate(el=>{el.disabled=false;el.click();});check('A removed finding is handled without editing a replacement',await page.evaluate(()=>S.sel.type==='report'&&S.data.findings.length===0));
+ // Recovering a draft is tied to the original project across every async boundary.
+ {
+   await page.evaluate(async()=>{setUiLang('es');for(const slug of ['recovery-alpha','recovery-beta'])await requireOk(await api.post('/api/projects',{slug,title:slug,client:'Synthetic recovery client'}));await refreshProjects();await loadProject('recovery-alpha');});
+   let releaseRemote,remoteArrived;const remoteGate=new Promise(resolve=>releaseRemote=resolve),remoteReceived=new Promise(resolve=>remoteArrived=resolve);let firstRead=true;
+   const remotePattern=base+'/api/projects/recovery-alpha';
+   await context.route(remotePattern,async route=>{if(firstRead&&route.request().method()==='GET'){firstRead=false;const response=await route.fetch();remoteArrived();await remoteGate;return route.fulfill({response});}return route.continue();});
+   await page.evaluate(()=>{window.pendingRecovery=StudioUI.resolveDraft().then(()=>null,error=>error.message);});await remoteReceived;
+   await page.selectOption('#projectSelect','recovery-beta');await page.waitForFunction(()=>S.slug==='recovery-beta'&&!projectBusyCount);releaseRemote();await page.evaluate(()=>window.pendingRecovery);
+   check('A delayed recovery read cannot open a merge against the replacement project',await page.evaluate(()=>S.data.meta.report_title==='recovery-beta'&&!document.querySelector('dialog[open]')&&!projectStore.dirty));
+   await context.unroute(remotePattern);await page.evaluate(async()=>{await loadProject('recovery-alpha');scheduleSave();await doSave();const shared=structuredClone(S.data);await loadProject('recovery-beta');S.data=shared;scheduleSave();await doSave();await loadProject('recovery-alpha');window.recoveryBaseETag=projectStore.etag;const draft=structuredClone(projectStore.draftFile());draft.data.meta.client='Private Alpha draft, never authorized for Beta';await StudioUI.resolveDraft(draft);});
+   // A copied workspace may legitimately start with identical YAML bytes and ETags.
+   fs.copyFileSync(path.join(workspace,'projects/recovery-alpha/engagement.yaml'),path.join(workspace,'projects/recovery-beta/engagement.yaml'));
+   let releaseCheck,checkArrived;const checkGate=new Promise(resolve=>releaseCheck=resolve),checkReceived=new Promise(resolve=>checkArrived=resolve),checkPattern=base+'/api/projects/recovery-alpha/draft-check';
+   await context.route(checkPattern,async route=>{const response=await route.fetch();checkArrived();await checkGate;await route.fulfill({response});});
+   await page.getByRole('button',{name:'Aplicar selección y guardar',exact:true}).click();await checkReceived;await page.keyboard.press('Escape');
+   await page.selectOption('#projectSelect','recovery-beta');await page.waitForFunction(()=>S.slug==='recovery-beta'&&!projectBusyCount);
+   assert.equal(await page.evaluate(()=>projectStore.etag),await page.evaluate(()=>window.recoveryBaseETag));
+   const checkResponse=page.waitForResponse(response=>response.url()===checkPattern);releaseCheck();await (await checkResponse).finished();await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   check('Cancelling recovery cannot overwrite a different project even when both saved revisions match',await page.evaluate(async()=>{const disk=await api.get('/api/projects/recovery-beta');return S.slug==='recovery-beta'&&S.data.meta.client==='Synthetic recovery client'&&!projectStore.dirty&&disk.meta.client==='Synthetic recovery client';}));
+   await context.unroute(checkPattern);
+   await page.evaluate(async()=>{await loadProject('recovery-alpha');S.data.report.sections.push({key:'async_notes',title:'Synthetic asynchronous notes',body:'Original paragraph'});scheduleSave();await doSave();select('section','async_notes');});
+   const notes=page.locator('.mdedlabel').filter({has:page.locator('[data-field="body"]')});
+   let releaseMarkdown,markdownArrived;const markdownGate=new Promise(resolve=>releaseMarkdown=resolve),markdownReceived=new Promise(resolve=>markdownArrived=resolve),markdownPattern=base+'/api/md';let firstPreview=true;
+   await context.route(markdownPattern,async route=>{if(firstPreview){firstPreview=false;const response=await route.fetch();markdownArrived();await markdownGate;return route.fulfill({response});}return route.continue();});
+   await notes.locator('[data-role="p"]').click();await markdownReceived;await notes.locator('[data-role="w"]').click();await notes.locator('textarea').fill('Newer paragraph');await notes.locator('[data-role="p"]').click();await notes.locator('.mded-prev').getByText('Newer paragraph',{exact:true}).waitFor();
+   const markdownResponse=page.waitForResponse(response=>response.url()===markdownPattern);releaseMarkdown();await (await markdownResponse).finished();await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   check('A late Markdown field preview cannot replace the newer edited text',await notes.locator('.mded-prev').innerText()==='Newer paragraph');
+   await context.unroute(markdownPattern);await page.evaluate(()=>doSave());
+   let releaseInspector,inspectorArrived;const inspectorGate=new Promise(resolve=>releaseInspector=resolve),inspectorReceived=new Promise(resolve=>inspectorArrived=resolve),inspectorPattern=base+'/api/projects/recovery-alpha/publication';
+   await context.route(inspectorPattern,async route=>{const response=await route.fetch();inspectorArrived();await inspectorGate;await route.fulfill({response});});
+   await page.evaluate(()=>{window.pendingInspector=StudioUI.inspector();});await inspectorReceived;
+   await notes.locator('[data-role="w"]').click();await notes.locator('textarea').fill('A new confidential note after inspection began');await page.evaluate(()=>doSave());releaseInspector();await page.evaluate(()=>window.pendingInspector);
+   check('Publication inspection discards its old snapshot when newer edits have already been saved',await page.evaluate(()=>!document.querySelector('dialog[open]')&&!projectStore.dirty&&S.data.report.sections.find(s=>s.key==='async_notes').body==='A new confidential note after inspection began'));
+   await context.unroute(inspectorPattern);
+ }
  check('No browser errors or external requests',results.pageErrors.length===0&&results.externalRequests.length===0,{pageErrors:results.pageErrors,external:results.externalRequests});save();
  }finally{clearTimeout(timer);await browser?.close();server.kill('SIGTERM');fs.rmSync(workspace,{recursive:true,force:true});}})().catch(error=>{results.error=String(error.stack||error);save();console.error(error);process.exitCode=1;});

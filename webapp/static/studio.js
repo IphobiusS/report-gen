@@ -1,24 +1,29 @@
 /* 0.20: task navigation, recovery and the explicit publication boundary. */
 const StudioUI=(()=>{
 'use strict';const w=(es,en)=>S.uiLang==='en'?en:es;
-let mode='work',bound=false,opener=null,recoveryGeneration=0,recoveryDialog=null;
+let mode='work',bound=false,opener=null,recoveryGeneration=0,recoveryDialog=null,resolutionGeneration=0;
 function button(text,run,primary=false){const b=h('button',{type:'button',class:'btn'+(primary?' primary':'')},text);b.addEventListener('click',async()=>{opener=b;b.disabled=true;try{await run(b);}catch(e){toast(e.message,'err');}finally{b.disabled=false;}});return b;}
 function dialog(title){const previous=document.activeElement===document.body?opener:document.activeElement,d=h('dialog',{class:'experience-dialog studio-dialog','aria-label':title}),body=h('div',{class:'experience-body'});d.append(h('div',{class:'experience-heading'},h('h2',{},title),button(w('Cerrar','Close'),()=>d.close())),body);d.addEventListener('close',()=>{d.remove();const target=previous?.closest('details:not([open])')?.querySelector('summary')||previous;(target?.isConnected?target:$('#editor')).focus();});document.body.append(d);d.showModal();return{d,body};}
 function downloadDraft(record=projectStore.draftFile()){const url=URL.createObjectURL(new Blob([JSON.stringify(record,null,2)],{type:'application/json'}));h('a',{href:url,download:(record.slug||'project')+'.report-gen-draft.json'}).click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function valueText(v){return v===undefined?w('(eliminado)','(deleted)'):typeof v==='string'?v:JSON.stringify(v,null,2);}
 async function resolveDraft(candidate){
   if(candidate&&candidate.workspace_id!==BrowserWorkspace.current()&&!confirm(w('Este archivo no identifica el espacio actual. Puede pertenecer a otro cliente o instalación. ¿Confirmas que quieres compararlo con este proyecto? Todavía no se guardará nada.','This file does not identify the current workspace. It may belong to another client or installation. Confirm that you want to compare it with this project. Nothing will be saved yet.')))return;
-  const remote=await projectStore.remote(),local=candidate?.data||projectStore.data,base=candidate?.base||projectStore.base,slug=S.slug,rev=projectStore.revision;
+  const generation=++resolutionGeneration,slug=S.slug,current=S.data,rev=projectStore.revision,etag=projectStore.etag;
+  const stale=()=>{if(generation!==resolutionGeneration||S.slug!==slug||S.data!==current||projectStore.revision!==rev||projectStore.etag!==etag||projectStore.loading)throw Error(w('El proyecto cambió. Abre nuevamente la comparación.','The project changed. Reopen the comparison.'));};
+  if(!slug||(candidate&&candidate.slug!==slug))throw Error(w('Abre el proyecto correspondiente al borrador.','Open the project matching this draft.'));
+  const local=candidate?.data||projectStore.data,base=candidate?.base||projectStore.base;
+  const remote=await projectStore.remote();stale();
   if(!base||!local||typeof local!=='object'||Array.isArray(local))throw Error(w('Borrador incompatible. Conserva su archivo y revisa los datos.','Incompatible draft. Keep its file and review the data.'));
   const choices={},initial=mergeDraft(base,local,remote.data),{d,body}=dialog(w('Recuperar y resolver cambios','Recover and resolve changes'));
   body.append(h('p',{},w('Se combinan los cambios independientes. Elige qué conservar donde ambos textos cambiaron. Nada se sustituye hasta guardar.','Independent edits are merged. Choose what to keep where both versions changed. Nothing is replaced until you save.')),button(w('Descargar copia de emergencia','Download emergency copy'),()=>downloadDraft(candidate||projectStore.draftFile())));
   const apply=button(w('Aplicar selección y guardar','Apply choices and save'),async()=>{
-    if(S.slug!==slug||projectStore.revision!==rev)throw Error(w('El proyecto cambió. Abre nuevamente la comparación.','The project changed. Reopen the comparison.'));
+    stale();if(!d.open||!d.isConnected)return;
     if(initial.conflicts.some(c=>!choices[c.path]))throw Error(w('Resuelve todos los campos.','Resolve every field.'));
     const merged=mergeDraft(base,local,remote.data,choices).data;
     const checked=await requireOk(await appFetch('/api/projects/'+encodeURIComponent(slug)+'/draft-check',{method:'POST',headers:{'Content-Type':'application/json','If-Match':remote.etag},body:JSON.stringify(merged)}));
-    const accepted=(await checked.json()).data;accepted.report||={sections:[]};accepted.report.sections||=[];
-    projectStore.adopt(accepted,remote);S.data=projectStore.data;
+    const accepted=(await checked.json()).data;stale();if(!d.open||!d.isConnected)return;
+    accepted.report||={sections:[]};accepted.report.sections||=[];
+    invalidateValidation();projectStore.adopt(accepted,remote);S.data=projectStore.data;
     const saved=await doSave();renderSidebar();renderMain();
     if(saved&&candidate?.id){await projectStore.journal?.removeUnchanged(candidate);projectStore.recovery=projectStore.recovery.filter(x=>x.id!==candidate.id);}
     d.close();
@@ -99,8 +104,8 @@ function update(){
 }
 async function inspector(){
   if(!S.slug||!await doSave())return;
-  const slug=S.slug,revision=projectStore.etag;const data=await api.get('/api/projects/'+encodeURIComponent(slug)+'/publication');
-  if(S.slug!==slug)return;
+  const slug=S.slug,current=S.data,localRevision=projectStore.revision,revision=projectStore.etag;const data=await api.get('/api/projects/'+encodeURIComponent(slug)+'/publication');
+  if(S.slug!==slug||S.data!==current||projectStore.revision!==localRevision||projectStore.etag!==revision||projectStore.dirty||projectStore.loading)return;
   const {d,body}=dialog(w('Inspector de publicación','Publication inspector'));
   body.append(h('p',{},w('Revisa el texto completo y las imágenes que saldrán. Las capturas privadas, los originales y el historial quedan en el proyecto.','Review the full outgoing text and images. Private captures, originals and history stay in the project.')),
     h('p',{class:'hash'},w('Revisión: ','Revision: ')+data.revision.slice(0,12)+' / '+data.images.length+' '+w('imágenes','images')+' / '+data.private_captures+' '+w('capturas privadas excluidas','private captures excluded')),
@@ -146,7 +151,7 @@ function bind(){
   const legacy=button('',legacyCopies);legacy.dataset.legacyCopies='';panel.append(legacy);
   const file=h('input',{type:'file',accept:'.json','aria-label':w('Archivo de borrador','Draft file')});file.addEventListener('change',async()=>{try{const f=file.files[0];if(!f)return;if(f.size>24*1024*1024)throw Error(w('Borrador demasiado grande.','Draft too large.'));const record=JSON.parse(await f.text());if(record.format!=='report-gen-draft'||record.version!==1||record.slug!==S.slug)throw Error(w('Abre el proyecto correspondiente; el borrador debe ser de formato 1.','Open the matching project; draft format must be 1.'));await resolveDraft(record);}catch(e){toast(e.message,'err');}finally{file.value='';}});panel.append(h('label',{},h('span',{id:'draftImportLabel'}),file));
   const inspectButton=button(w('Inspector de publicación','Publication inspector'),inspector);inspectButton.id='publicationBtn';$('#exportMenu .action-menu-body').append(inspectButton);
-  more.addEventListener('toggle',()=>{if(!more.open)return;});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySelector('dialog[open]')){more.open=false;}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySelector('dialog[open]')){more.open=false;}});
   bound=true;update();
 }
 return{bind,update,render,recovery,resolveDraft,saveHelp,inspector,downloadDraft,legacyCopies};

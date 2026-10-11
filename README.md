@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.31.1
+# report-gen 0.31.2
 
 <a id="qué-es"></a>
 
@@ -59,9 +59,9 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Correcciones de 0.31.1
+## Correcciones de 0.31.2
 
-La auditoría corrigió la conservación de métricas opcionales CVSS 4.0, resultados de validación atrasados, nombres de proyecto no portables y avisos de retención de respaldos. También revisó la exportación de nombres literales, encabezados dentro de hallazgos y dimensiones de imagen extremas. El mínimo de instalación es Python 3.11; CI utiliza 3.12. [Detalle de las correcciones](CHANGELOG.md).
+La segunda auditoría corrige carreras al recuperar borradores y previsualizar Markdown, rechaza enlaces simbólicos que cambian la identidad de un proyecto y limita recursos de respaldo antes de cargarlos en memoria. La recuperación contempla interrupciones durante la preparación de guardados, restauraciones e importaciones. También mejora la comprobación de encabezados y citas en las exportaciones, rechaza etapas de historial malformadas y elimina funciones sin uso. El control de CI verifica las identidades de las pruebas ejecutadas, además del total. [Detalle de las correcciones](CHANGELOG.md).
 
 ## Novedades de 0.31.0
 
@@ -99,7 +99,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.31.1 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.31.2 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 
