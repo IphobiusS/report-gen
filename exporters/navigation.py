@@ -119,8 +119,9 @@ def add_toc(document, entries, title, color):
         if i == len(links) - 1:
             _field_part(p, 'end')
     before.addprevious(sdt)
-    separator = document.add_page_break()
-    before.addprevious(separator._p)
+    # Anchor the break to the first body heading. A separate break paragraph
+    # can overflow a completely full TOC page and leave a blank page behind.
+    entries[0][0].paragraph_format.page_break_before = True
     settings = document.settings.element
     update = settings.find(qn('w:updateFields'))
     if update is None:

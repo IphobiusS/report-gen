@@ -310,10 +310,11 @@ def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=No
 
 
 def _pdf_code_layout(source):
-    """Keep code lines together and let literal URIs fill the available width.
+    """Apply transient PDF layout without altering authored text.
 
-    The transient PDF layout preserves every text character. Other export
-    formats and the source markup retain their original code representation.
+    Keep code lines together, let literal URIs fill the available width, and
+    reserve room for long list counters. Other exports and source markup
+    retain their original representation.
     """
     from lxml import html
     uri = re.compile(r'\b(?:https?|ftps?)://[^\s<>"\'`]+', re.IGNORECASE)
@@ -349,6 +350,18 @@ def _pdf_code_layout(source):
 
     tree = html.document_fromstring(source)
     changed = False
+    from safe_markup import ordered_list_start
+    for ordered in tree.xpath('//ol'):
+        start = ordered_list_start(ordered)
+        count = sum(child.tag == 'li' for child in ordered)
+        digits = len(str(start + max(0, count - 1)))
+        if digits >= 5:
+            # The default 40px list inset fits short counters, but ten-digit
+            # markers intrude into the printed margin. Size only long-counter
+            # lists in their own font's zero-width units, allowing punctuation
+            # and a gutter. Retain the parser's exact counter-reset and text.
+            ordered.set('style', ordered.get('style', '') + f';padding-left:{digits + 3}ch')
+            changed = True
     for pre in tree.xpath('//pre'):
         content = pre
         if len(pre):
@@ -372,14 +385,15 @@ def _pdf_code_layout(source):
                 ';break-inside:auto;page-break-inside:auto;orphans:4;widows:4')
         changed = True
 
-    for element in tree.xpath('//code[not(ancestor::pre)] | //a[not(ancestor::pre)] | '
+    for element in tree.xpath('//h1 | //h2 | //h3 | //h4 | //h5 | //h6 | '
+                              '//code[not(ancestor::pre)] | //a[not(ancestor::pre)] | '
                               '//ul[contains(concat(" ", normalize-space(@class), " "), " refs ")]/li'):
         if len(element):
             continue  # Nested inline code is handled separately; retain markup.
         text = element.text or ''
         if not uri.search(text):
             continue
-        if element.tag != 'code' and not uri.fullmatch(text.strip()):
+        if element.tag not in {'code', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'} and not uri.fullmatch(text.strip()):
             continue  # A human-readable label is prose, not a literal URI.
         if element.tag == 'code':
             # WeasyPrint does not reserve inline decoration when splitting
@@ -417,9 +431,13 @@ def _verify_pdf_code_lines(document):
 
 def render_pdf_weasyprint(html, out_pdf, base_url):
     from weasyprint import HTML
-    from pdf_pagination import verify_finding_tables
-    document = HTML(string=_pdf_code_layout(html), base_url=str(base_url), url_fetcher=restricted_fetcher(base_url, THEMES)).render()
+    from pdf_pagination import relax_oversized_rows, verify_finding_tables
+    renderer = HTML(string=_pdf_code_layout(html), base_url=str(base_url), url_fetcher=restricted_fetcher(base_url, THEMES))
+    document = renderer.render()
     verify_finding_tables(document)
+    if relax_oversized_rows(document):
+        document = renderer.render()
+        verify_finding_tables(document)
     _verify_pdf_code_lines(document)
     # WeasyPrint records unsupported code points while drawing the PDF, not
     # during layout. A ToUnicode map may preserve their text even though the

@@ -48,7 +48,7 @@ document.addEventListener('click',event=>{
 });
 window.addEventListener('hashchange',()=>reveal(location.hash));draw();toolbar.hidden=false;toolbarOffset();})();'''
 STYLE='''@font-face{font-family:Report;font-display:optional;src:url(data:font/ttf;base64,FONT)}
-*{box-sizing:border-box}body{margin:0;background:#f3f5f7;color:#172435;font:17px/1.65 Calibri,Report,Arial,sans-serif}.report-content{max-width:1060px;margin:auto;padding:32px;overflow-wrap:anywhere}h1,h2,h3{line-height:1.25;color:#142b42}h1{font-size:2.2rem}h2{font-size:1.65rem}h3{font-size:1.25rem}a{color:#155a8a;overflow-wrap:anywhere}img{display:block;max-width:100%;height:auto;max-height:740px;object-fit:contain;margin:16px auto}figure{margin:24px 0}figcaption,.caption{color:#45566b}pre{background:#edf1f5;padding:16px;white-space:pre-wrap;overflow-wrap:anywhere;border-left:3px solid #356483}code{font-family:Consolas,monospace;font-size:.88em}table{border-collapse:collapse;width:100%!important;table-layout:auto;margin:20px 0}td,th{padding:10px;border-bottom:1px solid #bbc8d4;text-align:left;overflow-wrap:anywhere}th{background:#e9eef3}.frontsec,.finding{background:white;border:1px solid #d5dee6;padding:28px;margin:24px 0;border-radius:6px}.cover{background:#132c40;color:white;padding:64px 32px;text-align:center;border-radius:6px}.cover h1,.cover h2,.cover h3{color:white}.cover table{margin-top:48px}.cover td,.cover th{background:transparent;color:white}.cover-art,.profile-mark{display:none}.provider-mark svg{max-width:200px;max-height:70px}.cover-top{display:flex;justify-content:space-between;gap:24px;text-align:left}.cover-center{padding:40px 0 8px}.cv-field-label,.cv-field-value{display:block}.cv-field-label{font-size:13px;margin-bottom:6px;opacity:.85}.cover-foot{text-align:center}.profile-identity{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-top:24px}.provider-logo svg{display:block;width:170px;max-height:70px}.profile-motif{display:none}.cover img{max-width:210px;max-height:130px}.sevchart{max-width:500px}.toc .pg,.c-pg,.pm{display:none}.toc-list{list-style:none;padding:0}.toc-list a{display:block;padding:8px}.sev-chip,.severity{font-weight:bold}.sev-critical>.finding-intro,.sev-high>.finding-intro{border-left:4px solid #a82b36;padding-left:16px}.sec-num{color:#49647b;margin-right:8px}.report-toolbar{position:sticky;top:0;z-index:10;background:white;border-bottom:1px solid #bcc9d5;padding:12px 24px;display:flex;align-items:end;gap:16px;flex-wrap:wrap}.report-toolbar label{font-size:14px;display:grid;gap:4px;min-width:0;max-width:100%}.report-toolbar input,.report-toolbar select,.report-toolbar button{font:inherit;border:1px solid #64778b;background:white;color:#172435;border-radius:4px;min-height:44px;padding:8px 12px;max-width:100%}.report-toolbar input,.report-toolbar select{width:100%;min-width:0}.report-toolbar button{cursor:pointer}.report-note{max-width:1000px;margin:20px auto;padding:0 24px;color:#43576b;font-size:14px}.report-toolbar :focus-visible,a:focus-visible{outline:3px solid #007f63;outline-offset:3px}[hidden]{display:none!important}.executive .sect-findings{display:none}html{scroll-padding-top:var(--report-toolbar-offset,16px)}section,div[id]{scroll-margin-top:0}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}@media(max-width:600px){.report-content{padding:12px}.frontsec,.finding{padding:16px}.cover{padding:40px 16px}.report-toolbar{position:static;padding:12px;gap:8px}.report-toolbar label{flex:1 1 12em;min-width:min(100%,12em)}h1{font-size:1.75rem}td,th{padding:6px;font-size:14px}}@media print{@page{size:A4;margin:16mm}body{background:white;font-size:11pt}.report-toolbar,.report-note{display:none}.report-content{padding:0;max-width:none}.frontsec,.finding{border:0;padding:0}.cover{background:white;color:#172435;break-after:page}.cover h1,.cover h2,.cover h3,.cover td,.cover th{color:#172435}h1,h2,h3{break-after:avoid}img{max-height:160mm}pre{white-space:pre-wrap}a{color:inherit}}'''
+*{box-sizing:border-box}body{margin:0;background:#f3f5f7;color:#172435;font:17px/1.65 Calibri,Report,Arial,sans-serif}.report-content{max-width:1060px;margin:auto;padding:32px;overflow-wrap:anywhere}h1,h2,h3{line-height:1.25;color:#142b42}h1{font-size:2.2rem}h2{font-size:1.65rem}h3{font-size:1.25rem}a{color:#155a8a;overflow-wrap:anywhere}img{display:block;max-width:100%;height:auto;max-height:740px;object-fit:contain;margin:16px auto}figure{margin:24px 0}figcaption,.caption{color:#45566b}pre{background:#edf1f5;padding:16px;white-space:pre-wrap;overflow-wrap:anywhere;border-left:3px solid #356483}code{font-family:Consolas,monospace;font-size:.88em}table{border-collapse:collapse;width:100%!important;table-layout:auto;margin:20px 0}td,th{padding:10px;border-bottom:1px solid #bbc8d4;text-align:left;overflow-wrap:anywhere}th{background:#e9eef3}.frontsec,.finding{background:white;border:1px solid #d5dee6;padding:28px;margin:24px 0;border-radius:6px}.cover{background:#132c40;color:white;padding:64px 32px;text-align:center;border-radius:6px}.cover h1,.cover h2,.cover h3{color:white}.cover table{margin-top:48px}.cover td,.cover th{background:transparent;color:white}.cover-art,.profile-mark{display:none}.provider-mark svg{max-width:200px;max-height:70px}.cover-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px;text-align:left}.cover-center{padding:40px 0 8px}.cv-field-label,.cv-field-value{display:block}.cv-field-label{font-size:13px;margin-bottom:6px;opacity:.85}.cover-foot{text-align:center}.profile-identity{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:24px;margin-top:24px}.provider-logo{max-width:100%;min-width:0}.provider-logo svg{display:block;width:170px;max-width:100%;height:auto;max-height:70px}.profile-motif{display:none}.cover img{max-width:210px;max-height:130px}.sevchart{max-width:500px}.toc .pg,.c-pg,.pm{display:none}.toc-list{list-style:none;padding:0}.toc-list a{display:block;padding:8px}.sev-chip,.severity{font-weight:bold}.sev-critical>.finding-intro,.sev-high>.finding-intro{border-left:4px solid #a82b36;padding-left:16px}.sec-num{color:#49647b;margin-right:8px}.report-toolbar{position:sticky;top:0;z-index:10;background:white;border-bottom:1px solid #bcc9d5;padding:12px 24px;display:flex;align-items:end;gap:16px;flex-wrap:wrap}.report-toolbar label{font-size:14px;display:grid;gap:4px;min-width:0;max-width:100%}.report-toolbar input,.report-toolbar select,.report-toolbar button{font:inherit;border:1px solid #64778b;background:white;color:#172435;border-radius:4px;min-height:44px;padding:8px 12px;max-width:100%}.report-toolbar input,.report-toolbar select{width:100%;min-width:0}.report-toolbar button{cursor:pointer}.report-note{max-width:1000px;margin:20px auto;padding:0 24px;color:#43576b;font-size:14px}.report-toolbar :focus-visible,a:focus-visible{outline:3px solid #007f63;outline-offset:3px}[hidden]{display:none!important}.executive .sect-findings{display:none}html{scroll-padding-top:var(--report-toolbar-offset,16px)}section,div[id]{scroll-margin-top:0}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}@media(max-width:600px){.report-content{padding:12px}.frontsec,.finding{padding:16px}.cover{padding:40px min(16px,3%)}.report-toolbar{position:static;padding:12px;gap:8px}.report-toolbar label{flex:1 1 12em;min-width:min(100%,12em)}h1{font-size:1.75rem}td,th{padding:6px;font-size:14px}}@media print{@page{size:A4;margin:16mm}body{background:white;font-size:11pt}.report-toolbar,.report-note{display:none}.report-content{padding:0;max-width:none}.frontsec,.finding{border:0;padding:0}.cover{background:white;color:#172435;break-after:page}.cover h1,.cover h2,.cover h3,.cover td,.cover th{color:#172435}h1,h2,h3{break-after:avoid}img{max-height:160mm}pre{white-space:pre-wrap}a{color:inherit}}'''
 
 TABLE_STYLE = '''
 @media screen{html.report-js .report-toolbar[hidden]{display:flex!important;visibility:hidden}
@@ -82,15 +82,45 @@ table.report-fields{table-layout:fixed}
 # changes only visual wrapping, so copied text and link destinations stay exact.
 TEXT_FLOW_STYLE = '''
 pre,code,.report-literal-url{overflow-wrap:anywhere;word-break:break-all;line-break:anywhere}
-@media(max-width:600px){.steps{padding-inline-start:24px}pre{padding:12px}}
+.report-content blockquote{margin-inline:0;border-inline-start:3px solid #64778b;padding-inline-start:min(1em,5%)}
+@media(max-width:600px){
+ .report-content ul:not(.toc-list),.report-content ol{padding-inline-start:min(24px,12%)}
+ .report-content .steps{padding-inline-start:24px}
+ pre{padding:12px}
+}
+.report-list-region{max-width:100%;min-width:0;overflow-x:auto;overscroll-behavior-inline:contain;margin:1em 0}
+.report-list-region:focus-visible{outline:3px solid #007f63;outline-offset:3px}
+.report-content .report-counter-list{margin:0;padding-inline-start:calc((var(--report-counter-digits) + 2)*1ch);min-width:calc((var(--report-counter-digits) + 10)*1ch)}
+@media screen and (max-width:600px){.report-list-region::before{content:attr(data-scroll-hint);display:block;padding:6px 0;color:#43576b;font-size:13px;line-height:1.5}}
+@media print{.report-list-region{overflow:visible;max-width:none}.report-content .report-counter-list{min-width:0}}
 '''
 
 
-def prepare_text_flow(tree):
+def prepare_text_flow(tree, en=False):
     """Mark literal URL labels without changing descriptive link wrapping."""
     for node in tree.xpath('//a[@href]|//ul[contains(concat(" ",normalize-space(@class)," ")," refs ")]/li'):
         if re.fullmatch(r'(?:https?|ftp)://\S+', ''.join(node.itertext()).strip(), re.IGNORECASE):
             node.set('class', ' '.join([*(node.get('class') or '').split(), 'report-literal-url']))
+    # Native list markers sit outside their element's box. Large, valid starts
+    # can otherwise lose their leading digits beyond the viewport without
+    # producing a detectable element overflow. Keep native counters and roles;
+    # provide enough marker space and local keyboard scrolling when necessary.
+    for ordered in tree.xpath('//ol'):
+        count = len(ordered.xpath('./li'))
+        start = int(ordered.get('start', '1'))
+        digits = max(len(str(start)), len(str(start + max(0, count - 1))))
+        if digits <= 3:
+            continue
+        ordered.set('class', ' '.join([*(ordered.get('class') or '').split(), 'report-counter-list']))
+        ordered.set('style', ordered.get('style', '').rstrip(';') + f';--report-counter-digits:{digits}')
+        region = html.Element('div', {'class': 'report-list-region', 'role': 'region', 'tabindex': '0',
+                              'aria-label': ('Numbered list; horizontal scrolling' if en else
+                                             'Lista numerada; desplazamiento horizontal'),
+                              'data-scroll-hint': ('Scroll horizontally to read the complete numbered list.' if en else
+                                                   'Desplázate horizontalmente para leer toda la lista numerada.')})
+        region.tail, ordered.tail = ordered.tail, None
+        ordered.addprevious(region)
+        region.append(ordered)
 
 
 def prepare_tables(tree, en=False):
@@ -164,7 +194,7 @@ def build(directory):
         node.set('data-report-kind',finding.get('mode','vuln'))
         node.set('data-report-severity',finding.get('severity') or ('pending' if finding.get('mode')!='machine' else ''))
     prepare_tables(tree, en)
-    prepare_text_flow(tree)
+    prepare_text_flow(tree, en)
     body=tree.find('body')
     contents=''.join(html.tostring(child,encoding='unicode') for child in body)
     font=b64encode((Path(__file__).parent/'themes/fonts/Carlito-Regular.ttf').read_bytes()).decode()

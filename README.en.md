@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.32.1
+# report-gen 0.32.2
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -48,6 +48,12 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Word | An editable `.docx` with its own table-of-contents fields. |
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
+
+## Fixes in 0.32.2
+
+Word tables consider their estimated height before keeping all rows together, and compact mode no longer makes their rows taller; tables and code nested in lists respect the width of their level. Portable HTML retains useful reading width for nested quotes and lists on narrow screens, and provider logos fit when text is enlarged. Long starting list numbers retain space for all digits in PDF and HTML. Short labelled Word lists avoid leaving their last bullet stranded. Chapter and table-of-contents transitions no longer create an empty page when the preceding page is full. In PDF, oversized narrative rows can continue with repeated headers without stranding the preceding title, and headings with long identifiers wrap within the page margin.
+
+PDF verification also prevents one text occurrence from supplying distinct cells, list items or paragraphs within the same category. This remains a global presence check and requires visual review. Early wrapping of some URLs in LibreOffice remains unresolved. LibreOfficeDev 26.8 also truncated large starting list numbers (for example, 65536 displayed as 0), although the DOCX retains the original value. [Changes and limitations](CHANGELOG.md).
 
 ## Fixes in 0.32.1
 
@@ -96,7 +102,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.32.1 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.32.2 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

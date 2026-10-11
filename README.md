@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.32.1
+# report-gen 0.32.2
 
 <a id="qué-es"></a>
 
@@ -59,6 +59,12 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
+## Correcciones de 0.32.2
+
+Las tablas de Word consideran su altura estimada antes de mantenerse juntas y el modo compacto ya no aumenta el alto de sus filas; las tablas y el código dentro de listas respetan el ancho de su nivel. El HTML portátil conserva un ancho de lectura útil para citas y listas anidadas en móvil, y sus logos se adaptan al texto ampliado. Las numeraciones iniciales largas conservan espacio para sus dígitos en PDF y HTML. Las listas breves de Word evitan dejar una última viñeta aislada. Las transiciones del índice y los capítulos dejan de crear una página vacía cuando la anterior está llena. En PDF, las filas narrativas demasiado altas pueden continuar con sus encabezados sin dejar el título aislado, y los títulos con identificadores extensos se ajustan dentro del margen.
+
+La comprobación PDF también evita reutilizar el mismo texto para justificar celdas, elementos de lista o párrafos distintos dentro de cada categoría. Sigue siendo una comprobación de presencia global y requiere revisión visual. El ajuste anticipado de algunas URL en LibreOffice permanece pendiente. En LibreOfficeDev 26.8 también se observó truncamiento de numeraciones iniciales grandes (por ejemplo, 65536 se muestra como 0), aunque el DOCX conserva el valor original. [Cambios y límites](CHANGELOG.md).
+
 ## Correcciones de 0.32.1
 
 Los títulos del PDF tienen una separación coherente con el texto y los marcos de evidencia siguen el tamaño visible de la imagen, sin bandas laterales artificiales. Los bloques de código y las URL literales del PDF y HTML portátil aprovechan el ancho de la línea sin modificar el texto ni el destino del enlace. Word limita las figuras al ancho real de listas y celdas.
@@ -111,7 +117,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.32.1 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.32.2 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

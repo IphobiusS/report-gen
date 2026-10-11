@@ -136,6 +136,14 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
                 block(part, depth)
             return
         if tag in {"ul", "ol"}:
+            previous = node.getprevious()
+            keep_short_labelled_list = (previous is not None and previous.tag == 'p'
+                and not (previous.text or '').strip() and len(previous) == 1
+                and previous[0].tag in {'strong', 'b'} and not (previous[0].tail or '').strip()
+                and len(node) <= 4 and len(node.text_content()) <= 240
+                and not node.xpath('.//ul|.//ol|.//table|.//pre|.//figure|.//img')
+                and len(node.xpath('.//br')) <= 4)
+            first_paragraph = len(document.paragraphs)
             number_id = list_numbering(tag == "ol", ordered_list_start(node) if tag == 'ol' else 1)
             for item in node:
                 p = document.add_paragraph()
@@ -179,17 +187,36 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
                     if child.tail and (child.tail.strip() or current is not None):
                         if current is None: current = continuation()
                         current.add_run(child.tail); started = True
+            if keep_short_labelled_list:
+                # A short affected-assets list should not leave its last IP
+                # alone on a page before the next major section. Bound the
+                # chain; arbitrary long/nested lists must still paginate.
+                paragraphs = document.paragraphs[first_paragraph:]
+                for index, paragraph in enumerate(paragraphs):
+                    paragraph.paragraph_format.keep_together = True
+                    paragraph.paragraph_format.keep_with_next = index < len(paragraphs)-1
         elif tag == "pre":
-            p = code_block(node.text_content().removesuffix("\n"))
-            if depth: p.paragraph_format.left_indent = Cm(.65 * depth)
+            text = node.text_content().removesuffix("\n")
+            p = code_block(text)
+            if depth:
+                from .pagination import code_fits_page
+                p.paragraph_format.left_indent = Cm(.65 * depth)
+                p.paragraph_format.keep_together = code_fits_page(document, text, width=paragraph_width(document, p))
         elif tag == "table":
             rows = node.xpath("./tr|./thead/tr|./tbody/tr|./tfoot/tr")
             cols = max([len(row) for row in rows]+[1])
             table = document.add_table(rows=0, cols=cols); table.style = "Table Grid"; table.autofit = False
             shares, _ = table_layout([[cell.text_content() for cell in row] for row in rows], column_weights)
-            widths = [int(available * share / 100) for share in shares]
+            indent = Cm(.65 * depth)
+            table_width = max(Cm(1), available - indent)
+            if depth:
+                indentation = OxmlElement('w:tblInd')
+                indentation.set(qn('w:type'), 'dxa')
+                indentation.set(qn('w:w'), str(round(indent / 635)))
+                table._tbl.tblPr.append(indentation)
+            widths = [int(table_width * share / 100) for share in shares]
             for col, width in zip(table.columns, widths): col.width = width
-            width_el = table._tbl.tblPr.find(qn("w:tblW")); width_el.set(qn("w:type"), "dxa"); width_el.set(qn("w:w"), str(int(available/635)))
+            width_el = table._tbl.tblPr.find(qn("w:tblW")); width_el.set(qn("w:type"), "dxa"); width_el.set(qn("w:w"), str(int(table_width/635)))
             for row in rows:
                 cells = table.add_row().cells
                 for i, cell in enumerate(row):

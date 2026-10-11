@@ -1,4 +1,4 @@
-"""Fail a PDF export instead of delivering a split or overflowing finding table."""
+"""Preserve protected tables and paginate genuinely oversized narrative rows."""
 from error_messages import message as backend_message
 
 
@@ -6,6 +6,41 @@ def table_error(finding):
     return ValueError(
         backend_message('Hallazgo {p0}: una tabla no cabe completa en una página junto a su encabezado. Acorta la tabla o mueve el contenido extenso al procedimiento detallado. El PDF no se ha generado para evitar cortar la tabla.', p0=finding)
     )
+
+
+def relax_oversized_rows(document):
+    """Let an already fragmented narrative row retain its repeated header.
+
+    Keeping ordinary rows together is useful, but WeasyPrint cannot honor
+    ``break-inside: avoid`` on a row taller than a page. Its fallback can drop
+    the table header on early fragments and strand the preceding title. Use
+    the actual first layout to relax only those rows, without guessing from
+    character counts or changing protected finding tables. The elements are
+    owned by the HTML renderer; the caller performs one fresh layout after a
+    change. Repeated header/footer rows are not oversized body rows.
+    """
+    rows = {}
+    for number, page in enumerate(document.pages):
+        def walk(box, protected=False, repeated_group=False):
+            element = getattr(box, 'element', None)
+            if element is not None:
+                protected = protected or 'finding' in (element.get('class') or '').split()
+                repeated_group = repeated_group or element.tag in {'thead', 'tfoot'}
+            if (type(box).__name__ == 'TableRowBox' and element is not None
+                    and not protected and not repeated_group
+                    and box.style['break_inside'] in {'avoid', 'avoid-page'}):
+                rows.setdefault(element, set()).add(number)
+            for child in box.all_children():
+                walk(child, protected, repeated_group)
+
+        walk(page._page_box)
+    changed = False
+    for element, pages in rows.items():
+        if len(pages) > 1:
+            element.set('style', (element.get('style') or '') +
+                        ';break-inside:auto!important;page-break-inside:auto!important')
+            changed = True
+    return changed
 
 
 def verify_finding_tables(document):

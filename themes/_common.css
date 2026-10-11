@@ -54,6 +54,7 @@ a { color:var(--cyan-ink); overflow-wrap:anywhere; }
 
 /* Authored Markdown headings use the report's rhythm, not browser defaults.
    Section/finding/cover identities override these shared body defaults. */
+h1, h2, h3, h4, h5, h6 { overflow-wrap: anywhere; }
 h1, h2, h4, h5, h6 { font-family: var(--font-heading); line-height: 1.2; color: var(--ink-soft); margin: 14px 0 6px; break-after: avoid; page-break-after: avoid; }
 h1 { font-size: 14pt; }
 h2 { font-size: 12pt; }
@@ -123,7 +124,7 @@ h6 { font-size: 8.5pt; }
 .finding.sev-low .f-head { border-left-color: var(--sev-low); }
 .finding.sev-info .f-head { border-left-color: var(--sev-info); }
 .f-id { font-family: var(--font-mono); font-size: 9pt; color: var(--muted); }
-.f-title { margin: 0; font-family: var(--font-display); font-size: 12.5pt; font-weight: 700; line-height: 1.25; flex: 1; }
+.f-title { margin: 0; font-family: var(--font-display); font-size: 12.5pt; font-weight: 700; line-height: 1.25; flex: 1; min-width: 0; }
 .sev-chip, .host-chip { font-family: var(--font-mono); font-size: 8pt; padding: 3px 8px; border-radius: 2px; white-space: nowrap; text-transform: capitalize; color: var(--sev-chip-ink, #ffffff); background: var(--ink); }
 .sev-chip b { font-weight: 700; margin-left: 3px; }
 .sev-chip.sev-critical { background: var(--sev-critical); }

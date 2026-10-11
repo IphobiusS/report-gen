@@ -1,3 +1,18 @@
+# Cambios 0.32.2 (2026-10-11)
+
+- Las filas narrativas de PDF que realmente superan una página se vuelven a maquetar con fragmentación permitida. Conservan el título acompañado y los encabezados de columna en las continuaciones. Las filas normales no requieren una segunda maquetación; las tablas protegidas de hallazgos conservan sus comprobaciones.
+- Los títulos PDF con identificadores o URL extensas admiten ajuste dentro del margen. La cabecera de hallazgo permite reducir el ancho del título para conservar visibles el identificador y la etiqueta de severidad o dirección.
+- Word estima la altura de las tablas antes de encadenar todas sus filas. Una tabla de pocas filas con celdas extensas puede continuar sin dejar un gran hueco en la página anterior. El espaciado compacto del cuerpo deja de aumentar por herencia la altura de las celdas de Table Grid; se conserva el formato explícito de cada párrafo.
+- Las tablas dentro de listas de Word respetan la sangría y el ancho disponible de su nivel. Los bloques de código anidados consideran ese ancho reducido antes de solicitar mantenerse en una sola página.
+- Las listas breves de Word precedidas por una etiqueta en negrita permanecen juntas cuando tienen hasta cuatro elementos y texto corto. Evitan páginas casi vacías con una única viñeta de activos afectados; listas largas, anidadas o con imágenes conservan su posibilidad de continuar.
+- Los capítulos Word y el contenido posterior al índice solicitan el salto de página en su propio encabezado. Se elimina el párrafo vacío de salto que podía desbordarse cuando el contenido anterior llenaba exactamente una página y dejar otra página sin contenido.
+- Eliminada una rama inalcanzable de la composición de metadatos Word; se conserva la separación explícita entre bloques.
+- Las citas y listas anidadas del HTML portátil usan sangrías adaptables para evitar que el ancho útil colapse en pantallas estrechas con ampliación. Se conservan texto, marcadores, orden, enlaces y controles de lectura. Las listas con numeraciones iniciales largas reservan espacio para el marcador; cuando no caben en HTML disponen de desplazamiento local por teclado y no ensanchan la página. El PDF reserva su sangría dentro del margen imprimible.
+- Los logos de proveedor del HTML portátil conservan su proporción y se ajustan al ancho de la portada en móvil y al ampliar al 200 %. La identidad puede ocupar varias filas sin recortar el logo.
+- La verificación PDF impide que una misma aparición física justifique valores distintos de celdas, listas o párrafos dentro de cada categoría. Conserva alternativas de coincidencia y límites de trabajo; una comprobación inconclusa no reemplaza la salida anterior. No acredita asociación entre bloques, geometría ni espacios literales.
+- Nuevas regresiones con tablas extensas, anidación, encabezados repetidos, documentos realmente alterados y conservación de exportaciones completas. Chromium ejecuta los nuevos casos de anidación y ampliación.
+- Límites conocidos: LibreOffice aún puede adelantar algunos saltos de URL en DOCX. LibreOfficeDev 26.8.0.0.alpha0 también trunca inicios de lista grandes al importar DOCX (65536 aparece como 0 y 1234567890 como 722), incluso con `startOverride`; el XML conserva los valores originales. No se altera el texto ni se atribuye una validación realizada en Microsoft Word nativo o LibreOffice estable.
+
 # Cambios 0.32.1 (2026-10-11)
 
 - El PDF normaliza el interlineado y la separación de los títulos de sección y los encabezados Markdown. Ejecutivo y Laboratorio dejan de sumar un relleno inferior desproporcionado al margen del título.

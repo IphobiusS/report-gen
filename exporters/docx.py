@@ -211,8 +211,12 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     sec_no = [0]
     navigation = []
 
-    def heading(text, level=1, sev=None, toc=False, anchor=None):
+    def heading(text, level=1, sev=None, toc=False, anchor=None, new_page=False):
         p = doc.add_heading("", level=level)
+        if new_page:
+            # A standalone break paragraph can overflow a full page before
+            # breaking again, creating an entirely empty body page.
+            p.paragraph_format.page_break_before = True
         for r in list(p.runs):
             r.text = ""
         if level == 1:
@@ -274,12 +278,9 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             rk = cells[0].paragraphs[0].add_run(k); rk.font.size = Pt(8.5); rk.font.color.rgb = MUTED; rk.font.name = MONO
             add_plain(cells[1].paragraphs[0], v)
         keep_table_together(t)
-        if keep_next and t.rows:
-            for cell in t.rows[-1].cells:
-                for p in cell.paragraphs: p.paragraph_format.keep_with_next = True
         spacer = doc.add_paragraph()
         spacer.paragraph_format.space_after = Pt(2)
-        spacer.paragraph_format.keep_with_next = keep_next
+        spacer.paragraph_format.keep_with_next = False
         return t
 
     def data_table(headers, rows, weights=None):
@@ -363,9 +364,6 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     field(fp, "PAGE")
     r = fp.add_run(" " + L["running"]["of"] + " "); r.font.size = Pt(7.5); r.font.color.rgb = MUTED; r.font.name = MONO
     field(fp, "NUMPAGES")
-
-    def newpage():
-        doc.add_page_break()
 
     has_finding_details = True
 
@@ -463,8 +461,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
                         doc.add_paragraph(para.replace("{client}", client).replace("{assessor}", meta.get("assessor") or ""))
 
         for i, s in enumerate(rsecs, 1):
-            if i > 1: newpage()
-            heading(s["title"], 1, anchor=s['key'])
+            heading(s["title"], 1, anchor=s['key'], new_page=i > 1)
             sp = s.get("special")
             if sp == "contacts":
                 c = meta.get("contacts") or {}
@@ -510,7 +507,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     # Contactos
     contacts = meta.get("contacts") or {}
     if contacts.get("client") or contacts.get("assessor"):
-        newpage(); heading(lab["contacts"], 1, anchor='sec-contacts')
+        heading(lab["contacts"], 1, anchor='sec-contacts', new_page=True)
         for grp, gt in [("client", lab["client"]), ("assessor", lab["team"])]:
             ppl = contacts.get(grp) or []
             if ppl:
@@ -518,7 +515,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
                 data_table([lab["name"], lab["title"], lab["email"]], [[p.get("name", ""), p.get("title", ""), p.get("email", "")] for p in ppl])
 
     # Overview
-    newpage(); heading(lab["overview"], 1, anchor='sec-overview'); heading(lab["approach"], 2)
+    heading(lab["overview"], 1, anchor='sec-overview', new_page=True); heading(lab["approach"], 2)
     if meta.get("overview", {}).get("approach_md"):
         add_markdown(meta["overview"]["approach_md"])
     else:
@@ -530,21 +527,21 @@ def to_docx(data, meta, L, engagement_dir, out_path):
         data_table([lab["target"], lab["description"]], [[s.get("target", ""), s.get("description", "")] for s in meta["scope"]])
 
     # The legacy model uses the same summary and finding renderers.
-    newpage(); heading(lab["summary"], 1, anchor='sec-summary')
+    heading(lab["summary"], 1, anchor='sec-summary', new_page=True)
     render_summary_body()
-    newpage(); heading(lab["findings"], 1)
+    heading(lab["findings"], 1, new_page=True)
     for finding in data["findings"]:
         render_one_finding(finding)
 
     # Appendix
     appx = engine.appendix_rows(data["findings"])
     if appx:
-        newpage(); heading(lab["appendix"], 1, anchor='sec-appendix')
+        heading(lab["appendix"], 1, anchor='sec-appendix', new_page=True)
         doc.add_paragraph(L.get("appendix_intro", ""))
         data_table([lab["host"], lab["item"], lab["value"], lab["notes"]], [[r["host"], r["item"], r["value"], r["notes"]] for r in appx])
 
     for extra in report_sections(data):
-        newpage(); heading(extra["title"], 1, anchor=extra['key'])
+        heading(extra["title"], 1, anchor=extra['key'], new_page=True)
         add_markdown(extra["body"], keep_tables=False, retest=extra["key"] == "rg_retest", workflow_key=extra['key'])
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     from .navigation import add_toc

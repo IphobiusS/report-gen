@@ -1,4 +1,4 @@
-# report-gen 0.32.1 user guide
+# report-gen 0.32.2 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -116,7 +116,7 @@ Structured export checks compare paragraphs, literal code, metadata, native tabl
 
 Project integers must be within −9,007,199,254,740,991 to 9,007,199,254,740,991 to preserve their value in the browser editor. Store larger documentary values or identifiers as quoted text in YAML/JSON. Out-of-range inputs are rejected with the field path rather than silently rounded or replaced with `null`. Report numbered lists use counters from 0 to 2,147,483,647, compatible with browser and Word consumers. An initial or final ordinal above that limit is rejected, preserving any previous output file.
 
-PDF verification reserves independent physical occurrences for each code line. If ambiguous wrapping exceeds its verification budget, it reports that verification could not be completed and preserves the previous delivery; it does not claim content loss without establishing it.
+PDF verification reserves independent physical occurrences for each code line and, within each category, for distinct cells, list items and paragraphs. A longer cell cannot also supply a missing cell whose text it contains. Categories are checked separately because a paragraph inside a list legitimately belongs to both. If ambiguous wrapping exceeds its verification budget, it reports that verification could not be completed and preserves the previous delivery; it does not claim content loss without establishing it.
 
 PDF and portable HTML wrap literal URLs to the available width without changing their text. LibreOffice may wrap some DOCX URLs early; no artificial characters or line breaks are inserted to conceal that limitation. Native Microsoft Word validation requires a licensed Windows desktop installation. The opt-in workflow is implemented; local OOXML and LibreOffice checks do not substitute for that native validation.
 

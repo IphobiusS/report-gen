@@ -13,7 +13,7 @@ def _code_font():
     return ImageFont.truetype(str(Path(__file__).resolve().parents[1] / 'themes' / 'fonts' / 'DejaVuSansMono.ttf'), 100)
 
 
-def code_fits_page(document, text, size=9):
+def code_fits_page(document, text, size=9, width=None):
     """Do not ask Word to keep a code paragraph larger than a page together.
 
     Count hard breaks and wrapped monospace lines, reserving the code inset,
@@ -21,7 +21,7 @@ def code_fits_page(document, text, size=9):
     engine; this conservative bound only controls the keep-lines instruction.
     """
     section = document.sections[-1]
-    width = (section.page_width - section.left_margin - section.right_margin) / Pt(1) - 14
+    width = (width if width is not None else section.page_width - section.left_margin - section.right_margin) / Pt(1) - 14
     height = (section.page_height - section.top_margin - section.bottom_margin) / Pt(1)
     if width <= 0:
         return False
@@ -32,7 +32,7 @@ def code_fits_page(document, text, size=9):
 
 
 def _tail_fits(table, start):
-    """Conservatively bound a few rows; never chain an entire long table.
+    """Conservatively bound rows before creating a keep-next chain.
 
     Word performs final layout. One em per character and an extra line per
     paragraph deliberately overestimate ordinary prose, reserving additional
@@ -80,6 +80,22 @@ def keep_table_together(table, whole=True):
     # cantSplit alone only protects individual rows. keepNext chains every
     # row to the next one, ending at the table boundary (not the next finding).
     rows = table.rows
+    # Writer gives explicit Normal paragraph spacing precedence over the
+    # table style. Compact body spacing must not make Table Grid rows taller
+    # than the same table in comfortable density. Materialize only the table's
+    # own spacing and preserve any paragraph-specific formatting.
+    if table.style.style_id == 'TableGrid':
+        spacing = table.style.paragraph_format
+        for row in rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    for field in ('space_after', 'line_spacing'):
+                        if getattr(paragraph.paragraph_format, field) is None:
+                            setattr(paragraph.paragraph_format, field, getattr(spacing, field))
+    # A small row count does not imply a short table: a dozen rows of long
+    # evidence can span several pages. Do not push that oversized chain to a
+    # new page before Word finally allows it to split.
+    whole = whole and _tail_fits(table, 0)
     tail_start = max(1, len(rows)-3)
     keep_tail = not whole and _tail_fits(table, tail_start)
     for row_index, row in enumerate(rows):

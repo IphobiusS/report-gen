@@ -19,6 +19,8 @@ W = '{' + NS['w'] + '}'
 _PDFIUM_LOCK = Lock()
 _PDF_CODE_MAX_STATES = 4096
 _PDF_CODE_MAX_RANGES = 1_000_000
+_PDF_TEXT_MAX_STATES = 4096
+_PDF_TEXT_MAX_RANGES = 1_000_000
 
 
 def normal(text):
@@ -669,13 +671,15 @@ def _pdf_pattern(unit):
     return re.compile(before + pattern + after)
 
 
-def _pdf_occurrences(unit, pages):
+def _pdf_occurrences(unit, pages, *, alternatives=False):
     """Count text chains using real, non-reusable ranges on adjacent pages.
 
     Headers/footers can interrupt a paragraph. Consume the longest verified
     source-word prefix on each consecutive page, retaining alternate starts.
     This is global textual presence, not a proof of block association.
     """
+    if alternatives:
+        return _pdf_text_fragments(unit, pages, prefixes=True)
     from functools import lru_cache
     words = normal(unit).split()
     if not words:
@@ -751,22 +755,271 @@ def _pdf_occurrences(unit, pages):
     return found
 
 
+def _pdf_text_fragments(unit, pages, *, prefixes, budget=None):
+    """Enumerate actual adjacent-page chains without discarding later starts.
+
+    The maximal-prefix pass is a cheap constructive search. If it cannot
+    supply a disjoint assignment, the exhaustive pass retains shorter prefixes
+    too. Construction has a work limit before candidates enter the allocator.
+    """
+    words = normal(unit).split()
+    if not words:
+        return []
+    examined = 0
+
+    def consume(amount=1):
+        nonlocal examined
+        examined += amount
+        if examined > _PDF_TEXT_MAX_RANGES:
+            _pdf_text_check_incomplete()
+        if budget is not None:
+            budget(amount)
+
+    patterns = [_pdf_pattern(word) for word in words]
+    starts = [re.compile('(?=(' + pattern.pattern + '))') for pattern in patterns]
+    carry = {}
+    completed = set()
+    for page_index, page in enumerate(pages):
+        progressed = {}
+        for first, chains in {0: {()}, **carry}.items():
+            for match in starts[first].finditer(page):
+                start, end = match.span(1)
+                consumed = first + 1
+                fragments = [(consumed, start, end)]
+                while consumed < len(words) and end < len(page) and page[end].isspace():
+                    following = end
+                    while following < len(page) and page[following].isspace():
+                        following += 1
+                    next_word = patterns[consumed].match(page, following)
+                    if next_word is None:
+                        break
+                    end = next_word.end()
+                    consumed += 1
+                    fragments.append((consumed, start, end))
+                    consume()
+                for consumed, start, end in fragments if prefixes else fragments[-1:]:
+                    for chain in chains:
+                        consume(len(chain) + 1)
+                        candidate = chain + ((page_index, start, end),)
+                        if consumed == len(words):
+                            completed.add(candidate)
+                        else:
+                            progressed.setdefault(consumed, set()).add(candidate)
+        carry = progressed
+    return sorted(completed)
+
+
 def _pdf_present(units, actual, label_es, label_en):
     """Require visible text occurrences, without claiming PDF block geometry."""
     counts = Counter(unit for unit in units if unit)
     across = 0
+    options = []
+    construction_work = 0
+
+    def budget(amount):
+        nonlocal construction_work
+        construction_work += amount
+        if construction_work > _PDF_TEXT_MAX_RANGES:
+            _pdf_text_check_incomplete()
+
+    offsets = []
+    offset = 0
+    for page in actual['pages']:
+        offsets.append(offset)
+        offset += len(page) + 1
     for unit, count in counts.items():
-        pattern = _pdf_pattern(unit)
-        if sum(len(pattern.findall(page)) for page in actual['pages']) < count:
-            ranges = _pdf_occurrences(unit, actual['pages'])
-            if len(ranges) >= count:
-                across += sum(len(occurrence) > 1 for occurrence in ranges[:count])
+        pattern = re.compile('(?=(' + _pdf_pattern(unit).pattern + '))')
+        ranges = set()
+        for page_index, page in enumerate(actual['pages']):
+            for match in pattern.finditer(page):
+                budget(1)
+                ranges.add(((page_index, *match.span(1)),))
+        if len(ranges) < count:
+            spanning = _pdf_occurrences(unit, actual['pages'])
+            budget(sum(map(len, spanning)))
+            ranges.update(spanning)
+            across += sum(len(occurrence) > 1 for occurrence in spanning[:count])
+        # Different source values may overlap too: one occurrence of
+        # "Approved with conditions" cannot also supply a missing "Approved"
+        # cell. Retain alternatives instead of making a greedy assignment.
+        options.append(set(tuple((offsets[p] + start, offsets[p] + end)
+                                 for p, start, end in occurrence)
+                           for occurrence in ranges))
+
+    def allocated():
+        return _pdf_disjoint_text_ranges(tuple(counts.values()),
+                                         tuple(tuple(sorted(ranges)) for ranges in options))
+
+    if allocated():
+        return sum(counts.values()), across
+    # A fast constructive pass may omit the only compatible page continuation.
+    # Failure is never proof of missing text until all bounded alternatives
+    # have been considered, including shorter prefixes and later starts.
+    for prefixes in (False, True):
+        for unit, ranges in zip(counts, options):
+            alternatives = _pdf_text_fragments(unit, actual['pages'], prefixes=prefixes, budget=budget)
+            ranges.update(tuple((offsets[p] + start, offsets[p] + end)
+                                for p, start, end in occurrence)
+                          for occurrence in alternatives)
+        if allocated():
+            return sum(counts.values()), across
+    raise ValueError(backend_message(
+        'Texto de {label} PDF ausente o alterado',
+        en='Missing or changed PDF {label} text',
+        label=label_en if current_language() == 'en' else label_es))
+
+
+def _pdf_text_check_incomplete():
+    raise ValueError(backend_message(
+        'No se pudo completar la verificación PDF: apariciones de texto ambiguas. '
+        'La salida no se considera verificada.',
+        en='PDF verification could not be completed: ambiguous text occurrences. '
+           'The output is not considered verified.'))
+
+
+def _pdf_disjoint_text_ranges(needs, options):
+    """Allocate actual text fragments, including interleaved page continuations.
+
+    A candidate is a tuple of disjoint physical ranges. Gaps between its page
+    fragments remain available to other cells/paragraphs, so no table geometry
+    or association is inferred. Categories are checked separately because a
+    paragraph inside a list legitimately belongs to both content categories.
+    """
+    from bisect import bisect_left
+    from heapq import heappop, heappush
+    examined = 0
+
+    def budget(ranges=0, states=0):
+        nonlocal examined
+        examined += ranges
+        if examined > _PDF_TEXT_MAX_RANGES or states > _PDF_TEXT_MAX_STATES:
+            _pdf_text_check_incomplete()
+
+    def overlaps(left, right):
+        i = j = 0
+        while i < len(left) and j < len(right):
+            a, b = left[i], right[j]
+            if a[0] < b[1] and b[0] < a[1]:
+                return True
+            if a[1] <= b[0]:
+                i += 1
+            else:
+                j += 1
+        return False
+
+    def compatible_count(ranges):
+        # A constructive lower bound, exact for single contiguous ranges.
+        # With fragmented candidates it must never reject on its own.
+        if all(len(candidate) == 1 for candidate in ranges):
+            end = -1
+            count = 0
+            for candidate in sorted(ranges, key=lambda value: (value[0][1], value[0][0])):
+                if candidate[0][0] >= end:
+                    count += 1
+                    end = candidate[0][1]
+            return count
+        chosen = []
+        for candidate in sorted(ranges, key=lambda value: (value[-1][1], value[0][0])):
+            budget(len(chosen) * len(candidate))
+            if all(not overlaps(candidate, prior) for prior in chosen):
+                chosen.append(candidate)
+        return len(chosen)
+
+    def reduce_state(needs, options):
+        while needs:
+            budget(sum(len(candidate) for ranges in options for candidate in ranges))
+            lower = tuple(compatible_count(ranges) for ranges in options)
+            if any(len(ranges) < need or (all(len(c) == 1 for c in ranges) and bound < need)
+                   for need, ranges, bound in zip(needs, options, lower)):
+                return None
+            forced = {i for i, (need, ranges) in enumerate(zip(needs, options))
+                      if need == len(ranges)}
+            if forced:
+                taken = sorted(span for i in forced for candidate in options[i]
+                               for span in candidate)
+                if any(left[1] > right[0] for left, right in zip(taken, taken[1:])):
+                    return None
+                starts = [span[0] for span in taken]
+
+                def available(candidate):
+                    for start, end in candidate:
+                        previous = bisect_left(starts, end) - 1
+                        if previous >= 0 and taken[previous][1] > start:
+                            return False
+                    return True
+
+                options = tuple(tuple(candidate for candidate in ranges
+                                      if available(candidate))
+                                for i, ranges in enumerate(options) if i not in forced)
+                needs = tuple(need for i, need in enumerate(needs) if i not in forced)
                 continue
-            raise ValueError(backend_message(
-                'Texto de {label} PDF ausente o alterado',
-                en='Missing or changed PDF {label} text',
-                label=label_en if current_language() == 'en' else label_es))
-    return sum(counts.values()), across
+            active = Counter()
+            ending = []
+            competing = set()
+            for start, end, kind in sorted((start, end, i) for i, ranges in enumerate(options)
+                                          for candidate in ranges for start, end in candidate):
+                while ending and ending[0][0] <= start:
+                    _, expired = heappop(ending)
+                    active[expired] -= 1
+                    if not active[expired]:
+                        del active[expired]
+                others = active.keys() - {kind}
+                if others:
+                    competing.update(others)
+                    competing.add(kind)
+                active[kind] += 1
+                heappush(ending, (end, kind))
+            # An independent type can be discharged only with a constructive
+            # non-overlapping set, never just its candidate count.
+            competing.update(i for i, (need, bound) in enumerate(zip(needs, lower))
+                             if bound < need)
+            if len(competing) == len(needs):
+                return needs, options
+            needs = tuple(need for i, need in enumerate(needs) if i in competing)
+            options = tuple(ranges for i, ranges in enumerate(options) if i in competing)
+        return (), ()
+
+    def branches(needs, options):
+        kind = min(range(len(needs)), key=lambda i: len(options[i]) - needs[i])
+        choices = sorted(options[kind], key=lambda candidate:
+                         (sum(end - start for start, end in candidate), candidate))
+        for index, taken in enumerate(choices):
+            budget(sum(len(candidate) for ranges in options for candidate in ranges))
+            next_needs = []
+            next_options = []
+            for i, (need, ranges) in enumerate(zip(needs, options)):
+                if i == kind:
+                    need -= 1
+                    ranges = choices[index + 1:]
+                if need:
+                    next_needs.append(need)
+                    next_options.append(tuple(candidate for candidate in ranges
+                                              if not overlaps(candidate, taken)))
+            yield tuple(next_needs), tuple(next_options)
+
+    stack = [iter([(needs, options)])]
+    seen = set()
+    states = 0
+    while stack:
+        try:
+            state = next(stack[-1])
+        except StopIteration:
+            stack.pop()
+            continue
+        if state in seen:
+            continue
+        states += 1
+        budget(states=states)
+        if len(seen) >= 2048:
+            seen.clear()
+        seen.add(state)
+        state = reduce_state(*state)
+        if state is None:
+            continue
+        if not state[0]:
+            return True
+        stack.append(branches(*state))
+    return False
 
 
 def _pdf_code_line_pattern(line):
