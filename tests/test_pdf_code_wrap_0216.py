@@ -23,7 +23,9 @@ def contract(code):
 
 
 def inspect_text(monkeypatch, tmp_path, source, extracted):
-    page = SimpleNamespace(extract_text=lambda: extracted)
+    # Keep the real page resource interface; replace only text extraction.
+    page = pypdf.PageObject()
+    page.extract_text = lambda: extracted
     monkeypatch.setattr(pypdf, 'PdfReader', lambda path: SimpleNamespace(pages=[page]))
     return export_contract.inspect(tmp_path / 'text-presence.pdf', 'pdf', contract(source))
 
@@ -76,7 +78,8 @@ def test_pdf_multiline_code_preserves_presence_without_claiming_literal_whitespa
 def test_missing_pdf_code_fails_even_with_unrelated_surrounding_text(monkeypatch, tmp_path):
     extracted = 'Cover and metadata remain.\n' + CANARY[:-1] + '\nA footer.'
     expected = deepcopy(contract(CANARY))
-    page = SimpleNamespace(extract_text=lambda: extracted)
+    page = pypdf.PageObject()
+    page.extract_text = lambda: extracted
     monkeypatch.setattr(pypdf, 'PdfReader', lambda path: SimpleNamespace(pages=[page]))
     with pytest.raises(ValueError, match='código PDF'):
         export_contract.inspect(tmp_path / 'missing.pdf', 'pdf', expected)
