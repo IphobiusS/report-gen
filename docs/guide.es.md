@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.32.2
+# Guía de uso de report-gen 0.32.3
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -154,7 +154,7 @@ No se ejecuta el código descargado ni se reemplaza la aplicación mientras prep
 
 ## Actualizar desde una versión anterior
 
-Si prefieres actualizar manualmente y ya tienes datos externos, detén el editor, descomprime o clona 0.30.0 en una carpeta nueva y ejecuta `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Así preparas la nueva `.venv` y actualizas el acceso para reutilizar esos datos; no necesitas importarlos ni `--upgrade-from`. No abras dos procesos sobre el mismo espacio de trabajo. Una vez comprobada la nueva instalación, puedes retirar la carpeta de la aplicación anterior conservando los datos externos.
+Si prefieres actualizar manualmente y ya tienes datos externos, detén el editor, descomprime o clona la versión actual en una carpeta nueva y ejecuta `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Así preparas la nueva `.venv` y actualizas el acceso para reutilizar esos datos; no necesitas importarlos ni `--upgrade-from`. No abras dos procesos sobre el mismo espacio de trabajo. Una vez comprobada la nueva instalación, puedes retirar la carpeta de la aplicación anterior conservando los datos externos.
 
 Para separar datos que aún están dentro de una instalación antigua, detén ambos editores y ejecuta desde la nueva carpeta:
 
@@ -185,6 +185,8 @@ Sustituye `/ruta/datos` por el espacio de trabajo elegido; en una instalación h
 El ejemplo `examples/pending-severity/engagement.yaml` permite comprobar el resumen con dos hallazgos ficticios confirmados y sin severidad. En Word, las entradas del índice están disponibles desde la exportación; sus números de página se calculan al actualizar los campos en el editor. Si no aparecen o cambias el contenido, selecciona todo con **Ctrl+A** y actualiza con **F9**. El exportador no inventa números a partir de la paginación PDF. LibreOffice y Microsoft Word pueden distribuir el contenido de forma distinta.
 
 Las listas numeradas de los informes admiten ordinales de 0 a 2.147.483.647, compatibles con el navegador y Word. Si una lista supera ese límite, la exportación se detiene y conserva cualquier archivo anterior. Renumera la lista o presenta esos identificadores como texto; no se reduce ni reemplaza su valor en silencio.
+
+Una lista de Word cuyo inicio supera 65.535 utiliza campos `SEQ` para evitar el truncamiento observado en LibreOfficeDev 26.8. Las demás mantienen la numeración automática, incluso al cruzar ese valor. Para ampliar una lista con campos, puedes editarla en report-gen y volver a exportar. Dentro de Word, copia un elemento posterior al primero, conservando su campo, y actualiza con **Ctrl+A → F9**; el primer campo fija el inicio. Si sólo hay un elemento, usa la edición en report-gen. Pulsar Enter por sí solo no añade un campo. Las comprobaciones de HTML, Markdown y Word comparan ordinales, formato decimal y orden con el texto fuente; en Word también comprueban la instrucción y el resultado guardado de cada campo. No sustituyen comprobar cómo lo presenta tu editor. PDF mantiene la numeración como revisión visual requerida.
 
 ## Desarrollo y límites
 

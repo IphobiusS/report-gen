@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.32.2
+# report-gen 0.32.3
 
 <a id="qué-es"></a>
 
@@ -48,7 +48,7 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 - **Documentar una evaluación:** alcance, metodología, activos, cobertura, hallazgos y pasos reproducibles; CVSS 3.1 y 4.0 cuando corresponda.
 - **Trabajar con evidencia:** galería, pies de imagen, vínculos a hallazgos, copias censuradas e inspección de lo que se publicará.
 - **Conservar el seguimiento:** identidades estables, revisiones recuperables, comparación con una entrega marcada, correcciones y matriz de retest.
-- **Elegir la presentación:** empezar con Serio, comparar los seis diseños generales y abrir el catálogo especializado cuando lo necesites. El idioma del informe es independiente del de la interfaz.
+- **Elegir la presentación:** empezar con Serio, comparar los seis diseños generales y los 29 perfiles especializados. El idioma del informe es independiente del de la interfaz.
 - **Separar destinatarios:** entregas técnica, ejecutiva y pública con planes de inclusión explícitos; la pública requiere texto aprobado y consentimiento registrado.
 - **Relacionar evidencia y decisiones:** afirmaciones, límites, contexto de negocio, observaciones y revisión visual del PDF. [Flujo y requisitos opcionales](docs/evidence-decisions-0230.md).
 
@@ -59,38 +59,13 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Correcciones de 0.32.2
+## Correcciones de 0.32.3
 
-Las tablas de Word consideran su altura estimada antes de mantenerse juntas y el modo compacto ya no aumenta el alto de sus filas; las tablas y el código dentro de listas respetan el ancho de su nivel. El HTML portátil conserva un ancho de lectura útil para citas y listas anidadas en móvil, y sus logos se adaptan al texto ampliado. Las numeraciones iniciales largas conservan espacio para sus dígitos en PDF y HTML. Las listas breves de Word evitan dejar una última viñeta aislada. Las transiciones del índice y los capítulos dejan de crear una página vacía cuando la anterior está llena. En PDF, las filas narrativas demasiado altas pueden continuar con sus encabezados sin dejar el título aislado, y los títulos con identificadores extensos se ajustan dentro del margen.
+Las listas de Word que empiezan por encima de 65.535 usan campos de secuencia actualizables para evitar el truncamiento observado en LibreOfficeDev 26.8. Los números largos disponen de espacio propio y las continuaciones respetan esa sangría. Las listas habituales mantienen su numeración automática. Para ampliarlas, edítalas en report-gen y vuelve a exportar. En Word puedes copiar un elemento posterior al primero con su campo y actualizar con Ctrl+A y F9; si sólo hay un elemento, usa report-gen. Pulsar Enter no crea otro campo.
 
-La comprobación PDF también evita reutilizar el mismo texto para justificar celdas, elementos de lista o párrafos distintos dentro de cada categoría. Sigue siendo una comprobación de presencia global y requiere revisión visual. El ajuste anticipado de algunas URL en LibreOffice permanece pendiente. En LibreOfficeDev 26.8 también se observó truncamiento de numeraciones iniciales grandes (por ejemplo, 65536 se muestra como 0), aunque el DOCX conserva el valor original. [Cambios y límites](CHANGELOG.md).
+El HTML portátil reduce los marcos y rellenos cuando el ancho real de lectura es muy estrecho, sin reducir la letra. La impresión del diseño compacto conserva el relleno previsto. Los controles de HTML, Markdown y Word comparan también los ordinales, además del texto de cada elemento.
 
-## Correcciones de 0.32.1
-
-Los títulos del PDF tienen una separación coherente con el texto y los marcos de evidencia siguen el tamaño visible de la imagen, sin bandas laterales artificiales. Los bloques de código y las URL literales del PDF y HTML portátil aprovechan el ancho de la línea sin modificar el texto ni el destino del enlace. Word limita las figuras al ancho real de listas y celdas.
-
-El verificador PDF impide reutilizar el mismo fragmento físico para justificar varias líneas de código distintas. Estas comprobaciones no sustituyen la revisión visual. En LibreOffice, algunas URL de Word siguen saltando antes de llenar la línea; no se insertan caracteres ni saltos artificiales para ocultarlo. La revisión en Microsoft Word nativo permanece pendiente. [Detalle y límites](CHANGELOG.md).
-
-## Novedades de 0.32.0
-
-La biblioteca incorpora perfiles independientes de práctica para CRTO, CRTL, BTL1 y BTL2, además de estructuras empresariales para evaluación ejecutiva, respuesta a incidentes y validación Purple Team. Son 29 perfiles especializados y seis diseños generales, con muestras reales en español e inglés. Las secciones personales con una sola traducción conservan su contenido al cambiar el idioma del proyecto. [Catálogo, referencias y límites](docs/design-library.md).
-
-Las comprobaciones de entrega rechazan comandos PDF alterados por prefijos o sufijos y detectan líneas repetidas que faltan. En HTML, Word y Markdown comparan completos el título, el subtítulo y los campos de portada: otro campo o una coincidencia parcial no puede sustituirlos. La revisión visual y técnica del informe sigue siendo necesaria.
-
-## Correcciones de 0.31.5
-
-La tercera prueba bancaria corrige la recuperación de hallazgos y borradores: deshacer descarta vínculos a activos eliminados, las copias no heredan resultados de corrección del original y la recuperación conserva la selección por su identidad. Word separa figura, leyenda y prosa dentro de enlaces o énfasis, conservando sus destinos. El PDF mantiene juntas las envolturas de una misma línea de código y comprueba también el texto de las listas y las celdas. Si una línea es más alta que la página, detiene la exportación y conserva el archivo anterior. Se mantienen las correcciones de búsqueda Unicode, leyendas y tablas extensas de 0.31.4. [Detalle y límites](CHANGELOG.md).
-
-## Novedades de 0.31.0
-
-- **Rutina de respaldo opcional:** elige una carpeta externa, frecuencia y copias que conservar. Mientras el servidor esté abierto, prepara respaldos privados sin cifrar y comprueba su restauración antes de rotar las copias propias. La pantalla muestra el último resultado y permite comprobar una copia manualmente. Los borradores del navegador no se incluyen.
-- **Vectores CVSS 3.1 sin correcciones silenciosas:** pegar un vector incompleto, duplicado o inválido muestra un error y conserva el hallazgo anterior. Los vectores válidos mantienen el mismo cálculo.
-- **Editor más mantenible:** transporte, cálculo CVSS y vista previa tienen módulos propios; el proyecto conserva un único estado guardado. Una pestaña bloqueada por cambio de carpeta ya no reanuda una escritura al terminar de preparar la sesión.
-- **Pruebas de escala reproducibles:** corpus sintéticos con cientos de hallazgos e imágenes distintas, medidas de interfaz y exportación en los cuatro formatos. Los resultados identifican entorno y tamaño; no prometen tiempos universales.
-- **Revisión más ligera:** la comprobación de posibles secretos en texto valida las imágenes sin recomprimirlas. El inspector completo y las exportaciones mantienen su limpieza y comprobaciones.
-- **Materiales externos comprobados:** los cuatro DOCX del kit pasan la inspección estructural automatizada antes de entregarse a revisión. Word nativo y las cinco sesiones con participantes siguen pendientes.
-
-Se mantienen la edición por lotes, las entregas por responsable, el instalador y la actualización asistida. [Cambios completos](CHANGELOG.md).
+**Límites:** algunas URL de Word siguen saltando antes de llenar la línea en LibreOffice; no se altera su texto para ocultarlo. La revisión en Microsoft Word nativo permanece pendiente. El verificador PDF no acredita ordinales ni maquetación; ambas requieren revisión visual. [Cambios completos](CHANGELOG.md) · [Guía de entrega](docs/guide.es.md#qué-comprueba-cada-entrega).
 
 ## Qué comprueba cada entrega
 
@@ -117,7 +92,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.32.2 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.32.3 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

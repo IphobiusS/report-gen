@@ -1,6 +1,6 @@
 """Keep chains and widths use the space of the actual Word content block."""
 from docx import Document
-from docx.shared import Cm, Pt
+from docx.shared import Pt
 from docx.oxml.ns import qn
 import pytest
 
@@ -126,10 +126,12 @@ def test_markdown_table_width_and_position_follow_list_depth(tmp_path, depth):
     result = document.tables[0]
     section = document.sections[-1]
     available = section.page_width - section.left_margin - section.right_margin
-    width = available - Cm(.65 * depth)
+    parents = [p for p in document.paragraphs if p._p.pPr is not None and p._p.pPr.numPr is not None]
+    content_indent = parents[-1].paragraph_format.left_indent if parents else 0
+    width = available - content_indent
     indent = result._tbl.tblPr.find(qn('w:tblInd'))
     if depth:
-        assert int(indent.get(qn('w:w'))) == round(Cm(.65 * depth) / 635)
+        assert int(indent.get(qn('w:w'))) == round(content_indent / 635)
     else:
         assert indent is None
     assert abs(sum(column.width for column in result.columns) - width) < Pt(.1)
@@ -150,6 +152,7 @@ def test_nested_code_uses_its_narrower_area_before_requesting_keep_lines(tmp_pat
     document = Document(output)
     code = next(p for p in document.paragraphs if p.style.name == 'ReportGenCode')
     assert code.text == transcript
-    assert abs(code.paragraph_format.left_indent - Cm(2.6)) < Pt(.05)
+    parents = [p for p in document.paragraphs if p._p.pPr is not None and p._p.pPr.numPr is not None]
+    assert code.paragraph_format.left_indent == parents[-1].paragraph_format.left_indent
     assert code_fits_page(document, transcript)
     assert code.paragraph_format.keep_together is False

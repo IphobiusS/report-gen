@@ -1,76 +1,69 @@
 meta:
   lang: es
-  report_title: Evaluación de Seguridad de IA de PhantomKernel
-  report_subtitle: Informe de hallazgos
-  client: PhantomKernel Ltd.
-  assessor: Sebastian Latorre Munoz (iphobiuss)
-  assessor_title: AI Red Team Operator
+  report_title: Evaluación sintética de seguridad de IA - Example Research Lab
+  report_subtitle: Demostración sintética; no se ejecutaron pruebas
+  client: Example Research Lab
+  assessor: Equipo de Revisión Demo
+  assessor_title: Revisión de seguridad sintética
   date: '2026-04-10'
   version: '1.0'
   theme: corporativo
   branding:
-    wordmark: iphobiuss
-    byline: Sebastian Latorre Munoz / iphobiuss
+    wordmark: REPORT-GEN DEMO
+    byline: Revisión de seguridad sintética
     accent: '#1f5fa8'
-    confidential_text: CONFIDENCIAL
+    confidential_text: SIMULACIÓN / NO EJECUTADO
   contacts:
     client:
-    - name: J. Marks
+    - name: Contacto TI Demo
       title: Departamento de TI
-      email: it@phantomkernel.htb
+      email: it@example.com
     assessor:
-    - name: Sebastian Latorre Munoz
-      title: AI Red Team Operator
-      email: iphobiuss@proton.me
+    - name: Evaluador Demo
+      title: Revisión de seguridad sintética
+      email: assessor@example.com
   scope:
-  - target: mcp.phantomkernel.htb
-    description: Servidor MCP que expone herramientas internas
+  - target: mcp.demolab.example
+    description: Activo ficticio para probar documentos; no se contactó. Servidor MCP que expone herramientas
+      internas
 report:
   sections:
   - key: confidentiality
   - key: contacts
   - key: executive_summary
-    summary: 'La evaluación identificó un compromiso total del servidor MCP mediante
-      inyección de comandos. El riesgo para el negocio es **crítico**: un atacante
-      con acceso de bajo privilegio obtiene ejecución remota y acceso al backend.
-      Se recomienda acción inmediata.'
+    summary: Este documento ficticio demuestra cómo representar un hallazgo **crítico** de inyección de
+      comandos en un servidor MCP. No se evaluó una organización real, no se contactó ningún host y no
+      se obtuvo acceso a ningún sistema. La severidad y las recomendaciones pertenecen exclusivamente
+      al caso sintético.
   - key: scope
-    objectives: Determinar si un atacante autenticado puede comprometer la infraestructura
-      de IA y pivotar a sistemas internos.
-    assumptions: Pruebas en ventana acordada, sin denegación de servicio. Caja gris
-      con credenciales de bajo privilegio.
+    objectives: Modelar el riesgo de concatenar una entrada no validada en un comando de shell.
+    assumptions: Ejemplo sin ejecución, datos personales ni credenciales operativas.
   - key: strategic_recommendations
-    recommendations: '1. Eliminar toda construcción de comandos por shell.
-
+    recommendations: |-
+      1. Eliminar toda construcción de comandos por shell.
       2. Implementar validación estricta de entradas en el servidor MCP.
-
-      3. Añadir linting de seguridad (Bandit/Semgrep) en CI.'
+      3. Añadir linting de seguridad (Bandit/Semgrep) en CI.
   - key: findings_summary
   - key: findings
   - key: attack_narrative
-    narrative: '**Enumeración inicial de red**
+    narrative: |-
+      **Inventario documental simulado**
 
-      Desde el host Linux (ATTACK01), se confirmaron tres interfaces de acceso al
-      entorno interno.
+      El esquema contiene activos ficticios dentro de 192.0.2.0/24, un rango de documentación. No representa interfaces descubiertas ni un barrido ejecutado.
 
-      ```bash
-
-      nxc smb 172.16.116.0/24
-
+      ```text
+      [NETWORK_ENUMERATION_NOT_EXECUTED]
       ```
 
-      ![Barrido SMB de 172.16.116.0/24 identificando DC01, DC02, DEV01 y EXCH01.](img/fig1.png){width="auto"}
+      ![Inventario sintético de DEMO-DC-01, DEMO-DC-02 y DEMO-APP-01; no ejecutado.](img/fig1.png){width="auto"}
 
-      **Relay NTLM a LDAPS**
+      **Límite de autenticación modelado**
 
-      Con SMB signing deshabilitado en DEV01, se relayó la autenticación coaccionada
-      a DC02 sobre LDAPS.
+      La posible transferencia de autenticación se conserva como condición de revisión; no se suministran cuentas, contraseñas ni un comando operativo.
 
-      ```bash
-
-      ntlmrelayx.py -t ldaps://172.16.116.11 --add-computer ''PWN$'' ''Pwn3d!''
-
-      ```'
+      ```text
+      [AUTHENTICATION_NOT_EXECUTED]
+      ```
   - key: remediation_plan
     short_term: Deshabilitar la herramienta vulnerable de exportación.
     medium_term: Reescribir el envío de correo con smtplib y vector de argumentos.
@@ -85,18 +78,20 @@ findings:
   cvss: '9.9'
   cvss_vector: CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H
   cwe: CWE-78
-  affected: mcp.phantomkernel.htb
-  description_md: El parámetro `domain_filter` se concatena en un comando de shell
-    sin validar.
-  impact_md: Ejecución remota como `mcpuser` y compromiso del backend.
+  affected: mcp.demolab.example
+  description_md: |-
+    **DEMOSTRACIÓN SINTÉTICA. No se contactó ningún sistema ni se ejecutaron pruebas.**
+
+    El parámetro `domain_filter` se concatena en un comando de shell sin validar.
+  impact_md: Ejecución remota como `DEMO_MCP_SERVICE` y compromiso del backend.
   remediation_md: Usar `smtplib` y `subprocess.run([...])` con `shell=False`.
   walkthrough:
-  - lead: Confirmar RCE.
-    text_md: El servidor devolvió `mcpuser`.
-    command: domain_filter=test$(whoami)
+  - lead: Representar la condición de ejecución en el modelo.
+    text_md: La identidad DEMO_MCP_SERVICE es un marcador del modelo, no la salida de un servidor real.
+    command: '[SHELL_INTERPRETATION_NOT_EXECUTED]'
     figure:
       src: img/fig2.png
-      caption: Respuesta filtrando mcpuser.
+      caption: Registro sintético de DEMO_MCP_SERVICE; simulación sin ejecución.
   proof:
   - name: proof.txt
-    value: 4385908a1c7e6f2b0d94a53e8c1f7b60
+    value: SYNTHETIC_PROOF_F1_1_NOT_EXECUTED

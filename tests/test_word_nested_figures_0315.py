@@ -73,7 +73,7 @@ def test_list_starting_with_figure_keeps_ordinal_on_the_drawing(tmp_path, linked
     assert paragraphs[0].paragraph_format.keep_with_next is True
     assert paragraphs[1].style.name == 'Caption'
     assert ''.join(paragraphs[1]._p.xpath('.//w:t/text()')) == 'Independent caption'
-    assert abs(paragraphs[1].paragraph_format.left_indent.cm - .65) < .002
+    assert paragraphs[1].paragraph_format.left_indent == paragraphs[0].paragraph_format.left_indent
     numbered = [p for p in paragraphs if p._p.xpath('./w:pPr/w:numPr')]
     assert len(numbered) == 2
     assert numbered[-1].text == 'Next case.'

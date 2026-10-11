@@ -8,6 +8,7 @@ from docx.oxml.ns import qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from safe_markup import md, ordered_list_start
 from .pagination import keep_table_together
+from .numbering import WordList
 from .images import word_image, fit_width, figure_space, paragraph_width, align_inline_picture
 from report_layout import table_layout
 
@@ -84,17 +85,6 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
                 inline(child, paragraph, bold or tag in {"b", "strong"}, italic or tag in {"i", "em"}, code or tag == "code", parent=parent)
             add(child.tail)
 
-    def list_numbering(ordered, start=1):
-        numbering = document.part.numbering_part.element
-        ids = [int(x.get(qn("w:abstractNumId"))) for x in numbering.findall(qn("w:abstractNum"))]
-        abstract_id = max(ids + [-1]) + 1
-        abstract = OxmlElement("w:abstractNum"); abstract.set(qn("w:abstractNumId"), str(abstract_id))
-        lvl = OxmlElement("w:lvl"); lvl.set(qn("w:ilvl"), "0")
-        for tag, value in [("start", str(start)), ("numFmt", "decimal" if ordered else "bullet"), ("lvlText", "%1." if ordered else "•")]:
-            el = OxmlElement("w:"+tag); el.set(qn("w:val"), value); lvl.append(el)
-        abstract.append(lvl); numbering.append(abstract)
-        return numbering.add_num(abstract_id).numId
-
     figure_wrappers = {}
 
     def paragraph_parts(node, wrappers=()):
@@ -129,11 +119,11 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
         if fragment.text_content().strip() or len(fragment):
             yield fragment
 
-    def block(node, depth=0, list_paragraph=None):
+    def block(node, depth=0, list_paragraph=None, list_offset=0):
         tag = node.tag
         if tag == 'p' and node.xpath('.//figure'):
             for part in paragraph_parts(node):
-                block(part, depth)
+                block(part, depth, list_offset=list_offset)
             return
         if tag in {"ul", "ol"}:
             previous = node.getprevious()
@@ -144,38 +134,44 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
                 and not node.xpath('.//ul|.//ol|.//table|.//pre|.//figure|.//img')
                 and len(node.xpath('.//br')) <= 4)
             first_paragraph = len(document.paragraphs)
-            number_id = list_numbering(tag == "ol", ordered_list_start(node) if tag == 'ol' else 1)
-            for item in node:
+            numbering = WordList(document, tag == "ol",
+                ordered_list_start(node) if tag == 'ol' else 1, len(node), depth, list_offset)
+            nested_offset = list_offset + numbering.extra_indent
+            for index, item in enumerate(node):
                 p = document.add_paragraph()
-                p.paragraph_format.left_indent = Cm(.65 * (depth+1)); p.paragraph_format.first_line_indent = Cm(-.4)
-                pr = p._p.get_or_add_pPr().get_or_add_numPr(); pr.get_or_add_ilvl().val = 0; pr.get_or_add_numId().val = number_id
+                numbering.add(p, index)
                 started = bool((item.text or '').strip())
                 if started: p.add_run(item.text)
                 current = p
                 def continuation():
                     paragraph = document.add_paragraph()
-                    paragraph.paragraph_format.left_indent = Cm(.65 * (depth+1))
+                    paragraph.paragraph_format.left_indent = numbering.indent
                     return paragraph
                 for child in item:
                     if child.tag in {"ul", "ol"}:
-                        block(child, depth+1); current = None; started = True
+                        block(child, depth+1, list_offset=nested_offset); current = None; started = True
                     elif child.tag == "p":
                         for part in paragraph_parts(child):
                             if part.tag == 'figure':
-                                block(part, depth+1, p if not started else None)
+                                block(part, depth+1, p if not started else None, nested_offset)
                             else:
                                 target = p if not started else continuation()
                                 inline(part, target)
                             started = True; current = None
                     elif child.tag in {'pre', 'table', 'blockquote', 'figure', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'}:
-                        block(child, depth+1, p if child.tag == 'figure' and not started else None)
+                        if child.tag != 'figure' and not started:
+                            # A block-led item has an ordinal paragraph before
+                            # its first content block. Keep only this boundary,
+                            # never an entire long table or transcript.
+                            p.paragraph_format.keep_with_next = True
+                        block(child, depth+1, p if child.tag == 'figure' and not started else None, nested_offset)
                         current = None; started = True
                     elif child.xpath('.//figure'):
                         wrapper = html.Element('p')
                         wrapper.append(deepcopy(child)); wrapper[0].tail = None
                         for part in paragraph_parts(wrapper):
                             if part.tag == 'figure':
-                                block(part, depth+1, p if not started else None); current = None
+                                block(part, depth+1, p if not started else None, nested_offset); current = None
                             else:
                                 if current is None: current = continuation()
                                 inline(part, current)
@@ -200,14 +196,14 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
             p = code_block(text)
             if depth:
                 from .pagination import code_fits_page
-                p.paragraph_format.left_indent = Cm(.65 * depth)
+                p.paragraph_format.left_indent = Cm(.65 * depth) + list_offset
                 p.paragraph_format.keep_together = code_fits_page(document, text, width=paragraph_width(document, p))
         elif tag == "table":
             rows = node.xpath("./tr|./thead/tr|./tbody/tr|./tfoot/tr")
             cols = max([len(row) for row in rows]+[1])
             table = document.add_table(rows=0, cols=cols); table.style = "Table Grid"; table.autofit = False
             shares, _ = table_layout([[cell.text_content() for cell in row] for row in rows], column_weights)
-            indent = Cm(.65 * depth)
+            indent = Cm(.65 * depth) + list_offset
             table_width = max(Cm(1), available - indent)
             if depth:
                 indentation = OxmlElement('w:tblInd')
@@ -238,8 +234,8 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
             for child in node:
                 if child.tag == "img":
                     picture_paragraph = list_paragraph or document.add_paragraph()
-                    if depth:
-                        picture_paragraph.paragraph_format.left_indent = Cm(.65 * depth)
+                    if depth and list_paragraph is None:
+                        picture_paragraph.paragraph_format.left_indent = Cm(.65 * depth) + list_offset
                     picture(child, picture_paragraph, caption=caption, href=href)
                 elif child.tag == "figcaption":
                     contents = deepcopy(child)
@@ -250,14 +246,14 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
                         contents = html.Element('span'); contents.append(outer)
                     p = document.add_paragraph(style="Caption"); inline(contents, p)
                     p.paragraph_format.keep_together = True
-                    if depth: p.paragraph_format.left_indent = Cm(.65 * depth)
+                    if depth: p.paragraph_format.left_indent = Cm(.65 * depth) + list_offset
         elif tag == "img": picture(node)
         elif tag == "blockquote":
-            for child in node: block(child, depth)
+            for child in node: block(child, depth, list_offset=list_offset)
         elif tag == "hr": document.add_paragraph(" ")
         elif tag in {"p", "h1", "h2", "h3", "h4", "h5", "h6"}:
             p = document.add_paragraph(style=f"Heading {min(int(tag[1]), 4)}" if tag.startswith("h") else None)
-            if depth: p.paragraph_format.left_indent = Cm(.65 * depth)
+            if depth: p.paragraph_format.left_indent = Cm(.65 * depth) + list_offset
             # A bold list label (e.g. generated affected assets) belongs with
             # the first item; otherwise it can be orphaned at the page bottom.
             if (tag == 'p' and not (node.text or '').strip() and len(node) == 1

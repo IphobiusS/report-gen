@@ -39,5 +39,13 @@ def test_word_preserves_supported_list_start(tmp_path, start, count):
     export.export(tmp_path / 'engagement.yaml', 'docx', output)
     with zipfile.ZipFile(output) as package:
         tree = etree.fromstring(package.read('word/numbering.xml'))
+        document = etree.fromstring(package.read('word/document.xml'))
     starts = tree.xpath('//*[local-name()="start"]/@*[local-name()="val"]')
-    assert str(int(start)) in starts
+    if int(start) <= 65535:
+        assert str(int(start)) in starts
+    else:
+        fields = document.xpath('//*[local-name()="fldSimple"]')
+        assert len(fields) == count
+        assert fields[0].get('{http://schemas.openxmlformats.org/wordprocessingml/2006/main}instr').endswith(
+            f' \\r {int(start)} \\* ARABIC ')
+        assert fields[0].xpath('.//*[local-name()="t"]/text()') == [str(int(start))]

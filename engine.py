@@ -431,8 +431,8 @@ def _verify_pdf_code_lines(document):
 
 def render_pdf_weasyprint(html, out_pdf, base_url):
     from weasyprint import HTML
-    from pdf_pagination import relax_oversized_rows, verify_finding_tables
-    renderer = HTML(string=_pdf_code_layout(html), base_url=str(base_url), url_fetcher=restricted_fetcher(base_url, THEMES))
+    from pdf_pagination import keep_short_labelled_lists, relax_oversized_rows, verify_finding_tables
+    renderer = HTML(string=_pdf_code_layout(keep_short_labelled_lists(html)), base_url=str(base_url), url_fetcher=restricted_fetcher(base_url, THEMES))
     document = renderer.render()
     verify_finding_tables(document)
     if relax_oversized_rows(document):
@@ -469,8 +469,8 @@ def render_pdf_chromium(html, out_pdf, meta):
     # cabecera/pie y el contador salen del mismo CSS que usa WeasyPrint. No se
     # inyecta header/footer template (duplicaria) ni margin (lo fija @page).
     from playwright.sync_api import sync_playwright
-    from pdf_pagination import mark_finding_tables, verify_table_markers
-    html, table_checks = mark_finding_tables(html)
+    from pdf_pagination import keep_short_labelled_lists, mark_finding_tables, verify_table_markers
+    html, table_checks = mark_finding_tables(keep_short_labelled_lists(html))
     with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
                                      dir=str(out_pdf.parent), encoding="utf-8") as tf:
         tf.write(html)

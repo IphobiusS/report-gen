@@ -95,6 +95,8 @@ def _paragraph_text(node):
 
 
 def _dom_units(root, markdown=False):
+    from export_numbering import dom_markers
+    markers = dom_markers(root)
     paragraphs = [normal(_paragraph_text(n)) for n in _dom_paragraph_nodes(root)
                   if normal(_paragraph_text(n))]
     # Actual paragraph order is used below, with block boundaries retained as spaces.
@@ -108,7 +110,8 @@ def _dom_units(root, markdown=False):
     return dict(text=text, paragraphs=paragraphs, codes=codes, table_rows=rows, tables=tables,
                 headings=[normal(n.text_content()) for n in root.xpath('.//h1|.//h2|.//h3|.//h4|.//h5|.//h6')
                           if (n.get('data-rg-anchor') is None if markdown else n.get('data-rg-authored-heading') == 'true')],
-                list_items=[list_lead(n) for n in root.xpath('.//li')])
+                list_items=[list_lead(n) for n in root.xpath('.//li')],
+                list_markers=[markers.get(n) for n in root.xpath('.//li')])
 
 
 def _clean(root):
@@ -204,6 +207,9 @@ def from_tree(tree, image_digests=None, docx_image_digests=None):
                           if not any(any(has_class(a, c) for c in ('steps', 'toc-list', 'toc'))
                                      for a in node.iterancestors())]
         list_sequence = [list_lead(node) for node in authored_items]
+        from export_numbering import dom_markers
+        markers = dom_markers(root)
+        list_markers = [markers.get(node) for node in authored_items]
         list_figure_parts = [dict(parts, index=index) for index, node in enumerate(authored_items)
                              if (parts := _list_figure_parts(node))]
         semantic=dom(root, lambda src: image_digests[unquote(src)], severity_label=severity_label)
@@ -212,7 +218,7 @@ def from_tree(tree, image_digests=None, docx_image_digests=None):
         scopes.append(dict(id=key, semantic=semantic, title=normal(titles[0].text_content()) if titles else '',
                            headings=[normal(n.text_content()) for n in root.xpath('.//*[@data-rg-authored-heading="true"]')],
                            paragraphs=units['paragraphs'], paragraphs_md=[normal(_paragraph_text(n)) for n in _dom_paragraph_nodes(root) if not has_class(n,'chart-scope') and normal(_paragraph_text(n))], codes=units['codes'], table_rows=rows, tables=tables, lists=lists, list_sequence=list_sequence,
-                           list_figure_parts=list_figure_parts))
+                           list_figure_parts=list_figure_parts, list_markers=list_markers))
     return dict(version=3, scopes=scopes, severity_label=severity_label, cover_units=_cover_units(tree),
                 titles=[s['title'] for s in scopes if s['id']],
                 code_lines=[line for s in scopes for code in s['codes'] for line in code.splitlines() if line],
@@ -321,6 +327,9 @@ def _word_scopes(path, expected):
     with zipfile.ZipFile(path) as package:
         tree = etree.fromstring(package.read('word/document.xml'), parser=etree.XMLParser(resolve_entities=False, no_network=True))
         blobs={n:package.read(n) for n in package.namelist() if n.startswith('word/media/') or n=='word/_rels/document.xml.rels'}
+        from export_numbering import word_markers
+        numbering = etree.fromstring(package.read('word/numbering.xml'), parser=etree.XMLParser(resolve_entities=False, no_network=True))
+        markers = word_markers(tree, numbering)
     names = {reference_name(s['id']): s['id'] for s in expected['scopes'] if s['id']}
     groups = {'': []}; current = ''
     for node in tree.find(W + 'body'):
@@ -355,6 +364,7 @@ def _word_scopes(path, expected):
             codes=[literal(_word_text(p)) for p in paras if p.xpath('./w:pPr/w:pStyle[@w:val="ReportGenCode"]', namespaces=NS)],
             paragraphs=[normal(_word_text(p)) for p in paras], table_rows=rows, tables=tables,
             list_items=[normal(_word_text(p)) for p in paras if _word_numbered(p)],
+            list_markers=[markers.get(p) for p in paras if _word_numbered(p)],
             list_flows=_word_list_flows(paras))
     cover=tree.find(W+'body/'+W+'tbl')
     profiles['']['cover_text']=normal(' '.join(_word_text(p) for p in cover.findall('.//'+W+'p'))) if cover is not None else ''
@@ -1213,7 +1223,7 @@ def inspect(path, fmt, expected):
     observed = profile(path, fmt, expected)
     content = 0; structure = 0; paragraphs = 0; codes = 0; page_break_paragraphs = 0; wrapped_code_lines = 0
     metadata = 0; links = 0; placements = 0; tables_checked = 0; list_order_checked = 0; headings_checked = 0
-    pdf_table_cells = 0; pdf_list_items = 0
+    pdf_table_cells = 0; pdf_list_items = 0; list_markers_checked = 0
     cover_text = observed[''].get('cover_text', '')
     if fmt != 'pdf' and expected['cover_units'] != observed[''].get('cover_units', []):
         raise ValueError(backend_message('Metadato de portada alterado / Cover metadata changed'))
@@ -1315,10 +1325,13 @@ def inspect(path, fmt, expected):
         for item_index, item in enumerate(scope.get('list_sequence', [])):
             found = next((i for i in range(cursor, len(list_items))
                           if list_items[i] == item
+                          and ('list_markers' not in scope
+                               or actual['list_markers'][i] == scope['list_markers'][item_index])
                           and (fmt != 'docx' or item_index not in source_list_parts
                                or (i < len(flows) and _word_figure_list_matches(source_list_parts[item_index], flows[i])))), None)
             if found is None: raise ValueError(backend_message('Lista alterada o listas desordenadas / List changed or lists reordered'))
             cursor = found + 1; list_order_checked += 1
+            if 'list_markers' in scope: list_markers_checked += 1
     return dict(content_units_checked=content, structure_units_checked=structure,
                 paragraphs_checked=paragraphs, literal_code_blocks_checked=codes,
                 finding_association_checked=fmt != 'pdf', contract_version=3,
@@ -1331,6 +1344,7 @@ def inspect(path, fmt, expected):
                 authored_tables_checked=tables_checked,
                 authored_headings_checked=headings_checked,
                 authored_list_items_order_checked=list_order_checked,
+                authored_list_markers_checked=list_markers_checked,
                 manual_review_required=True,
                 format_specific_omissions=(sum(len(s['paragraphs'])-len(s['paragraphs_md']) for s in expected['scopes']) if fmt=='md' else 0),
                 verification_scope=('text_presence_only' if fmt == 'pdf' else 'scoped_content_metadata_links_evidence'),

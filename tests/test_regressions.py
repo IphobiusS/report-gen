@@ -155,7 +155,7 @@ def test_actual_pdf_has_expected_content_and_explicit_chart(tmp_path):
     with pdfplumber.open(out) as pdf:
         assert len(pdf.pages) >= 5
         text='\n'.join(page.extract_text() or '' for page in pdf.pages)
-        assert 'PhantomKernel' in text and 'Informativa' in text
+        assert 'Example Research Lab' in text and 'Informativa' in text
     source=out.with_suffix('.html').read_text()
     assert 'fill="#b3001b"' in source and 'text-anchor="middle"' in source
 

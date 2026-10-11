@@ -2,6 +2,40 @@
 from error_messages import message as backend_message
 
 
+def keep_short_labelled_lists(source):
+    """Keep a brief label and its small inline-only list on one PDF page.
+
+    This transient hint is deliberately bounded. Long, nested or illustrated
+    lists must remain free to paginate, and the authored DOM text, targets and
+    native list counters are unchanged. Both PDF engines use the same hint.
+    """
+    from lxml import html
+    tree = html.document_fromstring(source)
+    changed = False
+    inline = {'a', 'strong', 'b', 'em', 'i', 'code', 'span', 'br', 's', 'del',
+              'sub', 'sup', 'u', 'wbr'}
+    for listing in tree.xpath('//ul|//ol'):
+        label = listing.getprevious()
+        if (label is None or label.tag != 'p' or (label.text or '').strip()
+                or len(label) != 1 or label[0].tag not in {'strong', 'b'}
+                or (label[0].tail or '').strip()
+                or not 0 < len(label.text_content().strip()) <= 160
+                or not 1 <= len(listing) <= 4
+                or any(item.tag != 'li' for item in listing)
+                or len(listing.text_content()) > 240
+                or len(listing.xpath('.//br')) > 4
+                or any(node.tag not in inline for item in listing
+                       for node in item.iterdescendants())
+                or any(node.tag not in inline for node in label.iterdescendants())):
+            continue
+        label.set('style', label.get('style', '') +
+                  ';break-after:avoid;page-break-after:avoid')
+        listing.set('style', listing.get('style', '') +
+                    ';break-inside:avoid;page-break-inside:avoid')
+        changed = True
+    return html.tostring(tree, encoding='unicode', method='html') if changed else source
+
+
 def table_error(finding):
     return ValueError(
         backend_message('Hallazgo {p0}: una tabla no cabe completa en una página junto a su encabezado. Acorta la tabla o mueve el contenido extenso al procedimiento detallado. El PDF no se ha generado para evitar cortar la tabla.', p0=finding)

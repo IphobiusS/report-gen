@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.32.2
+# report-gen 0.32.3
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -38,7 +38,7 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 - **Document an assessment:** scope, methodology, assets, coverage, findings and reproducible steps; CVSS 3.1 and 4.0 where appropriate.
 - **Work with evidence:** a gallery, captions, finding links, redacted copies and an inspector for published content.
 - **Retain follow-up:** stable identities, recoverable revisions, comparisons with a marked delivery, remediation and a retest matrix.
-- **Choose presentation:** start with Serious, compare the six general designs and open the specialized catalog when needed. Report language is independent of interface language.
+- **Choose presentation:** start with Serious and compare the six general designs and 29 specialized profiles. Report language is independent of interface language.
 - **Separate audiences:** technical, executive and public deliveries with explicit inclusion plans; public output requires approved prose and recorded consent.
 - **Connect evidence and decisions:** claims, limitations, business context, comments and actual PDF review. [Workflow and optional requirements](docs/evidence-decisions-0230.en.md).
 
@@ -49,38 +49,13 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
-## Fixes in 0.32.2
+## Fixes in 0.32.3
 
-Word tables consider their estimated height before keeping all rows together, and compact mode no longer makes their rows taller; tables and code nested in lists respect the width of their level. Portable HTML retains useful reading width for nested quotes and lists on narrow screens, and provider logos fit when text is enlarged. Long starting list numbers retain space for all digits in PDF and HTML. Short labelled Word lists avoid leaving their last bullet stranded. Chapter and table-of-contents transitions no longer create an empty page when the preceding page is full. In PDF, oversized narrative rows can continue with repeated headers without stranding the preceding title, and headings with long identifiers wrap within the page margin.
+Word lists starting above 65,535 use recalculable sequence fields to avoid the truncation observed in LibreOfficeDev 26.8. Long numbers have their own space, and continuation blocks respect that indent. Ordinary lists retain automatic numbering. To extend these lists, edit them in report-gen and export again. In Word, copy an item after the first with its field and update with Ctrl+A and F9; for a single-item list, use report-gen. Pressing Enter does not create another field.
 
-PDF verification also prevents one text occurrence from supplying distinct cells, list items or paragraphs within the same category. This remains a global presence check and requires visual review. Early wrapping of some URLs in LibreOffice remains unresolved. LibreOfficeDev 26.8 also truncated large starting list numbers (for example, 65536 displayed as 0), although the DOCX retains the original value. [Changes and limitations](CHANGELOG.md).
+Portable HTML reduces nested frames and padding when the actual reading width becomes very narrow, without shrinking text. Printing the compact design retains its intended padding. HTML, Markdown and Word checks now compare list ordinals as well as item text.
 
-## Fixes in 0.32.1
-
-PDF headings use consistent spacing, and evidence frames follow the visible image size without artificial side gutters. Code blocks and literal URLs in PDF and portable HTML use the available line width without changing their text or link destinations. Word figures respect the actual width of lists and table cells.
-
-PDF verification prevents the same physical text fragment from supplying several different code lines. These checks do not replace visual review. In LibreOffice, some Word URLs still wrap before filling the line; no artificial characters or line breaks are inserted to conceal this. Native Microsoft Word review remains pending. [Details and limits](CHANGELOG.md).
-
-## New in 0.32.0
-
-The library adds independent practice profiles for CRTO, CRTL, BTL1 and BTL2, plus business report structures for executive assurance, incident response and Purple Team validation. It now offers 29 specialized profiles and six general designs, with real Spanish and English samples. Personal sections with only one translation retain their content when the project language changes. [Catalog, references and limitations](docs/design-library.md).
-
-Delivery checks reject PDF commands altered by prefixes or suffixes and detect missing repeated lines. HTML, Word and Markdown compare complete cover titles, subtitles and metadata fields: another field or a partial match cannot supply a changed value. Visual and technical review of the report remains necessary.
-
-## Fixes in 0.31.5
-
-The third banking exercise fixes finding and draft recovery: undo discards links to deleted assets, copies do not inherit the original’s remediation results, and recovery preserves selection by identity. Word separates figures, captions and prose inside links or emphasis while retaining their destinations. PDF keeps the wrapped parts of a logical code line together and also checks text in list items and table cells. If one line exceeds the printable page height, export stops and preserves the previous file. Unicode search, caption and long-table fixes from 0.31.4 remain in place. [Details and limits](CHANGELOG.md).
-
-## New in 0.31.0
-
-- **Optional backup routine:** choose an external destination, frequency and retained generations. While the local server is open, it creates private unencrypted backups and tests restoration before rotating its own copies. Review the latest result or verify a copy manually. Browser drafts are not included.
-- **Strict CVSS 3.1 vectors:** incomplete, duplicate or invalid pasted metrics show an error and preserve the previous finding. Valid vectors retain the same calculation.
-- **A more maintainable editor:** transport, CVSS and preview have dedicated modules while saved project state remains shared. A tab blocked by a workspace change cannot resume a write after session preparation finishes.
-- **Reproducible scale measurements:** synthetic projects with hundreds of findings and distinct images, interface timings and real exports in all four formats. Results identify the environment and corpus; they are not universal performance guarantees.
-- **Lighter delivery preparation:** outgoing-text checks validate images without recompressing them. The complete inspector and exports retain their sanitization and verification.
-- **Checked external-review materials:** all four Word inputs pass automated structural delivery checks. Native Microsoft Word review and the five participant sessions remain pending.
-
-Bulk editing, per-owner deliveries, the installer and guided updates remain available. [Full changelog](CHANGELOG.md).
+**Limits:** some Word URLs still wrap before filling the line in LibreOffice; their text is not altered to conceal this. Native Microsoft Word review remains pending. PDF verification does not establish ordinals or layout; both require visual review. [Full changelog](CHANGELOG.md) · [Delivery guide](docs/guide.en.md#delivery-checks-and-limits).
 
 ## What delivery checks establish
 
@@ -102,7 +77,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.32.2 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.32.3 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

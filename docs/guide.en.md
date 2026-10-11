@@ -1,4 +1,4 @@
-# report-gen 0.32.2 user guide
+# report-gen 0.32.3 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -116,6 +116,8 @@ Structured export checks compare paragraphs, literal code, metadata, native tabl
 
 Project integers must be within −9,007,199,254,740,991 to 9,007,199,254,740,991 to preserve their value in the browser editor. Store larger documentary values or identifiers as quoted text in YAML/JSON. Out-of-range inputs are rejected with the field path rather than silently rounded or replaced with `null`. Report numbered lists use counters from 0 to 2,147,483,647, compatible with browser and Word consumers. An initial or final ordinal above that limit is rejected, preserving any previous output file.
 
+A Word list starting above 65,535 uses `SEQ` fields to avoid the truncation observed in LibreOfficeDev 26.8. Other lists retain automatic numbering, including when crossing that value. To extend a field-based list, edit it in report-gen and export again. Within Word, copy an item after the first while retaining its field, then update with **Ctrl+A → F9**; the first field sets the starting value. If there is only one item, use report-gen to edit it. Pressing Enter alone does not add a field. HTML, Markdown and Word checks compare ordinals, decimal format and order against the source; Word also checks each field's instruction and cached result. These checks do not replace reviewing the display in your editor. PDF numbering remains subject to visual review.
+
 PDF verification reserves independent physical occurrences for each code line and, within each category, for distinct cells, list items and paragraphs. A longer cell cannot also supply a missing cell whose text it contains. Categories are checked separately because a paragraph inside a list legitimately belongs to both. If ambiguous wrapping exceeds its verification budget, it reports that verification could not be completed and preserves the previous delivery; it does not claim content loss without establishing it.
 
 PDF and portable HTML wrap literal URLs to the available width without changing their text. LibreOffice may wrap some DOCX URLs early; no artificial characters or line breaks are inserted to conceal that limitation. Native Microsoft Word validation requires a licensed Windows desktop installation. The opt-in workflow is implemented; local OOXML and LibreOffice checks do not substitute for that native validation.
@@ -156,7 +158,7 @@ Downloaded code is not executed and the running application is not replaced duri
 
 ## Upgrade from an earlier version
 
-For a manual update when your data already lives outside the application, stop the editor, extract or clone 0.30.0 into a new directory and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en`. This prepares the new `.venv` and updates the shortcut to reuse your data; no import or `--upgrade-from` is needed. Do not run two processes against the same workspace. Once the new installation is checked, you can retire the previous application directory while retaining the external data.
+For a manual update when your data already lives outside the application, stop the editor, extract or clone the current release into a new directory and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en`. This prepares the new `.venv` and updates the shortcut to reuse your data; no import or `--upgrade-from` is needed. Do not run two processes against the same workspace. Once the new installation is checked, you can retire the previous application directory while retaining the external data.
 
 To separate data still held inside an old installation, stop both editors and run from the new directory:
 

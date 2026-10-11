@@ -7,6 +7,7 @@ from lxml import etree, html
 import pytest
 
 import export
+from export_numbering import word_markers
 from wizard import dump_yaml
 
 
@@ -20,6 +21,12 @@ CASES = {
                 '```text\n2147483648. Literal code identifier\n```\n\n'
                 '<ol start="2147483648"><li>Literal HTML example</li></ol>',
                 [], ['2147483648', 'Literal code identifier', 'Literal HTML example']),
+}
+WORD_ORDINALS = {
+    'zero': [0],
+    'maximum-single': [2147483647],
+    'nested': [7, 0, 1, 8],
+    'literal': [],
 }
 
 
@@ -65,9 +72,10 @@ def test_supported_counters_and_literal_identifiers_remain_intact(tmp_path, fmt,
             tree = etree.fromstring(package.read('word/document.xml'))
             numbering = etree.fromstring(package.read('word/numbering.xml'))
         content = ' '.join(tree.xpath('//*[local-name()="t"]/text()'))
-        observed = numbering.xpath('//*[local-name()="start"]/@*[local-name()="val"]')
-        for start in starts:
-            assert start in observed
+        # Resolve the visible ordinal, including SEQ compatibility fields. A
+        # valid native start alone cannot prove either its use or its sequence.
+        observed = list(word_markers(tree, numbering).values())
+        assert observed == WORD_ORDINALS[case]
     elif fmt == 'md':
         with zipfile.ZipFile(output) as package:
             content = package.read('report.md').decode()
