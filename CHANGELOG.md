@@ -23,6 +23,8 @@
   corrientes conservan los mismos saltos de línea en los seis temas.
 - La ventana de comprobaciones traduce el nuevo contador PDF a español e inglés
   y mantiene explícito que no certifica la asociación visual de las evidencias.
+- El enlace a la guía en «Preparar entrega» usa el color accesible del editor
+  en los temas oscuro y claro, conservando su subrayado.
 - Corrige un falso rechazo de evidencias Markdown: el texto de contexto
   conserva los encabezados de pasos que proceden de rótulos en línea. Se
   mantiene la comparación exacta de contexto y el rechazo de imágenes movidas.

@@ -389,7 +389,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px
 .design-guidance{margin-top:20px;border-top:1px solid var(--line);font-size:14px}
 .design-section-row{display:flex;align-items:center;gap:8px;margin:8px 0}.design-section-row input{min-width:0}
 #designLibraryBtn{width:100%;margin-bottom:16px;min-height:44px}
-.design-dialog button{min-height:44px;max-width:100%;white-space:normal;overflow-wrap:anywhere}.design-dialog .experience-heading>.btn{flex:none;white-space:nowrap}.design-dialog a{color:var(--accent)}
+.design-dialog button{min-height:44px;max-width:100%;white-space:normal;overflow-wrap:anywhere}.design-dialog .experience-heading>.btn{flex:none;white-space:nowrap}.design-dialog a,.design-guidance a{color:var(--accent)}
 .design-dialog :focus-visible,.experience-dialog :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 @media(max-width:760px){.design-layout{grid-template-columns:minmax(0,1fr)}.design-cards{max-height:310px;grid-template-columns:repeat(2,minmax(0,1fr))}.design-dialog .experience-body{padding:12px}.design-preview{padding:6px}.design-preview img{max-height:460px}.design-dialog .grid2{grid-template-columns:1fr}.design-dialog .experience-actions{flex-direction:column}.design-filters .btn{flex:1 1 auto}.design-section-row{flex-wrap:wrap}}
 .design-live-page{position:relative;width:100%;overflow:hidden;background:#fff;text-align:left}
