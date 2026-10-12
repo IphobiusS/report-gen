@@ -53,7 +53,7 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 
 ## New in 0.34.1
 
-PDF verification distinguishes repeated or overlapping heading occurrences and accepts complete titles wrapped across lines. The contents index reuses verified text, and the renderer allows 300 seconds by default, configurable between 30 and 600 for extensive reports. Word improves header clearance and avoids blank pages caused by spacers after tables. The tutorial restores focus to the button that opened the gallery after cancellation or closing, in both languages.
+PDF verification distinguishes repeated or overlapping heading occurrences and accepts complete titles wrapped across lines. The contents index reuses verified text, and the renderer allows 300 seconds by default, configurable between 30 and 600 for extensive reports. PDF reserves 3 mm below the header rule without moving the body. Word improves header clearance and avoids blank pages caused by spacers after tables. The tutorial restores focus to the button that opened the gallery after cancellation or closing, in both languages.
 
 **Visual tutorial** offers an optional invitation on first entry and remains available in the menu. Its six steps include real Spanish and English screenshots: template, report details, findings, evidence, review, and delivery with a backup. Enlarge screenshots, resume your place or restart without changing your projects. It works locally, including when the browser cannot save progress.
 

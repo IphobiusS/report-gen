@@ -5,10 +5,12 @@
 @page {
   size: A4; margin: 20mm 16mm 18mm 16mm;
   /* Symmetric side columns leave the title centered and a real gutter between
-     all three texts. Wrapping retains complete metadata within the top margin. */
-  @top-left     { width: 24%; box-sizing: border-box; padding-right: 2mm; font: 7.5pt var(--font-mono); line-height: 1.2; overflow-wrap: anywhere; color: var(--accent-ink); font-weight: 700; border-bottom: 0.5pt solid var(--rule); padding-bottom: 3mm; vertical-align: bottom; }
-  @top-center   { width: 52%; box-sizing: border-box; padding-left: 2mm; padding-right: 2mm; font: 7.5pt var(--font-mono); line-height: 1.2; overflow-wrap: anywhere; color: var(--muted); border-bottom: 0.5pt solid var(--rule); padding-bottom: 3mm; vertical-align: bottom; }
-  @top-right    { width: 24%; box-sizing: border-box; padding-left: 2mm; font: 7pt var(--font-mono); line-height: 1.2; overflow-wrap: anywhere; color: var(--muted); border-bottom: 0.5pt solid var(--rule); padding-bottom: 3mm; vertical-align: bottom; }
+     all three texts. Wrapping retains complete metadata within the top margin.
+     Bottom margin lifts the painted rule off continuation content; padding
+     alone only separates header text from the rule, not rule from body. */
+  @top-left     { width: 24%; box-sizing: border-box; padding-right: 2mm; font: 7.5pt var(--font-mono); line-height: 1.2; overflow-wrap: anywhere; color: var(--accent-ink); font-weight: 700; border-bottom: 0.5pt solid var(--rule); padding-bottom: 3mm; margin-bottom: 3mm; vertical-align: bottom; }
+  @top-center   { width: 52%; box-sizing: border-box; padding-left: 2mm; padding-right: 2mm; font: 7.5pt var(--font-mono); line-height: 1.2; overflow-wrap: anywhere; color: var(--muted); border-bottom: 0.5pt solid var(--rule); padding-bottom: 3mm; margin-bottom: 3mm; vertical-align: bottom; }
+  @top-right    { width: 24%; box-sizing: border-box; padding-left: 2mm; font: 7pt var(--font-mono); line-height: 1.2; overflow-wrap: anywhere; color: var(--muted); border-bottom: 0.5pt solid var(--rule); padding-bottom: 3mm; margin-bottom: 3mm; vertical-align: bottom; }
   @bottom-left  { font: 7pt var(--font-mono); color: var(--muted); padding-top: 2mm; }
   @bottom-right { font: 7pt var(--font-mono); color: var(--muted); padding-top: 2mm; }
 }
