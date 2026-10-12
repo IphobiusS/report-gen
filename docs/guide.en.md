@@ -1,4 +1,4 @@
-# report-gen 0.33.2 user guide
+# report-gen 0.34.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -53,7 +53,9 @@ Read each engine status in the diagnostic output; its exit code alone does not e
 
 ## First report
 
-On Overview, choose **Try Nimbus demo** or **Create my project**. With a project open, **Suggested next action** proposes a step based on its title and client, scope objectives, findings, evidence associations and actual results of the last saved review. **View this step in the guide** opens the corresponding explanation. You can also open **Guide: first report** in the sidebar or under **More** on mobile and revisit any of its six steps.
+On Overview, choose **Try Nimbus demo** or **Create my project**. With a project open, **Suggested next action** proposes a step based on its title and client, scope objectives, findings, evidence associations and actual results of the last saved review. **View this step in the guide** opens the corresponding explanation. You can also open **Visual tutorial** under **More**, on desktop and mobile and revisit any of its six steps.
+
+First entry offers an optional invitation: **Start tutorial** or **Not now**. The tutorial uses real screenshots with fictional data in Spanish and English, with controls to enlarge them or view actual size. **Escape** closes the screenshot and restores focus to its trigger. It remembers your step in this browser; **Restart tutorial** resets only tutorial progress, without changing projects. If storage is blocked, the tutorial still works during the session. It does not send screenshots to an external service.
 
 Suggestions support writing without requiring a fabricated finding or screenshot: go directly to review when a recommendation does not apply to your assessment. A review with no issues suggests preparing delivery, but does not approve its content. If you edit the draft after review, repeat the saved review before delivery.
 

@@ -431,8 +431,8 @@ def _verify_pdf_code_lines(document):
 
 def render_pdf_weasyprint(html, out_pdf, base_url):
     from weasyprint import HTML
-    from pdf_pagination import keep_short_labelled_lists, relax_oversized_rows, verify_finding_tables, prune_pdf_uri_break_links
-    renderer = HTML(string=_pdf_code_layout(keep_short_labelled_lists(html)), base_url=str(base_url), url_fetcher=restricted_fetcher(base_url, THEMES))
+    from pdf_pagination import compact_pdf_uri_breaks, keep_short_labelled_lists, relax_oversized_rows, verify_finding_tables, prune_pdf_uri_break_links
+    renderer = HTML(string=compact_pdf_uri_breaks(_pdf_code_layout(keep_short_labelled_lists(html))), base_url=str(base_url), url_fetcher=restricted_fetcher(base_url, THEMES))
     document = renderer.render()
     verify_finding_tables(document)
     if relax_oversized_rows(document):

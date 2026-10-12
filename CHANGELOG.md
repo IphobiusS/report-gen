@@ -1,3 +1,13 @@
+# Cambios 0.34.0 (2026-10-12)
+
+- Tutorial visual opcional de seis pasos, con 14 capturas reales ES/EN de datos ficticios, acceso permanente desde el menú, ampliación accesible, progreso local y reinicio independiente del proyecto. La invitación inicial se puede omitir; el recorrido sigue disponible sin almacenamiento del navegador.
+- Las oportunidades de salto de las URLs del PDF se compactan solo en la entrada privada del renderizador. Evita miles de elementos de composición por tabla sin modificar YAML, HTML portátil, DOCX ni Markdown. Se desactivan las ligaduras opcionales solo en la URL transformada para conservar cada letra al copiarla; las regresiones comprueban texto con dos extractores independientes, destinos, geometría y Unicode en los seis diseños.
+- La regresión de 72 URLs literales de más de 300 caracteres se exporta en ambos idiomas dentro del límite original de 120 segundos, conservando los dos pasos de maquetación, controles de contenido, tablas y escritura atómica. Esto corrige ese caso concreto, no elimina el límite para cualquier informe o carga del sistema.
+- Se corrige un falso rechazo del verificador PDF cuando una URL literal de un párrafo continúa en la página siguiente. La comprobación utiliza límites reales de línea y páginas adyacentes, conserva los rangos consumidos y rechaza fragmentos alterados o ausentes; no relaja la comparación de la prosa ni certifica maquetación.
+- El comprobador opcional de Microsoft Word admite únicamente los campos SEQ de numeración propios de report-gen y verifica sus instrucciones y resultados. Los fragmentos de enlaces externos ya no se exigen como marcadores locales. El kit incluye un caso específico de URLs literales y ordinales grandes para revisión en Word.
+- La guía aclara que el OCR local es opcional y no censura automáticamente. No se añaden documentos residuales de auditoría al proyecto.
+- Permanece el salto anticipado de algunas URLs DOCX en LibreOffice: las variantes nativas probadas no lo corrigen de forma portable. No se insertan caracteres invisibles, saltos manuales ni nombres alternativos para disimularlo. Las comprobaciones de OOXML y LibreOffice no sustituyen la aceptación visual en Microsoft Word nativo, que sigue pendiente.
+
 # Cambios 0.33.2 (2026-10-12)
 
 - El HTML portátil reserva la sangría de las listas ordinarias según sus dígitos y el tamaño de la fuente. Evita recortar marcadores como 73 o 973 en móvil al ampliar el texto al 200 %. Conserva los contadores nativos, el texto y el desplazamiento local de las listas de muchos dígitos. Las viñetas también escalan su sangría con el texto.

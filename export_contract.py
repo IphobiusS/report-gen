@@ -592,6 +592,7 @@ def _profiles(path, fmt, expected):
         raw_pages = pdf_text_pages(path, geometry_pages=(0,) if expected.get('cover_units') else ())
         pages = [normal(text) for text in raw_pages]
         return {'': dict(text=normal(' '.join(pages)), pages=pages,
+                         line_edges=[_pdf_line_edges(text) for text in raw_pages],
                          cover_text=pages[0] if pages else '',
                          raw_text='\n'.join(raw_pages), codes=[], table_rows=[], list_items=[])}
     if fmt == 'docx': return _word_scopes(path, expected)
@@ -679,6 +680,109 @@ def _pdf_pattern(unit):
     after = r'(?!\w)' if unit and re.match(r'\w', unit[-1]) else ''
     pattern = r'\s+'.join(r'\s*'.join(re.escape(c) for c in word) for word in words)
     return re.compile(before + pattern + after)
+
+
+def _pdf_line_edges(text):
+    """Map extractor line breaks to normalized offsets using only PDF text."""
+    text = unicodedata.normalize('NFC', text).replace('\u00ad', '')
+    words = list(re.finditer(r'\S+', text))
+    starts, ends = set(), set()
+    offset = 0
+    breaks = '\r\n\f\v\x85\u2028\u2029'
+    for index, word in enumerate(words):
+        previous = words[index - 1].end() if index else 0
+        following = words[index + 1].start() if index + 1 < len(words) else len(text)
+        if index == 0 or any(char in breaks for char in text[previous:word.start()]):
+            starts.add(offset)
+        offset += len(word.group())
+        if index + 1 == len(words) or any(char in breaks for char in text[word.end():following]):
+            ends.add(offset)
+        offset += 1  # The single whitespace produced by normal().
+    return {'starts': starts, 'ends': ends}
+
+
+def _pdf_uri_page_fragments(unit, pages, line_edges, budget):
+    """Match literal-URI continuations at retained extractor line boundaries.
+
+    Ordinary prose words remain indivisible across pages. Only a URI may
+    continue within a word, from a line end to a line start on the immediately
+    following page. This is bounded textual presence, not block association,
+    copyable-whitespace verification or a geometric layout certificate.
+    Every accepted character is read from the PDF; source text is never used
+    to repair extraction. Actual non-reusable ranges go to the same allocator.
+    """
+    from bisect import bisect_left
+    unit = normal(unit)
+    uris = list(re.finditer(r"\b(?:https?|ftps?)://[^\s<>\"'`]+", unit, re.IGNORECASE))
+    if not uris or len(line_edges) != len(pages):
+        return []
+    budget(len(unit))
+    uri_starts = [match.start() for match in uris]
+
+    def in_uri(offset):
+        index = bisect_left(uri_starts, offset) - 1
+        return index >= 0 and offset < uris[index].end()
+
+    def word_char(char):
+        return bool(re.match(r'\w', char))
+
+    def fragments(first, page, edges):
+        within_uri = in_uri(first)
+        starts = (sorted(edges['starts']) if within_uri else
+                  (match.start() for match in re.finditer(re.escape(unit[first]), page)))
+        for start in starts:
+            budget(1)
+            if start >= len(page) or page[start] != unit[first]:
+                continue
+            if (not within_uri and word_char(unit[first]) and start > 0
+                    and word_char(page[start - 1])):
+                continue
+            source, actual = first, start
+            while source < len(unit) and actual < len(page):
+                budget(1)
+                if unit[source].isspace():
+                    if not page[actual].isspace():
+                        break  # Authored whitespace is required, as in _pdf_pattern.
+                    source += 1
+                    while actual < len(page) and page[actual].isspace():
+                        actual += 1
+                    continue
+                while actual < len(page) and page[actual].isspace():
+                    actual += 1  # Extractor line/span spacing inside a source word.
+                if actual == len(page) or page[actual] != unit[source]:
+                    break
+                source += 1
+                actual += 1
+                boundary = (not word_char(unit[source - 1]) or actual == len(page)
+                            or not word_char(page[actual]))
+                if source == len(unit):
+                    if boundary:
+                        yield source, start, actual
+                elif unit[source].isspace() and boundary:
+                    yield source + 1, start, actual
+                elif in_uri(source) and actual in edges['ends']:
+                    yield source, start, actual
+
+    carry, completed = {}, set()
+    for number, (page, edges) in enumerate(zip(pages, line_edges)):
+        progressed = {}
+        states = 0
+        for first, chains in {0: {()}, **carry}.items():
+            for consumed, start, end in fragments(first, page, edges):
+                for chain in chains:
+                    budget(len(chain) + 1)
+                    candidate = chain + ((number, start, end),)
+                    if consumed == len(unit):
+                        completed.add(candidate)
+                    else:
+                        target = progressed.setdefault(consumed, set())
+                        if candidate not in target:
+                            if states >= _PDF_TEXT_MAX_STATES:
+                                _pdf_text_check_incomplete()
+                            states += 1
+                            target.add(candidate)
+        carry = progressed  # A chain cannot skip an empty/unmatched page.
+    return sorted(completed)
 
 
 def _pdf_occurrences(unit, pages, *, alternatives=False):
@@ -822,7 +926,7 @@ def _pdf_text_fragments(unit, pages, *, prefixes, budget=None):
 def _pdf_present(units, actual, label_es, label_en):
     """Require visible text occurrences, without claiming PDF block geometry."""
     counts = Counter(unit for unit in units if unit)
-    across = 0
+    across = {}
     options = []
     construction_work = 0
 
@@ -848,7 +952,7 @@ def _pdf_present(units, actual, label_es, label_en):
             spanning = _pdf_occurrences(unit, actual['pages'])
             budget(sum(map(len, spanning)))
             ranges.update(spanning)
-            across += sum(len(occurrence) > 1 for occurrence in spanning[:count])
+            across[unit] = sum(len(occurrence) > 1 for occurrence in spanning[:count])
         # Different source values may overlap too: one occurrence of
         # "Approved with conditions" cannot also supply a missing "Approved"
         # cell. Retain alternatives instead of making a greedy assignment.
@@ -861,7 +965,7 @@ def _pdf_present(units, actual, label_es, label_en):
                                          tuple(tuple(sorted(ranges)) for ranges in options))
 
     if allocated():
-        return sum(counts.values()), across
+        return sum(counts.values()), sum(across.values())
     # A fast constructive pass may omit the only compatible page continuation.
     # Failure is never proof of missing text until all bounded alternatives
     # have been considered, including shorter prefixes and later starts.
@@ -872,7 +976,21 @@ def _pdf_present(units, actual, label_es, label_en):
                                 for p, start, end in occurrence)
                           for occurrence in alternatives)
         if allocated():
-            return sum(counts.values()), across
+            return sum(counts.values()), sum(across.values())
+    if actual.get('line_edges'):
+        for unit, ranges in zip(counts, options):
+            continuations = _pdf_uri_page_fragments(
+                unit, actual['pages'], actual['line_edges'], budget)
+            ranges.update(tuple((offsets[p] + start, offsets[p] + end)
+                                for p, start, end in occurrence)
+                          for occurrence in continuations)
+            # A later fallback can rediscover an already verified chain.
+            # Count each source unit at most its authored multiplicity; this
+            # is a continuation-check count, not a geometric paragraph count.
+            across[unit] = max(across.get(unit, 0), sum(
+                len(occurrence) > 1 for occurrence in continuations[:counts[unit]]))
+        if allocated():
+            return sum(counts.values()), sum(across.values())
     raise ValueError(backend_message(
         'Texto de {label} PDF ausente o alterado',
         en='Missing or changed PDF {label} text',

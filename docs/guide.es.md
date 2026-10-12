@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.33.2
+# Guía de uso de report-gen 0.34.0
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -49,7 +49,9 @@ Chromium es un motor PDF alternativo, opcional:
 
 ## Primer informe
 
-En Inicio, elige **Probar demo Nimbus** o **Crear mi proyecto**. Con un proyecto abierto, la tarjeta **Siguiente acción sugerida** propone un paso según el título y cliente, objetivos de alcance, hallazgos, asociaciones de evidencia y resultados reales de la última revisión guardada. **Ver este paso en la guía** abre su explicación. También puedes abrir **Guía: primer informe** en el lateral o en **Más** en móvil y consultar cualquiera de sus seis pasos.
+En Inicio, elige **Probar demo Nimbus** o **Crear mi proyecto**. Con un proyecto abierto, la tarjeta **Siguiente acción sugerida** propone un paso según el título y cliente, objetivos de alcance, hallazgos, asociaciones de evidencia y resultados reales de la última revisión guardada. **Ver este paso en la guía** abre su explicación. También puedes abrir **Tutorial visual** desde **Más**, tanto en escritorio como en móvil y consultar cualquiera de sus seis pasos.
+
+El primer acceso muestra una invitación opcional: **Empezar recorrido** o **Ahora no**. El tutorial tiene capturas reales de datos ficticios en español e inglés y controles para ampliarlas o verlas a tamaño real. **Escape** cierra la captura y devuelve el foco al botón que la abrió. Conserva el paso consultado en este navegador; **Reiniciar recorrido** solo reinicia ese progreso, sin cambiar proyectos. Si el almacenamiento está bloqueado, el recorrido sigue funcionando durante la sesión. No envía las capturas a un servicio externo.
 
 La sugerencia orienta la escritura, sin exigir que inventes un hallazgo o una captura: puedes ir directamente a la revisión cuando una recomendación no corresponda a tu evaluación. Una revisión sin avisos sugiere preparar la entrega, pero no aprueba su contenido. Si cambias el borrador después de revisarlo, repite la revisión guardada antes de entregar.
 

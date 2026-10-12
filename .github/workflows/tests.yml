@@ -80,6 +80,7 @@ jobs:
           npm run test:first-use-browser
           npm run test:design-selection
           npm run test:project-gallery
+          npm run test:tutorial
           npm run test:pending-recovery
           npm run test:scanner-imports
           npm run test:private-tools
@@ -111,6 +112,7 @@ jobs:
             out/first-use-0260/
             out/design-selection-0260/
             out/project-gallery-0330/
+            out/visual-tutorial-0340/
             out/pending-recovery-0270/
             out/scanner-imports-0270/
             out/private-tools-0270/
@@ -152,7 +154,7 @@ jobs:
           node -e "process.stdout.write('REPORT_GEN_CHROMIUM=' + require('playwright').chromium.executablePath() + '\n')" >> "$GITHUB_ENV"
       - name: Measure two image-heavy projects and verify all four formats
         run: npm run test:scale
-      - name: Prepare and structurally inspect four DOCX inputs
+      - name: Prepare and structurally inspect six DOCX inputs
         run: python scripts/prepare-external-acceptance.py --output out/external-acceptance-0310
       - name: Preserve measured results and pending external-review kit
         if: always()

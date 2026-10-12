@@ -23,6 +23,12 @@ from wizard import dump_yaml
 TASKS = ("create", "deliver", "recover")
 VISUAL_CHECKS = ("text_commands", "tables_images", "headings_pages", "index_links")
 OUTCOMES = {"independent", "assisted", "blocked"}
+LITERAL_URL = ('https://records.albor.example/identity/administrative-authority/'
+               + '0' * 62 + '73?view=readable&revision=immutable#independent-acceptance-register')
+ENCODED_URL = ('https://review.albor.example/assessments/2026/identity-api-administration/SRV-IDM-07/'
+               'acceptance?entity=branch-A&policy=administrative-access%2Fversion-000000000000000073'
+               '&locale=es%2Den&return=%2Fidentity%2Fwithdrawals%3Fcutoff%3D2026-10-12T18%253A30%253A00Z'
+               '#criterion-03-literal-destination')
 
 
 def sha256(path):
@@ -172,6 +178,24 @@ def prepare(destination):
     }
     dump_yaml(content, stress / "engagement.yaml")
     cases.append("long-content")
+    for lang in ('es', 'en'):
+        name = f'url-layout-{lang}'
+        folder = sources / name
+        folder.mkdir()
+        title = 'URLs literales y ordinales grandes' if lang == 'es' else 'Literal URLs and wide ordinals'
+        body = (('Caso ficticio de compatibilidad. No es una evaluación real.\n\n' if lang == 'es'
+                 else 'Fictional compatibility case. This is not a real assessment.\n\n')
+                + f'### URL-PARAGRAPH\n\n[{LITERAL_URL}](<{LITERAL_URL}>)\n\n'
+                + f'### URL-LIST\n\n73. [{LITERAL_URL}](<{LITERAL_URL}>)\n74. END-ORDINAL-74\n\n'
+                + f'### URL-TABLE\n\n| Locator | ID |\n| --- | --- |\n| [{LITERAL_URL}](<{LITERAL_URL}>) | URL-ROW-01 |\n\n'
+                + f'### URL-ENCODED\n\n[{ENCODED_URL}](<{ENCODED_URL}>)\n\n'
+                + '### WIDE-ORDINALS\n\n2147483646. SEQ-START\n2147483647. SEQ-END\n\n'
+                + '[LOCAL-FINDING](#F001)\n')
+        dump_yaml({'meta': {'report_title': title, 'lang': lang, 'theme': 'corporativo'},
+                   'report': {'sections': [{'key': 'url_flow', 'title': title, 'body': body}, {'key': 'findings'}]},
+                   'findings': [{'id': 'F001', 'mode': 'vuln', 'title': 'SYNTHETIC LOCAL ANCHOR',
+                                 'description_md': 'LOCAL-FINDING-DESTINATION'}]}, folder / 'engagement.yaml')
+        cases.append(name)
     results = []
     commit = revision()
     for name in cases:
@@ -201,13 +225,17 @@ def prepare(destination):
             writer.writerow([name, "", "", "", "", "", "", "", ""])
     (destination / "INSTRUCTIONS.txt").write_text(
         "PENDING: preparing this kit does not test native Word or observe people.\n"
-        "The four generated DOCX files passed automated scoped-text, image and reference checks. "
+        "The six generated DOCX files passed automated scoped-text, image and reference checks. "
         "This does not prove pagination, typography or compatibility with desktop Word.\n"
         "1. On Windows with licensed Word: scripts/verify-microsoft-word.ps1 "
         "-InputDirectory <kit>/word-input -OutputDirectory <kit>/word-verified\n"
         "2. Inspect EVERY rendered PDF page. Complete word-review.csv with pass/fail for literal text/commands, "
         "table/image continuity, heading/page breaks and index/page links. Record the PDF SHA-256, reviewer "
         "and review date; describe failures. Do not infer visual approval from Word automation.\n"
+        "For url-layout-es/en, also follow URL-LAYOUT-EXPECTATIONS.json: compare literal text and exact destinations, "
+        "inspect the paragraph/list/table line widths and verify 2147483646 then 2147483647 after field updates. "
+        "A premature URL wrap must be recorded as a text_commands failure; preserving characters alone is not a layout pass. "
+        "These probes reproduce a known LibreOffice limitation. Their presence does not resolve it or validate Word.\n"
         "3. Run the voluntary five-person protocol in CONTRIBUTING.md. Use P1-P5 and synthetic material. "
         "Record every task, including blocked tasks. Outcomes: independent, assisted or blocked. "
         "Record seconds, setup_seconds, intervention count, observer and observed_at. "
@@ -216,6 +244,18 @@ def prepare(destination):
         "The command validates local evidence without changing it. Five recorded sessions do not "
         "automatically establish usability acceptance. Never fill missing observations from assumptions.\n",
         encoding="utf-8")
+    (destination / 'URL-LAYOUT-EXPECTATIONS.json').write_text(json.dumps({
+        'schema': 1, 'cases': ['url-layout-es', 'url-layout-en'],
+        'literal_url': LITERAL_URL, 'encoded_url': ENCODED_URL,
+        'contexts': ['URL-PARAGRAPH', 'URL-LIST', 'URL-TABLE', 'URL-ENCODED'],
+        'expected_ordinals': [73, 74, 2147483646, 2147483647],
+        'maximum_nonfinal_unused_width_points': 10.5,
+        'measure': 'For each URL line except the final line, compare its visible right edge with the right text boundary of its paragraph, list or table cell. The remaining width must not exceed 10.5 points (one body-font em); clipping or overlap always fails. Exclude headings and the URL final line. Record the native PDF page and measured gap in word-review.csv notes.',
+        'content': 'Concatenate the visible URL line fragments without their layout line endings; compare with the exact strings above. Follow the exported hyperlink destination without opening the fictional target, and verify query escaping and fragment are unchanged. Do not accept inserted spaces, soft hyphens, zero-width characters or substituted labels.',
+        'local_link': 'LOCAL-FINDING must reach SYNTHETIC LOCAL ANCHOR in this document. External #fragments must not be mistaken for local bookmarks.',
+        'status': 'pending_native_render_and_human_measurement',
+        'not_claimed': 'Preparing this file or running guard mocks is not Microsoft Word validation.'
+    }, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     result = {"schema": 2, "version": __version__, "commit": commit, "source_state": source_state(commit), "synthetic": True, "documents": results,
               "word_native": "not_run", "prepared_docx_content": "verified", "human_sessions": "not_run", "human_observations_recorded": 0,
               "instructions": "Use CONTRIBUTING.md for voluntary sessions. Run verify-microsoft-word.ps1 on licensed desktop Word; inspect its rendered pages. Blank CSV rows are not completed sessions."}

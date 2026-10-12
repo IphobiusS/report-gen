@@ -171,7 +171,7 @@ const ExperienceUI = (() => {
     body.append(formats,h('p',{class:'wf-hint'},w('El respaldo editable, los originales y el historial se descargan por separado desde «Respaldo del proyecto».','The editable backup, originals and history are downloaded separately under “Project backup”.')));
     const issues=h('div',{class:'delivery-issues'});
     report.issues.forEach(i=>issues.append(h('p',{class:i.level==='error'?'wf-error':'wf-warning'},i.message)));
-    if(report.issues.length)body.append(h('details',{open:''},h('summary',{},report.issues.length+' '+w('observaciones','review items')),issues));
+    if(report.issues.length)body.append(h('details',{open:''},h('summary',{},report.issues.length+' '+(report.issues.length===1?w('observación','review item'):w('observaciones','review items'))),issues));
     const ack=h('input',{type:'checkbox','data-delivery':'ack'});
     if(warnings.length)body.append(h('label',{class:'wf-check'},ack,w('He revisado los avisos que acompañarán a esta entrega.','I reviewed the warnings that will accompany this delivery.')));
     const state=h('p',{role:'status','aria-live':'polite'});body.append(state);

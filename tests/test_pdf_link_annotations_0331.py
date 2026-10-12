@@ -6,7 +6,7 @@ from PIL import Image
 from weasyprint import HTML
 
 import engine
-from pdf_pagination import prune_pdf_uri_break_links
+from pdf_pagination import compact_pdf_uri_breaks, prune_pdf_uri_break_links
 from resources import restricted_fetcher
 
 
@@ -38,7 +38,6 @@ def test_real_pdf_retains_pixels_targets_and_visible_link_areas(tmp_path):
     assert 'data-rg-pdf-uri-break="true"' in transformed
     document = HTML(string=transformed, base_url=str(tmp_path),
                     url_fetcher=restricted_fetcher(tmp_path, engine.THEMES)).render()
-    unfiltered = document.write_pdf()
     before = [list(page.links) for page in document.pages]
     removed = prune_pdf_uri_break_links(document)
     assert removed > 4000
@@ -46,6 +45,12 @@ def test_real_pdf_retains_pixels_targets_and_visible_link_areas(tmp_path):
         useful = [link for link in old
                   if link[2][0] != link[2][2] and link[2][1] != link[2][3]]
         assert all(link in page.links for link in useful)
+    # The renderer now coalesces generated break hints before shaping; compare
+    # filtering against that same layout, rather than the retired one-box-per-
+    # glyph layout whose kerning can differ slightly.
+    compact = HTML(string=compact_pdf_uri_breaks(transformed), base_url=str(tmp_path),
+                   url_fetcher=restricted_fetcher(tmp_path, engine.THEMES)).render()
+    unfiltered = compact.write_pdf()
     output = tmp_path / 'filtered.pdf'
     engine.render_pdf_weasyprint(original, output, tmp_path)
     with fitz.open(stream=unfiltered, filetype='pdf') as baseline, fitz.open(output) as fixed:

@@ -2,6 +2,56 @@ param(
     [Parameter(Mandatory=$true)][string]$InputDirectory,
     [Parameter(Mandatory=$true)][string]$OutputDirectory
 )
+function Test-ReportGenWordFieldInstruction {
+    param([string]$Instruction)
+    $instructionText = $Instruction.Trim()
+    if ($instructionText -match '^(TOC|TC|PAGEREF|PAGE|NUMPAGES)\b') { return $true }
+    # Only the decimal sequence emitted by exporters/numbering.py is allowed.
+    # Do not enable arbitrary SEQ switches, names or nested field instructions.
+    $sequence = [regex]::Match($instructionText, '\ASEQ RGList([1-9][0-9]{0,9}) (?:\\r ([1-9][0-9]{0,9})|\\n) \\\* ARABIC\z')
+    if (-not $sequence.Success -or [long]$sequence.Groups[1].Value -gt 2147483647) { return $false }
+    if ($sequence.Groups[2].Success) {
+        $start = [long]$sequence.Groups[2].Value
+        if ($start -le 65535 -or $start -gt 2147483647) { return $false }
+    }
+    return $true
+}
+
+function Assert-ReportGenWordInternalLinks {
+    param($Document)
+    foreach ($link in $Document.Hyperlinks) {
+        # SubAddress may identify a fragment in an external destination. It is
+        # a local bookmark only when the hyperlink has no external Address.
+        if (-not $link.Address -and $link.SubAddress -and -not $Document.Bookmarks.Exists($link.SubAddress)) {
+            throw "Unresolved internal hyperlink: $($link.SubAddress)"
+        }
+    }
+}
+
+function Assert-ReportGenWordFields {
+    param([System.Xml.XmlDocument]$Xml, [System.Xml.XmlNamespaceManager]$Namespaces)
+    $sequences = @{}
+    foreach ($field in $Xml.SelectNodes('//w:instrText|//w:fldSimple/@w:instr', $Namespaces)) {
+        $instructionText = if ($field.NodeType -eq [System.Xml.XmlNodeType]::Attribute) { $field.Value.Trim() } else { $field.InnerText.Trim() }
+        if (-not (Test-ReportGenWordFieldInstruction $instructionText)) { throw "Unsupported field instruction." }
+        if ($instructionText.StartsWith('SEQ ')) {
+            if ($field.NodeType -ne [System.Xml.XmlNodeType]::Attribute -or $field.OwnerElement.LocalName -ne 'fldSimple') {
+                throw "Sequence fields must use report-gen's cached simple-field representation."
+            }
+            $parts = $instructionText.Split(' ')
+            $name = $parts[1]
+            if ($parts[2] -eq '\r') { $ordinal = [long]$parts[3] }
+            else {
+                if (-not $sequences.ContainsKey($name)) { throw "Sequence continuation has no preceding start." }
+                $ordinal = $sequences[$name] + 1
+            }
+            $stored = [string]::Concat(@($field.OwnerElement.SelectNodes('.//w:t', $Namespaces) | ForEach-Object { $_.InnerText }))
+            if ($ordinal -gt 2147483647 -or $stored -cne [string]$ordinal) { throw "Sequence result does not match its instruction." }
+            $sequences[$name] = $ordinal
+        }
+    }
+}
+
 # Run on an interactive Windows machine with a licensed desktop Word installation.
 # Work on separate copies; update native page/index fields, save and render.
 # Never enable macros or linked resources. Original files remain unchanged.
@@ -48,9 +98,7 @@ try {
                         $xml.LoadXml($xmlText)
                         $ns = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
                         $ns.AddNamespace('w','http://schemas.openxmlformats.org/wordprocessingml/2006/main')
-                        foreach ($field in $xml.SelectNodes('//w:instrText|//w:fldSimple/@w:instr',$ns)) {
-                            if ($field.InnerText.Trim() -notmatch '^(TOC|TC|PAGEREF|PAGE|NUMPAGES)\b') { throw "Unsupported field instruction." }
-                        }
+                        Assert-ReportGenWordFields $xml $ns
                         foreach ($relationship in $xml.SelectNodes('//*[local-name()="Relationship"][@TargetMode="External"]')) {
                             if ($relationship.Type -notmatch '/hyperlink$') { throw "External document resource is not allowed." }
                         }
@@ -61,9 +109,7 @@ try {
             if (Test-Path -LiteralPath $copy) { throw "Output already exists: $copy. Use an empty directory." }
             Copy-Item -LiteralPath $file.FullName -Destination $copy
             $document = $word.Documents.Open($copy, $false, $false, $false)
-            foreach ($link in $document.Hyperlinks) {
-                if ($link.SubAddress -and -not $document.Bookmarks.Exists($link.SubAddress)) { throw "Unresolved internal hyperlink: $($link.SubAddress)" }
-            }
+            Assert-ReportGenWordInternalLinks $document
             $document.Repaginate()
             $updateErrors = $document.Fields.Update()
             if ($updateErrors -ne 0) { throw "Word reports a field update error at index $updateErrors." }

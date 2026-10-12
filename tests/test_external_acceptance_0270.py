@@ -3,8 +3,10 @@ import csv
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shutil
+import subprocess
 import zipfile
 
 from lxml import etree
@@ -23,7 +25,7 @@ def test_prepared_documents_and_blank_sessions_remain_unaccepted(tmp_path):
     assert result["word_native"] == result["human_sessions"] == "not_run"
     assert result["human_observations_recorded"] == 0
     assert result["prepared_docx_content"] == "verified"
-    assert {row["case"] for row in result["documents"]} == {"quality-lab", "pending-severity", "nimbus", "long-content"}
+    assert {row["case"] for row in result["documents"]} == {"quality-lab", "pending-severity", "nimbus", "long-content", "url-layout-es", "url-layout-en"}
     for row in result["documents"]:
         path = tmp_path / "kit" / row["docx"]
         assert hashlib.sha256(path.read_bytes()).hexdigest() == row["docx_sha256"]
@@ -186,3 +188,90 @@ def test_long_markdown_table_flows_by_rows_and_preserves_header_and_command(blan
     assert command.text == "COMANDO_LITERAL_WORD_0270 --documento ejemplo --salida local"
     assert command.paragraph_format.keep_together
     assert not command.paragraph_format.keep_with_next
+
+
+@pytest.mark.parametrize('lang', ['es', 'en'])
+def test_literal_url_and_wide_ordinal_kit_is_an_actual_unaccepted_document(blank_kit, lang):
+    document = Document(blank_kit / f'word-input/url-layout-{lang}.docx')
+    targets = {rel.rId: rel.target_ref for rel in document.part.rels.values() if rel.reltype.endswith('/hyperlink')}
+    links = [(link.get(qn('r:id')), ''.join(link.xpath('.//w:t/text()')))
+             for link in document.element.xpath('//w:hyperlink[@r:id]')]
+    assert [text for rid, text in links if targets[rid] == module.LITERAL_URL] == [module.LITERAL_URL] * 3
+    assert [text for rid, text in links if targets[rid] == module.ENCODED_URL] == [module.ENCODED_URL]
+    fields = document.element.xpath('//w:fldSimple')
+    assert [''.join(node.text for node in field.findall('.//' + qn('w:t'))) for field in fields if field.get(qn('w:instr')).strip().startswith('SEQ ')] == ['2147483646', '2147483647']
+    expectation = json.loads((blank_kit / 'URL-LAYOUT-EXPECTATIONS.json').read_text())
+    assert expectation['literal_url'] == module.LITERAL_URL
+    assert expectation['encoded_url'] == module.ENCODED_URL
+    assert expectation['maximum_nonfinal_unused_width_points'] == 10.5
+    assert expectation['status'] == 'pending_native_render_and_human_measurement'
+    assert module.summarize(blank_kit)['word_acceptance'] == 'pending'
+
+
+def test_native_word_guard_functions_with_actual_sequence_export_and_mock_links(blank_kit, tmp_path):
+    """Run real PowerShell guards; mock links are not a Microsoft Word session."""
+    executable = os.environ.get('REPORT_GEN_PWSH') or shutil.which('pwsh') or shutil.which('powershell')
+    if not executable:
+        pytest.skip('PowerShell is required for native-acceptance guard tests; Word is not required')
+    with zipfile.ZipFile(blank_kit / 'word-input/url-layout-en.docx') as archive:
+        xml = tmp_path / 'document.xml'
+        xml.write_bytes(archive.read('word/document.xml'))
+    check = tmp_path / 'guards.ps1'
+    check.write_text(r'''
+param([string]$Source, [string]$DocumentXml)
+$ErrorActionPreference = 'Stop'
+$tokens = $null; $parseErrors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile($Source, [ref]$tokens, [ref]$parseErrors)
+if ($parseErrors.Count) { throw 'PowerShell parser rejected the native verification script.' }
+$wanted = @('Test-ReportGenWordFieldInstruction', 'Assert-ReportGenWordFields', 'Assert-ReportGenWordInternalLinks')
+$functions = @($ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $false))
+foreach ($name in $wanted) {
+    $definition = @($functions | Where-Object { $_.Name -eq $name })
+    if ($definition.Count -ne 1) { throw "Missing guard: $name" }
+    Invoke-Expression $definition[0].Extent.Text
+}
+$xml = New-Object System.Xml.XmlDocument
+$xml.XmlResolver = $null
+$xml.Load($DocumentXml)
+$ns = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
+$ns.AddNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main')
+Assert-ReportGenWordFields $xml $ns
+foreach ($instruction in @(' SEQ RGList10 \r 65536 \* ARABIC ', 'SEQ RGList9 \r 2147483647 \* ARABIC', 'SEQ RGList10 \n \* ARABIC')) {
+    if (-not (Test-ReportGenWordFieldInstruction $instruction)) { throw "Valid sequence rejected: $instruction" }
+}
+foreach ($instruction in @('SEQ Arbitrary \n \* ARABIC', 'SEQ RGList10 \r 65535 \* ARABIC', 'SEQ RGList10 \r 2147483648 \* ARABIC',
+    'SEQ RGList10 \r 9999999999999999999999999999 \* ARABIC', 'SEQ RGList0 \n \* ARABIC', 'SEQ RGList10 \n \* ROMAN',
+    'SEQ RGList10 \n \* ARABIC DDEAUTO', 'SEQ RGList10 \c \* ARABIC', 'SEQ RGList10 \n \h \* ARABIC',
+    'DDEAUTO app topic', 'INCLUDETEXT "remote.docx"', 'LINK Excel.Sheet.12 source')) {
+    if (Test-ReportGenWordFieldInstruction $instruction) { throw "Unsupported field accepted: $instruction" }
+}
+$sequence = @($xml.SelectNodes('//w:fldSimple', $ns) | Where-Object { $_.GetAttribute('instr', $ns.LookupNamespace('w')).Trim().StartsWith('SEQ ') })
+$saved = $sequence[1].SelectSingleNode('.//w:t', $ns).InnerText
+$sequence[1].SelectSingleNode('.//w:t', $ns).InnerText = '2147483646'
+$rejected = $false
+try { Assert-ReportGenWordFields $xml $ns } catch { $rejected = $true }
+if (-not $rejected) { throw 'Changed cached ordinal was accepted.' }
+$sequence[1].SelectSingleNode('.//w:t', $ns).InnerText = $saved
+$sequence[0].ParentNode.RemoveChild($sequence[0]) | Out-Null
+$rejected = $false
+try { Assert-ReportGenWordFields $xml $ns } catch { $rejected = $true }
+if (-not $rejected) { throw 'Orphan sequence continuation was accepted.' }
+$bookmarks = [pscustomobject]@{ calls = 0 }
+$bookmarks | Add-Member ScriptMethod Exists { param($name) $this.calls++; return $name -eq 'present' }
+$document = [pscustomobject]@{ Hyperlinks = @([pscustomobject]@{Address='https://example.test/report'; SubAddress='external-fragment'}); Bookmarks=$bookmarks }
+Assert-ReportGenWordInternalLinks $document
+if ($bookmarks.calls -ne 0) { throw 'External fragment incorrectly resolved as a local bookmark.' }
+$document.Hyperlinks = @([pscustomobject]@{Address=''; SubAddress='present'})
+Assert-ReportGenWordInternalLinks $document
+if ($bookmarks.calls -ne 1) { throw 'Local bookmark was not checked.' }
+$document.Hyperlinks = @([pscustomobject]@{Address=''; SubAddress='missing'})
+$rejected = $false
+try { Assert-ReportGenWordInternalLinks $document } catch { $rejected = $true }
+if (-not $rejected) { throw 'Missing local bookmark was accepted.' }
+@{guard_checks='passed'; native_word_tested=$false} | ConvertTo-Json -Compress
+''', encoding='utf-8')
+    result = subprocess.run([executable, '-NoProfile', '-NonInteractive', '-File', str(check),
+                             '-Source', str(ROOT / 'scripts/verify-microsoft-word.ps1'),
+                             '-DocumentXml', str(xml)], capture_output=True, text=True, timeout=45)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert json.loads(result.stdout) == {'guard_checks': 'passed', 'native_word_tested': False}

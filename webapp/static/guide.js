@@ -8,6 +8,74 @@ const GuideUI = (() => {
     ['Redacta un hallazgo', 'Write a finding'], ['Conecta la evidencia', 'Connect evidence'],
     ['Revisa lo que compartes', 'Review what you share'], ['Entrega y conserva', 'Deliver and retain']
   ];
+  const tutorialKey = 'rg.visualTutorial.v1';
+  let tutorialState = null, tutorialStorage = true;
+  function progress() {
+    if (tutorialState) return tutorialState;
+    tutorialState = {version:1, dismissed:false, completed:false, step:0, visited:[]};
+    try {
+      const saved = JSON.parse(localStorage.getItem(tutorialKey) || 'null');
+      if (saved?.version === 1 && Number.isInteger(saved.step) && saved.step >= 0 && saved.step < names.length) {
+        tutorialState = {version:1, dismissed:saved.dismissed === true, completed:saved.completed === true, step:saved.step,
+          visited:Array.isArray(saved.visited) ? [...new Set(saved.visited.filter(index => Number.isInteger(index) && index >= 0 && index < names.length))] : []};
+      }
+    } catch (_) { tutorialStorage = false; }
+    return tutorialState;
+  }
+  function remember(changes) {
+    tutorialState = {...progress(), ...changes};
+    try { localStorage.setItem(tutorialKey, JSON.stringify(tutorialState)); tutorialStorage = true; }
+    catch (_) { tutorialStorage = false; }
+  }
+  const screens = [
+    {key:'gallery', title:['Elige una plantilla','Choose a template'], route:['Más → Nuevo proyecto → galería','More → New project → gallery'],
+      caption:['Filtra por tipo de informe, compara una página equivalente y elige «Continuar con esta plantilla». Revisa los datos antes de crear.','Filter by report type, compare the same page and choose “Continue with this design”. Review the details before creating.']},
+    {key:'metadata', title:['Identifica el proyecto','Identify the project'], route:['Navegación → Informe','Navigation → Report'],
+      caption:['Completa título, cliente, evaluador y periodo. El idioma del informe se elige aquí; ES/EN en Preferencias solo cambia la interfaz.','Complete title, client, assessor and dates. Choose the report language here; ES/EN in Preferences changes only the interface.']},
+    {key:'finding', title:['Documenta el resultado','Document the result'], route:['Hallazgos → selecciona un hallazgo','Findings → select a finding'],
+      caption:['Usa las pestañas para separar contexto, procedimiento, evidencia y corrección. Mantén pendiente lo que todavía no has verificado.','Use the tabs to separate context, procedure, evidence and remediation. Keep unverified results pending.']},
+    {key:'evidence', title:['Vincula las evidencias','Link the evidence'], route:['Navegación → Evidencias','Navigation → Evidence'],
+      caption:['Sube la imagen, escribe el pie y vincúlala a sus hallazgos. «Anotar / censurar» prepara la copia publicada; el original sigue siendo privado.','Upload the image, write its caption and link it to findings. “Annotate / redact” prepares the published copy; the original remains private.']},
+    {key:'privacy', title:['Inspecciona antes de compartir','Inspect before sharing'], route:['Entregar → Abrir inspector','Deliver → Open inspector'],
+      caption:['Lee los avisos y comprueba texto e imágenes. La censura y las excepciones solo se aplican cuando tú las eliges.','Read warnings and inspect text and images. Redactions and exceptions are applied only when you choose them.']},
+    {key:'delivery', title:['Revisa y exporta','Review and export'], route:['Entregar → Elegir formatos','Deliver → Choose formats'],
+      caption:['Guarda la revisión, elige PDF, DOCX, HTML o Markdown y descarga los archivos preparados. Abre cada resultado para comprobar su formato.','Save the revision, choose PDF, DOCX, HTML or Markdown and download the prepared files. Open each result to inspect its layout.']},
+    {key:'backup', title:['Conserva el proyecto editable','Keep the editable project'], route:['Navegación → Respaldo del proyecto','Navigation → Project backup'],
+      caption:['El ZIP incluye el proyecto, imágenes, originales e historial. Guárdalo como información privada, separado de los informes destinados al cliente.','The ZIP contains the project, images, originals and history. Store it privately, separately from reports intended for the client.']}
+  ];
+  function screenshot(spec) {
+    const language = S.uiLang === 'en' ? 'en' : 'es';
+    const source = '/static/tutorial/' + spec.key + '-' + language + '.webp';
+    const dimensions = {gallery:[1312,922], metadata:[1142,848], finding:[1142,848], evidence:[1142,848], privacy:[1000,882], delivery:[780,882], backup:[1078,203]};
+    const [width,height] = dimensions[spec.key];
+    const image = h('img', {src:source, width, height, loading:'lazy', decoding:'async', alt:w(...spec.title) + '. ' + w(...spec.caption)});
+    const view = h('button', {type:'button', class:'tutorial-screenshot-button', 'data-tutorial-image':spec.key,
+      'aria-label':w('Ampliar captura: ','Enlarge screenshot: ') + w(...spec.title)}, image,
+      h('span', {class:'tutorial-enlarge'}, w('Ampliar captura','Enlarge screenshot')));
+    view.addEventListener('click', () => imageDialog(source, spec, view));
+    image.addEventListener('error', () => {
+      view.replaceChildren(h('p', {}, w('Captura no disponible. Las instrucciones siguen debajo.','Screenshot unavailable. The instructions remain below.')));
+      view.disabled = true;
+    }, {once:true});
+    return h('figure', {class:'tutorial-screenshot'},
+      h('div', {class:'tutorial-screen-heading'}, h('span', {}, w('CAPTURA REAL · DATOS FICTICIOS','REAL SCREENSHOT · FICTIONAL DATA')), h('strong', {}, w(...spec.route))),
+      view, h('figcaption', {}, w(...spec.caption)));
+  }
+  function imageDialog(source, spec, opener) {
+    const title = w(...spec.title), dialog = h('dialog', {class:'tutorial-image-dialog', 'aria-labelledby':'tutorialImageTitle'});
+    const region = h('div', {class:'tutorial-image-region', 'data-tutorial-image-region':'', role:'region', tabindex:'0',
+      'aria-label':w('Captura ampliada. Usa las flechas para desplazarte en tamaño real.','Enlarged screenshot. Use arrow keys to scroll at actual size.')},
+      h('img', {src:source, alt:title + '. ' + w(...spec.caption)}));
+    let actual = false;
+    const scale = h('button', {type:'button', class:'btn', 'data-tutorial-scale':'', 'aria-pressed':'false'}, w('Tamaño real','Actual size'));
+    scale.addEventListener('click', () => {actual = !actual; region.classList.toggle('actual-size', actual); scale.setAttribute('aria-pressed', String(actual)); scale.textContent = actual ? w('Ajustar a la ventana','Fit to window') : w('Tamaño real','Actual size');});
+    const close = h('button', {type:'button', class:'btn', 'data-tutorial-close':'', autofocus:''}, w('Cerrar','Close'));
+    close.addEventListener('click', () => dialog.close());
+    dialog.append(h('header', {class:'tutorial-image-heading'}, h('h2', {id:'tutorialImageTitle'}, title), h('div', {}, scale, close)),
+      region, h('p', {class:'tutorial-image-caption'}, w(...spec.caption)));
+    dialog.addEventListener('close', () => {dialog.remove(); const target = opener.isConnected ? opener : $('#editor'); target?.focus({preventScroll:true});});
+    document.body.append(dialog); dialog.showModal();
+  }
 
   // These are writing suggestions based on recorded fields, never a completion score.
   // Keep the decision function pure so navigation, language and reading the guide cannot edit a report.
@@ -90,8 +158,9 @@ const GuideUI = (() => {
       target.scrollIntoView({block: 'start', inline: 'nearest', behavior: 'instant'});
     }
   }
-  function open(index = current, focusStep = false) {
+  function open(index = progress().step, focusStep = false) {
     current = Number.isInteger(index) && index >= 0 && index < names.length ? index : 0;
+    remember({dismissed:true, step:current, visited:[...new Set([...progress().visited, current])]});
     go('guide', current);
     if (focusStep) {
       const heading = $('#guideStepTitle');
@@ -135,6 +204,7 @@ const GuideUI = (() => {
   }
   function content(index) {
     const box = h('div', {class: 'guide-step-content'});
+    box.append(screenshot(screens[index]));
     if (index === 0) {
       box.append(note('Prueba el recorrido con Nimbus si aún no tienes material. Se crea una copia editable con datos ficticios; tu proyecto actual se guarda primero y no se sustituye.',
         'Try the workflow with Nimbus if you do not have material yet. It creates an editable copy with fictional data; your current project is saved first and is not replaced.'),
@@ -216,7 +286,7 @@ const GuideUI = (() => {
         w('Sin avisos no significa «sin vulnerabilidades» ni «listo sin revisión humana».', 'No warnings does not mean “no vulnerabilities” or “ready without human review”.')),
       checklist([
         ['Contrasta afirmaciones y referencias con tu evidencia y tu alcance.', 'Check claims and references against evidence and scope.'],
-        ['Revisa también lo que aparece dentro de las imágenes: no hay OCR automático.', 'Also review text inside images: there is no automatic OCR.'],
+        ['Revisa también el texto dentro de imágenes. El OCR local opcional puede omitir secretos y no censura automáticamente.', 'Also review text inside images. Optional local OCR can miss secrets and never redacts automatically.'],
         ['Las excepciones de publicación deben ser decisiones conscientes, no una forma de ocultar un aviso.', 'Publication exceptions must be deliberate decisions, not a way to conceal a warning.']
       ]), projectActions(
         button(w('Abrir revisión de entrega', 'Open delivery review'), () => go('workflow', 'review'), 'review', true, true),
@@ -227,7 +297,7 @@ const GuideUI = (() => {
       example(w('Cada archivo tiene un destinatario', 'Each file has a recipient'), [h('div', {class: 'guide-delivery-grid'},
         h('div', {}, h('strong', {}, w('Entrega', 'Deliverable')), h('span', {}, 'PDF · DOCX · HTML · Markdown'), h('p', {}, w('Informe y comprobaciones de exportación', 'Report and export checks'))),
         h('div', {}, h('strong', {}, w('Respaldo privado', 'Private backup')), h('span', {}, w('ZIP de proyecto', 'Project ZIP')), h('p', {}, w('Editable, originales e historial', 'Editable data, originals and history'))))],
-        w('El HTML autónomo contiene todo el informe aunque uses filtros. Un filtro no elimina información.', 'Standalone HTML contains the whole report even when filtered. A filter does not remove information.')),
+        w('El HTML autónomo contiene todo el informe aunque uses filtros. Un filtro no elimina información.', 'Standalone HTML contains the whole report even when filtered. A filter does not remove information.')), screenshot(screens[6]),
       checklist([
         ['Abre los archivos: revisa saltos de página, imágenes, índice y enlaces. Las comprobaciones automáticas no sustituyen esta lectura.', 'Open the files: review page breaks, images, contents and links. Automatic checks do not replace this review.'],
         ['Guarda el respaldo como información confidencial; no lo incluyas por defecto en la entrega al cliente.', 'Store the backup as confidential information; do not include it in the client delivery by default.'],
@@ -255,12 +325,20 @@ const GuideUI = (() => {
   function render(el) {
     if (S.sel.type === 'guide' && Number.isInteger(S.sel.idx) && S.sel.idx >= 0 && S.sel.idx < names.length) current = S.sel.idx;
     const shell = h('section', {class: 'guide-shell', 'data-guide-page': '', 'aria-labelledby': 'guideTitle'});
-    shell.append(h('header', {class: 'guide-intro'}, h('p', {class: 'guide-eyebrow'}, w('GUÍA DE TRABAJO', 'WORKFLOW GUIDE')),
+    shell.append(h('header', {class: 'guide-intro'}, h('p', {class: 'guide-eyebrow'}, w('TUTORIAL VISUAL · 6 PASOS', 'VISUAL TUTORIAL · 6 STEPS')),
       h('h1', {id: 'guideTitle'}, w('Tu primer informe, paso a paso.', 'Your first report, step by step.')),
       h('p', {}, w('Un recorrido opcional para convertir tu trabajo en una entrega clara. Puedes volver a cualquier paso sin cambiar el informe.',
         'An optional path from assessment work to a clear deliverable. You can revisit any step without changing the report.')),
       h('ol', {class: 'guide-flow', 'aria-label': w('De la evidencia a la entrega', 'From evidence to delivery')},
-        ['Evidencia|Evidence', 'Hallazgo|Finding', 'Revisión|Review', 'Entrega|Delivery'].map(pair => h('li', {}, w(...pair.split('|')))))));
+        ['Plantilla|Template', 'Hallazgo|Finding', 'Revisión|Review', 'Entrega|Delivery'].map(pair => h('li', {}, w(...pair.split('|')))))));
+    const reset = h('button', {type:'button', class:'btn', 'data-tutorial-reset':''}, w('Reiniciar recorrido','Restart tutorial'));
+    reset.addEventListener('click', () => {remember({completed:false, step:0, visited:[]}); open(0, true);});
+    shell.append(h('div', {class:'tutorial-progress'}, h('p', {'data-tutorial-progress':'', role:'status'}, progress().completed ?
+      w('Recorrido completado. Puedes repasar cualquier paso.','Tutorial completed. You can revisit any step.') :
+      progress().visited.length + w(' de 6 pasos consultados. Este registro pertenece al tutorial.',' of 6 steps viewed. This record belongs to the tutorial.')), reset));
+    shell.append(h('p', {class:'tutorial-storage-note'}, tutorialStorage ?
+      w('El progreso se guarda solo en este navegador. Reiniciarlo no cambia tus proyectos.','Progress is saved only in this browser. Restarting it does not change your projects.') :
+      w('Este navegador no permite guardar el progreso. Puedes seguir el recorrido durante esta sesión y abrirlo siempre desde Tutorial visual.','This browser cannot save progress. You can continue during this session and reopen it anytime from Visual tutorial.')));
     if (S.data) shell.append(projectState(true));
     const navigation = h('nav', {class: 'guide-navigation', 'aria-label': w('Pasos de la guía', 'Guide steps')},
       h('ol', {'data-guide-nav': ''}, names.map((pair, index) => {
@@ -278,41 +356,39 @@ const GuideUI = (() => {
     next.id = 'guideNext'; next.disabled = current === names.length - 1;
     stage.append(h('footer', {class: 'guide-footer'}, previous, next,
       button(S.slug ? w('Volver al inicio del proyecto', 'Back to project overview') : w('Volver al inicio', 'Back to overview'), () => go('home'), 'home')));
+    if (current === names.length - 1) {
+      const complete = h('button', {type:'button', class:'btn primary', 'data-tutorial-complete':''}, w('Completar recorrido','Complete tutorial'));
+      complete.addEventListener('click', () => {remember({completed:true, dismissed:true}); renderMain(); $('#guideStepTitle')?.focus({preventScroll:true});});
+      complete.disabled = progress().completed;
+      stage.querySelector('.guide-footer').append(complete);
+    }
     shell.append(h('div', {class: 'guide-layout'}, navigation, stage), seniorHelp());
     el.append(shell);
   }
   function entry() {
-    if (S.data) return projectState();
-    return h('section', {class: 'guide-entry', 'aria-labelledby': 'guideEntryTitle'},
+    const wrapper = h('div', {class:'tutorial-entry-wrapper'});
+    if (S.data) wrapper.append(projectState());
+    if (progress().dismissed) return wrapper;
+    const start = button(w('Empezar recorrido','Start tutorial'), () => open(), 'open-guide', true);
+    start.dataset.tutorialStart = '';
+    const dismiss = h('button', {type:'button', class:'btn', 'data-tutorial-dismiss':''}, w('Ahora no','Not now'));
+    dismiss.addEventListener('click', () => {remember({dismissed:true}); wrapper.querySelector('[data-tutorial-invite]')?.remove(); $('#editor')?.focus({preventScroll:true});});
+    wrapper.prepend(h('section', {class: 'guide-entry', 'data-tutorial-invite':'', 'aria-labelledby': 'guideEntryTitle'},
       h('div', {}, h('p', {class: 'guide-eyebrow'}, w('6 PASOS · A TU RITMO', '6 STEPS · AT YOUR PACE')),
-        h('h2', {id: 'guideEntryTitle'}, w('¿Es tu primer informe aquí?', 'Your first report here?')),
-        h('p', {}, w('Alcance, hallazgos, evidencias, revisión y entrega. Una guía visual que puedes abrir cuando la necesites.',
-          'Scope, findings, evidence, review and delivery. A visual guide you can open whenever you need it.'))),
-      button(w('Abrir guía visual', 'Open visual guide'), () => open(), 'open-guide'));
+        h('h2', {id: 'guideEntryTitle'}, w('Conoce report-gen en imágenes','Get to know report-gen in pictures')),
+        h('p', {}, w('Capturas reales para elegir plantilla, redactar, revisar y exportar. Puedes volver desde «Tutorial visual» en el menú.',
+          'Real screenshots to choose a template, write, review and export. Reopen it from “Visual tutorial” in the menu.'))),
+      h('div', {class:'tutorial-entry-actions'}, start, dismiss)));
+    return wrapper;
   }
   function bind() {
     if ($('#guideBtn')) return;
-    const b = button(w('Guía: primer informe', 'Guide: first report'), () => open(), 'open-guide');
+    const b = button(w('Tutorial visual', 'Visual tutorial'), () => open(), 'open-guide');
     b.id = 'guideBtn';
     const utilities = $('.workspace-utilities') || $('.sidebar');
     const more = $('#studioMore .studio-more-body');
-    const mobile = window.matchMedia('(max-width:760px)');
-    const place = () => {
-      const focused = document.activeElement === b;
-      const destination = mobile.matches && more ? more : utilities;
-      if (b.parentElement !== destination) destination.append(b);
-      if (focused) {
-        if (mobile.matches && more) $('#studioMore').open = true;
-        else if (document.body.classList.contains('focus-mode')) {
-          // Keep a focused help control reachable when the sidebar is hidden.
-          $('#studioMore')?.querySelector('summary')?.focus({preventScroll: true});
-          return;
-        }
-        b.focus({preventScroll: true});
-      }
-    };
-    place();
-    mobile.addEventListener?.('change', place);
+    // One stable menu entry remains reachable on mobile and in desktop focus mode.
+    (more || utilities).append(b);
     secondaryNavigation();
     update();
   }
@@ -339,13 +415,13 @@ const GuideUI = (() => {
     const active = S.sel.type === 'guide';
     const b = $('#guideBtn');
     if (b) {
-      b.textContent = w('Guía: primer informe', 'Guide: first report');
+      b.textContent = w('Tutorial visual', 'Visual tutorial');
       b.classList.toggle('active', active);
       b.setAttribute('aria-current', active ? 'page' : 'false');
       b.disabled = projectBusyCount > 0;
     }
     $('.layout')?.classList.toggle('workspace-guide', active);
-    if (active && $('#workspaceContext')) $('#workspaceContext').textContent = w('Guía: primer informe', 'Guide: first report');
+    if (active && $('#workspaceContext')) $('#workspaceContext').textContent = w('Tutorial visual', 'Visual tutorial');
     for (const [id, pair] of [['workspaceResearch',['Registro y cobertura','Capture and coverage']],['workspaceFollowup',['Historial y seguimiento','History and follow-up']]]) {
       const details = $('#'+id);
       if (details) details.querySelector('summary').textContent = w(...pair);

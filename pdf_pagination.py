@@ -2,6 +2,88 @@
 from error_messages import message as backend_message
 
 
+def compact_pdf_uri_breaks(source):
+    """Coalesce generated URI hints in the private WeasyPrint input only.
+
+    One ``wbr`` per ASCII character creates several layout/drawing objects per
+    glyph. WeasyPrint represents those breaks internally as U+200B anyway.
+    Let Pango shape one text run with the same optional break opportunities;
+    its empty glyphs are omitted from the PDF, including its ToUnicode text.
+    Authored markup, non-ASCII clusters and link destinations stay untouched.
+    This representation must never be saved as the portable HTML export.
+    """
+    import re
+    from bisect import bisect_left, bisect_right
+    from lxml import html
+    uri = re.compile(r"\b(?:https?|ftps?)://[^\s<>\"'`]+", re.IGNORECASE)
+    tree = html.document_fromstring(source)
+    changed = False
+    parents = {boundary.getparent() for boundary in
+               tree.xpath('//wbr[@data-rg-pdf-uri-break="true"]')}
+    for parent in parents:
+        # _pdf_code_layout generates only plain break hints in each affected
+        # text container. Retain any mixed/visible authored markup unchanged.
+        if any(child.tag != 'wbr' or len(child) or child.text or
+               dict(child.attrib) != {'data-rg-pdf-uri-break': 'true'}
+               for child in parent):
+            continue
+        parts = [parent.text or '']
+        offsets = set()
+        length = len(parts[0])
+        for boundary in parent:
+            offsets.add(length)
+            parts.append(boundary.tail or '')
+            length += len(parts[-1])
+        original = ''.join(parts)
+        ordered_offsets = sorted(offsets)
+        matches = [(match, ordered_offsets[bisect_right(ordered_offsets, match.start()):
+                                          bisect_left(ordered_offsets, match.end())])
+                   for match in uri.finditer(original)]
+        if {offset for _, positions in matches for offset in positions} != offsets:
+            continue
+        for boundary in list(parent):
+            parent.remove(boundary)
+        parent.text = None
+        if (len(matches) == 1 and not original[:matches[0][0].start()].strip()
+                and not original[matches[0][0].end():].strip()):
+            # A literal-only anchor needs no extra inline box (and therefore
+            # no second inherited PDF annotation for each visible line).
+            cuts = [0, *ordered_offsets, len(original)]
+            parent.text = '\u200b'.join(original[a:b] for a, b in zip(cuts, cuts[1:]))
+            parent.set('style', parent.get('style', '') + ';font-variant-ligatures:none')
+            changed = True
+            continue
+        previous = None
+        cursor = 0
+        for match, positions in matches:
+            if not positions:
+                continue
+            prefix = original[cursor:match.start()]
+            if previous is None:
+                parent.text = (parent.text or '') + prefix
+            else:
+                previous.tail = (previous.tail or '') + prefix
+            # Common/contextual ligatures can cross an empty break glyph and
+            # acquire an invalid ToUnicode map in WeasyPrint/Pango. The old
+            # independent wbr boxes prevented these ligatures already. Limit
+            # the setting to this URI; prose and required script shaping keep
+            # their normal typography.
+            run = html.Element('span', {
+                'data-rg-pdf-uri-run': 'true',
+                'style': 'font-variant-ligatures:none'})
+            cuts = [match.start(), *positions, match.end()]
+            run.text = '\u200b'.join(original[a:b] for a, b in zip(cuts, cuts[1:]))
+            parent.append(run)
+            previous = run
+            cursor = match.end()
+        if previous is None:
+            parent.text = original
+        else:
+            previous.tail = original[cursor:]
+        changed = True
+    return html.tostring(tree, encoding='unicode', method='html') if changed else source
+
+
 def keep_short_labelled_lists(source):
     """Keep a brief label and its small inline-only list on one PDF page.
 

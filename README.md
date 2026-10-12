@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.33.2
+# report-gen 0.34.0
 
 <a id="qué-es"></a>
 
@@ -39,6 +39,8 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 2. En el proyecto, **Siguiente acción sugerida** te orienta según lo que ya has escrito. **Ver este paso en la guía** abre la ayuda correspondiente. La ayuda no completa ni valida los datos de tu evaluación por ti.
 3. Guarda, revisa el **Inspector de publicación** y genera los formatos que necesites desde **Entregar**. Abre los archivos antes de compartirlos y conserva un respaldo privado del proyecto.
 
+**Tutorial visual** está disponible desde el menú, con capturas ES/EN ampliables y progreso local. La invitación inicial se puede omitir.
+
 [Recorrido completo y recomendaciones](docs/guide.es.md#primer-informe).
 
 <a id="características"></a>
@@ -59,15 +61,13 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.33.2
+## Novedades de 0.34.0
 
-El HTML portátil reserva la sangría de las listas según sus dígitos y el tamaño del texto. Los marcadores de dos y tres dígitos permanecen completos en móvil al ampliar al 200 %, sin alterar la numeración, los enlaces ni el desplazamiento local de listas excepcionales. La tabla de activos de Word también da más espacio a los identificadores habituales.
+**Tutorial visual** acompaña el primer acceso con una invitación opcional y queda disponible en el menú. Sus seis pasos incluyen capturas reales en español e inglés: plantilla, datos del informe, hallazgos, evidencias, revisión y entrega con respaldo. Puedes ampliar las capturas, continuar donde quedaste o reiniciar el recorrido sin cambiar tus proyectos. Funciona localmente y también cuando el navegador no permite guardar el progreso.
 
-Los PDF con muchas URLs largas evitan crear anotaciones de enlace vacías por cada oportunidad de salto. Se conservan texto, destinos y ajuste visual. Si una tabla no cabe dentro de un hallazgo, el aviso explica cómo dividirla o moverla a una sección narrativa; el procedimiento del mismo hallazgo tiene el mismo límite. Una exportación que supera los 120 segundos muestra un aviso localizado, conserva la salida anterior y limpia sus archivos intermedios.
+La exportación PDF reduce el trabajo de composición de URLs literales extensas. Conserva su texto seleccionable y sus destinos completos, sin aumentar el límite de 120 segundos ni retirar las comprobaciones del informe. Las pruebas incluyen tablas con 72 URLs de más de 300 caracteres, ambos idiomas y los seis diseños generales. También se corrige el falso rechazo de un párrafo cuando una URL completa continúa entre páginas.
 
-**Crear mi proyecto** abre primero la galería. Filtra por propósito, busca un perfil y compara portada, resumen y página técnica antes de completar los datos. Volver a la galería conserva lo escrito. El nuevo perfil **Enterprise Control Review** aporta una portada editorial alineada a la izquierda y ocho apartados para revisar diseño y operación de controles, muestreo, excepciones y repetición de pruebas.
-
-El botón **Enlace** de los campos Markdown permite mostrar un nombre descriptivo conservando la URL completa como destino. La revisión señala las URLs largas visibles para comprobar su ajuste en Word, sin cambiar la puntuación de preparación ni el contenido. También se corrigen la celda vacía de metadatos en portadas HTML estrechas y la reserva de espacio de portadas Word con ilustración.
+El kit opcional de aceptación en Microsoft Word admite los campos de numeración generados por report-gen y distingue los fragmentos de URLs externas de los marcadores del documento. Añade un caso explícito de URLs largas y numeración excepcional para la revisión nativa.
 
 **Límites:** algunas URL de Word siguen saltando antes de llenar la línea en LibreOffice; no se altera su texto para ocultarlo. La revisión en Microsoft Word nativo permanece pendiente. El verificador PDF no acredita ordinales ni maquetación; ambas requieren revisión visual. [Cambios completos](CHANGELOG.md) · [Guía de entrega](docs/guide.es.md#qué-comprueba-cada-entrega).
 
@@ -96,7 +96,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.33.2 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.34.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 
