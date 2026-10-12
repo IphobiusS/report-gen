@@ -74,3 +74,46 @@ def test_plain_url_hints_preserve_mixed_markup_unicode_and_non_url_typography():
     assert unicodedata.normalize('NFC', compact.text_content().replace('\u200b', '')) == unicodedata.normalize('NFC', before.text_content())
     assert 'e\u0301/' in compact.text_content()
     assert compact.xpath('//em')[0].get('style') is None
+
+
+@pytest.mark.parametrize('theme', THEMES)
+@pytest.mark.parametrize('tag', ['p', 'li', 'td', 'figcaption'])
+def test_non_uri_identifier_wraps_inside_narrative_container(theme, tag):
+    token = 'artifact-' + '0123456789abcdef' * 18
+    body = f'<{tag}>{token}</{tag}>'
+    if tag == 'li':
+        body = '<ul>' + body + '</ul>'
+    elif tag == 'td':
+        body = '<table style="width:55%;table-layout:fixed"><tr>' + body + '</tr></table>'
+    elif tag == 'figcaption':
+        body = '<figure>' + body + '</figure>'
+    sheet = (Path(engine.THEMES) / f'{theme}.css').as_uri()
+    source = f'<html><head><link rel="stylesheet" href="{sheet}"></head><body>{body}</body></html>'
+    document = HTML(string=engine._pdf_code_layout(source)).render()
+    assert len(document.pages) == 1
+    root = document.pages[0]._page_box
+    container = next(b for b in root.descendants() if type(b).__name__ in {'BlockBox', 'TableCellBox'}
+                     and b.element.tag == tag
+                     and any(type(child).__name__ == 'LineBox' for child in b.children))
+    boxes = [b for b in container.descendants() if type(b).__name__ == 'TextBox']
+    assert ''.join(b.text for b in boxes) == token
+    assert len(boxes) > 2
+    left, right = container.content_box_x(), container.content_box_x() + container.width
+    assert all(left - .1 <= b.position_x <= b.position_x + b.width <= right + .1 for b in boxes)
+    with fitz.open(stream=document.write_pdf(), filetype='pdf') as pdf:
+        assert token in ''.join(page.get_text() for page in pdf).replace('\n', '')
+
+
+@pytest.mark.parametrize('theme', THEMES)
+def test_emergency_wrapping_does_not_change_ordinary_prose(theme):
+    prose = ('Office staff review ordinary words and independent controls before approval. '
+             'Los responsables revisan palabras corrientes y controles antes de aprobar. ') * 4
+    sheet = (Path(engine.THEMES) / f'{theme}.css').as_uri()
+    def lines(style):
+        source = (f'<html><head><link rel="stylesheet" href="{sheet}"></head><body>'
+                  f'<p style="{style}">{prose}</p></body></html>')
+        document = HTML(string=source).render()
+        return [''.join(child.text for child in box.descendants() if type(child).__name__ == 'TextBox')
+                for page in document.pages for box in page._page_box.descendants()
+                if type(box).__name__ == 'LineBox']
+    assert lines('') == lines('overflow-wrap:normal')

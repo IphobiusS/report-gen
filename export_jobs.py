@@ -276,10 +276,14 @@ def _exitcode(process):
     except BlockingIOError:
         return None
     if not status:
-        raise RuntimeError('Export supervisor closed without a worker result')
+        raise RuntimeError(backend_message(
+            'El supervisor de exportación terminó sin recibir el resultado del trabajador',
+            en='Export supervisor closed without a worker result'))
     process._report_gen_status += status
     if len(process._report_gen_status) > 16:
-        raise RuntimeError('Invalid export supervisor result')
+        raise RuntimeError(backend_message(
+            'Resultado del supervisor de exportación inválido',
+            en='Invalid export supervisor result'))
     if not process._report_gen_status.endswith(b'\n'):
         return None
     process._report_gen_worker_exitcode = int(process._report_gen_status)

@@ -146,3 +146,47 @@ def test_pdf_name_destination_spelling_is_supported(tmp_path):
     writer.write(changed)
     result = contract.inspect(changed, 'pdf', expected)
     assert result['pdf_finding_regions_checked'] == 2
+
+
+@pytest.mark.parametrize('mutation', ['unused-form', 'executed-form', 'changed-content'])
+def test_unused_form_resources_do_not_invalidate_real_regional_hyphens(tmp_path, mutation):
+    from pypdf import PdfWriter
+    from pypdf.generic import ArrayObject, DecodedStreamObject, DictionaryObject, NameObject
+    import pypdfium2
+    from weasyprint import HTML
+
+    original = ('<html lang="en"><body><section class="frontsec" id="start">Start</section>'
+                '<section class="finding" id="F01"><h2 class="f-title">First heading</h2>'
+                '<p style="width:65px;font-family:DejaVu Sans;font-size:12px">'
+                'recovery-assurance</p></section></body></html>')
+    expected = contract.from_tree(html.document_fromstring(original))
+    observed = original.replace('assurance', 'assurancX') if mutation == 'changed-content' else original
+    plain = tmp_path / 'plain.pdf'
+    HTML(string=observed).write_pdf(plain)
+    writer = PdfWriter(clone_from=plain)
+    page = writer.pages[0]
+    form = DecodedStreamObject()
+    form.update({NameObject('/Type'): NameObject('/XObject'), NameObject('/Subtype'): NameObject('/Form'),
+                 NameObject('/BBox'): ArrayObject(page.mediabox),
+                 NameObject('/Resources'): DictionaryObject({NameObject('/Font'): page['/Resources']['/Font']})})
+    form.set_data(page.get_contents().get_data())
+    page['/Resources'][NameObject('/XObject')] = DictionaryObject({NameObject('/SharedForm'): writer._add_object(form)})
+    if mutation == 'executed-form':
+        stream = DecodedStreamObject()
+        stream.set_data(page.get_contents().get_data() + b'\n/SharedForm Do\n')
+        page[NameObject('/Contents')] = writer._add_object(stream)
+    target = tmp_path / (mutation + '.pdf')
+    writer.write(target)
+    with pypdfium2.PdfDocument(target) as document:
+        pdfpage = document[0]
+        textpage = pdfpage.get_textpage()
+        try:
+            assert '\x02' in textpage.get_text_bounded(errors='strict')
+        finally:
+            textpage.close()
+            pdfpage.close()
+    if mutation == 'unused-form':
+        assert contract.inspect(target, 'pdf', expected)['pdf_finding_regions_checked'] == 1
+    else:
+        with pytest.raises(ValueError):
+            contract.inspect(target, 'pdf', expected)

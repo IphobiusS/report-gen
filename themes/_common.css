@@ -22,6 +22,9 @@
 
 html { font-size: 10pt; }
 body { margin: 0; font-family: var(--font-body); color: var(--ink); background: var(--paper); line-height: 1.45; }
+/* A hash, hostname or identifier may be longer than its narrative container.
+   Emergency wrapping preserves the token; ordinary words use normal breaks. */
+p, li, blockquote, figcaption, td, th { overflow-wrap: anywhere; }
 a { color:var(--cyan-ink); overflow-wrap:anywhere; }
 .frontsec, .finding { position: relative; }
 .pm { position: absolute; top: 0; left: 0; font-size: 1px; color: #ffffff; opacity: 0.01; }

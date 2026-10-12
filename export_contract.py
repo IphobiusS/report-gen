@@ -421,10 +421,7 @@ def _pdf_hyphen_donor(page, reader):
         return lo, hi, data
 
     resources = resolved(page.get('/Resources', {}))
-    for ref in resolved(resources.get('/XObject', {})).values():
-        if resolved(ref).get('/Subtype') != '/Image':
-            raise ValueError(backend_message('No se puede corroborar el texto del objeto Form',
-                                             en='Form text is not corroborated'))
+    xobjects = resolved(resources.get('/XObject', {}))
     mappings = {}
     fonts = {}
     for name, ref in resolved(resources.get('/Font', {})).items():
@@ -469,7 +466,14 @@ def _pdf_hyphen_donor(page, reader):
     selected = None
     stack = []
     for operands, operator in ContentStream(page.get_contents(), reader).operations:
-        if operator == b'q':
+        if operator == b'Do':
+            # Backends share resources across pages. An unpainted Form cannot
+            # contribute text; an executed one still needs unsupported nested
+            # decoding and must fail closed rather than bypass corroboration.
+            if not operands or resolved(xobjects.get(operands[0], {})).get('/Subtype') != '/Image':
+                raise ValueError(backend_message('No se puede corroborar el texto del objeto Form',
+                                                 en='Form text is not corroborated'))
+        elif operator == b'q':
             stack.append(selected)
         elif operator == b'Q':
             if not stack:
@@ -651,6 +655,7 @@ def _pdf_region_profiles(path, regions):
         previous = ordered_end
         ranges.append((region['id'], start, end))
     result = {}
+    proved_pages = set()
     with _PDFIUM_LOCK, pypdfium2.PdfDocument(path) as document:
         for key, start, end in ranges:
             raw_pages = []
@@ -668,8 +673,10 @@ def _pdf_region_profiles(path, regions):
                         if '\x02' in text or '\ufffe' in text:
                             # Corroborate every marker on the full native page
                             # before accepting the same markers in its region.
-                            full = textpage.get_text_bounded(errors='strict')
-                            _pdf_proved_hyphens(reader.pages[number], reader, textpage, full)
+                            if number not in proved_pages:
+                                full = textpage.get_text_bounded(errors='strict')
+                                _pdf_proved_hyphens(reader.pages[number], reader, textpage, full)
+                                proved_pages.add(number)
                             if '\ufffe' in text:
                                 raise ValueError(backend_message('Extracción de región PDF ambigua',
                                                                  en='Ambiguous PDF region extraction'))

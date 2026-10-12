@@ -441,10 +441,13 @@ def test_parent_death_cleans_worker_tree_without_pid_lookup(tmp_path, worker_exi
 
 
 @pytest.mark.skipif(os.name == 'nt', reason='POSIX supervisor failure')
-def test_crashed_supervisor_does_not_publish_success_or_leave_descendants(controlled_tree):
+@pytest.mark.parametrize('language,fragment', [('es', 'supervisor de exportación terminó'),
+                                               ('en', 'supervisor closed')])
+def test_crashed_supervisor_does_not_publish_success_or_leave_descendants(controlled_tree, language, fragment):
+    from error_messages import language_scope
     process, children = controlled_tree('running')
     os.kill(process.pid, signal.SIGKILL)
-    with pytest.raises(RuntimeError, match='supervisor closed'):
+    with language_scope(language), pytest.raises(RuntimeError, match=fragment):
         eventually(lambda: _exitcode(process) is not None)
     # Observing EOF did not reap the dead leader, so its group remains ours.
     assert process.returncode is None

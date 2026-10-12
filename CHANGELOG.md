@@ -9,11 +9,20 @@
   La presencia regional no certifica el orden visual ni la pertenencia de
   cada imagen o evidencia; los documentos no canónicos conservan el control
   global explícito.
+- La corroboración de guiones PDF valida los objetos dibujados en la página,
+  sin rechazar recursos Form que solo estén declarados y no se utilicen.
+  Los objetos Form ejecutados siguen requiriendo corroboración; la prueba no
+  acepta texto ambiguo ni lo completa a partir del contenido esperado.
 - Evita desbordamientos PDF de URLs escritas como texto común, también tras
   formato en línea, en listas y en tablas. Añade puntos de corte opcionales
   únicamente a la URL y conserva sus caracteres. El verificador prueba primero
   la continuación estricta entre líneas antes de una búsqueda genérica, evitando
   falsos límites con URLs largas después de muchos párrafos parecidos.
+- Las cadenas narrativas sin espacios, como hashes e identificadores largos,
+  se ajustan al ancho disponible sin alterar sus caracteres. Las palabras
+  corrientes conservan los mismos saltos de línea en los seis temas.
+- La ventana de comprobaciones traduce el nuevo contador PDF a español e inglés
+  y mantiene explícito que no certifica la asociación visual de las evidencias.
 - Corrige un falso rechazo de evidencias Markdown: el texto de contexto
   conserva los encabezados de pasos que proceden de rótulos en línea. Se
   mantiene la comparación exacta de contexto y el rechazo de imágenes movidas.
