@@ -1,5 +1,9 @@
 # Cambios 0.34.2 (2026-10-12)
 
+- El HTML portátil aprovecha la línea disponible también con URLs literales
+  e identificadores ASCII largos después de una etiqueta. El ajuste se limita
+  a esos tokens, conserva exactamente el texto y los enlaces, y no cambia los
+  saltos de las palabras normales ni las salidas PDF, Word o Markdown.
 - Conserva la alineación izquierda, centrada y derecha de las tablas Markdown
   en HTML, PDF y Word. La alineación procede del parser; no se admite CSS
   arbitrario ni se habilita HTML sin filtrar.

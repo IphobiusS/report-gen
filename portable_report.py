@@ -83,6 +83,7 @@ table.report-fields{table-layout:fixed}
 TEXT_FLOW_STYLE = '''
 code{overflow-wrap:anywhere;word-break:normal;line-break:auto}
 pre,pre code,.report-literal-url,.report-literal-url code{overflow-wrap:anywhere;word-break:break-all;line-break:anywhere}
+.report-literal-token{overflow-wrap:anywhere;word-break:break-all}
 .report-content blockquote{margin-inline:0;border-inline-start:3px solid #64778b;padding-inline-start:min(1em,5%)}
 .report-content ol:not(.report-counter-list){padding-inline-start:max(40px,calc((var(--report-counter-digits,1) + 1)*1ch))}
 @media(max-width:600px){
@@ -129,10 +130,43 @@ REFLOW_STYLE = '''
 
 
 def prepare_text_flow(tree, en=False):
-    """Mark literal URL labels without changing descriptive link wrapping."""
+    """Wrap literal runs while preserving authored text and ordinary prose."""
     for node in tree.xpath('//a[@href]|//code[not(ancestor::pre)]|//ul[contains(concat(" ",normalize-space(@class)," ")," refs ")]/li'):
         if re.fullmatch(r'(?:https?|ftp)://\S+', ''.join(node.itertext()).strip(), re.IGNORECASE):
             node.set('class', ' '.join([*(node.get('class') or '').split(), 'report-literal-url']))
+    # Emergency overflow wrapping first moves a bare, overlong token to a new
+    # line. Give only literal URLs and long ASCII runs normal break opportunities
+    # so they can use the space after a prose label. DOM text nodes retain exact
+    # characters: no soft hyphens, hidden separators or authored HTML parsing.
+    literal = re.compile(r'\b(?:https?|ftps?)://[^\s<>"\'`]+|'
+                         r'(?<!\S)[\x21-\x7e]{64,}(?!\S)', re.IGNORECASE)
+    for slot in tree.xpath('.//text()[not(ancestor::head or ancestor::pre or '
+                           'ancestor::code or ancestor::script or ancestor::style or '
+                           'ancestor::textarea or ancestor::svg or ancestor::math) and '
+                           'not(ancestor::*[contains(concat(" ",normalize-space(@class)," "),'
+                           '" report-literal-url ") or contains(concat(" ",normalize-space(@class)," "),'
+                           '" report-literal-token ")])]'):
+        text = str(slot)
+        matches = list(literal.finditer(text))
+        if not matches:
+            continue
+        parent = slot.getparent()
+        if slot.is_text:
+            parent.text = text[:matches[0].start()]
+            container, index = parent, 0
+        elif slot.is_tail:
+            parent.tail = text[:matches[0].start()]
+            container = parent.getparent()
+            index = container.index(parent) + 1
+        else:
+            continue
+        for number, match in enumerate(matches):
+            span = html.Element('span', {'class': 'report-literal-token'})
+            span.text = match.group()
+            end = matches[number + 1].start() if number + 1 < len(matches) else len(text)
+            span.tail = text[match.end():end]
+            container.insert(index, span)
+            index += 1
     # Native list markers sit outside their element's box. Large, valid starts
     # can otherwise lose their leading digits beyond the viewport without
     # producing a detectable element overflow. Keep native counters and roles;
