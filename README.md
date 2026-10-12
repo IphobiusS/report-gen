@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.34.1
+# report-gen 0.34.2
 
 <a id="qué-es"></a>
 
@@ -61,13 +61,13 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.34.1
+## Novedades de 0.34.2
 
-La revisión del PDF distingue apariciones repetidas o solapadas de encabezados y acepta títulos completos que se envuelven entre líneas. El índice reutiliza el texto ya verificado y el motor dispone de 300 segundos por defecto, configurables entre 30 y 600 para informes extensos. PDF reserva 3 mm bajo la línea del encabezado sin mover el cuerpo. Word separa mejor el encabezado y evita páginas vacías causadas por espaciadores después de tablas. El tutorial devuelve el foco al botón que abrió la galería al cancelarla o cerrarla, en ambos idiomas.
+La alineación izquierda, centrada o derecha de las tablas Markdown se conserva al exportar. El verificador PDF comprueba el contenido de cada hallazgo dentro de su región, para que una copia en el índice o el resumen no oculte texto ausente. Las URLs largas escritas como texto común ya no desbordan el PDF; su verificación evita búsquedas ambiguas innecesarias. En Linux y macOS, un supervisor mantiene reservado el grupo del trabajo hasta detener sus procesos, incluso si el trabajador termina antes. La publicación exige también las comprobaciones de macOS, LibreOffice estable y WebKit. Estas comprobaciones de motor no equivalen a una revisión en Microsoft Word o Safari nativos.
 
 **Tutorial visual** acompaña el primer acceso con una invitación opcional y queda disponible en el menú. Sus seis pasos incluyen capturas reales en español e inglés: plantilla, datos del informe, hallazgos, evidencias, revisión y entrega con respaldo. Puedes ampliar las capturas, continuar donde quedaste o reiniciar el recorrido sin cambiar tus proyectos. Funciona localmente y también cuando el navegador no permite guardar el progreso.
 
-La exportación PDF reduce el trabajo de composición de URLs literales extensas. Conserva su texto seleccionable y sus destinos completos, sin aumentar el límite de 120 segundos ni retirar las comprobaciones del informe. Las pruebas incluyen tablas con 72 URLs de más de 300 caracteres, ambos idiomas y los seis diseños generales. También se corrige el falso rechazo de un párrafo cuando una URL completa continúa entre páginas.
+La exportación PDF reduce el trabajo de composición de URLs literales extensas. Conserva su texto seleccionable y sus destinos completos, con un presupuesto predeterminado de 300 segundos, configurable entre 30 y 600, y sin retirar las comprobaciones del informe. Las pruebas incluyen tablas con 72 URLs de más de 300 caracteres, ambos idiomas y los seis diseños generales. También se corrige el falso rechazo de un párrafo cuando una URL completa continúa entre páginas.
 
 El kit opcional de aceptación en Microsoft Word admite los campos de numeración generados por report-gen y distingue los fragmentos de URLs externas de los marcadores del documento. Añade un caso explícito de URLs largas y numeración excepcional para la revisión nativa.
 
@@ -98,7 +98,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.34.1 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.34.2 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

@@ -1,4 +1,4 @@
-# report-gen 0.34.1 user guide
+# report-gen 0.34.2 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -128,6 +128,13 @@ A Word list starting above 65,535 uses `SEQ` fields to avoid the truncation obse
 
 PDF verification reserves independent physical occurrences for each code line and, within each category, for distinct headings, cells, list items and paragraphs. A longer cell cannot also supply a missing cell whose text it contains. Categories are checked separately because a paragraph inside a list legitimately belongs to both. If ambiguous wrapping exceeds its verification budget, it reports that verification could not be completed and preserves the previous delivery; it does not claim content loss without establishing it.
 
+For reports with canonical sections, PDF verification also requires each
+finding's text inside its region, between the delimiting PDF destinations.
+It checks the title, headings, paragraphs, code, cells, lists and metadata.
+Copies in the contents or summary cannot replace text missing from that region.
+This does not verify visual order or the association of individual images;
+noncanonical documents retain the global scope.
+
 PDF and portable HTML wrap literal URLs to the available width without changing their text. LibreOffice may wrap some DOCX URLs early; no artificial characters or line breaks are inserted to conceal that limitation. Native Microsoft Word validation requires a licensed Windows desktop installation. The opt-in workflow is implemented; local OOXML and LibreOffice checks do not substitute for that native validation.
 
 **URL compatibility in Word**, under review, identifies locations containing visible URLs of 96 or more characters in the outgoing content. This signals that the DOCX needs inspection; it does not measure line breaks, fail preparation or change the readiness score. Markdown fields offer **Link** for entering a descriptive name and an HTTP/HTTPS URL whose destination remains literal. This is an optional writing alternative: preserve literal URLs that are evidence or commands. The notice does not modify the report automatically or display the detected value.
@@ -136,7 +143,7 @@ Shared delivery manifests and downloadable verification records retain warning c
 
 ## Recovery and privacy
 
-The export queue terminates each job's processes before cleaning up its files. Windows uses a private process job; POSIX retains the worker until its descendants are stopped when `waitid`/`WNOWAIT` are available. On macOS with Python 3.11/3.12, an early worker exit retains a limitation: descendants cannot be guaranteed to stop after the worker is reaped. Python 3.13 adds `waitid` on macOS; native acceptance on that platform remains pending. This difference does not change export contents.
+The export queue terminates each job's processes before cleaning up its files. Windows uses a private process job. On Linux and macOS, a supervisor retains the job's process group until cleanup without relying on `waitid`/`WNOWAIT`; it communicates the worker result separately and stops the group if the parent disappears. Cleanup covers descendants that remain in that group; it is not isolation against programs that deliberately start another session. The macOS gate runs Python 3.11 and 3.12.
 
 The external workspace contains `projects/` and `library/`; originals, history and annexes stay inside each project. The launcher resolves `--workspace` before `REPORT_GEN_WORKSPACE`. Without either selection it retains `webapp/projects/` and `webapp/library/`; it does not search for or move data automatically. **Workspace backup** includes all projects, originals and libraries. Treat it as private data.
 

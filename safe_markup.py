@@ -78,7 +78,7 @@ def markdown_parser(*, raw_inline_html=False):
     """Shared parser for publication and reusable-resource inspection."""
     parser = markdown.Markdown(
         extensions=['pymdownx.superfences', 'tables', 'sane_lists', 'nl2br'],
-        extension_configs={'pymdownx.superfences': {
+        extension_configs={'tables': {'use_align_attribute': True}, 'pymdownx.superfences': {
             'custom_fences': [{'name': '*', 'class': '', 'format': _literal_fence}],
         }}, output_format='html5')
     if not raw_inline_html:
@@ -213,6 +213,15 @@ def md(text, img_base=None):
         # report's generated titles and verify that they survive every export.
         for heading in root.xpath('.//h1|.//h2|.//h3|.//h4|.//h5|.//h6'):
             heading.set('data-rg-authored-heading', 'true')
+        # Preserve Markdown's colon alignment without accepting source CSS.
+        # Word reads the align attribute; browsers and WeasyPrint need the
+        # explicit generated style to override theme header defaults reliably.
+        for cell in root.xpath('.//th[@align]|.//td[@align]'):
+            alignment = cell.get('align')
+            if alignment in {'left', 'center', 'right'}:
+                cell.set('style', 'text-align:' + alignment)
+            else:
+                del cell.attrib['align']
         for ordered in root.xpath('.//ol'):
             start = ordered_list_start(ordered)
             # WeasyPrint ignores HTML presentational hints by default. This

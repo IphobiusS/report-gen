@@ -3,6 +3,7 @@ import re
 from copy import deepcopy
 from lxml import html
 from docx.shared import Cm, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
@@ -216,7 +217,17 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
             for row in rows:
                 cells = table.add_row().cells
                 for i, cell in enumerate(row):
-                    cells[i].width = widths[i]; inline(cell, cells[i].paragraphs[0], bold=cell.tag == "th")
+                    cells[i].width = widths[i]
+                    paragraph = cells[i].paragraphs[0]
+                    # The shared Markdown parser carries each column's colon
+                    # alignment on its cells. Preserve it in editable Word
+                    # tables, including headers and numeric evidence columns.
+                    alignment = {"left": WD_ALIGN_PARAGRAPH.LEFT,
+                                 "center": WD_ALIGN_PARAGRAPH.CENTER,
+                                 "right": WD_ALIGN_PARAGRAPH.RIGHT}.get(cell.get("align"))
+                    if alignment is not None:
+                        paragraph.alignment = alignment
+                    inline(cell, paragraph, bold=cell.tag == "th")
                 if any(cell.tag == "th" for cell in row):
                     repeat = OxmlElement("w:tblHeader"); table.rows[-1]._tr.get_or_add_trPr().append(repeat)
             # As in the summary/inventory exporter, long tables must flow into

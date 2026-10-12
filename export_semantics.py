@@ -107,10 +107,16 @@ def dom(root, image_digest, markdown=False, severity_label='Severidad'):
     images = []; codes = 0
     context=[]
     prefixes={}
-    blocks={'p','div','li','tr','td','th','pre','h1','h2','h3','h4','figure','figcaption','br','dt','dd'}
+    blocks={'p','div','li','tr','td','th','pre','h1','h2','h3','h4','h5','h6','figure','figcaption','br','dt','dd'}
     def preceding(node):
         if node.tag=='img':prefixes[node]=normal(''.join(context))[-200:]
-        if node.tag in {'p','pre','li','h1','h2','h3','h4','td','th','figcaption','dt','dd'}:context.clear()
+        # Markdown turns an inline generated step lead into a heading followed
+        # by a paragraph. Retain its actual preceding text, as the Word reader
+        # already does, so a faithful representation can contain the source's
+        # whole suffix. The comparison still requires that exact visible suffix
+        # within this finding; no source text is inserted into the observation.
+        if not markdown and node.tag in {'p','pre','li','h1','h2','h3','h4','h5','h6','td','th','figcaption','dt','dd'}:
+            context.clear()
         if node.tag in blocks:context.append(' ')
         if node.text:context.append(node.text)
         for child in node:

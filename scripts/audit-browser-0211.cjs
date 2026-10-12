@@ -3,7 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),asse
 const root=path.resolve(__dirname,'..'),args=process.argv.slice(2),option=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
 const out=path.resolve(option('--output','out/browser-0211')),engine=option('--browser','chromium');
 const playwright=require(require.resolve('playwright',{paths:[root,process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES||root]}));
-if(!['chromium','firefox'].includes(engine))throw Error('Use chromium or firefox');
+if(!['chromium','firefox','webkit'].includes(engine))throw Error('Use chromium, firefox or webkit');
 fs.mkdirSync(out,{recursive:true});const workspaces=[],servers=[],checks=[],errors=[],screens=[];let browser,page,base,server,info;
 const save=()=>fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({release:JSON.parse(fs.readFileSync(path.join(root,'package.json'))).version,engine,version:browser?.version(),checks,errors,screens},null,2));
 const check=(name,condition,detail)=>{checks.push({name,passed:!!condition,detail});save();assert.ok(condition,name);console.log('PASS '+name);};

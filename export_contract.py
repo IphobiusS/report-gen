@@ -177,6 +177,24 @@ def _cover_units(tree):
     return values
 
 
+def _pdf_regions(tree):
+    """Keep only generated, document-order boundaries, not authored anchors.
+
+    A PDF destination marks the beginning of a container, not every semantic
+    block inside it. Retain that narrower claim: finding-region text presence.
+    Noncanonical documents without generated sections retain the global check.
+    """
+    boundaries = [node for node in tree.iter()
+                  if isinstance(node.tag, str) and node.get('id')
+                  and (has_class(node, 'frontsec') or has_class(node, 'finding'))
+                  and not any(has_class(parent, 'finding') for parent in node.iterancestors())]
+    if not any(has_class(node, 'frontsec') for node in boundaries):
+        return []
+    return [dict(id=node.get('id'), end=boundaries[index + 1].get('id')
+                 if index + 1 < len(boundaries) else None)
+            for index, node in enumerate(boundaries) if has_class(node, 'finding')]
+
+
 def from_tree(tree, image_digests=None, docx_image_digests=None):
     from export_semantics import dom
     import engine
@@ -220,6 +238,7 @@ def from_tree(tree, image_digests=None, docx_image_digests=None):
                            paragraphs=units['paragraphs'], paragraphs_md=[normal(_paragraph_text(n)) for n in _dom_paragraph_nodes(root) if not has_class(n,'chart-scope') and normal(_paragraph_text(n))], codes=units['codes'], table_rows=rows, tables=tables, lists=lists, list_sequence=list_sequence,
                            list_figure_parts=list_figure_parts, list_markers=list_markers))
     return dict(version=3, scopes=scopes, severity_label=severity_label, cover_units=_cover_units(tree),
+                pdf_regions=_pdf_regions(tree),
                 titles=[s['title'] for s in scopes if s['id']],
                 code_lines=[line for s in scopes for code in s['codes'] for line in code.splitlines() if line],
                 table_rows=[row for s in scopes for row in s['table_rows']],
@@ -583,6 +602,90 @@ def pdf_text_pages(source, *, geometry_pages=()):
     return [unicodedata.normalize('NFC', text).replace('\u00ad', '') for text in raw_pages]
 
 
+def _pdf_region_profiles(path, regions):
+    """Read actual text between named PDF boundaries, never expected prose.
+
+    The first/last page is clipped at its destination ordinate; continuation
+    pages retain their text. This checks region presence, not visual roles,
+    table structure, evidence ownership or order of blocks inside a finding.
+    """
+    import math
+    import pypdfium2
+    from pypdf import PdfReader
+    reader = PdfReader(path)
+    destinations = reader.named_destinations
+
+    def location(key):
+        try:
+            # Chromium writes PDF Name destinations, surfaced by pypdf with
+            # their leading slash; WeasyPrint writes ordinary string names.
+            destination = destinations.get(key, destinations.get('/' + key))
+            if destination is None:
+                raise KeyError(key)
+            number = reader.get_destination_page_number(destination)
+            top = float(destination['/Top'])
+            page = reader.pages[number]
+            height = float(page.mediabox.height)
+            if (destination['/Type'] != '/XYZ' or number < 0
+                    or page.rotation != 0 or not math.isfinite(top)
+                    or not 0 <= top <= height):
+                raise ValueError
+            return number, top
+        except (KeyError, TypeError, ValueError, IndexError) as exc:
+            raise ValueError(backend_message(
+                'Región PDF sin destino válido: {key}. La asociación textual no se considera verificada.',
+                en='PDF region lacks a valid destination: {key}. Text association is not considered verified.',
+                key=key)) from exc
+
+    ranges = []
+    previous = None
+    for region in regions:
+        start = location(region['id'])
+        end = location(region['end']) if region['end'] is not None else (len(reader.pages), 0)
+        # PDF ordinates increase upwards; source order moves down the page.
+        ordered_start = (start[0], -start[1])
+        ordered_end = (end[0], -end[1])
+        if ordered_start >= ordered_end or (previous is not None and ordered_start < previous):
+            raise ValueError(backend_message('Límites de región PDF desordenados',
+                                             en='PDF region boundaries are out of order'))
+        previous = ordered_end
+        ranges.append((region['id'], start, end))
+    result = {}
+    with _PDFIUM_LOCK, pypdfium2.PdfDocument(path) as document:
+        for key, start, end in ranges:
+            raw_pages = []
+            last = min(end[0], len(document) - 1)
+            for number in range(start[0], last + 1):
+                page = document[number]
+                try:
+                    textpage = page.get_textpage()
+                    try:
+                        text = textpage.get_text_bounded(
+                            left=0, right=page.get_width(),
+                            top=start[1] if number == start[0] else page.get_height(),
+                            bottom=end[1] if number == end[0] else 0,
+                            errors='strict')
+                        if '\x02' in text or '\ufffe' in text:
+                            # Corroborate every marker on the full native page
+                            # before accepting the same markers in its region.
+                            full = textpage.get_text_bounded(errors='strict')
+                            _pdf_proved_hyphens(reader.pages[number], reader, textpage, full)
+                            if '\ufffe' in text:
+                                raise ValueError(backend_message('Extracción de región PDF ambigua',
+                                                                 en='Ambiguous PDF region extraction'))
+                            text = text.replace('\x02', '-')
+                    finally:
+                        textpage.close()
+                finally:
+                    page.close()
+                raw_pages.append(unicodedata.normalize('NFC', text).replace('\u00ad', ''))
+            pages = [normal(text) for text in raw_pages]
+            result[key] = dict(text=normal(' '.join(pages)), pages=pages,
+                               line_edges=[_pdf_line_edges(text) for text in raw_pages],
+                               raw_text='\n'.join(raw_pages))
+    return result
+
+
 def _profiles(path, fmt, expected):
     if fmt == 'pdf':
         # The generated cover is the first page. Its title/subtitle can be
@@ -594,7 +697,9 @@ def _profiles(path, fmt, expected):
         return {'': dict(text=normal(' '.join(pages)), pages=pages,
                          line_edges=[_pdf_line_edges(text) for text in raw_pages],
                          cover_text=pages[0] if pages else '',
-                         raw_text='\n'.join(raw_pages), codes=[], table_rows=[], list_items=[])}
+                         raw_text='\n'.join(raw_pages), codes=[], table_rows=[], list_items=[],
+                         finding_regions=_pdf_region_profiles(path, expected['pdf_regions'])
+                         if expected.get('pdf_regions') else {})}
     if fmt == 'docx': return _word_scopes(path, expected)
     from export_semantics import dom, html_digest, visible_copy
     if fmt == 'md':
@@ -964,17 +1069,10 @@ def _pdf_present(units, actual, label_es, label_en):
 
     if allocated():
         return sum(counts.values()), sum(across.values())
-    # A fast constructive pass may omit the only compatible page continuation.
-    # Failure is never proof of missing text until all bounded alternatives
-    # have been considered, including shorter prefixes and later starts.
-    for prefixes in (False, True):
-        for unit, ranges in zip(counts, options):
-            alternatives = _pdf_text_fragments(unit, actual['pages'], prefixes=prefixes, budget=budget)
-            ranges.update(tuple((offsets[p] + start, offsets[p] + end)
-                                for p, start, end in occurrence)
-                          for occurrence in alternatives)
-        if allocated():
-            return sum(counts.values()), sum(across.values())
+    # Literal URI continuations have stricter physical-line boundaries than
+    # generic prose fragments. Try that constructive match first: a long URL
+    # after many similar paragraphs otherwise exhausts the generic ambiguity
+    # budget before this independently sufficient, bounded path is reached.
     if actual.get('line_edges'):
         for unit, ranges in zip(counts, options):
             continuations = _pdf_uri_page_fragments(
@@ -987,6 +1085,17 @@ def _pdf_present(units, actual, label_es, label_en):
             # is a continuation-check count, not a geometric paragraph count.
             across[unit] = max(across.get(unit, 0), sum(
                 len(occurrence) > 1 for occurrence in continuations[:counts[unit]]))
+        if allocated():
+            return sum(counts.values()), sum(across.values())
+    # A fast constructive pass may omit the only compatible page continuation.
+    # Failure is never proof of missing text until all bounded alternatives
+    # have been considered, including shorter prefixes and later starts.
+    for prefixes in (False, True):
+        for unit, ranges in zip(counts, options):
+            alternatives = _pdf_text_fragments(unit, actual['pages'], prefixes=prefixes, budget=budget)
+            ranges.update(tuple((offsets[p] + start, offsets[p] + end)
+                                for p, start, end in occurrence)
+                          for occurrence in alternatives)
         if allocated():
             return sum(counts.values()), sum(across.values())
     raise ValueError(backend_message(
@@ -1340,6 +1449,7 @@ def inspect(path, fmt, expected):
     content = 0; structure = 0; paragraphs = 0; codes = 0; page_break_paragraphs = 0; wrapped_code_lines = 0
     metadata = 0; links = 0; placements = 0; tables_checked = 0; list_order_checked = 0; headings_checked = 0
     pdf_table_cells = 0; pdf_list_items = 0; list_markers_checked = 0
+    pdf_regions_checked = 0
     cover_text = observed[''].get('cover_text', '')
     if fmt != 'pdf' and expected['cover_units'] != observed[''].get('cover_units', []):
         raise ValueError(backend_message('Metadato de portada alterado / Cover metadata changed'))
@@ -1401,8 +1511,25 @@ def inspect(path, fmt, expected):
         if fmt != 'pdf': _paragraphs(prose, actual['paragraphs'], scope['id'])
         paragraphs += len(prose)
         if fmt == 'pdf':
+            region = actual.get('finding_regions', {}).get(scope['id'])
+            if region is not None:
+                _pdf_present([scope['title'], *scope.get('headings', [])], region,
+                             'encabezado en región de hallazgo', 'heading in finding region')
+                _pdf_present(scope['paragraphs'], region,
+                             'párrafo en región de hallazgo', 'paragraph in finding region')
+                _pdf_present((cell for row in scope.get('table_rows', []) for cell in row), region,
+                             'tabla en región de hallazgo', 'table in finding region')
+                _pdf_present(scope.get('list_sequence', []), region,
+                             'lista en región de hallazgo', 'list in finding region')
+                _pdf_code_multiplicity(scope['codes'], region['raw_text'])
+                for code in scope['codes']:
+                    _pdf_code_lines(code, region['raw_text'])
+                pdf_regions_checked += 1
             for label,value in scope['semantic']['fields']:
                 if not _pdf_pattern(value).search(text): raise ValueError(backend_message('Metadato PDF ausente o alterado: {p0}', p0=label))
+                if region is not None and not _pdf_pattern(value).search(region['text']):
+                    raise ValueError(backend_message('Metadato ausente en la región PDF: {p0}',
+                                                     en='Missing metadata in PDF region: {p0}', p0=label))
                 metadata+=1
             for code in scope['codes']:
                 checked, wrapped = _pdf_code_lines(code, actual['raw_text'])
@@ -1466,6 +1593,7 @@ def inspect(path, fmt, expected):
                 pdf_wrapped_code_lines=wrapped_code_lines,
                 pdf_table_cells_checked=pdf_table_cells,
                 pdf_list_items_checked=pdf_list_items,
+                pdf_finding_regions_checked=pdf_regions_checked,
                 authored_tables_checked=tables_checked,
                 authored_headings_checked=headings_checked,
                 authored_list_items_order_checked=list_order_checked,

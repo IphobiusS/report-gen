@@ -216,14 +216,26 @@ def _start_process(command):
     try:
         options = ({'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP}
                    if os.name == 'nt' else {'start_new_session': True})
+        if os.name != 'nt':
+            # Keep a live session leader until cleanup, including on Python builds
+            # without waitid/WNOWAIT. The worker's result travels on a separate pipe;
+            # observing it never reaps the process that reserves our private PGID.
+            command = [sys.executable, str(Path(__file__).resolve()),
+                       '--supervisor-gated', json.dumps(command)]
         process = subprocess.Popen(command, stdin=subprocess.PIPE,
-                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **options)
+                                   stdout=subprocess.PIPE if os.name != 'nt' else subprocess.DEVNULL,
+                                   stderr=subprocess.DEVNULL, **options)
         if job is not None:
             # Assignment must precede releasing the worker: rendering children inherit this job.
             job.assign(process)
             process._report_gen_job = job
         process.stdin.write(b'1')
-        process.stdin.close()
+        process.stdin.flush()
+        if os.name == 'nt':
+            process.stdin.close()
+        else:
+            process._report_gen_status = b''
+            os.set_blocking(process.stdout.fileno(), False)
         return process
     except BaseException:
         # The gate is still closed if assignment failed. Kill before closing its pipe.
@@ -249,22 +261,61 @@ def _start_process(command):
                     finally:
                         if not process.stdin.closed:
                             process.stdin.close()
+                        if process.stdout is not None:
+                            process.stdout.close()
         raise
 
 
 def _exitcode(process):
-    # Preserve an exited POSIX leader as a zombie until _stop kills its private group.
-    # Its PID/PGID then cannot be recycled between observing exit and group cleanup.
-    if os.name != 'nt' and hasattr(os, 'waitid') and hasattr(os, 'WNOWAIT'):
-        if process.returncode is not None:
-            return process.returncode
-        result = os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
-        if result is None:
-            return None
-        return result.si_status if result.si_code == os.CLD_EXITED else -result.si_status
-    # Older macOS Python builds lack waitid. Keep export compatibility there;
-    # _stop must not signal a recycled PGID after this fallback reaps the leader.
-    return process.poll()
+    if os.name == 'nt':
+        return process.poll()
+    if hasattr(process, '_report_gen_worker_exitcode'):
+        return process._report_gen_worker_exitcode
+    try:
+        status = os.read(process.stdout.fileno(), 32)
+    except BlockingIOError:
+        return None
+    if not status:
+        raise RuntimeError('Export supervisor closed without a worker result')
+    process._report_gen_status += status
+    if len(process._report_gen_status) > 16:
+        raise RuntimeError('Invalid export supervisor result')
+    if not process._report_gen_status.endswith(b'\n'):
+        return None
+    process._report_gen_worker_exitcode = int(process._report_gen_status)
+    return process._report_gen_worker_exitcode
+
+
+def _supervise(command):
+    """Reserve the POSIX group while its worker finishes; parent EOF cancels all."""
+    if os.name == 'nt' or os.getpgrp() != os.getpid():
+        raise SystemExit('Export supervisor requires its own POSIX session')
+    if sys.stdin.buffer.read(1) != b'1':
+        return 1
+
+    def parent_closed():
+        # This descriptor is not inherited by workers. Parent death therefore
+        # causes EOF even while the renderer is running or after it has exited.
+        sys.stdin.buffer.read()
+        os.killpg(os.getpgrp(), signal.SIGKILL)
+
+    threading.Thread(target=parent_closed, daemon=True).start()
+    try:
+        child = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL)
+        try:
+            child.stdin.write(b'1')
+            child.stdin.close()
+        except BrokenPipeError:
+            pass
+        code = child.wait()
+    except OSError:
+        code = 127
+    sys.stdout.write(str(code) + '\n')
+    sys.stdout.flush()
+    # The supervisor stays alive, reserving the PGID, until its parent cleans up.
+    # Do not use waitid, waitpid, or poll here to observe any other process.
+    threading.Event().wait()
 
 
 class ExportQueue:
@@ -377,11 +428,11 @@ class ExportQueue:
             if os.name == 'nt':
                 process._report_gen_job.close()
             elif process.returncode is not None:
-                # Compatibility fallback: do not claim to have cleaned an unowned PGID.
+                # Defensive guard for an externally reaped/unowned process handle.
                 return process.wait(timeout=15)
             else:
-                # Our WNOWAIT path keeps the leader/PID reserved until this point.
-                # A previously reaped POSIX leader no longer safely identifies its group.
+                # The supervisor is still alive (or our unreaped child if it crashed).
+                # Never poll it before signaling: its PID reserves this private group.
                 try:
                     os.killpg(process.pid, signal.SIGKILL)
                 except ProcessLookupError:
@@ -389,6 +440,10 @@ class ExportQueue:
             # Mark only successful cleanup; never signal a stale group on a repeated call.
             process._report_gen_stopped = True
         process.wait(timeout=15)
+        if process.stdin is not None and not process.stdin.closed:
+            process.stdin.close()
+        if process.stdout is not None and not process.stdout.closed:
+            process.stdout.close()
 
     def _run(self):
         while not self.closed:
@@ -520,6 +575,8 @@ def worker(root):
 
 
 if __name__ == '__main__':
+    if len(sys.argv) == 3 and sys.argv[1] == '--supervisor-gated':
+        raise SystemExit(_supervise(json.loads(sys.argv[2])))
     if len(sys.argv) != 3 or sys.argv[1] not in ('--worker', '--worker-gated'):
         raise SystemExit('Use the local report-gen export API')
     if sys.argv[1] == '--worker-gated' and sys.stdin.buffer.read(1) != b'1':

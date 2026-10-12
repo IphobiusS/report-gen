@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.34.1
+# Guía de uso de report-gen 0.34.2
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -120,6 +120,13 @@ La versión 0.34.0 corrigió el coste excesivo de maquetación de las URLs liter
 
 La verificación PDF reserva ocurrencias físicas independientes para cada línea de código y, dentro de cada categoría, para encabezados, celdas, elementos de lista y párrafos distintos. Una celda larga no puede suplir simultáneamente otra celda ausente cuyo texto contiene. Las categorías se comprueban por separado porque un párrafo dentro de una lista pertenece legítimamente a ambas. Si una combinación de saltos ambiguos supera el presupuesto de comprobación, informa que no pudo completar la verificación y conserva la entrega anterior; no acusa pérdida de contenido sin demostrarla.
 
+Cuando el informe conserva las secciones canónicas, la verificación PDF también
+exige que el texto de cada hallazgo aparezca dentro de su región, entre los
+destinos PDF que la delimitan. Comprueba título, encabezados, párrafos, código,
+celdas, listas y metadatos. Las copias del índice o del resumen no sustituyen
+texto ausente allí. Este control no verifica el orden visual ni la asociación
+de cada imagen; los documentos no canónicos conservan el alcance global.
+
 En **Informe → Espaciado del informe** puedes elegir cómoda o compacta. Es independiente de la densidad visual del editor. El HTML portátil permite filtrar por tipo, severidad pendiente y texto, y restablecer los filtros. PDF y HTML ajustan las URL literales al ancho disponible sin modificar su texto. LibreOffice puede adelantar algunos saltos de URL en DOCX; no se insertan saltos ni caracteres artificiales en el documento para ocultar esa limitación.
 
 **Compatibilidad de URLs en Word**, dentro de la revisión, identifica ubicaciones con URLs visibles de 96 o más caracteres en el contenido que se publicará. Es una señal para inspeccionar el DOCX, no una medición del salto ni un fallo de preparación; no cambia la puntuación. Los campos Markdown ofrecen **Enlace** para introducir un nombre descriptivo y una URL HTTP/HTTPS cuyo destino se conserva literalmente. Es una alternativa voluntaria de redacción: si la URL literal forma parte de una evidencia o un comando, consérvala. El aviso no modifica automáticamente el informe ni muestra el valor detectado.
@@ -130,7 +137,7 @@ Los anexos van exclusivamente en el paquete ZIP bajo `anexos/`, con su hash en `
 
 ## Datos y recuperación
 
-La cola de exportación termina los procesos de cada trabajo antes de limpiar sus archivos. Windows utiliza un grupo privado de procesos y POSIX conserva al trabajador hasta terminar sus descendientes cuando dispone de `waitid`/`WNOWAIT`. En macOS con Python 3.11/3.12, la salida anticipada del trabajador conserva una limitación: no se garantiza detener a sus descendientes después de recolectarlo. Python 3.13 incorpora `waitid` en macOS; la aceptación nativa de esa plataforma sigue pendiente. Esta diferencia no modifica el contenido de las exportaciones.
+La cola de exportación termina los procesos de cada trabajo antes de limpiar sus archivos. Windows utiliza un grupo privado de procesos. En Linux y macOS, un supervisor conserva el grupo del trabajo hasta que termina la limpieza, sin depender de `waitid`/`WNOWAIT`; comunica el resultado del trabajador por separado y detiene el grupo si el proceso padre desaparece. La limpieza cubre los descendientes que permanecen en ese grupo: no es un aislamiento contra programas que deliberadamente crean otra sesión. El gate de macOS ejecuta Python 3.11 y 3.12.
 
 La carpeta externa contiene `projects/` y `library/`; originales, historial y anexos permanecen dentro de cada proyecto. El lanzador resuelve `--workspace` antes que `REPORT_GEN_WORKSPACE`. Sin ninguna selección, conserva `webapp/projects/` y `webapp/library/`; no busca ni traslada datos automáticamente. Usa **Respaldo integral** para trasladar proyectos, originales y bibliotecas juntos. Es información privada.
 

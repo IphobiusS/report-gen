@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish the current main commit only after all four independent push gates.
+"""Publish the current main commit only after all required independent push gates.
 
 No downloaded workflow artifact is executed. The package is rebuilt from Git
 objects, uploaded to a draft, verified, and only then made public and latest.
@@ -23,6 +23,8 @@ WORKFLOWS = {
     'tests.yml': 'tests',
     'browser-acceptance.yml': 'Browser acceptance',
     'windows.yml': 'Windows compatibility',
+    'macos.yml': 'macOS compatibility',
+    'renderers.yml': 'Additional renderer acceptance',
     'source-package.yml': 'Reproducible source package',
 }
 SHA = re.compile(r'[0-9a-f]{40}')

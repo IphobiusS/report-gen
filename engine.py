@@ -404,6 +404,28 @@ def _pdf_code_layout(source):
         element.text = None
         url_breaks(element, text)
         changed = True
+
+    # Plain Markdown URLs are text, not necessarily anchors or inline code.
+    # They can also follow an emphasized label in a tail node. Restrict the
+    # extra break opportunities to URI runs, retaining prose, inline markup
+    # and the exact authored text; ordinary words keep normal line breaking.
+    for slot in tree.xpath('//body//text()[not(ancestor::pre) and '
+                           'not(ancestor::script) and not(ancestor::style)]'):
+        text = str(slot)
+        if not uri.search(text):
+            continue
+        parent = slot.getparent()
+        wrapper = html.Element('span', {'data-rg-pdf-plain-uri': 'true'})
+        url_breaks(wrapper, text)
+        if slot.is_text:
+            parent.text = None
+            parent.insert(0, wrapper)
+        elif slot.is_tail:
+            parent.tail = None
+            parent.addnext(wrapper)
+        else:
+            continue
+        changed = True
     return html.tostring(tree, encoding='unicode', method='html') if changed else source
 
 

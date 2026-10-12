@@ -56,7 +56,13 @@ class Witness:
                 return status.read_text().rsplit(')', 1)[1].split()[0] != 'Z'
             except FileNotFoundError:
                 return False
-        return True
+        if sys.platform != 'darwin':
+            return True
+        # macOS has no /proc; a dead orphan can briefly remain a zombie before
+        # launchd reaps it. It has already released its files and cannot execute.
+        state = subprocess.run(['ps', '-o', 'stat=', '-p', str(self.pid)],
+                               capture_output=True, text=True, check=False).stdout.strip()
+        return bool(state) and not state.startswith('Z')
 
     def close(self):
         if os.name == 'nt':
@@ -122,18 +128,16 @@ def controlled_tree(tmp_path):
 
 @pytest.mark.parametrize('mode', ['0', '7', 'running'])
 def test_stop_terminates_real_descendants_and_preserves_unrelated_process(controlled_tree, mode):
-    if mode != 'running' and os.name != 'nt' and not hasattr(os, 'WNOWAIT'):
-        pytest.skip('Older POSIX Python lacks non-reaping exit observation')
     unrelated = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(45)'])
     try:
         process, descendants = controlled_tree(mode)
         if mode != 'running':
             eventually(lambda: _exitcode(process) is not None)
             assert _exitcode(process) == int(mode)
-            if os.name != 'nt' and hasattr(os, 'WNOWAIT'):
-                # Observing exit must not reap the leader and release its process-group ID.
+            if os.name != 'nt':
+                # The live supervisor reserves the group after the actual worker exits.
                 assert process.returncode is None
-                assert os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOWAIT).si_pid == process.pid
+                assert process.poll() is None
         assert all(child.alive() for child in descendants)
         ExportQueue._stop(process)
         if os.name == 'nt':
@@ -167,7 +171,7 @@ def test_stop_never_signals_a_group_after_its_leader_was_reaped():
         unrelated.wait(timeout=5)
 
 
-@pytest.mark.skipif(os.name == 'nt' or not hasattr(os, 'WNOWAIT'), reason='POSIX non-reaping group signaling')
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX group signaling')
 def test_stop_can_retry_failed_group_cleanup(controlled_tree, monkeypatch):
     process, descendants = controlled_tree('0')
     eventually(lambda: _exitcode(process) is not None)
@@ -211,8 +215,6 @@ def test_failed_windows_assignment_never_releases_worker(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize('returncode,stage', [(0, 'done'), (7, 'error')])
 def test_queue_finally_stops_descendants_after_worker_exit(controlled_tree, monkeypatch, returncode, stage):
-    if os.name != 'nt' and not hasattr(os, 'WNOWAIT'):
-        pytest.skip('Older POSIX Python lacks non-reaping exit observation')
     captured = []
     def start(_command):
         process, children = controlled_tree(str(returncode), hold_root=Path(_command[-1]))
@@ -377,3 +379,97 @@ def test_cleanup_failure_is_visible_and_queue_runs_next_job(tmp_path, monkeypatc
         for process in started:
             real_stop(process)
         queue.close()
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='Portable POSIX supervisor')
+@pytest.mark.parametrize('mode', ['0', '7', 'running'])
+def test_posix_cleanup_without_waitid_or_wnowait(controlled_tree, monkeypatch, mode):
+    monkeypatch.delattr(os, 'waitid', raising=False)
+    monkeypatch.delattr(os, 'WNOWAIT', raising=False)
+    process, children = controlled_tree(mode)
+    if mode != 'running':
+        eventually(lambda: _exitcode(process) is not None)
+        assert _exitcode(process) == int(mode)
+        # Repeated ordinary Popen observation cannot reap the still-live leader.
+        for _ in range(10):
+            assert process.poll() is None
+            assert _exitcode(process) == int(mode)
+    ExportQueue._stop(process)
+    eventually(lambda: not any(child.alive() for child in children))
+    assert process.stdin.closed and process.stdout.closed
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX parent-death pipe')
+@pytest.mark.parametrize('worker_exit', [False, True])
+def test_parent_death_cleans_worker_tree_without_pid_lookup(tmp_path, worker_exit):
+    marker = tmp_path / 'pids.json'
+    child_code = 'import time; time.sleep(45)'
+    worker_code = (
+        'import json,os,subprocess,sys,time; from pathlib import Path\n'
+        'if sys.stdin.buffer.read(1) != b"1": raise SystemExit(99)\n'
+        'child=subprocess.Popen([sys.executable,"-c",sys.argv[2]])\n'
+        'Path(sys.argv[1]).write_text(json.dumps([os.getpid(),child.pid]))\n'
+        + ('raise SystemExit(0)\n' if worker_exit else 'time.sleep(45)\n'))
+    parent_code = (
+        'import json,os,sys,time; from pathlib import Path\n'
+        'from export_jobs import _start_process,_exitcode\n'
+        'process=_start_process([sys.executable,"-c",sys.argv[2],sys.argv[1],sys.argv[3]])\n'
+        'while not Path(sys.argv[1]).exists(): time.sleep(.01)\n'
+        + ('while _exitcode(process) is None: time.sleep(.01)\n' if worker_exit else '') +
+        'Path(sys.argv[1]+".supervisor").write_text(str(process.pid))\n'
+        'time.sleep(45)\n')
+    parent = subprocess.Popen([sys.executable, '-c', parent_code, str(marker),
+                               worker_code, child_code], cwd=Path(export_jobs.__file__).parent)
+    witnesses = []
+    try:
+        supervisor = marker.with_suffix('.json.supervisor')
+        eventually(supervisor.exists)
+        pids = json.loads(marker.read_text())
+        witnesses = [Witness(pid) for pid in [int(supervisor.read_text()), *pids]]
+        assert witnesses[0].alive() and witnesses[-1].alive()
+        # SIGKILL bypasses atexit/finally and proves the parent pipe is not retained
+        # by the worker or its descendants. No cleanup request can be sent now.
+        parent.kill()
+        parent.wait(timeout=5)
+        eventually(lambda: not any(witness.alive() for witness in witnesses))
+    finally:
+        if parent.poll() is None:
+            parent.kill()
+            parent.wait(timeout=5)
+        for witness in witnesses:
+            witness.close()
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX supervisor failure')
+def test_crashed_supervisor_does_not_publish_success_or_leave_descendants(controlled_tree):
+    process, children = controlled_tree('running')
+    os.kill(process.pid, signal.SIGKILL)
+    with pytest.raises(RuntimeError, match='supervisor closed'):
+        eventually(lambda: _exitcode(process) is not None)
+    # Observing EOF did not reap the dead leader, so its group remains ours.
+    assert process.returncode is None
+    ExportQueue._stop(process)
+    eventually(lambda: not any(child.alive() for child in children))
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX supervisor startup error')
+def test_supervisor_reports_worker_launch_failure(tmp_path):
+    process = _start_process([str(tmp_path / 'missing-renderer')])
+    try:
+        eventually(lambda: _exitcode(process) is not None)
+        assert _exitcode(process) == 127
+        assert process.poll() is None
+    finally:
+        ExportQueue._stop(process)
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX worker signal result')
+def test_supervisor_retains_signalled_worker_result():
+    process = _start_process([sys.executable, '-c',
+        'import os,signal,sys; sys.stdin.buffer.read(1); os.kill(os.getpid(),signal.SIGTERM)'])
+    try:
+        eventually(lambda: _exitcode(process) is not None)
+        assert _exitcode(process) == -signal.SIGTERM
+        assert process.poll() is None
+    finally:
+        ExportQueue._stop(process)

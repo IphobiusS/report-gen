@@ -1,3 +1,36 @@
+# Cambios 0.34.2 (2026-10-12)
+
+- Conserva la alineación izquierda, centrada y derecha de las tablas Markdown
+  en HTML, PDF y Word. La alineación procede del parser; no se admite CSS
+  arbitrario ni se habilita HTML sin filtrar.
+- El verificador PDF comprueba títulos, encabezados, párrafos, código, celdas,
+  listas y metadatos dentro de la región de cada hallazgo canónico. Una copia
+  del título en el índice o el resumen ya no suple un encabezado perdido.
+  La presencia regional no certifica el orden visual ni la pertenencia de
+  cada imagen o evidencia; los documentos no canónicos conservan el control
+  global explícito.
+- Evita desbordamientos PDF de URLs escritas como texto común, también tras
+  formato en línea, en listas y en tablas. Añade puntos de corte opcionales
+  únicamente a la URL y conserva sus caracteres. El verificador prueba primero
+  la continuación estricta entre líneas antes de una búsqueda genérica, evitando
+  falsos límites con URLs largas después de muchos párrafos parecidos.
+- Corrige un falso rechazo de evidencias Markdown: el texto de contexto
+  conserva los encabezados de pasos que proceden de rótulos en línea. Se
+  mantiene la comparación exacta de contexto y el rechazo de imágenes movidas.
+- Un supervisor POSIX conserva el grupo del trabajo hasta la limpieza y
+  comunica el resultado del trabajador por separado. Funciona sin
+  `waitid`/`WNOWAIT`, incluidos Python 3.11/3.12 en macOS, y limpia el grupo si
+  desaparece el padre. El trabajo privado de Windows se conserva.
+- Añade aceptación nativa macOS, render de Word con LibreOffice estable y
+  recorridos de navegador WebKit. Los seis workflows son obligatorios antes
+  de publicar una versión. WebKit no equivale a Safari; LibreOffice no equivale
+  a Microsoft Word de escritorio.
+- Corrige la referencia residual a 120 segundos en los README: el presupuesto
+  PDF vigente es 300 segundos, configurable entre 30 y 600.
+- Se conserva el texto literal de las URLs. El salto anticipado de algunas
+  URLs en LibreOffice sigue siendo un límite del renderizador: no se insertan
+  caracteres invisibles ni se cambian las evidencias para esconderlo.
+
 # Cambios 0.34.1 (2026-10-12)
 
 - El verificador PDF reserva apariciones independientes para los encabezados escritos y los títulos de hallazgos. Evita que un título repetido o contenido dentro de otro supla una aparición ausente y acepta títulos íntegros que se envuelven entre líneas. Conserva el presupuesto de trabajo y el alcance de presencia textual global: no certifica posición ni asociación visual.

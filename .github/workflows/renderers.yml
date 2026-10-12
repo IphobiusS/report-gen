@@ -1,0 +1,53 @@
+name: Additional renderer acceptance
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  libreoffice:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install distribution-stable LibreOffice Writer and fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea libpango-1.0-0 libpangocairo-1.0-0
+          libreoffice --version
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - name: Export, render and inspect the synthetic Word acceptance corpus
+        run: python scripts/verify-libreoffice.py --output out/libreoffice --executable /usr/bin/libreoffice --require-stable
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: libreoffice-acceptance
+          path: out/libreoffice/
+  webkit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+      - run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps webkit
+      - name: WebKit create, save, export and portable HTML controls
+        run: node scripts/audit-browser-0210.cjs --browser webkit --output out/browser-webkit
+      - name: WebKit concurrent tabs, storage faults and crash recovery
+        run: node scripts/audit-browser-0211.cjs --browser webkit --output out/recovery-webkit
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: webkit-acceptance
+          path: |
+            out/browser-webkit/
+            out/recovery-webkit/

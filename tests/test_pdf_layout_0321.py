@@ -129,7 +129,9 @@ def test_human_link_labels_are_not_fragmented_or_replaced_by_the_destination():
     assert before.xpath('//a/@href') == after.xpath('//a/@href')
     assert not after.xpath('//a')[0].xpath('.//wbr')
     assert after.xpath('//a')[1].xpath('.//wbr')
-    assert not after.xpath('//li//wbr')
+    # A bare URI embedded in ordinary reference prose also needs optional
+    # wrapping; only that URI is affected and the complete text stays exact.
+    assert after.xpath('//li//wbr')
 
 
 @pytest.mark.parametrize('theme', THEMES)

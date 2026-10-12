@@ -138,9 +138,9 @@ def test_completion_action_is_required():
         release.event_commit(payload, environment())
 
 
-def test_four_exact_receipts_are_required():
+def test_six_exact_receipts_are_required():
     receipts = release.gate_receipts(API(), COMMIT)
-    assert len(receipts) == 4 and {row['workflow'] for row in receipts} == set(release.WORKFLOWS.values())
+    assert len(receipts) == 6 and {row['workflow'] for row in receipts} == set(release.WORKFLOWS.values())
 
 
 def test_old_success_does_not_mask_in_progress_or_failed_rerun(publication):
@@ -151,13 +151,14 @@ def test_old_success_does_not_mask_in_progress_or_failed_rerun(publication):
     assert not api.mutations
 
 
+@pytest.mark.parametrize('filename', ['windows.yml', 'macos.yml', 'renderers.yml'])
 @pytest.mark.parametrize('change', ['missing', 'foreign', 'other-sha', 'failed', 'wrong-path'])
-def test_each_gate_identity_and_result_is_checked(change):
+def test_each_gate_identity_and_result_is_checked(change, filename):
     api = API()
-    original = api.request(release.route('actions/workflows/windows.yml/runs'))['workflow_runs'][0]
+    original = api.request(release.route(f'actions/workflows/{filename}/runs'))['workflow_runs'][0]
     overrides = {'foreign': {'head_repository': {'full_name': 'fork/report-gen'}}, 'other-sha': {'head_sha': OTHER},
                  'failed': {'conclusion': 'failure'}, 'wrong-path': {'path': '.github/workflows/arbitrary.yml'}}
-    api.run_overrides['windows.yml'] = [] if change == 'missing' else [{**original, **overrides[change]}]
+    api.run_overrides[filename] = [] if change == 'missing' else [{**original, **overrides[change]}]
     if change == 'wrong-path':
         with pytest.raises(release.ReleaseError):
             release.gate_receipts(api, COMMIT)

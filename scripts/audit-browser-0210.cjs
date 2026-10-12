@@ -3,7 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const args=process.argv.slice(2),option=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
 const root=path.resolve(__dirname,'..'),out=path.resolve(option('--output','out/browser-0210')),engine=option('--browser','chromium');
 const playwright=require(require.resolve('playwright',{paths:[root,process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES||root]}));
-if(!['chromium','firefox'].includes(engine))throw Error('Use chromium or firefox');
+if(!['chromium','firefox','webkit'].includes(engine))throw Error('Use chromium, firefox or webkit');
 fs.mkdirSync(out,{recursive:true});const checks=[],errors=[],external=[],screens=[];let browser,server,page,base,fixture;const requireVersion=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version;
 const save=()=>fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({engine,version:browser?.version(),checks,errors,external,screens},null,2));
 const check=(name,condition,detail)=>{checks.push({name,passed:!!condition,detail});save();assert.ok(condition,name);console.log('PASS '+name);};
