@@ -1,4 +1,4 @@
-# report-gen 0.34.2 user guide
+# report-gen 0.34.3 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -218,6 +218,8 @@ node tests/test_editor_browser_0213.cjs --output out/editor-chromium
 ```
 
 Replace `/path/to/data` with the selected workspace; legacy installations use `webapp/projects/`. Other export formats: `pdf`, `docx`, `md` (ZIP with images).
+
+The automatic summary describes recorded findings and severity ratings without claiming that all are confirmed. Machine entries are records, and **Asset inventory** does not establish that assessment was performed. Consult **Coverage and limitations** and each finding's verification state. If no approach has been authored, default text stays within documented information and does not claim manual reproduction. Explicitly authored text is preserved and must be reviewed before delivery.
 
 The included `examples/pending-severity/engagement.yaml` fixture contains two fictional findings with confirmed technical verification and no assigned severity. Its report text is in Spanish. In Word, table-of-contents titles are available immediately; page numbers are calculated when fields are updated in the editor. If they are missing or the content changes, use **Ctrl+A**, then **F9**. Word pagination is not copied from the PDF. Microsoft Word and LibreOffice may distribute content differently; desktop Microsoft Word remains a separate validation target.
 

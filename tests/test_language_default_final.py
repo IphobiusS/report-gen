@@ -33,9 +33,9 @@ def test_legacy_language_is_consistent_in_rendered_body_and_dom(language, sectio
     tree = publication.render(data, tmp_path)
     text = tree.text_content()
     assert tree.get('lang') == 'en'
-    assert 'Assessed assets' in text and 'Coverage and limitations' in text
+    assert 'Asset inventory' in text and 'Coverage and limitations' in text
     assert 'Remediation tracking and retest' in text
-    assert 'Activos evaluados' not in text and 'Resumen de hallazgos' not in text
+    assert 'Inventario de activos' not in text and 'Resumen de hallazgos' not in text
     assert data == before
 
 
@@ -49,8 +49,8 @@ def test_legacy_language_keeps_one_fallback_through_capture_and_four_exports(lan
     captured = delivery.capture(tmp_path, tmp_path / 'captured')
     artifact = export.export(tmp_path / 'engagement.yaml', fmt, tmp_path / ('legacy.' + ('zip' if fmt == 'md' else fmt)))
     text = export_contract.profile(artifact, fmt)['text']
-    assert 'Assessed assets' in text and 'Coverage and limitations' in text
-    assert 'Activos evaluados' not in text and 'Cobertura y limitaciones' not in text
+    assert 'Asset inventory' in text and 'Coverage and limitations' in text
+    assert 'Inventario de activos' not in text and 'Cobertura y limitaciones' not in text
     assert 'Documented asset canary' in text and 'Unexecuted test canary' in text
     if fmt == 'html':
         tree = html.document_fromstring(artifact.read_text())
@@ -60,7 +60,7 @@ def test_legacy_language_keeps_one_fallback_through_capture_and_four_exports(lan
     assert (tmp_path / 'engagement.yaml').read_bytes() == source
 
 
-@pytest.mark.parametrize('language,expected', [('es', 'Activos evaluados'), ('en', 'Assessed assets')])
+@pytest.mark.parametrize('language,expected', [('es', 'Inventario de activos'), ('en', 'Asset inventory')])
 def test_explicit_language_is_never_replaced_by_fallback(language, expected, tmp_path):
     data = document('absent', True); data['meta']['lang'] = language
     before = deepcopy(data)

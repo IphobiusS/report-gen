@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.34.2
+# Guía de uso de report-gen 0.34.3
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -198,6 +198,8 @@ Los proyectos anteriores siguen siendo legibles. Los respaldos que contengan el 
 ```
 
 Sustituye `/ruta/datos` por el espacio de trabajo elegido; en una instalación heredada, el proyecto está bajo `webapp/projects/`. Otros formatos: `pdf`, `docx`, `md` (ZIP con imágenes). Los recursos se procesan localmente.
+
+El resumen automático describe los hallazgos y las severidades registradas, sin afirmar que todos estén confirmados. Las entradas de máquinas son registros; **Inventario de activos** tampoco acredita una evaluación realizada. Consulta **Cobertura y limitaciones** y el estado de verificación de cada ficha. Si no has escrito un enfoque propio, el texto predeterminado se limita a la información documentada y no afirma una reproducción manual. Un texto escrito expresamente por el autor se conserva y debe revisarse antes de entregar.
 
 El ejemplo `examples/pending-severity/engagement.yaml` permite comprobar el resumen con dos hallazgos ficticios confirmados y sin severidad. En Word, las entradas del índice están disponibles desde la exportación; sus números de página se calculan al actualizar los campos en el editor. Si no aparecen o cambias el contenido, selecciona todo con **Ctrl+A** y actualiza con **F9**. El exportador no inventa números a partir de la paginación PDF. LibreOffice y Microsoft Word pueden distribuir el contenido de forma distinta.
 

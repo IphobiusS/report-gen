@@ -1,3 +1,17 @@
+# Cambios 0.34.3 (2026-10-12)
+
+- El resumen automático describe hallazgos y severidades registradas sin afirmar
+  que todos fueron identificados mediante una evaluación ejecutada. Las entradas
+  de máquinas se describen como registros, sin inferir un compromiso demostrado.
+- La sección automática de activos pasa a llamarse «Inventario de activos» /
+  «Asset inventory». La presencia de un objetivo no implica cobertura realizada;
+  los estados de prueba siguen en su sección de cobertura y limitaciones.
+- El enfoque predeterminado deja de atribuir reproducción manual a todos los
+  hallazgos. Remite a los estados técnicos, evidencias y límites documentados;
+  conserva el enfoque que el autor haya escrito expresamente.
+- README y guías ES/EN explican estos límites de los textos automáticos. No se
+  cambia la severidad, verificación ni el contenido de las fichas guardadas.
+
 # Cambios 0.34.2 (2026-10-12)
 
 - El HTML portátil aprovecha la línea disponible también con URLs literales

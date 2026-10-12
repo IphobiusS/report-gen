@@ -352,7 +352,7 @@ def test_new_content_in_html_docx_and_markdown_without_source_mutation(tmp_path,
     doc = Document(path)
     doc_text = '\n'.join(p.text for p in doc.paragraphs) + '\n' + '\n'.join(c.text for t in doc.tables for row in t.rows for c in row.cells)
     for text in [html, md.replace('\\', ''), doc_text]:
-        assert 'Activos evaluados' in text
+        assert 'Inventario de activos' in text
         assert '10.10.1.2' in text
         assert 'Control de acceso' in text
         assert 'Equipo App' in text

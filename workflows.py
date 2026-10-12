@@ -400,7 +400,7 @@ def report_sections(data):
     out = []
     def add(key, title, body): out.append(dict(key=key, title=title, body=body))
     if cfg.get('include_assets', True) and asset_rows:
-        add('rg_assets', 'Activos evaluados' if es else 'Assessed assets', table(
+        add('rg_assets', 'Inventario de activos' if es else 'Asset inventory', table(
             ['Activo', 'Objetivo', 'Tipo', 'Notas'] if es else ['Asset', 'Target', 'Type', 'Notes'],
             [[a.get(k, '') for k in ('name', 'target', 'kind', 'notes')] for a in asset_rows]))
     if cfg.get('include_coverage', True) and (data.get('coverage') or data.get('limitations_md')):

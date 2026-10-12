@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.34.2
+# report-gen 0.34.3
 
 <a id="qué-es"></a>
 
@@ -61,7 +61,13 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.34.2
+## Novedades de 0.34.3
+
+Los textos automáticos describen lo registrado sin atribuir verificaciones que no constan. El resumen presenta hallazgos y severidades registradas; las entradas de máquinas se cuentan como registros. **Inventario de activos** identifica los objetivos incluidos, mientras **Cobertura y limitaciones** conserva qué pruebas están pendientes o realizadas.
+
+El texto de enfoque predeterminado tampoco afirma que todos los hallazgos se hayan reproducido manualmente. Revisa el estado técnico, la evidencia y las limitaciones de cada ficha; el resumen no los sustituye. El contenido que hayas escrito expresamente se conserva.
+
+## Exportación y tutorial visual
 
 La alineación izquierda, centrada o derecha de las tablas Markdown se conserva al exportar. El verificador PDF comprueba el contenido de cada hallazgo dentro de su región, para que una copia en el índice o el resumen no oculte texto ausente. Las URLs largas escritas como texto común ya no desbordan el PDF; su verificación evita búsquedas ambiguas innecesarias. En Linux y macOS, un supervisor mantiene reservado el grupo del trabajo hasta detener sus procesos, incluso si el trabajador termina antes. La publicación exige también las comprobaciones de macOS, LibreOffice estable y WebKit. Estas comprobaciones de motor no equivalen a una revisión en Microsoft Word o Safari nativos.
 
@@ -98,7 +104,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.34.2 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.34.3 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

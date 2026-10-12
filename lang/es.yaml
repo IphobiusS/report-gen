@@ -58,22 +58,22 @@ labels:
   cover_date: "Fecha"
   cover_version: "Versión"
 summary:
-  identified: "La evaluación identificó"
+  identified: "El informe contiene"
   finding: "hallazgo"
   findings: "hallazgos"
-  rating: "con la siguiente clasificación de severidad:"
+  rating: "con la siguiente clasificación de severidad registrada:"
   rating_pending: "con el siguiente desglose:"
   none: "ninguno"
   pending_one: "1 pendiente de valoración"
   pending_many: "{n} pendientes de valoración"
   chart_scope: "Distribución de los hallazgos con severidad asignada"
-  and_machines_one: "y 1 máquina evaluada"
-  and_machines_many: "y {n} máquinas evaluadas"
+  and_machines_one: "y 1 registro de máquina"
+  and_machines_many: "y {n} registros de máquinas"
 appendix_intro: "Los siguientes artefactos se recolectaron como evidencia de acceso durante el engagement."
 prose:
   confidentiality:
     - "Este documento contiene información propietaria y confidencial sobre los sistemas, aplicaciones y postura de seguridad de {client}. Está dirigido únicamente al personal autorizado a recibirlo. Los hallazgos, técnicas y evidencias que se describen podrían utilizarse para comprometer el entorno evaluado y deben manejarse en consecuencia."
     - "Ninguna parte de este informe puede distribuirse, copiarse ni divulgarse sin el consentimiento por escrito de {client}. Almacénelo solo en sistemas con controles de acceso apropiados para material de seguridad sensible y destruya cualquier copia que ya no sea necesaria."
   approach:
-    - "{assessor} realizó una evaluación de seguridad sobre {client} durante la ventana acordada del engagement. El objetivo fue identificar vulnerabilidades que un atacante motivado pudiera explotar, demostrar su impacto mediante explotación controlada y entregar recomendaciones de remediación accionables."
-    - "Las pruebas siguieron una metodología estructurada que abarca recopilación de información, enumeración de servicios, explotación, post explotación y limpieza. Cada hallazgo de este informe se verificó manualmente y se documenta con los pasos exactos para reproducirlo."
+    - "Este informe organiza la información registrada sobre {client}, con {assessor} como evaluador indicado. Su alcance, metodología y resultados se limitan a lo documentado en el informe."
+    - "Los hallazgos pueden tener distintos estados de verificación. La inclusión en este informe no acredita que un hallazgo se haya reproducido o verificado manualmente. Cada registro debe leerse junto a su estado de verificación, evidencias y limitaciones para determinar qué se ha comprobado."

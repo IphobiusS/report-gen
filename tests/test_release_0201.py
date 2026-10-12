@@ -43,7 +43,7 @@ def test_summary_retains_pending_and_does_not_assign_severity():
     assert engine.unclassified_count(data['findings']) == 2
     assert engine.severity_counts(data['findings']) == {'critical': 0, 'high': 1, 'medium': 0, 'low': 0, 'info': 0}
     text = engine.summary_text(data['findings'], engine.load_lang('es'))
-    assert '3 hallazgos' in text and '2 pendientes de valoración' in text and '1 máquina evaluada' in text
+    assert '3 hallazgos' in text and '2 pendientes de valoración' in text and '1 registro de máquina' in text
     assert data == before
 
 
@@ -94,7 +94,7 @@ def test_pending_findings_are_visible_in_every_summary(tmp_path, section_based, 
 def test_summary_zero_and_machine_counts(findings, total, machines):
     L = engine.load_lang('es')
     text = engine.summary_text(findings, L)
-    assert f'identificó {total} ' in text
+    assert f'contiene {total} ' in text
     assert ('máquina' in text) is bool(machines)
     from exporters.common import summary_sev
     if total:
