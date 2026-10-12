@@ -77,11 +77,12 @@ table.report-fields{table-layout:fixed}
 }
 '''
 
-# Literal commands and URLs have no prose word boundaries: use the available
-# line width instead of preferring slashes, hyphens or query separators. CSS
-# changes only visual wrapping, so copied text and link destinations stay exact.
+# Prefer existing word boundaries in inline code, while literal commands and
+# URL labels fill the available width. CSS changes only visual wrapping, so
+# copied text and link destinations stay exact.
 TEXT_FLOW_STYLE = '''
-pre,code,.report-literal-url{overflow-wrap:anywhere;word-break:break-all;line-break:anywhere}
+code{overflow-wrap:anywhere;word-break:normal;line-break:auto}
+pre,pre code,.report-literal-url,.report-literal-url code{overflow-wrap:anywhere;word-break:break-all;line-break:anywhere}
 .report-content blockquote{margin-inline:0;border-inline-start:3px solid #64778b;padding-inline-start:min(1em,5%)}
 @media(max-width:600px){
  .report-content ul:not(.toc-list),.report-content ol{padding-inline-start:min(24px,12%)}
@@ -113,6 +114,7 @@ REFLOW_STYLE = '''
  }
  @container(max-width:14em){
   .cover-grid,.cover-grid>tbody,.cover-grid>tbody>tr,.cover-grid>tbody>tr>td{display:block;width:100%}
+  .cover-grid>tbody>tr>td:empty{display:none}
   .frontsec,.finding{padding-inline:min(8px,3%)}
   .frontsec>.finding{border:0;border-radius:0;padding-inline:0}
   .sev-critical>.finding-intro,.sev-high>.finding-intro{padding-inline-start:min(8px,3%)}
@@ -127,7 +129,7 @@ REFLOW_STYLE = '''
 
 def prepare_text_flow(tree, en=False):
     """Mark literal URL labels without changing descriptive link wrapping."""
-    for node in tree.xpath('//a[@href]|//ul[contains(concat(" ",normalize-space(@class)," ")," refs ")]/li'):
+    for node in tree.xpath('//a[@href]|//code[not(ancestor::pre)]|//ul[contains(concat(" ",normalize-space(@class)," ")," refs ")]/li'):
         if re.fullmatch(r'(?:https?|ftp)://\S+', ''.join(node.itertext()).strip(), re.IGNORECASE):
             node.set('class', ' '.join([*(node.get('class') or '').split(), 'report-literal-url']))
     # Native list markers sit outside their element's box. Large, valid starts
@@ -233,6 +235,8 @@ def build(directory):
         design=data['meta']['design'];pal=palette(design)
         bg=pal['--profile-dark'] if design['layout']=='split' else pal['--cover-bg'];fg=ink_on(bg)
         style+='\n@media screen{.cover{background:'+bg+';color:'+fg+';border-top:5px solid '+pal['--cover-rule']+'}.cover h1,.cover h2,.cover h3,.cover td,.cover th{color:'+fg+'}}'
+        if design['layout'] == 'editorial':
+            style+='\n.cover.layout-editorial,.layout-editorial .cover-foot{text-align:left}.layout-editorial .cover-main{border-top:3px solid '+pal['--cover-rule']+';padding-top:24px}'
     script_hashes=' '.join("'sha256-"+b64encode(sha256(script.encode()).digest()).decode()+"'"
                            for script in (BOOTSTRAP, SCRIPT))
     toolbar='<nav hidden class="report-toolbar" aria-label="'+w('Lectura del informe','Report reading')+'">'

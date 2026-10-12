@@ -92,6 +92,13 @@ def add_cover(doc, meta, labels, engagement_dir, hx):
     widths = [rail/10, 21-rail/10] if rail else [21]
     for col, width in zip(cover.columns, widths): col.width = Cm(width)
     heights = [70,120,106] if design else [70,130,96]
+    if design and illustration:
+        # An illustrated title can exceed the old 120 mm minimum. Reserving
+        # almost a full page across all three minimum-height rows then pushed
+        # the complete metadata row onto another page. Give the central zone
+        # room to grow, with a smaller lower blank area and a 17 mm allowance
+        # for the renderer's font and paragraph metrics. No text is shrunk.
+        heights = [60,130,82]
     if theme=='corporativo': heights = [67,133,96] if illustration else [83,105,108]
     elif theme=='htb': heights = [77,116,103]
     # Word's minimum row content height excludes vertical cell padding.
@@ -114,8 +121,10 @@ def add_cover(doc, meta, labels, engagement_dir, hx):
     header.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
     middle.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
     bottom.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.BOTTOM
-    margins(header, top=20, start=30-rail if theme=='laboratorio' else 24-rail, end=24)
-    margins(bottom, bottom=18, start=30-rail if theme=='laboratorio' else 24-rail, end=24)
+    margins(header, top=20, bottom=4 if design and illustration else 0,
+            start=30-rail if theme=='laboratorio' else 24-rail, end=24)
+    margins(bottom, top=4 if design and illustration else 0, bottom=18,
+            start=30-rail if theme=='laboratorio' else 24-rail, end=24)
     width = 15.6 if theme=='laboratorio' else 16.2
     if design:
         layout=design['layout']
@@ -188,7 +197,7 @@ def add_cover(doc, meta, labels, engagement_dir, hx):
                 shape=p.add_run().add_picture(src,width=w)
                 shape._inline.docPr.set('descr',key.replace('_',' ')); p.add_run('    ')
 
-    align=WD_ALIGN_PARAGRAPH.LEFT if theme in ('serio','laboratorio') else WD_ALIGN_PARAGRAPH.CENTER
+    align=WD_ALIGN_PARAGRAPH.LEFT if theme in ('serio','laboratorio','profile-editorial') else WD_ALIGN_PARAGRAPH.CENTER
     title_style=doc.styles['Title']
     for previous in title_style.element.xpath('./w:pPr/w:pBdr'):
         previous.getparent().remove(previous)
@@ -196,6 +205,14 @@ def add_cover(doc, meta, labels, engagement_dir, hx):
     tp=paragraph(middle,first=True,align=align);tp.style=title_style
     tp.paragraph_format.space_after=Pt(0);tp.paragraph_format.line_spacing=1.14
     tp.paragraph_format.keep_with_next=False
+    if theme == 'profile-editorial':
+        rules = OxmlElement('w:pBdr')
+        rule = OxmlElement('w:top')
+        for key, value in {'val':'single', 'sz':'24', 'space':'22', 'color':accent}.items():
+            rule.set(qn('w:' + key), value)
+        rules.append(rule)
+        tp._p.get_or_add_pPr().insert_element_before(
+            rules, 'w:shd', 'w:tabs', 'w:spacing', 'w:ind', 'w:jc', 'w:rPr')
     size=27 if (design and illustration) else 32 if design else 28 if illustration else (34 if theme=='ejecutivo' else (33 if theme=='serio' else 31))
     run(tp,meta.get('report_title',''),size,title_color,True)
     if meta.get('report_subtitle'):
@@ -241,5 +258,5 @@ def add_cover(doc, meta, labels, engagement_dir, hx):
             run(paragraph(b,first=True,align=WD_ALIGN_PARAGRAPH.RIGHT if theme=='htb' else WD_ALIGN_PARAGRAPH.LEFT),value,10)
     p=bottom.paragraphs[-1]
     p.paragraph_format.space_before=Pt(14);p.paragraph_format.space_after=Pt(0)
-    p.alignment=WD_ALIGN_PARAGRAPH.RIGHT if theme=='htb' else (WD_ALIGN_PARAGRAPH.LEFT if theme in ('serio','laboratorio') else WD_ALIGN_PARAGRAPH.CENTER)
+    p.alignment=WD_ALIGN_PARAGRAPH.RIGHT if theme=='htb' else (WD_ALIGN_PARAGRAPH.LEFT if theme in ('serio','laboratorio','profile-editorial') else WD_ALIGN_PARAGRAPH.CENTER)
     run(p,branding.get('confidential_text','CONFIDENTIAL'),7.5,muted)

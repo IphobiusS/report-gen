@@ -9,7 +9,7 @@ function check(name,value){result.checks.push({name,passed:!!value});save();asse
 let browser,page,server,base;
 async function ready(){await page.waitForFunction(()=>S.slug&&!projectStore.loading&&projectBusyCount===0);}
 async function saved(){await page.waitForFunction(()=>!projectStore.dirty&&!projectStore.saving&&!projectStore.lastError);}
-async function newProject(){await page.evaluate(()=>document.getElementById('studioMore').open=true);await page.locator('#newProjectBtn').click();await page.locator('#newModal').waitFor({state:'visible'});}
+async function newProject(){await page.evaluate(()=>document.getElementById('studioMore').open=true);await page.locator('#newProjectBtn').click();await page.locator('dialog[data-design-mode=create] .experience-actions .primary').click();await page.locator('#newModal').waitFor({state:'visible'});}
 async function gallery(){await page.evaluate(()=>DesignLibraryUI.gallery(document.getElementById('designLibraryBtn')));return page.locator('dialog.design-dialog');}
 (async()=>{
  server=spawn(process.env.RG_PYTHON||'python',[path.join(root,'scripts/browser-server-0212.py')],{cwd:root,env:process.env,stdio:['ignore','pipe','pipe']});server.stderr.pipe(fs.createWriteStream(path.join(out,'server.log')));
@@ -37,7 +37,7 @@ async function gallery(){await page.evaluate(()=>DesignLibraryUI.gallery(documen
  const presetCount=await page.locator('#mPreset option').count();check('All original preset choices remain selectable',presetCount>3);
  await page.locator('#mPreset').selectOption('client');await page.locator('#mPresetOptions>summary').click();
  check('Selected optional profile remains visible when its controls close',await page.locator('#mPresetSelected').innerText().then(text=>text.includes('cliente')));
- await page.locator('#mCancel').click();await newProject();await page.locator('#mTitle').fill('Design selection acceptance');await page.locator('#mSlug').fill('design-selection');await page.locator('#mCreate').click();await ready();
+ await page.locator('#mCancel').click();await newProject();check('Cancelled creation preserves the chosen structure',await page.locator('#mPreset').inputValue()==='client');await page.locator('#mPresetOptions>summary').click();await page.locator('#mPreset').selectOption('base');await page.locator('#mPresetOptions>summary').click();await page.locator('#mTitle').fill('Design selection acceptance');await page.locator('#mSlug').fill('design-selection');await page.locator('#mCreate').click();await ready();
  check('Recommended route preserves original Base preset and report defaults',await page.evaluate(()=>S.data.meta.theme==='serio'&&S.data.meta.lang==='es'));
  await page.evaluate(async()=>{S.data.meta.theme='laboratorio';S.data.findings=[{id:'F001',uid:WorkflowUI.uid(),mode:'vuln',title:'Preserve existing finding',severity:'low',description_md:'Synthetic existing content',impact_md:'Synthetic impact',remediation_md:'Synthetic remediation',status:'open',evidence_uids:[],asset_uids:[]}];scheduleSave();await doSave();});await saved();
  const before=await page.evaluate(()=>({data:JSON.stringify(S.data),etag:projectStore.etag,revision:projectStore.revision}));gal=await gallery();
@@ -55,7 +55,7 @@ async function gallery(){await page.evaluate(()=>DesignLibraryUI.gallery(documen
  check('Creation waits for a successful save, preserves the draft and explains failure inside the modal',created===0&&await page.evaluate(()=>S.slug==='design-selection'&&S.data.meta.report_title==='Pending draft remains'&&projectStore.dirty)&&await page.locator('#newModal').evaluate(e=>e.open)&&await page.locator('#newModal [role="alert"]').isVisible());
  await page.locator('#mCancel').click();await context.unroute(base+'/api/projects/design-selection');page.off('request',countCreate);await page.evaluate(()=>doSave());await saved();
  await page.evaluate(()=>setUiLang('en'));await newProject();
- check('New-project recommendation and gallery entry localize to English',await page.locator('#mPresetSelected').innerText().then(text=>text.includes('Recommended starting point'))&&await page.locator('#newProjectLibrary button').innerText()==='Choose in report design library');
+ check('New-project recommendation and gallery entry localize to English',await page.locator('#mPresetSelected').innerText().then(text=>text.includes('Recommended starting point'))&&await page.locator('#newProjectLibrary button').innerText()==='Back to gallery');
  await page.locator('#newProjectLibrary button').click();gal=page.locator('dialog.design-dialog');await gal.waitFor({state:'visible'});check('Opening gallery releases the old modal instead of stacking it',!await page.locator('#newModal').evaluate(e=>e.open));await gal.getByRole('button',{name:'Close',exact:true}).click();await page.waitForFunction(()=>document.activeElement.id==='newProjectBtn');
  check('Gallery returns focus to the reachable original new-project opener',await page.locator('#newProjectBtn').evaluate(e=>e===document.activeElement));
  check('No JavaScript errors or external requests',!result.errors.length&&!result.external.length);

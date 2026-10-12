@@ -1,14 +1,14 @@
 # Biblioteca de diseños y plantillas
 
-La biblioteca reúne 29 perfiles especializados (26 de certificación o práctica y tres empresariales), dos variantes por perfil y los seis diseños generales existentes. Los perfiles combinan una composición de portada con una estructura inicial de trabajo y una referencia de entrega. Son diseños independientes de report-gen, no plantillas oficiales ni una garantía de aceptación de un examen.
+La biblioteca reúne 30 perfiles especializados (26 de certificación o práctica y cuatro empresariales), dos variantes por perfil y los seis diseños generales existentes. Los perfiles combinan una composición de portada con una estructura inicial de trabajo y una referencia de entrega. Son diseños independientes de report-gen, no plantillas oficiales ni una garantía de aceptación de un examen.
 
 ## Uso
 
 Abre **Biblioteca de informes** desde el panel izquierdo, la pantalla inicial o **Nuevo proyecto**. Para empezar, **Serio** es la recomendación general y mantiene la apariencia del preset Base. La biblioteca abre el diseño de tu proyecto cuando ya hay uno seleccionado; no lo sustituye por la recomendación.
 
-Los seis diseños generales aparecen primero. Elige portada, resumen o página técnica para comparar la misma clase de página entre diseños. Las muestras se exportan realmente por la herramienta con datos ficticios. El catálogo completo de OffSec, HTB, Zero-Point Security, Centri, perfiles empresariales, plantillas personales y referencias históricas está en un apartado desplegable. Se abre automáticamente si el proyecto utiliza un diseño especializado. Dentro puedes filtrar y buscar por certificación o curso.
+Elige portada, resumen o página técnica para comparar la misma clase de página entre diseños, en español o inglés. Las muestras se exportan realmente por la herramienta con datos ficticios. Filtra por propósito (general, empresarial, Red Team, Blue Team o certificación), proveedor o plantillas personales, y busca por nombre. Las referencias históricas permanecen disponibles como contexto.
 
-**Nuevo proyecto** mantiene visible la estructura elegida y recomienda Base para comenzar. Los presets especializados siguen disponibles en sus opciones adicionales. Explorar una muestra o desplegar el catálogo no aplica cambios al proyecto.
+**Nuevo proyecto** abre primero la galería. Selecciona una apariencia y pulsa **Continuar con esta plantilla** para completar título, cliente, carpeta e idioma. Puedes volver a la galería o cerrar y reabrir el formulario sin perder esos datos durante la sesión. La estructura inicial es independiente de la apariencia elegida; los presets siguen disponibles en opciones adicionales. Explorar muestras no crea un proyecto ni modifica el abierto.
 
 - **Crear proyecto** inicia un documento ES o EN con instrucciones `TODO`, sin hallazgos ni resultados inventados.
 - **Aplicar apariencia** cambia exclusivamente `meta.theme` y `meta.design`. Conserva título, cliente, secciones, hallazgos, imágenes, evidencias y el resto de los datos. Antes de aplicar, se guarda el trabajo y se comprueba la revisión del proyecto.
@@ -20,9 +20,9 @@ Las plantillas personales se guardan en `webapp/library/designs.json`. Se compru
 
 ## Composición y fuentes
 
-Hay cinco composiciones para los perfiles: banda lateral, dos zonas, marco, franja central y cronología. Los 29 perfiles no son 29 composiciones diferentes: cada perfil aporta su especialidad, estructura, motivo geométrico y orientación de entrega. Los motivos geométricos son originales. Los perfiles OffSec y HTB también muestran sus logotipos de familia incluidos con el producto; no son insignias de certificación obtenida. Los perfiles nuevos de Zero-Point Security, Centri y Enterprise se identifican mediante texto, sin logotipos inventados.
+Hay seis composiciones para los perfiles: banda lateral, dos zonas, marco, franja central, cronología y editorial. Los 30 perfiles no son 30 composiciones diferentes: cada perfil aporta su especialidad, estructura y orientación de entrega. Los perfiles OffSec y HTB también muestran sus logotipos de familia incluidos con el producto; no son insignias de certificación obtenida. Los perfiles de Zero-Point Security, Centri y Enterprise se identifican mediante texto, sin logotipos inventados.
 
-El título queda centrado en la zona central y los datos del cliente en el tercio inferior. Se han comprobado títulos largos, nombres de organización extensos, los seis campos de portada y los tres recursos opcionales: logotipo propio, logotipo de cliente e ilustración.
+Las primeras cinco composiciones centran el título; la editorial de Enterprise Control Review lo alinea a la izquierda. Los datos del cliente aparecen en la zona inferior. Los recursos opcionales son logotipo propio, logotipo de cliente e ilustración. Revisa títulos y organizaciones especialmente extensos en el formato de entrega: la paginación de Word depende también del visor.
 
 Word utiliza Calibri; PDF utiliza Carlito incrustada, una alternativa compatible en métricas. Los comandos conservan una fuente monoespaciada. Es una decisión editorial del producto, no una supuesta exigencia universal de OffSec o HTB. Las guías vigentes del examen prevalecen sobre la configuración del perfil.
 
@@ -68,8 +68,9 @@ Perfiles incorporados con referencias consultadas el **11 de octubre de 2026**:
 | Enterprise | Corporate Assurance | Informe para dirección: alcance, decisiones, riesgos, responsables y aceptación |
 | Enterprise | Incident Response | Investigación: coordinación, cronología, contención, recuperación y lecciones |
 | Enterprise | Purple Team | Validación: objetivos, señales esperadas y observadas, brechas y repetición |
+| Enterprise | Control Review | Ocho apartados: diseño y operación del control, muestreo, excepciones, responsables y retest; composición editorial |
 
-Centri es el nombre actual al que redirige el sitio de Security Blue Team. CRTO, CRTL y BTL1 son cuadernos de práctica: no se presume un requisito de informe de examen. BTL2 ofrece una estructura independiente; el formato de entrega debe confirmarse con la guía privada. Las paletas de estos siete perfiles son decisiones editoriales de report-gen, sin atribución de colores oficiales.
+Centri es el nombre actual al que redirige el sitio de Security Blue Team. CRTO, CRTL y BTL1 son cuadernos de práctica: no se presume un requisito de informe de examen. BTL2 ofrece una estructura independiente; el formato de entrega debe confirmarse con la guía privada. Las paletas de estos perfiles son decisiones editoriales de report-gen, sin atribución de colores oficiales.
 
 Los perfiles empresariales son estructuras originales. El campo opcional OSID puede dejarse vacío cuando no corresponde al encargo; su presencia en una muestra no es un requisito empresarial. NIST y ATT&CK aportan referencias de contexto, sin prometer conformidad, cobertura automática o certificación. Cada conclusión debe distinguir hechos, hipótesis, acciones propuestas y verificaciones realizadas.
 
@@ -114,6 +115,6 @@ python scripts/audit-design-library-0150.py --output comprobacion-biblioteca
 pytest -q
 ```
 
-El constructor genera 64 PDF, 64 Word y las 192 vistas WebP de la galería por idioma desde datos ficticios mediante la interfaz normal de exportación. Para limitar la generación, añade `--only offsec-oscp htb-cpts`. Esa opción también limita el registro de generación a la selección ejecutada. Repite el comando con `--lang en` para las muestras inglesas. Las hojas de contacto incluyen todas las familias presentes en el catálogo.
+El constructor genera 66 PDF, 66 Word y las 198 vistas WebP de la galería por idioma desde datos ficticios mediante la interfaz normal de exportación. Para limitar la generación, añade `--only offsec-oscp htb-cpts`. Esa opción también limita el registro de generación a la selección ejecutada. Repite el comando con `--lang en` para las muestras inglesas. Las hojas de contacto incluyen todas las familias presentes en el catálogo.
 
 Los estilos nativos de Word conservan el contenido y la jerarquía, aunque su paginación y algunos detalles de líneas pueden diferir del PDF. Revisa el resultado en el editor o visor que utilizará el destinatario.

@@ -25,8 +25,8 @@ const check=(name,condition)=>{results.checks.push({name,passed:!!condition});as
   if(scenario==='app-abort'){
    await page.unroute('**/static/app.js');await page.keyboard.press('Enter');await page.waitForFunction(()=>!document.querySelector('#splash')&&!!document.querySelector('.workspace-dashboard'));
    check(prefix+' native reload preserves URL query parameters',new URL(page.url()).search==='?lang=en&source=static-startup');
-   check(prefix+' native reload restores working application',await page.getByRole('button',{name:'Crear proyecto',exact:true}).isEnabled());check(prefix+' normal startup releases inert and removes notice',await page.locator('main[inert],header[inert],footer[inert],.skip-link[inert]').count()===0);
-   await page.getByRole('button',{name:'Crear proyecto',exact:true}).click();check(prefix+' recovered create control opens a real modal',await page.locator('#newModal').evaluate(e=>e.matches(':modal')));
+   check(prefix+' native reload restores working application',await page.getByRole('button',{name:'Crear mi proyecto',exact:true}).isEnabled());check(prefix+' normal startup releases inert and removes notice',await page.locator('main[inert],header[inert],footer[inert],.skip-link[inert]').count()===0);
+   await page.getByRole('button',{name:'Crear mi proyecto',exact:true}).click();await page.locator('dialog[data-design-mode=create]').waitFor({state:'visible'});check(prefix+' recovered create control opens a real modal',await page.locator('dialog[data-design-mode=create]').evaluate(e=>e.matches(':modal')));
   }
   await context.close();
  }

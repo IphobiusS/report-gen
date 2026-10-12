@@ -31,7 +31,13 @@ jobs:
         if: matrix.browser == 'chromium'
         run: |
           export REPORT_GEN_CHROMIUM="$(node -p "require('playwright').chromium.executablePath()")"
-          python -m pytest tests/test_portable_report_browser.py tests/test_portable_literal_wrap_0321.py tests/test_portable_nested_flow_0322.py tests/test_portable_extreme_reflow_0323.py tests/test_portable_font_stability_0323.py --junitxml=out/portable-chromium.xml
+          python -m pytest tests/test_portable_report_browser.py tests/test_portable_literal_wrap_0321.py tests/test_portable_nested_flow_0322.py tests/test_portable_extreme_reflow_0323.py tests/test_portable_font_stability_0323.py tests/test_portable_cover_empty_0330.py tests/test_portable_inline_code_0330.py --junitxml=out/portable-chromium.xml
+      - name: Literal URL preservation and descriptive link authoring
+        if: matrix.browser == 'chromium'
+        run: |
+          export REPORT_GEN_CHROMIUM="$(node -p "require('playwright').chromium.executablePath()")"
+          export RG_PYTHON=python
+          python -m pytest tests/test_docx_url_guidance_0330.py --junitxml=out/url-guidance-chromium.xml
       - name: Editor dialogs, import validation and mobile keyboard search
         if: matrix.browser == 'chromium'
         run: node tests/test_editor_browser_0213.cjs --output out/editor-chromium
@@ -43,4 +49,5 @@ jobs:
             out/browser-${{ matrix.browser }}/
             out/recovery-${{ matrix.browser }}/
             out/portable-chromium.xml
+            out/url-guidance-chromium.xml
             out/editor-chromium/

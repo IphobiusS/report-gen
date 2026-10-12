@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.32.3
+# report-gen 0.33.0
 
 <a id="qué-es"></a>
 
@@ -48,7 +48,7 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 - **Documentar una evaluación:** alcance, metodología, activos, cobertura, hallazgos y pasos reproducibles; CVSS 3.1 y 4.0 cuando corresponda.
 - **Trabajar con evidencia:** galería, pies de imagen, vínculos a hallazgos, copias censuradas e inspección de lo que se publicará.
 - **Conservar el seguimiento:** identidades estables, revisiones recuperables, comparación con una entrega marcada, correcciones y matriz de retest.
-- **Elegir la presentación:** empezar con Serio, comparar los seis diseños generales y los 29 perfiles especializados. El idioma del informe es independiente del de la interfaz.
+- **Elegir la presentación:** crear un proyecto desde una galería con seis diseños generales y 30 perfiles especializados, agrupados por propósito. El idioma del informe es independiente del de la interfaz.
 - **Separar destinatarios:** entregas técnica, ejecutiva y pública con planes de inclusión explícitos; la pública requiere texto aprobado y consentimiento registrado.
 - **Relacionar evidencia y decisiones:** afirmaciones, límites, contexto de negocio, observaciones y revisión visual del PDF. [Flujo y requisitos opcionales](docs/evidence-decisions-0230.md).
 
@@ -59,11 +59,11 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Correcciones de 0.32.3
+## Novedades de 0.33.0
 
-Las listas de Word que empiezan por encima de 65.535 usan campos de secuencia actualizables para evitar el truncamiento observado en LibreOfficeDev 26.8. Los números largos disponen de espacio propio y las continuaciones respetan esa sangría. Las listas habituales mantienen su numeración automática. Para ampliarlas, edítalas en report-gen y vuelve a exportar. En Word puedes copiar un elemento posterior al primero con su campo y actualizar con Ctrl+A y F9; si sólo hay un elemento, usa report-gen. Pulsar Enter no crea otro campo.
+**Crear mi proyecto** abre primero la galería. Filtra por propósito, busca un perfil y compara portada, resumen y página técnica antes de completar los datos. Volver a la galería conserva lo escrito. El nuevo perfil **Enterprise Control Review** aporta una portada editorial alineada a la izquierda y ocho apartados para revisar diseño y operación de controles, muestreo, excepciones y repetición de pruebas.
 
-El HTML portátil reduce los marcos y rellenos cuando el ancho real de lectura es muy estrecho, sin reducir la letra. La impresión del diseño compacto conserva el relleno previsto. Los controles de HTML, Markdown y Word comparan también los ordinales, además del texto de cada elemento.
+El botón **Enlace** de los campos Markdown permite mostrar un nombre descriptivo conservando la URL completa como destino. La revisión señala las URLs largas visibles para comprobar su ajuste en Word, sin cambiar la puntuación de preparación ni el contenido. También se corrigen la celda vacía de metadatos en portadas HTML estrechas y la reserva de espacio de portadas Word con ilustración.
 
 **Límites:** algunas URL de Word siguen saltando antes de llenar la línea en LibreOffice; no se altera su texto para ocultarlo. La revisión en Microsoft Word nativo permanece pendiente. El verificador PDF no acredita ordinales ni maquetación; ambas requieren revisión visual. [Cambios completos](CHANGELOG.md) · [Guía de entrega](docs/guide.es.md#qué-comprueba-cada-entrega).
 
@@ -92,7 +92,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.32.3 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.33.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

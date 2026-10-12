@@ -62,12 +62,12 @@ def register(api):
     @app.post('/api/design-library/projects')
     @api.project_lock
     def create():
-        body=api._json_dict();p,variant=body_profile(body)
+        body=api._json_dict();slug,d=api.new_project_destination(body)
+        p,variant=body_profile(body)
         title=lib.text(body.get('title'),'Título',300)
-        slug=api.slugify(title,new=True);d=api.PROJECTS/slug
-        if d.exists() or any(candidate.name.casefold() == slug.casefold() for candidate in api.PROJECTS.iterdir()):
-            abort(409,backend_message('Ya existe un proyecto con un nombre equivalente en mayúsculas o Unicode; usa otro nombre'))
-        data=api.checked_data(lib.new_report(p,title,body.get('lang','es'),variant))
+        data=lib.new_report(p,title,body.get('lang','es'),variant)
+        data['meta']['client']=body.get('client') or ''
+        data=api.checked_data(data)
         with history.transaction(d) as staged:
             (staged/'img').mkdir(exist_ok=True)
             history.save(staged,data)

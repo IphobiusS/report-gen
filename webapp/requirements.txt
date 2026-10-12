@@ -2,6 +2,7 @@
 jinja2
 pyyaml
 markdown
+pymdown-extensions==12.2
 weasyprint
 tinycss2>=1.4,<2
 cssselect2>=0.8,<1

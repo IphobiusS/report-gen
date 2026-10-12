@@ -1,4 +1,4 @@
-# report-gen 0.32.3 user guide
+# report-gen 0.33.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -57,7 +57,7 @@ On Overview, choose **Try Nimbus demo** or **Create my project**. With a project
 
 Suggestions support writing without requiring a fabricated finding or screenshot: go directly to review when a recommendation does not apply to your assessment. A review with no issues suggests preparing delivery, but does not approve its content. If you edit the draft after review, repeat the saved review before delivery.
 
-1. **Start.** Use **Create project** or **New project** to choose the design and report language. To learn with prepared content, **Try Nimbus demo** creates an editable fictional case with 12 findings. You can also open a backup of your work.
+1. **Start.** Use **Create my project** or **New project** to open the gallery. Choose a template, compare its samples and continue to enter the title, client, folder and report language. You can return to the gallery without losing those details. To learn with prepared content, **Try Nimbus demo** creates an editable fictional case with 12 findings. You can also open a backup of your work.
 2. **Define scope.** Complete the client, assessor, dates and report details. Document objectives, included assets, exclusions and limitations. Record **Assets** and **Coverage** when useful for your assessment.
 3. **Write a finding.** Add a blank finding or open an existing one. Describe the failed control, observed behavior, reproduction steps, demonstrated impact and proposed remediation. Record severity, CVSS vector and technical verification when you can substantiate them.
 4. **Connect evidence.** Under **Evidence**, upload the screenshot, write its title and caption and select its associations under **Used in findings**. Review and redact the copy that will be published. Quick capture notes stay outside the report until you incorporate them.
@@ -66,7 +66,7 @@ Suggestions support writing without requiring a fabricated finding or screenshot
 
 CVSS expresses technical severity, not business risk by itself. **Risk Posture and Business Impact** and **Strategic Recommendations** let you document the context, priorities and risk appetite agreed with the organization. Enable these sections under **Manage sections**. You author the conclusions; selecting a design does not calculate or approve them.
 
-**Library** recommends Serious as a general starting point. Compare the six general designs using the same sample page: cover, summary or technical page. An expandable specialized catalog retains 26 certification and practice profiles plus three business report structures, Brand/Quiet variants and personal templates. If your project already uses a specialized design, the library opens in that context; browsing does not change its appearance.
+**Library** recommends Serious as a general starting point. Compare the same sample page: cover, summary or technical page. The gallery contains six general designs, 26 certification and practice profiles, four business report structures and personal templates. Filter by purpose or provider, search by name and compare Brand/Quiet variants. **Enterprise Control Review** adds an editorial composition and eight sections covering control design and operation, sampling, exceptions and retesting. If your project already uses a specialized design, the library opens in that context; browsing does not change its appearance. Appearance and initial structure are separate choices; changing a preset does not replace the selected design.
 
 Every profile supports English and Spanish. Applying an appearance preserves findings. Word uses Calibri; PDF and HTML use compatible Carlito. Commands retain their monospaced font.
 
@@ -116,11 +116,15 @@ Structured export checks compare paragraphs, literal code, metadata, native tabl
 
 Project integers must be within −9,007,199,254,740,991 to 9,007,199,254,740,991 to preserve their value in the browser editor. Store larger documentary values or identifiers as quoted text in YAML/JSON. Out-of-range inputs are rejected with the field path rather than silently rounded or replaced with `null`. Report numbered lists use counters from 0 to 2,147,483,647, compatible with browser and Word consumers. An initial or final ordinal above that limit is rejected, preserving any previous output file.
 
+Within a Markdown list, indent continuation text and code fences by four spaces per level, regardless of the number of digits in the list marker. Eight spaces at the first level represent indented code, not an equivalent continuation. Fenced blocks preserve tabs, spaces and blank lines; indented code follows Markdown normalization.
+
 A Word list starting above 65,535 uses `SEQ` fields to avoid the truncation observed in LibreOfficeDev 26.8. Other lists retain automatic numbering, including when crossing that value. To extend a field-based list, edit it in report-gen and export again. Within Word, copy an item after the first while retaining its field, then update with **Ctrl+A → F9**; the first field sets the starting value. If there is only one item, use report-gen to edit it. Pressing Enter alone does not add a field. HTML, Markdown and Word checks compare ordinals, decimal format and order against the source; Word also checks each field's instruction and cached result. These checks do not replace reviewing the display in your editor. PDF numbering remains subject to visual review.
 
 PDF verification reserves independent physical occurrences for each code line and, within each category, for distinct cells, list items and paragraphs. A longer cell cannot also supply a missing cell whose text it contains. Categories are checked separately because a paragraph inside a list legitimately belongs to both. If ambiguous wrapping exceeds its verification budget, it reports that verification could not be completed and preserves the previous delivery; it does not claim content loss without establishing it.
 
 PDF and portable HTML wrap literal URLs to the available width without changing their text. LibreOffice may wrap some DOCX URLs early; no artificial characters or line breaks are inserted to conceal that limitation. Native Microsoft Word validation requires a licensed Windows desktop installation. The opt-in workflow is implemented; local OOXML and LibreOffice checks do not substitute for that native validation.
+
+**URL compatibility in Word**, under review, identifies locations containing visible URLs of 96 or more characters in the outgoing content. This signals that the DOCX needs inspection; it does not measure line breaks, fail preparation or change the readiness score. Markdown fields offer **Link** for entering a descriptive name and an HTTP/HTTPS URL whose destination remains literal. This is an optional writing alternative: preserve literal URLs that are evidence or commands. The notice does not modify the report automatically or display the detected value.
 
 Shared delivery manifests and downloadable verification records retain warning categories and counts, without copying private diagnostic messages, paths or source values. The complete details remain in the editor for review. This separation does not redact fields you choose to include in a report or annex.
 

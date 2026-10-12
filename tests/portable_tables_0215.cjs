@@ -46,8 +46,19 @@ async function streamingContract() {
   });
   await page.goto(streamed+'?gate='+token,{waitUntil:'commit'});
   await page.locator('main .cover').waitFor();
+  // The embedded font deliberately replaces fallback text (font-display:swap).
+  // Measure activation after that independent font phase, while the response
+  // is still held open. A font metric change is not movement caused by wiring
+  // the reading controls; their reserved geometry must remain unchanged.
+  await page.evaluate(async()=>{
+    await document.fonts.ready;
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    window.reportFontPhaseCLS=window.reportShifts.reduce((sum,value)=>sum+value,0);
+    window.reportShifts=[];
+  });
   const initial=await page.locator('.report-toolbar').evaluate(el=>({
-    height:el.getBoundingClientRect().height,visibility:getComputedStyle(el).visibility,hidden:el.hidden}));
+    height:el.getBoundingClientRect().height,visibility:getComputedStyle(el).visibility,hidden:el.hidden,
+    contentTop:document.querySelector('.report-content').getBoundingClientRect().top}));
   assert.ok(initial.height>=44,`toolbar does not reserve space while streaming at ${width}`);
   assert.equal(initial.visibility,'hidden','unwired controls remain invisible during download');
   assert.equal(initial.hidden,true);
@@ -55,11 +66,14 @@ async function streamingContract() {
   gate.response.end(body.slice(cut));gates.delete(token);
   await page.waitForLoadState('load');await page.evaluate(()=>document.fonts.ready);await settle(page);
   const final=await page.locator('.report-toolbar').evaluate(el=>({
-    height:el.getBoundingClientRect().height,visibility:getComputedStyle(el).visibility,hidden:el.hidden}));
+    height:el.getBoundingClientRect().height,visibility:getComputedStyle(el).visibility,hidden:el.hidden,
+    contentTop:document.querySelector('.report-content').getBoundingClientRect().top}));
   assert.ok(Math.abs(final.height-initial.height)<=1,'readiness keeps the reserved toolbar height');
   assert.equal(final.hidden,false);assert.equal(final.visibility,'visible');
+  assert.ok(Math.abs(final.contentTop-initial.contentTop)<=1,'activating controls does not move the report');
   const cls=await page.evaluate(()=>window.reportShifts.reduce((sum,value)=>sum+value,0));
-  assert.ok(cls<=.01,`streaming moves the report at ${width}: CLS=${cls}`);
+  assert.ok(cls<=.01,`activating controls moves the report at ${width}: CLS=${cls}`);
+  console.log(JSON.stringify({width,fontPhaseCLS:await page.evaluate(()=>window.reportFontPhaseCLS),activationCLS:cls}));
   await page.locator('#query').fill('no-matching-sentinel');
   assert.equal(await page.locator('#empty-results').isVisible(),true,'visible controls have their listeners');
   assert.deepEqual(errors,[],'both inline scripts execute under their hashes');

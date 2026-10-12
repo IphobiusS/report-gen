@@ -133,10 +133,11 @@
 <dialog class="modal" id="newModal" aria-labelledby="newModalTitle">
   <div class="modal-box">
     <h3 id="newModalTitle" data-i18n="new_project">Nuevo proyecto</h3>
-    <p class="modal-hint" data-i18n="new_project_start">Empieza con la estructura Base. Puedes ajustar el diseño y las secciones después.</p>
+    <p class="modal-hint" data-i18n="new_project_start">Paso 2 de 2. Revisa la plantilla y completa los datos del proyecto.</p>
+    <div id="mDesignSelected" class="new-project-selection design-selected-summary" aria-live="polite"></div>
     <p id="mPresetSelected" class="new-project-selection" role="status"></p>
     <details id="mPresetOptions" class="design-catalog-options">
-    <summary data-i18n="new_project_options">Otras estructuras y perfiles especializados</summary>
+    <summary data-i18n="new_project_options">Cambiar la estructura inicial</summary>
     <label><span data-i18n="preset_label">Plantilla</span>
       <select id="mPreset"></select>
     </label>

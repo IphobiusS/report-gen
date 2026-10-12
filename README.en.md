@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.32.3
+# report-gen 0.33.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -38,7 +38,7 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 - **Document an assessment:** scope, methodology, assets, coverage, findings and reproducible steps; CVSS 3.1 and 4.0 where appropriate.
 - **Work with evidence:** a gallery, captions, finding links, redacted copies and an inspector for published content.
 - **Retain follow-up:** stable identities, recoverable revisions, comparisons with a marked delivery, remediation and a retest matrix.
-- **Choose presentation:** start with Serious and compare the six general designs and 29 specialized profiles. Report language is independent of interface language.
+- **Choose presentation:** start a project from a gallery with six general designs and 30 specialized profiles, grouped by purpose. Report language is independent of interface language.
 - **Separate audiences:** technical, executive and public deliveries with explicit inclusion plans; public output requires approved prose and recorded consent.
 - **Connect evidence and decisions:** claims, limitations, business context, comments and actual PDF review. [Workflow and optional requirements](docs/evidence-decisions-0230.en.md).
 
@@ -49,11 +49,11 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
-## Fixes in 0.32.3
+## New in 0.33.0
 
-Word lists starting above 65,535 use recalculable sequence fields to avoid the truncation observed in LibreOfficeDev 26.8. Long numbers have their own space, and continuation blocks respect that indent. Ordinary lists retain automatic numbering. To extend these lists, edit them in report-gen and export again. In Word, copy an item after the first with its field and update with Ctrl+A and F9; for a single-item list, use report-gen. Pressing Enter does not create another field.
+**Create my project** opens the gallery first. Filter by purpose, search for a profile and compare cover, summary and technical pages before entering project details. Returning to the gallery preserves your draft. The new **Enterprise Control Review** profile provides a left-aligned editorial cover and eight sections for control design and operation, sampling, exceptions and retesting.
 
-Portable HTML reduces nested frames and padding when the actual reading width becomes very narrow, without shrinking text. Printing the compact design retains its intended padding. HTML, Markdown and Word checks now compare list ordinals as well as item text.
+The **Link** button in Markdown fields lets you display a descriptive name while retaining the complete URL as its destination. Review identifies long visible URLs for checking Word wrapping, without changing the readiness score or content. Narrow HTML covers no longer reserve an empty metadata cell; illustrated Word covers also reserve space more appropriately.
 
 **Limits:** some Word URLs still wrap before filling the line in LibreOffice; their text is not altered to conceal this. Native Microsoft Word review remains pending. PDF verification does not establish ordinals or layout; both require visual review. [Full changelog](CHANGELOG.md) · [Delivery guide](docs/guide.en.md#delivery-checks-and-limits).
 
@@ -77,7 +77,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.32.3 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.33.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

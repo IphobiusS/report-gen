@@ -354,6 +354,17 @@ def api_cvss():
 
 
 # ---- Proyectos -------------------------------------------------------------
+def new_project_destination(body):
+    """Shared input and portable-name boundary for both creation routes."""
+    if any(value is not None and not isinstance(value, str) for value in body.values()):
+        abort(400, backend_message('Los datos del proyecto deben ser texto'))
+    slug = slugify(body.get("slug") or body.get("title") or "engagement", new=True)
+    directory = PROJECTS / slug
+    if directory.exists() or (PROJECTS.exists() and any(path.name.casefold() == slug.casefold() for path in PROJECTS.iterdir())):
+        abort(409, backend_message('Ya existe un proyecto con un nombre equivalente en mayúsculas o Unicode; usa otro nombre'))
+    return slug, directory
+
+
 @app.route("/api/projects")
 @project_lock
 def list_projects():
@@ -365,13 +376,11 @@ def list_projects():
 @project_lock
 def create_project():
     body = _json_dict()
-    if any(value is not None and not isinstance(value, str) for value in body.values()):
-        abort(400, backend_message('Los datos del proyecto deben ser texto'))
+    slug, d = new_project_destination(body)
     model = MODELS.get(body.get("model", "corporativo-es")) or MODELS["corporativo-es"]
-    slug = slugify(body.get("slug") or body.get("title") or "engagement", new=True)
-    d = PROJECTS / slug
-    if d.exists() or (PROJECTS.exists() and any(path.name.casefold() == slug.casefold() for path in PROJECTS.iterdir())):
-        abort(409, backend_message('Ya existe un proyecto con un nombre equivalente en mayúsculas o Unicode; usa otro nombre'))
+    appearance = body.get('appearance')
+    if appearance is not None and appearance not in ALLOWED_THEMES:
+        abort(422, backend_message('Diseño general desconocido'))
     meta = {
         "lang": model["lang"],
         "report_title": body.get("title", "Nuevo informe"),
@@ -395,6 +404,10 @@ def create_project():
             meta["theme"] = pdef["theme"]
         if pdef.get("accent"):
             meta["branding"]["accent"] = pdef["accent"]
+    if appearance is not None:
+        # Explicit gallery selection is independent of the selected structure.
+        meta['theme'] = appearance
+        meta['branding'].pop('accent', None)
     sections = sectionlib.preset_sections(preset, model["lang"]) if preset else sectionlib.default_enabled()
     report = {"sections": sections}
     with project_history.transaction(d) as staged:

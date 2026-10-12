@@ -371,7 +371,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px
 }
 
 /* Report library: compact browse area and readable actual-page previews. */
-.design-dialog{width:min(1220px,96vw);max-height:94vh}
+.design-dialog{width:min(1320px,96vw);max-height:94dvh}
 .design-dialog .experience-body{padding:20px}
 .design-layout{display:grid;grid-template-columns:minmax(280px,.85fr) minmax(340px,1fr);gap:24px;margin-top:16px;align-items:start}
 .design-filters{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
@@ -389,7 +389,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px
 .design-guidance{margin-top:20px;border-top:1px solid var(--line);font-size:14px}
 .design-section-row{display:flex;align-items:center;gap:8px;margin:8px 0}.design-section-row input{min-width:0}
 #designLibraryBtn{width:100%;margin-bottom:16px;min-height:44px}
-.design-dialog button{min-height:44px}.design-dialog a{color:var(--accent)}
+.design-dialog button{min-height:44px;max-width:100%;white-space:normal;overflow-wrap:anywhere}.design-dialog .experience-heading>.btn{flex:none;white-space:nowrap}.design-dialog a{color:var(--accent)}
 .design-dialog :focus-visible,.experience-dialog :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 @media(max-width:760px){.design-layout{grid-template-columns:minmax(0,1fr)}.design-cards{max-height:310px;grid-template-columns:repeat(2,minmax(0,1fr))}.design-dialog .experience-body{padding:12px}.design-preview{padding:6px}.design-preview img{max-height:460px}.design-dialog .grid2{grid-template-columns:1fr}.design-dialog .experience-actions{flex-direction:column}.design-filters .btn{flex:1 1 auto}.design-section-row{flex-wrap:wrap}}
 .design-live-page{position:relative;width:100%;overflow:hidden;background:#fff;text-align:left}
@@ -397,6 +397,21 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px
 .design-custom-preview{margin-top:16px}
 .design-dialog input[type=color],.experience-dialog input[type=color]{padding:4px;min-height:44px}
 .design-custom-preview .design-live-page,.design-preview .design-live-page{max-width:370px;margin-inline:auto}
+.design-steps{display:flex;flex-wrap:wrap;gap:12px 28px;list-style:none;padding:0;margin:0 0 12px;color:var(--muted);font-size:14px}
+.design-steps [aria-current=step]{color:var(--fg);font-weight:700}
+.design-search{display:block;margin-block:12px;font-size:14px}.design-search input{display:block;width:100%;min-height:44px;margin-top:6px}
+.design-purpose-select{display:none}.design-card>strong,.design-card>span{min-width:0;max-width:100%}
+.design-purposes{margin-block:12px}.design-purposes .btn{font-size:14px;padding:8px 12px}
+.design-dialog .design-current{margin-block:12px}
+.design-empty{grid-column:1/-1;border:1px dashed var(--line);border-radius:var(--radius);padding:24px;text-align:left}.design-empty h3{margin-top:0}
+.design-selected-summary{display:grid;gap:4px}.design-selected-summary span{font-weight:400;color:var(--muted)}
+.design-detail{border:1px solid var(--line);border-radius:var(--radius);padding:18px;background:var(--bg)}
+.design-dialog .design-card{justify-content:flex-start}.design-card strong{line-height:1.35}
+.design-dialog .design-cards{scroll-padding:8px;scrollbar-gutter:stable}
+@media(min-width:1100px){.design-layout{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}.design-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.design-card img{max-width:108px}}
+@media(max-width:760px){.design-detail{padding:12px}.design-empty{padding:16px}.design-dialog .experience-heading{gap:12px;padding:14px 12px}.design-dialog .experience-heading h2{overflow-wrap:anywhere}.design-steps{gap:6px 20px}}
+@media(max-width:420px){.design-card strong{font-size:14px}.design-dialog .design-card{padding-inline:6px}}
+@media(max-width:760px){.design-dialog .experience-body{display:flex;flex-direction:column}.design-purposes,.design-intro{display:none}.design-purpose-select{display:block;font-size:14px}.design-purpose-select select{display:block;width:100%;min-height:44px;margin-top:4px}.design-dialog .experience-body>.design-catalog-options{order:2}.design-dialog .experience-body>.grid2{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.design-dialog .experience-body>.grid2 label{display:flex;flex-direction:column;justify-content:space-between;font-size:12px}.design-dialog .experience-body>.grid2 select{font-size:14px;min-height:44px}.design-dialog .experience-body>.wf-hint[role=status]{margin-block:8px}.design-dialog .design-layout{margin-top:4px}}
 
 /* Retention review and contextual annex feedback. */
 .privacy-files,.privacy-location,.annex-scan { overflow-wrap:anywhere; }

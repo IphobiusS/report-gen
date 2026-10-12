@@ -64,6 +64,37 @@ class _ProseWhitespace(Preprocessor):
         return re.sub(r'(?<=\n) +\n', '\n', source).split('\n')
 
 
+def _literal_fence(source, language, class_name, options, parser, **kwargs):
+    """Emit inert code only; SuperFences owns nesting and source tokenization."""
+    language_class = ' class="language-' + escape(language, quote=True) + '"' if language else ''
+    # SuperFences joins content lines without their final newline. Its 12.2
+    # line_count distinguishes zero lines from one empty line, both source=''.
+    # Pin that version: this parser detail is covered by literal-boundary tests.
+    final_newline = '\n' if parser.preprocessors['fenced_code_block'].line_count else ''
+    return '<pre><code' + language_class + '>' + escape(source) + final_newline + '</code></pre>'
+
+
+def markdown_parser(*, raw_inline_html=False):
+    """Shared parser for publication and reusable-resource inspection."""
+    parser = markdown.Markdown(
+        extensions=['pymdownx.superfences', 'tables', 'sane_lists', 'nl2br'],
+        extension_configs={'pymdownx.superfences': {
+            'custom_fences': [{'name': '*', 'class': '', 'format': _literal_fence}],
+        }}, output_format='html5')
+    if not raw_inline_html:
+        parser.inlinePatterns.deregister('html')
+    parser.preprocessors.deregister('html_block')
+    # Protect complete fences before prose normalization, just as the former
+    # root-only fenced_code parser did. SuperFences owns nesting and indentation.
+    # Do not use preserve_tabs: its raw-stash pass adds a line to empty fences.
+    parser.preprocessors.register(parser.preprocessors['fenced_code_block'], 'fenced_code_block', 35)
+    parser.preprocessors.register(_SourceControls(parser), 'source_controls', 40)
+    parser.preprocessors.register(_ProseWhitespace(parser), 'normalize_whitespace', 30)
+    parser.inlinePatterns.register(_WidthImage(IMAGE_LINK_RE, parser), 'image_link', 150)
+    parser.treeprocessors.register(_NestingLimit(parser), 'nesting_limit', 5)
+    return parser
+
+
 class _NestingLimit(Treeprocessor):
     def run(self, root):
         # libxml's recovery parser silently discards nodes beyond its nesting
@@ -80,18 +111,7 @@ class _NestingLimit(Treeprocessor):
 
 
 def _parsed(text):
-    parser = markdown.Markdown(extensions=['fenced_code', 'tables', 'sane_lists', 'nl2br'], output_format='html5')
-    # Raw HTML is text. Let Markdown itself identify fenced, indented and
-    # multiline inline code instead of rewriting their source with a regex.
-    parser.inlinePatterns.deregister('html')
-    parser.preprocessors.deregister('html_block')
-    # Protect fenced literal blocks before Markdown expands tabs in prose.
-    # The HTML is still escaped by fenced_code and sanitized by nh3 below.
-    parser.preprocessors.register(parser.preprocessors['fenced_code_block'], 'fenced_code_block', 35)
-    parser.preprocessors.register(_SourceControls(parser), 'source_controls', 40)
-    parser.preprocessors.register(_ProseWhitespace(parser), 'normalize_whitespace', 30)
-    parser.inlinePatterns.register(_WidthImage(IMAGE_LINK_RE, parser), 'image_link', 150)
-    parser.treeprocessors.register(_NestingLimit(parser), 'nesting_limit', 5)
+    parser = markdown_parser()
     return parser.convert(str(text or '').replace('\r\n', '\n').replace('\r', '\n'))
 
 

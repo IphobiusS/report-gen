@@ -11,13 +11,12 @@ import re
 from urllib.parse import urlsplit
 from uuid import uuid4
 
-import markdown
 from lxml import html
 from markdown.blockprocessors import ReferenceProcessor
 from markdown.inlinepatterns import (ImageInlineProcessor, ImageReferenceInlineProcessor,
     ShortImageReferenceInlineProcessor, LinkInlineProcessor, ReferenceInlineProcessor,
     ShortReferenceInlineProcessor, IMAGE_LINK_RE, LINK_RE)
-from safe_markup import _WidthImage, _SourceControls, _ProseWhitespace, _parsed
+from safe_markup import markdown_parser, _parsed
 
 
 def private_destination(value):
@@ -61,14 +60,9 @@ def private_reference(value):
 
 
 def _parse(source):
-    parser = markdown.Markdown(extensions=['fenced_code', 'tables', 'sane_lists', 'nl2br'], output_format='html5')
-    # Match the report parser's literal-code treatment. Raw HTML is enabled only
-    # for this inspection, so prose <img>/<a> tags also lose project resources.
-    parser.preprocessors.deregister('html_block')
-    parser.preprocessors.register(parser.preprocessors['fenced_code_block'], 'fenced_code_block', 35)
-    parser.preprocessors.register(_SourceControls(parser), 'source_controls', 40)
-    parser.preprocessors.register(_ProseWhitespace(parser), 'normalize_whitespace', 30)
-    parser.inlinePatterns.register(_WidthImage(IMAGE_LINK_RE, parser), 'image_link', 150)
+    # Raw inline HTML is enabled only for resource inspection; literal fenced
+    # content uses exactly the publication parser and cannot become a resource.
+    parser = markdown_parser(raw_inline_html=True)
     return parser, html.fragment_fromstring(parser.convert(source), create_parent='div')
 
 

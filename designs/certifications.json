@@ -85,7 +85,15 @@
         "source": "https://www.offsec.com/courses/pen-200/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Alcance, ruta de acceso, evidencias y correcciones de infraestructura.",
+        "en": "Infrastructure scope, access path, evidence and remediation."
+      }
     },
     {
       "id": "offsec-osep",
@@ -170,7 +178,15 @@
         "source": "https://www.offsec.com/courses/pen-300/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Alcance, ruta de acceso, evidencias y correcciones de infraestructura.",
+        "en": "Infrastructure scope, access path, evidence and remediation."
+      }
     },
     {
       "id": "offsec-oswa",
@@ -255,7 +271,15 @@
         "source": "https://www.offsec.com/courses/web-200/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Superficie web, peticiones reproducibles, evidencia y retest.",
+        "en": "Web surface, reproducible requests, evidence and retest."
+      }
     },
     {
       "id": "offsec-oswe",
@@ -340,7 +364,15 @@
         "source": "https://www.offsec.com/courses/web-300/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Revisión de código, flujo de datos, causa raíz y reproducción.",
+        "en": "Code review, data flow, root cause and reproduction."
+      }
     },
     {
       "id": "offsec-oswp",
@@ -425,7 +457,15 @@
         "source": "https://www.offsec.com/courses/pen-210/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Alcance inalámbrico, capturas autorizadas y protecciones verificadas.",
+        "en": "Wireless scope, authorized captures and verified protections."
+      }
     },
     {
       "id": "offsec-osed",
@@ -510,7 +550,15 @@
         "source": "https://www.offsec.com/courses/exp-301/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Entorno, análisis del fallo, reproducción y límites de fiabilidad.",
+        "en": "Environment, crash analysis, reproduction and reliability limits."
+      }
     },
     {
       "id": "offsec-osee",
@@ -595,7 +643,15 @@
         "source": "https://www.offsec.com/courses/exp-401/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Entorno, análisis del fallo, reproducción y límites de fiabilidad.",
+        "en": "Environment, crash analysis, reproduction and reliability limits."
+      }
     },
     {
       "id": "offsec-osda",
@@ -677,7 +733,15 @@
         "source": "https://www.offsec.com/courses/soc-200/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification",
+        "blue-team"
+      ],
+      "description": {
+        "es": "Triaje, cronología, fuentes y decisiones de respuesta.",
+        "en": "Triage, timeline, sources and response decisions."
+      }
     },
     {
       "id": "offsec-osir",
@@ -759,7 +823,15 @@
         "source": "https://www.offsec.com/courses/ir-200/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification",
+        "blue-team"
+      ],
+      "description": {
+        "es": "Triaje, cronología, fuentes y decisiones de respuesta.",
+        "en": "Triage, timeline, sources and response decisions."
+      }
     },
     {
       "id": "offsec-osth",
@@ -841,7 +913,15 @@
         "source": "https://www.offsec.com/courses/th-200/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification",
+        "blue-team"
+      ],
+      "description": {
+        "es": "Hipótesis, consultas, observaciones y límites de visibilidad.",
+        "en": "Hypotheses, queries, observations and visibility limits."
+      }
     },
     {
       "id": "offsec-osai",
@@ -926,7 +1006,15 @@
         "source": "https://www.offsec.com/courses/ai-300/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Límites de confianza, casos de prueba y resultados de sistemas de IA.",
+        "en": "Trust boundaries, test cases and AI system results."
+      }
     },
     {
       "id": "offsec-oscc-sec",
@@ -1010,7 +1098,14 @@
         "source": "https://www.offsec.com/courses/sec-100/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification"
+      ],
+      "description": {
+        "es": "Cuaderno de alcance, comprobaciones y aprendizaje documentado.",
+        "en": "Workbook for scope, checks and documented learning."
+      }
     },
     {
       "id": "offsec-oscc-sjd",
@@ -1094,7 +1189,14 @@
         "source": "https://www.offsec.com/courses/sjd-100/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification"
+      ],
+      "description": {
+        "es": "Notas de desarrollo, código, pruebas y lecciones aprendidas.",
+        "en": "Development notes, code, tests and lessons learned."
+      }
     },
     {
       "id": "offsec-klcp",
@@ -1178,7 +1280,14 @@
         "source": "https://www.offsec.com/courses/pen-103/",
         "checked": "2026-10-03"
       },
-      "color_source": "https://www.offsec.com/courses/"
+      "color_source": "https://www.offsec.com/courses/",
+      "categories": [
+        "certification"
+      ],
+      "description": {
+        "es": "Entorno Linux, tareas reproducibles y comprobaciones.",
+        "en": "Linux environment, reproducible tasks and verification."
+      }
     },
     {
       "id": "htb-cpts",
@@ -1263,7 +1372,15 @@
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
         "checked": "2026-10-11"
       },
-      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Alcance, ruta de acceso, evidencias y correcciones de infraestructura.",
+        "en": "Infrastructure scope, access path, evidence and remediation."
+      }
     },
     {
       "id": "htb-cwes",
@@ -1348,7 +1465,15 @@
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
         "checked": "2026-10-11"
       },
-      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Superficie web, peticiones reproducibles, evidencia y retest.",
+        "en": "Web surface, reproducible requests, evidence and retest."
+      }
     },
     {
       "id": "htb-cwee",
@@ -1433,7 +1558,15 @@
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
         "checked": "2026-10-11"
       },
-      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Revisión de código, flujo de datos, causa raíz y reproducción.",
+        "en": "Code review, data flow, root cause and reproduction."
+      }
     },
     {
       "id": "htb-cape",
@@ -1518,7 +1651,15 @@
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
         "checked": "2026-10-11"
       },
-      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Alcance, ruta de acceso, evidencias y correcciones de infraestructura.",
+        "en": "Infrastructure scope, access path, evidence and remediation."
+      }
     },
     {
       "id": "htb-cwpe",
@@ -1603,7 +1744,15 @@
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
         "checked": "2026-10-11"
       },
-      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Alcance inalámbrico, capturas autorizadas y protecciones verificadas.",
+        "en": "Wireless scope, authorized captures and verified protections."
+      }
     },
     {
       "id": "htb-cdsa",
@@ -1685,7 +1834,15 @@
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
         "checked": "2026-10-11"
       },
-      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/",
+      "categories": [
+        "certification",
+        "blue-team"
+      ],
+      "description": {
+        "es": "Triaje, cronología, fuentes y decisiones de respuesta.",
+        "en": "Triage, timeline, sources and response decisions."
+      }
     },
     {
       "id": "htb-cjca",
@@ -1767,7 +1924,14 @@
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
         "checked": "2026-10-11"
       },
-      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/",
+      "categories": [
+        "certification"
+      ],
+      "description": {
+        "es": "Cuaderno de alcance, comprobaciones y aprendizaje documentado.",
+        "en": "Workbook for scope, checks and documented learning."
+      }
     },
     {
       "id": "htb-coae",
@@ -1852,7 +2016,15 @@
         "source": "https://help.hackthebox.com/en/articles/12741732-academy-certifications",
         "checked": "2026-10-11"
       },
-      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/"
+      "color_source": "https://docs.sysreptor.com/htb-reporting-with-sysreptor/",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Límites de confianza, casos de prueba y resultados de sistemas de IA.",
+        "en": "Trust boundaries, test cases and AI system results."
+      }
     },
     {
       "id": "zeropoint-crto",
@@ -1950,7 +2122,15 @@
         "source": "https://www.zeropointsecurity.co.uk/course/red-team-ops",
         "checked": "2026-10-11"
       },
-      "color_source": "Original report-gen palette; not an official provider color."
+      "color_source": "Original report-gen palette; not an official provider color.",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Objetivos, reglas, bitácora operativa, telemetría y limpieza.",
+        "en": "Objectives, rules, operational log, telemetry and cleanup."
+      }
     },
     {
       "id": "zeropoint-crtl",
@@ -2048,7 +2228,15 @@
         "source": "https://www.zeropointsecurity.co.uk/course/red-team-ops-ii",
         "checked": "2026-10-11"
       },
-      "color_source": "Original report-gen palette; not an official provider color."
+      "color_source": "Original report-gen palette; not an official provider color.",
+      "categories": [
+        "certification",
+        "red-team"
+      ],
+      "description": {
+        "es": "Objetivos, reglas, bitácora operativa, telemetría y limpieza.",
+        "en": "Objectives, rules, operational log, telemetry and cleanup."
+      }
     },
     {
       "id": "centri-btl1",
@@ -2146,7 +2334,15 @@
         "source": "https://www.centri.org/certifications/blue-team-level-1",
         "checked": "2026-10-11"
       },
-      "color_source": "Original report-gen palette; not an official provider color."
+      "color_source": "Original report-gen palette; not an official provider color.",
+      "categories": [
+        "certification",
+        "blue-team"
+      ],
+      "description": {
+        "es": "Triaje, cronología, fuentes y decisiones de respuesta.",
+        "en": "Triage, timeline, sources and response decisions."
+      }
     },
     {
       "id": "centri-btl2",
@@ -2244,7 +2440,15 @@
         "source": "https://www.centri.org/certifications/blue-team-level-2",
         "checked": "2026-10-11"
       },
-      "color_source": "Original report-gen palette; not an official provider color."
+      "color_source": "Original report-gen palette; not an official provider color.",
+      "categories": [
+        "certification",
+        "blue-team"
+      ],
+      "description": {
+        "es": "Hipótesis, consultas, observaciones y límites de visibilidad.",
+        "en": "Hypotheses, queries, observations and visibility limits."
+      }
     },
     {
       "id": "enterprise-assurance",
@@ -2342,7 +2546,14 @@
         "source": "https://www.nist.gov/cyberframework",
         "checked": "2026-10-11"
       },
-      "color_source": "Original report-gen palette; not an official provider color."
+      "color_source": "Original report-gen palette; not an official provider color.",
+      "categories": [
+        "corporate"
+      ],
+      "description": {
+        "es": "Decisiones para dirección, riesgos, responsables y aceptación.",
+        "en": "Management decisions, risks, owners and acceptance."
+      }
     },
     {
       "id": "enterprise-incident",
@@ -2440,7 +2651,15 @@
         "source": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
         "checked": "2026-10-11"
       },
-      "color_source": "Original report-gen palette; not an official provider color."
+      "color_source": "Original report-gen palette; not an official provider color.",
+      "categories": [
+        "corporate",
+        "blue-team"
+      ],
+      "description": {
+        "es": "Coordinación, cronología, contención, recuperación y lecciones.",
+        "en": "Coordination, timeline, containment, recovery and lessons."
+      }
     },
     {
       "id": "enterprise-purple-team",
@@ -2549,7 +2768,133 @@
         "source": "https://attack.mitre.org/resources/",
         "checked": "2026-10-11"
       },
-      "color_source": "Original report-gen palette; not an official provider color."
+      "color_source": "Original report-gen palette; not an official provider color.",
+      "categories": [
+        "corporate",
+        "red-team",
+        "blue-team"
+      ],
+      "description": {
+        "es": "Señales esperadas y observadas, brechas y repetición de pruebas.",
+        "en": "Expected and observed signals, gaps and repeat validation."
+      }
+    },
+    {
+      "id": "enterprise-control-review",
+      "name": "Control Review",
+      "provider": "Enterprise",
+      "certificate": "Control Review",
+      "course": "Control design and operating effectiveness",
+      "accent": "#315B68",
+      "background": "#173843",
+      "layout": "editorial",
+      "motif": "blocks",
+      "domain": "controls",
+      "purpose": "report",
+      "sections": [
+        {
+          "key": "control-summary",
+          "title": {
+            "es": "Resumen y decisiones",
+            "en": "Summary and decisions"
+          },
+          "body": {
+            "es": "TODO: Resume controles revisados, resultados sustentados, límites y decisiones pendientes. Separa el diseño del control de su funcionamiento observado.",
+            "en": "TODO: Summarize reviewed controls, supported results, limitations and pending decisions. Separate control design from observed operation."
+          }
+        },
+        {
+          "key": "control-criteria",
+          "title": {
+            "es": "Objetivos y criterios acordados",
+            "en": "Objectives and agreed criteria"
+          },
+          "body": {
+            "es": "TODO: Identifica servicio, propietario, objetivo del control, criterio acordado, versión y período evaluado. No declares conformidad con una norma sin una evaluación sustentada.",
+            "en": "TODO: Identify the service, owner, control objective, agreed criterion, version and review period. Do not claim conformity with a standard without a supported assessment."
+          }
+        },
+        {
+          "key": "control-sampling",
+          "title": {
+            "es": "Población y selección de muestras",
+            "en": "Population and sample selection"
+          },
+          "body": {
+            "es": "TODO: Documenta población, método de selección, tamaño, exclusiones y cobertura temporal. Distingue una muestra dirigida de una muestra representativa y limita toda extrapolación.",
+            "en": "TODO: Document the population, selection method, size, exclusions and time coverage. Distinguish a targeted sample from a representative sample and limit every extrapolation."
+          }
+        },
+        {
+          "key": "control-test-record",
+          "title": {
+            "es": "Pruebas de diseño y funcionamiento",
+            "en": "Design and operating tests"
+          },
+          "body": {
+            "es": "TODO: Para cada prueba registra criterio, muestra, precondiciones, resultado esperado, resultado observado y fuente. Distingue conforme a criterio, excepción, inconcluso y no probado; una política escrita no prueba funcionamiento.",
+            "en": "TODO: For each test record the criterion, sample, prerequisites, expected result, observed result and source. Distinguish criterion met, exception, inconclusive and not tested; a written policy does not prove operation."
+          }
+        },
+        {
+          "key": "findings"
+        },
+        {
+          "key": "control-exceptions",
+          "title": {
+            "es": "Excepciones y riesgo residual",
+            "en": "Exceptions and residual risk"
+          },
+          "body": {
+            "es": "TODO: Relaciona excepciones con impacto sustentado, frecuencia observada, control compensatorio comprobado y límites. Conserva la separación entre aceptación por el responsable y remediación verificada.",
+            "en": "TODO: Link exceptions to supported impact, observed frequency, verified compensating control and limitations. Keep owner acceptance separate from verified remediation."
+          }
+        },
+        {
+          "key": "control-retest",
+          "title": {
+            "es": "Remediación y repetición comparable",
+            "en": "Remediation and comparable retest"
+          },
+          "body": {
+            "es": "TODO: Asigna responsable, fecha objetivo, dependencia y criterio de cierre. Registra la nueva muestra, condiciones comparables y evidencia del retest; conserva los casos aún pendientes.",
+            "en": "TODO: Assign an owner, target date, dependency and closure criterion. Record the new sample, comparable conditions and retest evidence; retain outstanding cases."
+          }
+        },
+        {
+          "key": "control-evidence",
+          "title": {
+            "es": "Registro de pruebas y evidencias",
+            "en": "Test and evidence register"
+          },
+          "body": {
+            "es": "TODO: Relaciona identificador de control, prueba, muestra, evidencia, fecha con zona horaria, custodio y hash. Registra restricciones de acceso y omisiones de forma explícita.",
+            "en": "TODO: Link the control identifier, test, sample, evidence, timestamp with time zone, custodian and hash. Record access restrictions and omissions explicitly."
+          }
+        }
+      ],
+      "guidance": {
+        "note": {
+          "es": "Estructura original de report-gen para revisión de controles. No es una plantilla oficial ni una certificación de conformidad. Define los criterios con el destinatario y limita las conclusiones a la evidencia y muestras revisadas.",
+          "en": "Original report-gen structure for control review. Not an official template or certification of conformity. Agree criteria with the recipient and limit conclusions to the evidence and samples reviewed."
+        },
+        "formats": [
+          "pdf",
+          "docx",
+          "md"
+        ],
+        "source": "https://github.com/IphobiusS/report-gen",
+        "checked": "2026-10-12"
+      },
+      "color_source": "Original report-gen palette; not an official provider color.",
+      "categories": [
+        "corporate",
+        "blue-team"
+      ],
+      "description": {
+        "es": "Pruebas de controles, muestreo, excepciones y retest con evidencia trazable.",
+        "en": "Control tests, sampling, exceptions and retest with traceable evidence."
+      }
     }
   ],
   "historical": [

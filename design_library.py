@@ -9,7 +9,7 @@ from input_guard import load_json_file, load_json
 from storage import atomic_write
 
 CATALOG = Path(__file__).parent / 'designs' / 'certifications.json'
-LAYOUTS = ('rail', 'split', 'frame', 'band', 'timeline')
+LAYOUTS = ('rail', 'split', 'frame', 'band', 'timeline', 'editorial')
 MOTIFS = ('network', 'web', 'code', 'wifi', 'events', 'ai', 'blocks')
 VARIANTS = ('brand', 'quiet')
 FIELDS = {'schema', 'id', 'name', 'provider', 'certificate', 'accent', 'background', 'layout', 'motif', 'variant', 'base_theme', 'guidance_id'}

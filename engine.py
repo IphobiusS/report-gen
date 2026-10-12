@@ -262,7 +262,7 @@ def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=No
         section.get("special") == "findings" for section in ctx.get("rsections", []))
     import design_render
     if meta.get("design"):
-        ctx.update(profile_css=design_render.css(meta["design"]), profile_mark=design_render.svg(meta["design"]))
+        ctx['profile_css'] = design_render.css(meta['design'])
         from provider_branding import provider_mark
         ctx['provider_mark'] = provider_mark(meta['design'])
     from report_layout import prepare_html

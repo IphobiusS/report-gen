@@ -47,6 +47,7 @@ async function contextPage({width = 1366, language = 'es', blockGuide = false} =
 async function createOwnProject(page, slug) {
   if (!await page.locator('#newProjectBtn').isVisible()) await page.locator('#studioMore > summary').click();
   await page.locator('#newProjectBtn').click();
+  await page.locator('dialog[data-design-mode=create] .experience-actions .primary').click();
   const modal = page.locator('#newModal');
   await modal.waitFor({state: 'visible'});
   await modal.locator('#mTitle').fill('Synthetic first report');
@@ -246,7 +247,8 @@ async function axeGuide(page, label) {
 
   // The own-project path is deliberately independent of the seeded Nimbus demo.
   await page.locator('[data-guide-action="new"]').click();
-  check('Explicit create action opens the native project dialog', await page.locator('#newModal').evaluate(element => element.open && element.matches(':modal')));
+  await page.locator('dialog[data-design-mode=create]').waitFor({state:'visible'});
+  check('Explicit create action opens the native project dialog', await page.locator('dialog[data-design-mode=create]').evaluate(element => element.open && element.matches(':modal')));
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !document.querySelector('dialog[open]'));
   check('Cancelling project creation from the guide does not create report data', JSON.stringify(await snapshot(page)) === JSON.stringify(beforeEmpty));
@@ -379,7 +381,8 @@ async function axeGuide(page, label) {
   check('A missing optional guide script exposes no dead tutorial launcher', await failed.page.locator('#guideBtn').count() === 0 || !await failed.page.locator('#guideBtn').isVisible() || !await failed.page.locator('#guideBtn').isEnabled());
   if (!await failed.page.locator('#newProjectBtn').isVisible()) await failed.page.locator('#studioMore > summary').click();
   await failed.page.locator('#newProjectBtn').click();
-  check('A missing guide script still allows a real new-project dialog', await failed.page.locator('#newModal').evaluate(element => element.open && element.matches(':modal')));
+  await failed.page.locator('dialog[data-design-mode=create]').waitFor({state:'visible'});
+  check('A missing guide script still allows a real new-project dialog', await failed.page.locator('dialog[data-design-mode=create]').evaluate(element => element.open && element.matches(':modal')));
   await failed.context.close();
   check('Guide acceptance run has no JavaScript exceptions', results.errors.length === 0, results.errors);
 })().catch(error => {

@@ -35,7 +35,7 @@ const S = { designs: [], projects: [], slug: null, data: null, sel: { type: "rep
 // ---- i18n del sitio -------------------------------------------------------
 const I18N = {
   es: {
-    new_project:"Nuevo proyecto", new_project_start:"Empieza con la estructura Base. Puedes ajustar el diseño y las secciones después.", new_project_options:"Otras estructuras y perfiles especializados", new_project_library:"Elegir en la biblioteca de informes", delete:"Eliminar", delete_title:"Eliminar el proyecto actual",
+    new_project:"Nuevo proyecto", new_project_start:"Paso 2 de 2. Revisa la plantilla y completa los datos del proyecto.", new_project_options:"Cambiar la estructura inicial", new_project_library:"Volver a la galería", delete:"Eliminar", delete_title:"Eliminar el proyecto actual",
     hide_preview:"Ocultar vista previa", show_preview:"Mostrar vista previa", preview_toggle_title:"Mostrar u ocultar la vista previa",
     ui_lang_title:"Idioma del sitio", validate_title:"Validar informe", translating:"Actualizando\u2026", toast_created:"Proyecto creado", toast_exported:"Exportado", toast_copied:"Copiado", exporting:"Generando", validate_ok:"Sin avisos", validate_issues:"aviso(s)", dash_sort_sev:"Severidad", dash_sort_manual:"Manual", dash_incomplete:"CVSS o CWE sin registrar (opcionales). No impide exportar.", theme_light:"Tema claro", theme_dark:"Tema oscuro", update_preview:"Actualizar vista previa", export:"Exportar",
     rename:"Renombrar", rename_title:"Cambiar el nombre del proyecto (título del informe)", rename_prompt:"Nuevo nombre del proyecto:",
@@ -89,7 +89,7 @@ const I18N = {
     create_fail:"No se pudo crear", delete_confirm:"Eliminar el proyecto \"{n}\"?\nEsto borra su informe y sus imagenes de forma permanente."
   },
   en: {
-    new_project:"New project", new_project_start:"Start with the Base structure. You can adjust the design and sections later.", new_project_options:"Other structures and specialized profiles", new_project_library:"Choose in report design library", delete:"Delete", delete_title:"Delete the current project",
+    new_project:"New project", new_project_start:"Step 2 of 2. Review your design and enter the project details.", new_project_options:"Change the starter structure", new_project_library:"Back to gallery", delete:"Delete", delete_title:"Delete the current project",
     hide_preview:"Hide preview", show_preview:"Show preview", preview_toggle_title:"Show or hide the preview",
     ui_lang_title:"Site language", validate_title:"Validate report", translating:"Updating\u2026", toast_created:"Project created", toast_exported:"Exported", toast_copied:"Copied", exporting:"Generating", validate_ok:"No warnings", validate_issues:"warning(s)", dash_sort_sev:"Severity", dash_sort_manual:"Manual", dash_incomplete:"CVSS or CWE not recorded (optional). Export remains available.", theme_light:"Light theme", theme_dark:"Dark theme", update_preview:"Refresh preview", export:"Export",
     rename:"Rename", rename_title:"Rename the project (report title)", rename_prompt:"New project name:",
@@ -847,7 +847,50 @@ function field(label, obj, key, opts = {}) {
   }
   inp.dataset.field = key;
   if (opts.ph) inp.setAttribute("placeholder", opts.ph);
-  return h("label", {}, label, inp);
+  const control=h("label", {}, label, inp);
+  if(opts.area&&key.endsWith('_md'))return h('div',{class:'markdown-field'},control,
+    h('button',{type:'button',class:'btn sm','data-markdown-link':key,onclick:()=>openMarkdownLink(inp,()=>inp.dispatchEvent(new Event('input',{bubbles:true})))},S.uiLang==='en'?'Link':'Enlace'));
+  return control;
+}
+
+function openMarkdownLink(ta, apply, onInserted = () => {}) {
+const w = (es, en) => S.uiLang === "en" ? en : es;
+  const start=ta.selectionStart,end=ta.selectionEnd,original=ta.value,slug=S.slug;
+  const selected=original.slice(start,end),isUrl=/^https?:\/\/\S+$/i.test(selected);
+  const name=h('input',{type:'text',required:'','data-link-name':'',value:isUrl?'':selected,maxlength:500});
+  const target=h('input',{type:'url',required:'','data-link-url':'',value:isUrl?selected:'',placeholder:'https://'});
+  const status=h('p',{role:'alert','data-link-error':''});
+  const cancel=h('button',{type:'button',class:'btn'},w('Cancelar','Cancel'));
+  const submit=h('button',{type:'submit',class:'btn primary'},w('Insertar enlace','Insert link'));
+  const form=h('form',{class:'modal-box'},h('h3',{},w('Insertar enlace','Insert link')),
+    h('p',{},w('Escribe el texto que verá el lector. El destino conserva la URL completa.','Enter the text the reader will see. The destination retains the complete URL.')),
+    h('label',{},w('Nombre descriptivo','Descriptive name'),name),h('label',{},'URL',target),status,
+    h('div',{class:'row'},cancel,submit));
+  const dialog=h('dialog',{class:'modal','aria-label':w('Insertar enlace','Insert link'),'data-link-dialog':''},form);
+  for(const input of [name,target])input.addEventListener('input',()=>{status.textContent='';});
+  cancel.addEventListener('click',()=>dialog.close());
+  dialog.addEventListener('close',()=>{dialog.remove();if(ta.isConnected)ta.focus({preventScroll:true});});
+  form.addEventListener('submit',event=>{
+    event.preventDefault();
+    const label=name.value,url=target.value;
+    let valid=false;
+    try{const parsed=new URL(url);valid=/^https?:\/\//i.test(url)&&['http:','https:'].includes(parsed.protocol)&&!/[\s<>\\]/.test(url);}catch(_){}
+    if(!label.trim()||/[\r\n]/.test(label)||!valid){
+      status.textContent=w('Escribe un nombre y una URL HTTP o HTTPS completa, sin espacios.','Enter a name and a complete HTTP or HTTPS URL without spaces.');
+      (!label.trim()?name:target).focus();return;
+    }
+    if(S.slug!==slug||!ta.isConnected||ta.value!==original){
+      status.textContent=w('El texto o el proyecto cambió. Cierra el diálogo y vuelve a insertar el enlace.','The text or project changed. Close this dialog and insert the link again.');return;
+    }
+    // Angle-delimited Markdown destinations retain parentheses, query
+    // strings and percent escapes. Never normalize through URL.href.
+    const escaped=label.replace(/[\\`*_{}\[\]()#+.!|<>]/g,'\\$&');
+    const markdown='['+escaped+'](<'+url+'>)';
+    ta.value=original.slice(0,start)+markdown+original.slice(end);
+    ta.selectionStart=ta.selectionEnd=start+markdown.length;
+    apply();onInserted();dialog.close();
+  });
+  document.body.append(dialog);dialog.showModal();(!selected||isUrl?name:target).focus();
 }
 
 // Editor Markdown estilo SysReptor: barra + Write/Preview + imagen + tabla.
@@ -903,7 +946,7 @@ function mdEditor(label, obj, key, opts = {}) {
     tb("•", w("Lista", "List"), () => prefixLines("- ")),
     tb("1.", w("Lista numerada", "Numbered list"), () => prefixLines("1. ")),
     tb("❝", w("Cita", "Quote"), () => prefixLines("> ")),
-    tb(w("Enlace", "Link"), w("Enlace", "Link"), () => insert("[", "](https://)", w("texto", "text"))),
+    tb(w("Enlace", "Link"), w("Enlace", "Link"), () => openMarkdownLink(ta,apply,()=>{if(ta.style.display==='none')wTab.click();})),
     tb(w("Imagen", "Image"), w("Subir imagen", "Upload image"), () => fileInp.click()),
     tb(w("Tabla", "Table"), w("Insertar tabla", "Insert table"), () => insertAtCursor("\n| Col1 | Col2 |\n|---|---|\n| a | b |\n")),
     h("span", { class: "mded-sp" }),
@@ -1387,7 +1430,7 @@ function bindUI() {
   $("#mPreset").addEventListener("change", () => { const v = $("#mPreset").value; if (v.startsWith("family:")) fillCertOptions(v.slice(7)); refreshPresetDesc(); });
   $("#mCert").addEventListener("change", refreshPresetDesc);
   populatePresetSelector();
-  $("#newProjectBtn").addEventListener("click", () => { populatePresetSelector(); $("#mPresetOptions").open=false; $("#mLang").value='corporativo-'+S.uiLang; openModal($("#newModal")); $("#mTitle").focus(); });
+  $("#newProjectBtn").addEventListener("click", () => DesignLibraryUI.newProject($("#newProjectBtn")));
   $("#deleteProjectBtn").addEventListener("click", deleteProject);
   $("#renameProjectBtn").addEventListener("click", renameProject);
   $("#restoreProjectBtn").addEventListener("click", restoreProject);
@@ -1457,12 +1500,13 @@ async function createProject() {
   creatingProject=true;$("#mCreate").disabled=true;
   try {
     if(S.slug&&!await doSave())throw Error(S.uiLang==='en'?'The open project could not be saved. Resolve its save warning before creating another project.':'No se pudo guardar el proyecto abierto. Resuelve su aviso de guardado antes de crear otro proyecto.');
-    const body = { model: $("#mLang").value, preset: selectedPresetId(), title: $("#mTitle").value, client: $("#mClient").value, slug: $("#mSlug").value };
-    const r = await requireOk(await api.post("/api/projects", body));
+    const request = DesignLibraryUI.projectRequest();
+    const r = await requireOk(await api.post(request.url, request.body));
     const { slug } = await r.json();
     if(typeof InsightsUI!=="undefined")InsightsUI.projectCreated(slug);
     closeModal($("#newModal"));
     $("#mTitle").value = $("#mClient").value = $("#mSlug").value = "";
+    DesignLibraryUI.resetCreation();
     await refreshProjects();await loadProject(slug);$("#editor").focus({preventScroll:true});toast(t("toast_created"), "ok");
   } catch(error) {
     const message=error.message || t("create_fail"),modal=$("#newModal");

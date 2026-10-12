@@ -1,6 +1,6 @@
 {
   "name": "report-gen-ui-tests",
-  "version": "0.32.3",
+  "version": "0.33.0",
   "private": true,
   "scripts": {
     "test": "node --test tests/test_save_manager.cjs tests/test_drafts_0200.cjs",
@@ -30,7 +30,8 @@
     "test:guided-update": "node tests/test_guided_update_0300_browser.cjs",
     "test:editor-modules": "node --test tests/test_editor_modules_0310.cjs",
     "test:backup-routine": "node tests/test_backup_routine_0310_browser.cjs",
-    "test:scale": "node scripts/benchmark-workspace-0230.cjs --counts 50,250 --rounds 1 --evidence-limit 0 --image-mode distinct --export-formats pdf,docx,md,html --assert-bounded --output out/workspace-scale-0310"
+    "test:scale": "node scripts/benchmark-workspace-0230.cjs --counts 50,250 --rounds 1 --evidence-limit 0 --image-mode distinct --export-formats pdf,docx,md,html --assert-bounded --output out/workspace-scale-0310",
+    "test:project-gallery": "node tests/test_project_gallery_0330.cjs --output out/project-gallery-0330"
   },
   "devDependencies": {
     "jsdom": "26.1.0",

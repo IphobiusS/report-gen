@@ -103,7 +103,25 @@ const ExperienceUI = (() => {
       });action.dataset.readinessAction=check.key;row.lastElementChild.append(action);}
       list.append(row);
     }
-    box.append(list);return box;
+    box.append(list);
+    const compatibility=report.readiness.compatibility;
+    if(compatibility?.format==='docx'&&compatibility.count){
+      const details=h('details',{'data-docx-url-compatibility':''},
+        h('summary',{},w('Compatibilidad de URLs en Word','URL compatibility in Word')+' ('+compatibility.count+')'),
+        h('p',{},w('Estas ubicaciones muestran URLs de 96 o más caracteres. Es una señal para revisar el DOCX, no una medición del salto: LibreOffice puede dejar espacio al dividirlas. La URL y su destino se conservan.','These locations display URLs of 96 or more characters. This flags the DOCX for review; it does not measure line breaks. LibreOffice may leave space when wrapping them. URL text and destinations are retained.')),
+        h('p',{},w('En texto Markdown puedes usar Enlace para escribir un nombre descriptivo y conservar la URL completa como destino. Si el valor literal es evidencia o un comando, consérvalo y revisa el archivo generado.','In Markdown text, use Link to enter a descriptive name and retain the complete URL as its destination. If the literal value is evidence or a command, preserve it and review the generated file.')));
+      const locations=h('ul',{});
+      for(const location of compatibility.locations||[]){
+        const action=button(location.label+' ('+location.count+')',()=>{
+          if(S.slug!==slug)return;
+          box.closest('dialog')?.close();
+          WorkflowUI.navigateIssue(location);
+        });
+        action.dataset.docxUrlLocation=location.path;locations.append(h('li',{},action));
+      }
+      details.append(locations);box.append(details);
+    }
+    return box;
   }
   function deliveryChecklist() {
     const slug=S.slug,box=h('section',{class:'card','data-delivery-readiness':'','aria-label':w('Preparación de la entrega','Delivery preparation')});

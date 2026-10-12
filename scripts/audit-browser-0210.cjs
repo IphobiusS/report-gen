@@ -31,7 +31,7 @@ async function api(method,uri,body){return page.evaluate(async ({method,uri,body
  await page.getByRole('button',{name:'Hallazgos',exact:true}).click();
  await screenshot('02-hallazgos');
  check('Sin desbordamiento horizontal en escritorio',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
- await more();await page.locator('#newProjectBtn').click();
+ await more();await page.locator('#newProjectBtn').click();await page.locator('dialog[data-design-mode=create] .experience-actions .primary').click();
  await page.locator('#mTitle').fill('Aurora: informe ficticio de aceptación');await page.locator('#mClient').fill('Cooperativa Aurora [FICTICIA]');await page.locator('#mSlug').fill('aurora');await page.locator('#mCreate').click();await ready();await closeMore();
  await page.getByRole('button',{name:'Añadir hallazgo',exact:true}).click();
  await page.locator('[data-field="title"]').fill('Control de sesión [SIMULADO]');

@@ -79,6 +79,7 @@ jobs:
           npm run test:first-use
           npm run test:first-use-browser
           npm run test:design-selection
+          npm run test:project-gallery
           npm run test:pending-recovery
           npm run test:scanner-imports
           npm run test:private-tools
@@ -109,6 +110,7 @@ jobs:
           path: |
             out/first-use-0260/
             out/design-selection-0260/
+            out/project-gallery-0330/
             out/pending-recovery-0270/
             out/scanner-imports-0270/
             out/private-tools-0270/

@@ -20,11 +20,11 @@ def client(tmp_path,monkeypatch):
 
 def test_catalog_groups_and_distinct_compositions():
     cat=lib.catalog();profiles=cat['profiles']
-    assert len(profiles)==29
+    assert len(profiles)==30
     assert len([p for p in profiles if p['provider']=='OffSec'])==14
     assert len([p for p in profiles if p['provider']=='HTB'])==8
     assert {p['layout'] for p in profiles}==set(lib.LAYOUTS)
-    assert len({p['id'] for p in profiles})==29
+    assert len({p['id'] for p in profiles})==30
     assert lib.profile('htb-cwpe')['domain']=='wifi'
     assert lib.profile('htb-cwee')['domain']=='code'
     assert all(p['accent']=='#9FEF00' for p in profiles if p['provider']=='HTB')
