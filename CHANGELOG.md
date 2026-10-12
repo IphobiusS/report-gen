@@ -1,3 +1,12 @@
+# Cambios 0.34.1 (2026-10-12)
+
+- El verificador PDF reserva apariciones independientes para los encabezados escritos y los títulos de hallazgos. Evita que un título repetido o contenido dentro de otro supla una aparición ausente y acepta títulos íntegros que se envuelven entre líneas. Conserva el presupuesto de trabajo y el alcance de presencia textual global: no certifica posición ni asociación visual.
+- La cola termina los descendientes de un trabajador que ya finalizó. En POSIX con `waitid` y `WNOWAIT` conserva el identificador del grupo hasta limpiarlo; en Windows utiliza un Job Object privado y no permite que el trabajador continúe antes de asignarlo. La limpieza espera a que los procesos Windows terminen antes de retirar sus archivos. Las regresiones usan hijos y nietos reales y un proceso ajeno que debe permanecer vivo.
+- En POSIX sin `waitid`/`WNOWAIT`, incluido macOS con Python 3.11/3.12, se mantiene la compatibilidad y el límite anterior de limpieza tras la salida anticipada del trabajador. No se señala un grupo cuyo identificador podría haberse reutilizado. La prueba nativa de macOS sigue pendiente.
+- Crear un proyecto desde el tutorial conserva el botón original para devolverle el foco al cerrar la galería, cancelar el formulario o volver atrás. Se comprueban los tres recorridos en español e inglés. Si una captura no carga, su nombre accesible también anuncia que no está disponible, en lugar de ofrecer ampliarla.
+- Las guías dejan de presentar como pendiente el coste de exportación de 72 URLs largas corregido en 0.34.0. Se elimina una rama privada de búsqueda PDF sin consumidores; no se añaden documentos residuales de auditoría.
+- Persiste el salto anticipado de algunas URLs literales de DOCX en LibreOffice. No se modifican sus caracteres o destinos para disimularlo; la revisión en Microsoft Word nativo permanece pendiente.
+
 # Cambios 0.34.0 (2026-10-12)
 
 - Tutorial visual opcional de seis pasos, con 14 capturas reales ES/EN de datos ficticios, acceso permanente desde el menú, ampliación accesible, progreso local y reinicio independiente del proyecto. La invitación inicial se puede omitir; el recorrido sigue disponible sin almacenamiento del navegador.

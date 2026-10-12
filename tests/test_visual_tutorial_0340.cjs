@@ -58,6 +58,25 @@ async function state(target) { return target.evaluate(() => JSON.stringify({slug
   await open(page);
   for(const language of ['es','en']) {
     await page.evaluate(language=>setUiLang(language),language);
+    await page.locator('[data-guide-step="0"]').click();
+    const createTrigger=page.locator('[data-guide-action="new"]');
+    for(const route of ['escape','cancel','back']) {
+      await createTrigger.focus();await page.keyboard.press('Enter');
+      await page.locator('dialog.design-dialog[open]').waitFor();
+      if(route!=='escape') {
+        await page.getByRole('button',{name:language==='es'?'Continuar con esta plantilla':'Continue with this design',exact:true}).click();
+        await page.locator('#newModal[open]').waitFor();
+        if(route==='back') {
+          await page.locator('#newProjectLibrary button').click();
+          await page.locator('dialog.design-dialog[open]').waitFor();
+        }
+      }
+      if(route==='cancel') await page.locator('#mCancel').click();
+      else await page.keyboard.press('Escape');
+      await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      check(language+' tutorial project '+route+' restores its actual trigger',await createTrigger.evaluate(node=>node===document.activeElement));
+    }
     for(let step=0;step<6;step++) {
       await page.locator('[data-guide-step="'+step+'"]').click();
       const images=page.locator('.tutorial-screenshot img');
@@ -108,14 +127,18 @@ async function state(target) { return target.evaluate(() => JSON.stringify({slug
   }
   check('Reading, completion, restart and images make no modifying API requests',mutations.length===0,mutations);
   await first.context.close();
-  const missing=await launch();page=missing.page;
-  await page.route('**/static/tutorial/*.webp', route=>route.abort());
-  await open(page);
-  await page.waitForFunction(()=>document.querySelector('.tutorial-screenshot-button')?.disabled);
-  check('A missing screenshot leaves a readable fallback and a 44px control', await page.locator('.tutorial-screenshot-button').evaluate(node=>node.getBoundingClientRect().height>=44&&node.textContent.includes('no disponible')) && await page.locator('.tutorial-screenshot figcaption').isVisible());
-  await page.locator('#guideNext').click();
-  check('Missing screenshots do not block tutorial navigation',await page.locator('[data-guide-current="1"]').count()===1);
-  await missing.context.close();
+  for(const language of ['es','en']) {
+    const missing=await launch(language);page=missing.page;
+    await page.route('**/static/tutorial/*.webp', route=>route.abort());
+    await open(page);
+    await page.waitForFunction(()=>document.querySelector('.tutorial-screenshot-button')?.disabled);
+    const fallback=language==='es'?'Captura no disponible. Las instrucciones siguen debajo.':'Screenshot unavailable. The instructions remain below.';
+    check(language+' missing screenshot leaves a readable fallback and a 44px control', await page.locator('.tutorial-screenshot-button').evaluate((node,text)=>node.getBoundingClientRect().height>=44&&node.textContent.includes(text),fallback) && await page.locator('.tutorial-screenshot figcaption').isVisible());
+    check(language+' missing screenshot accessible name matches its visible fallback', await page.locator('.tutorial-screenshot-button').getAttribute('aria-label')===fallback);
+    await page.locator('#guideNext').click();
+    check(language+' missing screenshots do not block tutorial navigation',await page.locator('[data-guide-current="1"]').count()===1);
+    await missing.context.close();
+  }
   for(const mode of ['blocked','corrupt']) {
     const next=await launch('es',mode==='blocked',mode==='corrupt');page=next.page;
     await page.locator('[data-tutorial-start]').click();await page.locator('#guideNext').click();

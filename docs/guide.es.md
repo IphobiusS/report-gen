@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.34.0
+# Guía de uso de report-gen 0.34.1
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -116,9 +116,9 @@ PDF comprueba presencia textual, incluidas celdas de tablas y elementos de lista
 
 Las tablas dentro de un hallazgo, incluido su procedimiento detallado, deben caber completas en una página junto a su encabezado. Si no caben, divide o reduce la tabla, o coloca el registro extenso en una sección narrativa o anexo del informe, donde puede continuar entre páginas. El proceso de exportación PDF tiene un límite de 120 segundos: si lo supera, conserva la salida anterior y retira sus archivos intermedios. Divide el contenido por exportación o reintenta con menos carga; el límite no se amplía automáticamente.
 
-Una prueba de estrés con 72 filas y una URL literal de unos 300 caracteres por fila superó ese tiempo incluso situada en una sección narrativa. No es un máximo universal de filas: influyen el contenido y los recursos disponibles. Para registros de ese tamaño, divide el informe o usa etiquetas breves con el destino completo del enlace; conservar el destino no exige mostrar toda la URL en cada celda.
+La versión 0.34.0 corrigió el coste excesivo de maquetación de las URLs literales largas. La prueba de 72 filas con una URL de unos 300 caracteres por fila, situada en una sección narrativa, pasó dentro del límite tras esa corrección. No establece un máximo universal de filas ni un tiempo garantizado: influyen el contenido y los recursos disponibles. Conserva las URLs literales que formen parte de la evidencia; las etiquetas descriptivas son una opción de redacción, no un requisito para exportar ese caso.
 
-La verificación PDF reserva ocurrencias físicas independientes para cada línea de código y, dentro de cada categoría, para celdas, elementos de lista y párrafos distintos. Una celda larga no puede suplir simultáneamente otra celda ausente cuyo texto contiene. Las categorías se comprueban por separado porque un párrafo dentro de una lista pertenece legítimamente a ambas. Si una combinación de saltos ambiguos supera el presupuesto de comprobación, informa que no pudo completar la verificación y conserva la entrega anterior; no acusa pérdida de contenido sin demostrarla.
+La verificación PDF reserva ocurrencias físicas independientes para cada línea de código y, dentro de cada categoría, para encabezados, celdas, elementos de lista y párrafos distintos. Una celda larga no puede suplir simultáneamente otra celda ausente cuyo texto contiene. Las categorías se comprueban por separado porque un párrafo dentro de una lista pertenece legítimamente a ambas. Si una combinación de saltos ambiguos supera el presupuesto de comprobación, informa que no pudo completar la verificación y conserva la entrega anterior; no acusa pérdida de contenido sin demostrarla.
 
 En **Informe → Espaciado del informe** puedes elegir cómoda o compacta. Es independiente de la densidad visual del editor. El HTML portátil permite filtrar por tipo, severidad pendiente y texto, y restablecer los filtros. PDF y HTML ajustan las URL literales al ancho disponible sin modificar su texto. LibreOffice puede adelantar algunos saltos de URL en DOCX; no se insertan saltos ni caracteres artificiales en el documento para ocultar esa limitación.
 
@@ -129,6 +129,8 @@ Los anexos van exclusivamente en el paquete ZIP bajo `anexos/`, con su hash en `
 **Analizar posibles secretos** busca patrones en el primer MiB de textos UTF-8 y cuenta metadatos de imágenes. Ese análisis de anexos no realiza OCR ni inspecciona el contenido de PDF. El Inspector ofrece por separado OCR local opcional de las imágenes publicadas, descrito más abajo. Muestra alcance y límites, sin reproducir los valores detectados. No sustituye la revisión ni cambia los archivos.
 
 ## Datos y recuperación
+
+La cola de exportación termina los procesos de cada trabajo antes de limpiar sus archivos. Windows utiliza un grupo privado de procesos y POSIX conserva al trabajador hasta terminar sus descendientes cuando dispone de `waitid`/`WNOWAIT`. En macOS con Python 3.11/3.12, la salida anticipada del trabajador conserva una limitación: no se garantiza detener a sus descendientes después de recolectarlo. Python 3.13 incorpora `waitid` en macOS; la aceptación nativa de esa plataforma sigue pendiente. Esta diferencia no modifica el contenido de las exportaciones.
 
 La carpeta externa contiene `projects/` y `library/`; originales, historial y anexos permanecen dentro de cada proyecto. El lanzador resuelve `--workspace` antes que `REPORT_GEN_WORKSPACE`. Sin ninguna selección, conserva `webapp/projects/` y `webapp/library/`; no busca ni traslada datos automáticamente. Usa **Respaldo integral** para trasladar proyectos, originales y bibliotecas juntos. Es información privada.
 

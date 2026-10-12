@@ -21,6 +21,153 @@ from storage import atomic_write
 TERMINAL = {'done', 'error', 'cancelled'}
 
 
+class _WindowsJob:
+    """Keep rendering descendants attached after their immediate parent exits."""
+    def __init__(self):
+        import ctypes
+        from ctypes import wintypes
+
+        class BasicLimits(ctypes.Structure):
+            _fields_ = [('PerProcessUserTimeLimit', ctypes.c_int64),
+                        ('PerJobUserTimeLimit', ctypes.c_int64),
+                        ('LimitFlags', wintypes.DWORD),
+                        ('MinimumWorkingSetSize', ctypes.c_size_t),
+                        ('MaximumWorkingSetSize', ctypes.c_size_t),
+                        ('ActiveProcessLimit', wintypes.DWORD),
+                        ('Affinity', ctypes.c_size_t),
+                        ('PriorityClass', wintypes.DWORD),
+                        ('SchedulingClass', wintypes.DWORD)]
+
+        class IoCounters(ctypes.Structure):
+            _fields_ = [(name, ctypes.c_uint64) for name in (
+                'ReadOperationCount', 'WriteOperationCount', 'OtherOperationCount',
+                'ReadTransferCount', 'WriteTransferCount', 'OtherTransferCount')]
+
+        class ExtendedLimits(ctypes.Structure):
+            _fields_ = [('BasicLimitInformation', BasicLimits), ('IoInfo', IoCounters),
+                        ('ProcessMemoryLimit', ctypes.c_size_t),
+                        ('JobMemoryLimit', ctypes.c_size_t),
+                        ('PeakProcessMemoryUsed', ctypes.c_size_t),
+                        ('PeakJobMemoryUsed', ctypes.c_size_t)]
+
+        class Accounting(ctypes.Structure):
+            _fields_ = [(name, ctypes.c_int64) for name in (
+                'TotalUserTime', 'TotalKernelTime', 'ThisPeriodTotalUserTime',
+                'ThisPeriodTotalKernelTime')] + [(name, wintypes.DWORD) for name in (
+                    'TotalPageFaultCount', 'TotalProcesses', 'ActiveProcesses',
+                    'TotalTerminatedProcesses')]
+
+        self.accounting_type = Accounting
+        self.api = ctypes.WinDLL('kernel32', use_last_error=True)
+        signatures = {
+            'CreateJobObjectW': ([ctypes.c_void_p, wintypes.LPCWSTR], wintypes.HANDLE),
+            'SetInformationJobObject': ([wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p,
+                                         wintypes.DWORD], wintypes.BOOL),
+            'AssignProcessToJobObject': ([wintypes.HANDLE, wintypes.HANDLE], wintypes.BOOL),
+            'TerminateJobObject': ([wintypes.HANDLE, wintypes.UINT], wintypes.BOOL),
+            'QueryInformationJobObject': ([wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p,
+                                           wintypes.DWORD, ctypes.c_void_p], wintypes.BOOL),
+            'CloseHandle': ([wintypes.HANDLE], wintypes.BOOL),
+        }
+        for name, (args, result) in signatures.items():
+            function = getattr(self.api, name)
+            function.argtypes, function.restype = args, result
+        self.handle = self.api.CreateJobObjectW(None, None)
+        if not self.handle:
+            raise ctypes.WinError(ctypes.get_last_error())
+        limits = ExtendedLimits()
+        limits.BasicLimitInformation.LimitFlags = 0x2000  # KILL_ON_JOB_CLOSE; no breakaway
+        if not self.api.SetInformationJobObject(self.handle, 9, ctypes.byref(limits),
+                                                ctypes.sizeof(limits)):
+            error = ctypes.WinError(ctypes.get_last_error())
+            self.close()
+            raise error
+
+    def assign(self, process):
+        import ctypes
+        # Popen's Windows handle identifies this process even if its PID is reused.
+        if not self.api.AssignProcessToJobObject(self.handle, int(process._handle)):
+            raise ctypes.WinError(ctypes.get_last_error())
+
+    def close(self):
+        if self.handle is not None:
+            import ctypes
+            if not self.api.TerminateJobObject(self.handle, 1):
+                raise ctypes.WinError(ctypes.get_last_error())
+            deadline = time.monotonic() + 15
+            while True:
+                accounting = self.accounting_type()
+                if not self.api.QueryInformationJobObject(self.handle, 1, ctypes.byref(accounting),
+                                                           ctypes.sizeof(accounting), None):
+                    raise ctypes.WinError(ctypes.get_last_error())
+                if accounting.ActiveProcesses == 0:
+                    break
+                if time.monotonic() >= deadline:
+                    raise subprocess.TimeoutExpired('export process tree cleanup', 15)
+                time.sleep(.02)
+            if not self.api.CloseHandle(self.handle):
+                raise ctypes.WinError(ctypes.get_last_error())
+            self.handle = None
+
+
+def _start_process(command):
+    """Internal only: command must wait for byte '1' on stdin before doing work."""
+    job = _WindowsJob() if os.name == 'nt' else None
+    process = None
+    try:
+        options = ({'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP}
+                   if os.name == 'nt' else {'start_new_session': True})
+        process = subprocess.Popen(command, stdin=subprocess.PIPE,
+                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **options)
+        if job is not None:
+            # Assignment must precede releasing the worker: rendering children inherit this job.
+            job.assign(process)
+            process._report_gen_job = job
+        process.stdin.write(b'1')
+        process.stdin.close()
+        return process
+    except BaseException:
+        # The gate is still closed if assignment failed. Kill before closing its pipe.
+        try:
+            if process is not None:
+                try:
+                    if os.name == 'nt':
+                        process.kill()
+                    else:
+                        # Do not call Popen.kill first: it can reap the leader before
+                        # group cleanup and allow the private PGID to be recycled.
+                        os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+        finally:
+            try:
+                if job is not None:
+                    job.close()
+            finally:
+                if process is not None:
+                    try:
+                        process.wait(timeout=15)
+                    finally:
+                        if not process.stdin.closed:
+                            process.stdin.close()
+        raise
+
+
+def _exitcode(process):
+    # Preserve an exited POSIX leader as a zombie until _stop kills its private group.
+    # Its PID/PGID then cannot be recycled between observing exit and group cleanup.
+    if os.name != 'nt' and hasattr(os, 'waitid') and hasattr(os, 'WNOWAIT'):
+        if process.returncode is not None:
+            return process.returncode
+        result = os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+        if result is None:
+            return None
+        return result.si_status if result.si_code == os.CLD_EXITED else -result.si_status
+    # Older macOS Python builds lack waitid. Keep export compatibility there;
+    # _stop must not signal a recycled PGID after this fallback reaps the leader.
+    return process.poll()
+
+
 class ExportQueue:
     def __init__(self, limit=8, ttl=3600, timeout=1800):
         self.root = Path(tempfile.mkdtemp(prefix='report-gen-jobs-'))
@@ -125,17 +272,23 @@ class ExportQueue:
 
     @staticmethod
     def _stop(process):
-        if process is None or process.poll() is not None:
+        if process is None:
             return
-        if os.name == 'nt':
-            # PID belongs to our private worker. /T also stops its rendering children.
-            subprocess.run(['taskkill', '/PID', str(process.pid), '/T', '/F'],
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15, check=False)
-        else:
-            try:
-                os.killpg(process.pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
+        if not getattr(process, '_report_gen_stopped', False):
+            if os.name == 'nt':
+                process._report_gen_job.close()
+            elif process.returncode is not None:
+                # Compatibility fallback: do not claim to have cleaned an unowned PGID.
+                return process.wait(timeout=15)
+            else:
+                # Our WNOWAIT path keeps the leader/PID reserved until this point.
+                # A previously reaped POSIX leader no longer safely identifies its group.
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+            # Mark only successful cleanup; never signal a stale group on a repeated call.
+            process._report_gen_stopped = True
         process.wait(timeout=15)
 
     def _run(self):
@@ -154,12 +307,11 @@ class ExportQueue:
             language_token = set_language(job['error_language'])
             try:
                 if not job['cancelled']:
-                    options = {'creationflags': subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == 'nt' else {'start_new_session': True}
-                    process = subprocess.Popen([sys.executable, str(Path(__file__).resolve()), '--worker', str(job['root'])],
-                                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **options)
+                    process = _start_process([sys.executable, str(Path(__file__).resolve()),
+                                              '--worker-gated', str(job['root'])])
                     job['process'] = process
                     started = time.monotonic()
-                    while process.poll() is None:
+                    while (returncode := _exitcode(process)) is None:
                         if self.closed or job['cancelled'] or time.monotonic() - started > self.timeout:
                             self._stop(process)
                             if not self.closed and not job['cancelled']:
@@ -172,7 +324,7 @@ class ExportQueue:
                                 if not job['cancelled']:
                                     job['stage'] = stage
                         time.sleep(.1)
-                    if not job['cancelled'] and not self.closed and process.returncode:
+                    if not job['cancelled'] and not self.closed and returncode:
                         failure = job['root'] / 'error.txt'
                         raise ValueError(failure.read_text(encoding='utf-8') if failure.exists() else backend_message('El motor terminó sin generar el archivo'))
                 with self.lock:
@@ -256,6 +408,8 @@ def worker(root):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3 or sys.argv[1] != '--worker':
+    if len(sys.argv) != 3 or sys.argv[1] not in ('--worker', '--worker-gated'):
         raise SystemExit('Use the local report-gen export API')
+    if sys.argv[1] == '--worker-gated' and sys.stdin.buffer.read(1) != b'1':
+        raise SystemExit('Export worker was not released')
     raise SystemExit(worker(sys.argv[2]))

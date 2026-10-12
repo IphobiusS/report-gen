@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.34.0
+# report-gen 0.34.1
 
 <a id="qué-es"></a>
 
@@ -61,7 +61,9 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.34.0
+## Novedades de 0.34.1
+
+La revisión del PDF distingue apariciones repetidas o solapadas de encabezados y acepta títulos completos que se envuelven entre líneas. El tutorial devuelve el foco al botón que abrió la galería al cancelarla o cerrarla, en ambos idiomas. Las guías ya reflejan la corrección de rendimiento de las URLs aplicada en 0.34.0.
 
 **Tutorial visual** acompaña el primer acceso con una invitación opcional y queda disponible en el menú. Sus seis pasos incluyen capturas reales en español e inglés: plantilla, datos del informe, hallazgos, evidencias, revisión y entrega con respaldo. Puedes ampliar las capturas, continuar donde quedaste o reiniciar el recorrido sin cambiar tus proyectos. Funciona localmente y también cuando el navegador no permite guardar el progreso.
 
@@ -96,7 +98,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.34.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.34.1 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

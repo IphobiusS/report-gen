@@ -785,15 +785,13 @@ def _pdf_uri_page_fragments(unit, pages, line_edges, budget):
     return sorted(completed)
 
 
-def _pdf_occurrences(unit, pages, *, alternatives=False):
+def _pdf_occurrences(unit, pages):
     """Count text chains using real, non-reusable ranges on adjacent pages.
 
     Headers/footers can interrupt a paragraph. Consume the longest verified
     source-word prefix on each consecutive page, retaining alternate starts.
     This is global textual presence, not a proof of block association.
     """
-    if alternatives:
-        return _pdf_text_fragments(unit, pages, prefixes=True)
     from functools import lru_cache
     words = normal(unit).split()
     if not words:
@@ -1350,6 +1348,16 @@ def inspect(path, fmt, expected):
             if not _pdf_pattern(unit).search(cover_text): raise ValueError(backend_message('Metadato de portada PDF alterado / Cover metadata changed'))
         metadata+=1
     if fmt == 'pdf':
+        # Authored and finding headings are distinct visible occurrences even
+        # when their labels repeat or overlap. Use the same bounded allocator
+        # as paragraphs, rather than allowing one heading to supply another.
+        # Physical line wraps may insert extraction whitespace in a long
+        # finding title, so the exact structured-format substring check is not
+        # suitable for PDF. This remains global text presence, not placement.
+        _pdf_present(
+            (heading for scope in expected['scopes']
+             for heading in [scope['title'], *scope.get('headings', [])]),
+            observed[''], 'encabezado', 'heading')
         # Table cells and plain li elements need not contain a paragraph.
         # Their text must not silently fall outside the PDF presence contract.
         # Count repetitions globally; PDF order, boundaries and finding
@@ -1376,10 +1384,7 @@ def inspect(path, fmt, expected):
         for heading in scope.get('headings', []):
             if not heading:
                 continue
-            if fmt == 'pdf':
-                if not _pdf_pattern(heading).search(text):
-                    raise ValueError(backend_message('Encabezado ausente o alterado', en='Missing or changed heading'))
-            else:
+            if fmt != 'pdf':
                 found = next((i for i in range(heading_cursor, len(actual['headings']))
                               if actual['headings'][i] == heading), None)
                 if found is None:
@@ -1387,7 +1392,9 @@ def inspect(path, fmt, expected):
                 heading_cursor = found + 1
             headings_checked += 1
         if scope['title']:
-            _ordered([scope['title']], text, 'Título'); content += 1
+            if fmt != 'pdf':
+                _ordered([scope['title']], text, 'Título')
+            content += 1
         # Repeated paragraphs consume separate occurrences and cannot move to
         # another finding in HTML, Markdown or Word.
         prose=scope['paragraphs_md'] if fmt=='md' else scope['paragraphs']

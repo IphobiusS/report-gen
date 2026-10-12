@@ -1,4 +1,4 @@
-# report-gen 0.34.0 user guide
+# report-gen 0.34.1 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -118,7 +118,7 @@ Structured export checks compare paragraphs, literal code, metadata, native tabl
 
 Tables inside a finding, including its detailed procedure, must fit on one page with their heading. Otherwise split or shorten the table, or place the extensive register in a narrative section or report appendix, where it can continue across pages. PDF export has a 120-second limit: exceeding it preserves the previous output and removes intermediate files. Split the content per export or retry with less load; the limit is not automatically increased.
 
-A stress test with 72 rows and a literal URL of about 300 characters per row exceeded that time even in a narrative section. This is not a universal row limit: content and available resources affect it. For registers of that size, split the report or use short labels with the full link destination; preserving the destination does not require displaying the entire URL in every cell.
+Version 0.34.0 corrected the excessive layout cost of long literal URLs. The test with 72 rows and a URL of about 300 characters per row in a narrative section passed within the limit after that correction. This does not establish a universal row maximum or a guaranteed duration: content and available resources affect it. Preserve literal URLs that are part of the evidence; descriptive labels are an optional writing choice, not a requirement for exporting that case.
 
 Project integers must be within −9,007,199,254,740,991 to 9,007,199,254,740,991 to preserve their value in the browser editor. Store larger documentary values or identifiers as quoted text in YAML/JSON. Out-of-range inputs are rejected with the field path rather than silently rounded or replaced with `null`. Report numbered lists use counters from 0 to 2,147,483,647, compatible with browser and Word consumers. An initial or final ordinal above that limit is rejected, preserving any previous output file.
 
@@ -126,7 +126,7 @@ Within a Markdown list, indent continuation text and code fences by four spaces 
 
 A Word list starting above 65,535 uses `SEQ` fields to avoid the truncation observed in LibreOfficeDev 26.8. Other lists retain automatic numbering, including when crossing that value. To extend a field-based list, edit it in report-gen and export again. Within Word, copy an item after the first while retaining its field, then update with **Ctrl+A → F9**; the first field sets the starting value. If there is only one item, use report-gen to edit it. Pressing Enter alone does not add a field. HTML, Markdown and Word checks compare ordinals, decimal format and order against the source; Word also checks each field's instruction and cached result. These checks do not replace reviewing the display in your editor. PDF numbering remains subject to visual review.
 
-PDF verification reserves independent physical occurrences for each code line and, within each category, for distinct cells, list items and paragraphs. A longer cell cannot also supply a missing cell whose text it contains. Categories are checked separately because a paragraph inside a list legitimately belongs to both. If ambiguous wrapping exceeds its verification budget, it reports that verification could not be completed and preserves the previous delivery; it does not claim content loss without establishing it.
+PDF verification reserves independent physical occurrences for each code line and, within each category, for distinct headings, cells, list items and paragraphs. A longer cell cannot also supply a missing cell whose text it contains. Categories are checked separately because a paragraph inside a list legitimately belongs to both. If ambiguous wrapping exceeds its verification budget, it reports that verification could not be completed and preserves the previous delivery; it does not claim content loss without establishing it.
 
 PDF and portable HTML wrap literal URLs to the available width without changing their text. LibreOffice may wrap some DOCX URLs early; no artificial characters or line breaks are inserted to conceal that limitation. Native Microsoft Word validation requires a licensed Windows desktop installation. The opt-in workflow is implemented; local OOXML and LibreOffice checks do not substitute for that native validation.
 
@@ -135,6 +135,8 @@ PDF and portable HTML wrap literal URLs to the available width without changing 
 Shared delivery manifests and downloadable verification records retain warning categories and counts, without copying private diagnostic messages, paths or source values. The complete details remain in the editor for review. This separation does not redact fields you choose to include in a report or annex.
 
 ## Recovery and privacy
+
+The export queue terminates each job's processes before cleaning up its files. Windows uses a private process job; POSIX retains the worker until its descendants are stopped when `waitid`/`WNOWAIT` are available. On macOS with Python 3.11/3.12, an early worker exit retains a limitation: descendants cannot be guaranteed to stop after the worker is reaped. Python 3.13 adds `waitid` on macOS; native acceptance on that platform remains pending. This difference does not change export contents.
 
 The external workspace contains `projects/` and `library/`; originals, history and annexes stay inside each project. The launcher resolves `--workspace` before `REPORT_GEN_WORKSPACE`. Without either selection it retains `webapp/projects/` and `webapp/library/`; it does not search for or move data automatically. **Workspace backup** includes all projects, originals and libraries. Treat it as private data.
 

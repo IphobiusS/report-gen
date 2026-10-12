@@ -1,6 +1,6 @@
 {
   "name": "report-gen-ui-tests",
-  "version": "0.34.0",
+  "version": "0.34.1",
   "private": true,
   "scripts": {
     "test": "node --test tests/test_save_manager.cjs tests/test_drafts_0200.cjs",

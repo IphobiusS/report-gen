@@ -54,7 +54,9 @@ const GuideUI = (() => {
       h('span', {class:'tutorial-enlarge'}, w('Ampliar captura','Enlarge screenshot')));
     view.addEventListener('click', () => imageDialog(source, spec, view));
     image.addEventListener('error', () => {
-      view.replaceChildren(h('p', {}, w('Captura no disponible. Las instrucciones siguen debajo.','Screenshot unavailable. The instructions remain below.')));
+      const unavailable = w('Captura no disponible. Las instrucciones siguen debajo.','Screenshot unavailable. The instructions remain below.');
+      view.replaceChildren(h('p', {}, unavailable));
+      view.setAttribute('aria-label', unavailable);
       view.disabled = true;
     }, {once:true});
     return h('figure', {class:'tutorial-screenshot'},
@@ -128,7 +130,7 @@ const GuideUI = (() => {
     b.addEventListener('click', async () => {
       if (b.disabled) return;
       b.dataset.guideRunning = ''; b.disabled = true;
-      try { await action(); } catch (error) { toast(error.message, 'err'); }
+      try { await action(b); } catch (error) { toast(error.message, 'err'); }
       finally { delete b.dataset.guideRunning; update(); }
     });
     return b;
@@ -144,10 +146,13 @@ const GuideUI = (() => {
     select(type, value);
     $('#editor')?.focus({preventScroll: true});
   }
-  function activate(id) {
+  function activate(id, opener = null) {
     const target = $('#' + id);
     if (!target || target.disabled) return;
     closeNavigation();
+    // The gallery must return focus to the visible tutorial action, rather
+    // than the hidden menu button used by the legacy click proxy.
+    if (id === 'newProjectBtn' && opener) return DesignLibraryUI.newProject(opener);
     target.click();
   }
   function reveal(target) {
@@ -219,7 +224,7 @@ const GuideUI = (() => {
         ['Comprueba la instalación antes de depender de la exportación PDF.', 'Check the installation before relying on PDF export.']
       ]), h('div', {class: 'guide-actions'},
         button(w('Probar Nimbus: crear una copia', 'Try Nimbus: create a copy'), () => activate('demoBtn'), 'demo', true),
-        button(w('Crear proyecto', 'Create project'), () => activate('newProjectBtn'), 'new'),
+        button(w('Crear proyecto', 'Create project'), opener => activate('newProjectBtn', opener), 'new'),
         button(w('Abrir respaldo', 'Open backup'), () => activate('importProjectBtn'), 'import'),
         button(w('Comprobar instalación', 'Check installation'), () => activate('diagnosticsBtn'), 'diagnostics')));
     } else if (index === 1) {
