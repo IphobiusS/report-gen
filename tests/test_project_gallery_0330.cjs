@@ -10,7 +10,7 @@ fs.mkdirSync(out,{recursive:true});
 const workspace=fs.mkdtempSync(path.join(os.tmpdir(),'report-gen-acceptance-0211-r8-experience-'));
 fs.writeFileSync(path.join(workspace,'.test-only'),'synthetic acceptance workspace');
 const {createHash}=require('node:crypto');
-const sourcePaths=['webapp/static/design-library.js','webapp/static/app.js','webapp/static/style.css','webapp/static/studio.css','webapp/static/index.html','webapp/design_api.py','designs/certifications.json'];
+const sourcePaths=['webapp/static/design-library.js','webapp/static/workspace.js','webapp/static/app.js','webapp/static/style.css','webapp/static/studio.css','webapp/static/index.html','webapp/design_api.py','designs/certifications.json'];
 const sourceHashes=()=>Object.fromEntries(sourcePaths.map(p=>[p,createHash('sha256').update(fs.readFileSync(path.join(root,p))).digest('hex')]));
 const results={sourceStart:sourceHashes(),started:new Date().toISOString(),checks:[],states:[],errors:[],external:[],requests:[],workspace,limitations:['Chromium local application only.','No human screen reader.','Screenshots require a separate visual-review receipt.']};
 function save(){fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(results,null,2));}
@@ -19,11 +19,25 @@ const server=spawn(process.env.RG_PYTHON||'python',[path.join(root,'scripts/brow
 server.stderr.on('data',data=>fs.appendFileSync(path.join(out,'server.log'),data));
 let browser,page,context,base,timer;
 async function idle(){await page.waitForFunction(()=>!projectStore.loading&&!projectBusyCount);}
-async function openNew(){
-  const hero=page.getByRole('button',{name:/^(Crear mi proyecto|Create my project)$/});
-  if(await hero.isVisible()){await hero.focus();await page.keyboard.press('Enter');}
-  else{const menu=page.locator('#studioMore');if(!await menu.evaluate(el=>el.open))await menu.locator('summary').first().click();await page.locator('#newProjectBtn').focus();await page.keyboard.press('Enter');}
-  await page.locator('dialog.design-dialog[open]').waitFor();
+async function openNew(entry='auto'){
+  const hero=page.getByRole('button',{name:/^(Crear mi proyecto|Create my project)$/});let trigger;
+  if(entry==='hero'||entry==='auto'&&await hero.isVisible())trigger=hero;
+  else{
+    const menu=page.locator('#studioMore');if(!await menu.evaluate(el=>el.open))await menu.locator('summary').first().click();
+    if(entry==='mobile'){const project=page.locator('#projectActions');if(!await project.evaluate(el=>el.open))await project.locator('summary').click();trigger=project.locator('.mobile-create');}
+    else trigger=page.locator('#newProjectBtn');
+  }
+  const opener=await trigger.elementHandle();await trigger.focus();await page.keyboard.press('Enter');
+  await page.locator('dialog.design-dialog[open]').waitFor();return opener;
+}
+const galleryFocusRestored=opener=>{const target=opener.closest('details:not([open])')?.querySelector('summary')||opener,e=document.activeElement,r=e.getBoundingClientRect();return e===target&&e!==document.body&&!e.disabled&&r.width>0&&r.height>0;};
+async function waitForGalleryFocus(opener){
+  // The close event removes the dialog before its next-frame focus restoration.
+  await page.locator('dialog.design-dialog').waitFor({state:'detached'});
+  // Observe after the already-scheduled callback, not only native restoration.
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(resolve)));
+  await page.waitForFunction(galleryFocusRestored,opener);
+  return page.evaluate(galleryFocusRestored,opener);
 }
 async function selectCategory(id){const dialog=page.locator('dialog.design-dialog[open]'),mobile=dialog.locator('[data-design-category-select]');if(await mobile.isVisible())await mobile.selectOption(id);else await dialog.locator('[data-design-category="'+id+'"]').click();}
 async function closeAll(){await page.evaluate(()=>document.querySelectorAll('dialog[open]').forEach(d=>d.close()));await page.waitForFunction(()=>!document.querySelector('dialog[open]'));}
@@ -69,7 +83,7 @@ async function exportViaUI(format,label){
  page.on('request',r=>{if(!['GET','HEAD'].includes(r.method()))results.requests.push({method:r.method(),url:r.url().replace(base,''),postData:r.postData()});});
  await page.addInitScript(()=>{localStorage.setItem('rg.previewVisible','0');localStorage.setItem('rg.uiLang','es');});
  await page.goto(base);await page.waitForFunction(()=>typeof DesignLibraryUI!=='undefined'&&!document.getElementById('splash')&&!projectStore.loading&&!projectBusyCount);await page.locator('.workspace-dashboard').waitFor();
- await openNew();
+ const initialOpener=await openNew();
  check('New project starts with a gallery rather than the final form',await page.locator('dialog.design-dialog[open]').count()===1&&!await page.locator('#newModal').evaluate(el=>el.open),undefined,true);
  results.initialGallery=await page.locator('dialog.design-dialog[open]').innerText();
  const d=page.locator('dialog.design-dialog[open]');
@@ -77,7 +91,7 @@ async function exportViaUI(format,label){
  await d.locator('[data-design-category="personal"]').focus();await page.keyboard.press('Enter');
  check('Empty personal category announces no matches and clears selected card',await d.locator('.design-empty').isVisible()&&await d.locator('.design-card[aria-pressed="true"]').count()===0&&await d.getByRole('button',{name:'Continuar con esta plantilla',exact:true}).count()===0);
  await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
- check('Escape returns focus to a visible enabled trigger',await page.evaluate(()=>{const e=document.activeElement;const r=e.getBoundingClientRect();return e!==document.body&&!e.disabled&&r.width>0&&r.height>0;}));
+ check('Escape returns focus to a visible enabled trigger',await waitForGalleryFocus(initialOpener));
  await openNew();
  check('Reopening an empty category cannot offer a hidden stale template',await d.locator('.design-empty').isVisible()&&await d.getByRole('button',{name:'Continuar con esta plantilla',exact:true}).count()===0,await d.locator('.design-detail').innerText());
  await d.getByRole('button',{name:'Ver todas las plantillas',exact:true}).click();
@@ -108,6 +122,21 @@ async function exportViaUI(format,label){
  await closeAll();
  check('Browsing and canceling do not create or save projects',results.requests.filter(r=>r.method==='POST'||r.method==='PUT').length===0,results.requests);
 
+ // The welcome button and mobile proxy must retain their actual invoker.
+ // Direct menu invocation still falls back to its summary if that menu closes.
+ for(const [entry,width] of [['hero',1440],['mobile',390],['more',1440]]){
+   await page.setViewportSize({width,height:1000});
+   let opener=await openNew(entry);await page.keyboard.press('Escape');
+   check(entry+' entry Escape restores its actual reachable invoker',await waitForGalleryFocus(opener));
+   opener=await openNew(entry);await d.getByRole('button',{name:'Continuar con esta plantilla',exact:true}).click();await page.locator('#newModal[open]').waitFor();
+   const cancelOpener=await page.locator('#newModal').evaluate((el,opener)=>el._opener===opener,opener);
+   await page.locator('#mCancel').click();await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+   check(entry+' entry Cancel restores its invoker and preserves the draft',cancelOpener&&await waitForGalleryFocus(opener)&&await page.evaluate(expected=>JSON.stringify(expected)===JSON.stringify({title:$('#mTitle').value,client:$('#mClient').value,slug:$('#mSlug').value,lang:$('#mLang').value,preset:$('#mPreset').value}),expected));
+   opener=await openNew(entry);await d.getByRole('button',{name:'Continuar con esta plantilla',exact:true}).click();await page.locator('#newModal[open]').waitFor();
+   await page.locator('#newProjectLibrary button').click();await d.waitFor();await page.keyboard.press('Escape');
+   check(entry+' entry Back and Escape retain its invoker and draft',await waitForGalleryFocus(opener)&&await page.evaluate(expected=>JSON.stringify(expected)===JSON.stringify({title:$('#mTitle').value,client:$('#mClient').value,slug:$('#mSlug').value,lang:$('#mLang').value,preset:$('#mPreset').value}),expected));
+ }
+ await page.setViewportSize({width:1440,height:1000});
  // Catalog failure must be recoverable without creating a project.
  const responseHeaders=await apiResponseHeaders(context,base);
  let failedCatalog=false;

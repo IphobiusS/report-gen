@@ -127,7 +127,7 @@ const WorkspaceUI = (() => {
         h('div',{class:'workspace-hero-actions'},...(S.data?
           [button(w('Continuar donde lo dejé','Continue where I left off'),()=>WorkbenchUI.resume(),typeof GuideUI==='undefined'),
             ...(typeof GuideUI==='undefined'?[button(w('Revisar entrega','Review delivery'),()=>go('workflow','review'))]:[])]:
-          [button(w('Probar demo Nimbus','Try Nimbus demo'),()=>$('#demoBtn').click(),true),button(w('Crear mi proyecto','Create my project'),()=>$('#newProjectBtn').click())]))),
+          [button(w('Probar demo Nimbus','Try Nimbus demo'),()=>$('#demoBtn').click(),true),button(w('Crear mi proyecto','Create my project'),b=>DesignLibraryUI.newProject(b))]))),
       h('figure',{class:'workspace-mascots'},h('img',{src:'/static/brand-mark.webp',width:300,height:200,alt:w('Prometeo y Evaristo, los dos perros de report-gen, sobre una consola.','Prometeo and Evaristo, the two report-gen dogs, above a console.')}),h('figcaption',{},'Prometeo & Evaristo')));
     shell.append(hero);
     if(typeof GuideUI!=='undefined')shell.append(GuideUI.entry());
@@ -197,7 +197,7 @@ const WorkspaceUI = (() => {
     $('#brandHome').addEventListener('click',()=>go('home'));$('#navHome').addEventListener('click',()=>go('home'));
     $('#deliverySlot').append($('#deliveryBtn'));$('#projectActionsList').prepend($('#demoBtn'));
     $('#workflowNav .side-head').dataset.workspaceText='projectManagement';
-    const newProject=button(w('Nuevo proyecto','New project'),()=>$('#newProjectBtn').click());newProject.dataset.workspaceText='newProject';newProject.classList.add('mobile-create');$('#projectActionsList').prepend(newProject);
+    const newProject=button(w('Nuevo proyecto','New project'),b=>DesignLibraryUI.newProject(b));newProject.dataset.workspaceText='newProject';newProject.classList.add('mobile-create');$('#projectActionsList').prepend(newProject);
     const tools=h('div',{class:'workspace-utilities'},h('div',{class:'side-head','data-workspace-text':'tools'}));
     const backupButton=button(w('Respaldo integral','Workspace backup'),backup);backupButton.id='workspaceBackupBtn';
     const privacyButton=button(w('Datos privados guardados','Stored private data'),()=>PrivacyUI.open());privacyButton.id='privacyBtn';
