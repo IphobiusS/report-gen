@@ -1,4 +1,4 @@
-# report-gen 0.33.0 user guide
+# report-gen 0.33.1 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -113,6 +113,10 @@ Annexes are excluded until individually reviewed and selected. Only the combined
 The annex scanner searches the first MiB of UTF-8 text or counts image metadata. That annex scan does not perform OCR or inspect PDF contents. The Publication inspector offers a separate optional local OCR action for published images. Results include scope and limitations, never matched secret values.
 
 Structured export checks compare paragraphs, literal code, metadata, native tables, links and evidence placement within their finding. Only code line endings are normalized. Missing internal destinations block publication. Static HTML visibility checks do not certify geometry, occlusion, conditional CSS or dynamic states. PDF checks text presence, including table cells and list items, image counts and index destinations. Text presence is global and does not prove the location or association of a cell or item. Wrapped parts of a logical code line stay on one page; a line taller than the printable page is rejected while preserving the previous output. In PDF, literal whitespace, block association and layout require manual review. Markdown intentionally omits the severity chart and its scope caption; that difference is recorded.
+
+Tables inside a finding, including its detailed procedure, must fit on one page with their heading. Otherwise split or shorten the table, or place the extensive register in a narrative section or report appendix, where it can continue across pages. PDF export has a 120-second limit: exceeding it preserves the previous output and removes intermediate files. Split the content per export or retry with less load; the limit is not automatically increased.
+
+A stress test with 72 rows and a literal URL of about 300 characters per row exceeded that time even in a narrative section. This is not a universal row limit: content and available resources affect it. For registers of that size, split the report or use short labels with the full link destination; preserving the destination does not require displaying the entire URL in every cell.
 
 Project integers must be within −9,007,199,254,740,991 to 9,007,199,254,740,991 to preserve their value in the browser editor. Store larger documentary values or identifiers as quoted text in YAML/JSON. Out-of-range inputs are rejected with the field path rather than silently rounded or replaced with `null`. Report numbered lists use counters from 0 to 2,147,483,647, compatible with browser and Word consumers. An initial or final ordinal above that limit is rejected, preserving any previous output file.
 

@@ -1,3 +1,11 @@
+# Cambios 0.33.1 (2026-10-12)
+
+- La tabla de activos de Word reserva más ancho a los nombres, para mantener completos identificadores corrientes como DIRECTORY-05 y RECOVERY-12. Conserva el espacio de tipo y notas y todos los valores; HTML y PDF mantienen sus proporciones.
+- Los puntos de ajuste visual de URLs del PDF dejan de generar anotaciones de enlace sin área. Se conservan los enlaces visibles y sus destinos literales, la composición y el texto; se evita que cientos de anotaciones vacías por URL ralenticen los informes extensos.
+- El aviso de una tabla de hallazgo demasiado grande indica alternativas verificables: dividirla, reducirla o moverla a una sección narrativa o anexo. Aclara que el procedimiento del mismo hallazgo conserva el mismo límite de paginación.
+- Al superar los 120 segundos, la exportación PDF muestra un mensaje ES/EN con alternativas sin exponer el comando ni las rutas del proceso. Mantiene intacta la salida anterior. Cada ejecución aísla sus pases intermedios para retirarlos también si el proceso se interrumpe por tiempo o falla.
+- Las regresiones comprueban enlaces visibles, destinos codificados, preservación del contenido, tablas en las tres ubicaciones, fallos del proceso y limpieza que respeta otros archivos. Se conservan los documentos útiles del proyecto y los límites de revisión en Word nativo y ajuste de URLs en LibreOffice.
+
 # Cambios 0.33.0 (2026-10-12)
 
 - Crear un proyecto comienza en una galería visual con filtros por propósito y proveedor, búsqueda, muestras de portada/resumen/página técnica y comparación ES/EN. El formulario posterior conserva título, cliente, carpeta, idioma y estructura al volver a la galería. La estructura inicial no sustituye la apariencia elegida.

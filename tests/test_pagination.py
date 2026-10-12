@@ -151,5 +151,6 @@ def test_api_returns_actionable_error_for_oversized_table_without_saving(tmp_pat
     response = client.post('/api/projects/pagination/export/pdf', json=data)
     assert response.status_code == 422
     assert 'Hallazgo F1' in response.get_json()['error']
-    assert 'procedimiento detallado' in response.get_json()['error']
+    assert 'sección narrativa' in response.get_json()['error']
+    assert 'mismo límite' in response.get_json()['error']
     assert client.get('/api/projects/pagination').get_json() == original

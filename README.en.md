@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.33.0
+# report-gen 0.33.1
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -49,7 +49,9 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
-## New in 0.33.0
+## New in 0.33.1
+
+PDFs containing many long URLs avoid empty link annotations at each wrapping opportunity. Text, destinations and visual wrapping are preserved. If a table does not fit inside a finding, the message explains how to split it or move it to a narrative section; the same finding’s procedure has the same limit. An export exceeding 120 seconds shows a localized message, preserves the previous output and removes its intermediate files.
 
 **Create my project** opens the gallery first. Filter by purpose, search for a profile and compare cover, summary and technical pages before entering project details. Returning to the gallery preserves your draft. The new **Enterprise Control Review** profile provides a left-aligned editorial cover and eight sections for control design and operation, sampling, exceptions and retesting.
 
@@ -77,7 +79,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.33.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.33.1 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

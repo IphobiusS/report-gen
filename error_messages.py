@@ -260,7 +260,7 @@ CATALOG = {
     'Hallazgo ambiguo en Word / Ambiguous Word finding': 'Ambiguous Word finding',
     'Hallazgo inexistente': 'Finding not found',
     'Hallazgo inexistente / Finding not found': 'Finding not found',
-    'Hallazgo {p0}: una tabla no cabe completa en una página junto a su encabezado. Acorta la tabla o mueve el contenido extenso al procedimiento detallado. El PDF no se ha generado para evitar cortar la tabla.': 'Finding {p0}: a table and its heading do not fit together on one page. Shorten the table or move the extensive content to the detailed procedure. PDF was not generated to avoid cutting the table.',
+    'Hallazgo {p0}: una tabla no cabe completa en una página junto a su encabezado. Reduce o divide la tabla, o muévela a una sección narrativa o anexo del informe. Las tablas del procedimiento del mismo hallazgo tienen el mismo límite. El PDF no se ha generado para evitar cortar la tabla.': 'Finding {p0}: a table and its heading do not fit together on one page. Shorten or split the table, or move it to a narrative section or report appendix. Tables in the same finding\'s procedure have the same limit. PDF was not generated to avoid cutting the table.',
     'Hash de anexo inválido / Invalid annex hash': 'Invalid annex hash',
     'Hash inválido': 'Invalid hash',
     'Hay dos vistas previas en curso; vuelve a intentar / Two PDF previews are in progress': 'Two PDF previews are in progress; try again',

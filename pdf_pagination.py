@@ -38,7 +38,7 @@ def keep_short_labelled_lists(source):
 
 def table_error(finding):
     return ValueError(
-        backend_message('Hallazgo {p0}: una tabla no cabe completa en una página junto a su encabezado. Acorta la tabla o mueve el contenido extenso al procedimiento detallado. El PDF no se ha generado para evitar cortar la tabla.', p0=finding)
+        backend_message('Hallazgo {p0}: una tabla no cabe completa en una página junto a su encabezado. Reduce o divide la tabla, o muévela a una sección narrativa o anexo del informe. Las tablas del procedimiento del mismo hallazgo tienen el mismo límite. El PDF no se ha generado para evitar cortar la tabla.', p0=finding)
     )
 
 
@@ -146,3 +146,30 @@ def verify_table_markers(pdf_bytes, checks):
             offset = pages[page].index(token)
             if any(top < 0 or bottom > heights[page] for _, top, bottom in character_pages[page][offset:offset+len(token)]):
                 raise table_error(finding)
+
+
+def prune_pdf_uri_break_links(document):
+    """Remove zero-area annotations inherited by generated URI break boxes.
+
+    WeasyPrint inherits the enclosing link on every wbr and its ::before
+    box. These have no hit area, while the enclosing anchor already covers
+    each visible line. Keeping them adds two useless PDF annotations per
+    character. Leave all visible link rectangles and exact targets intact.
+    """
+    removed = 0
+    for page in document.pages:
+        retained = []
+        for link in page.links:
+            kind, target, rectangle, box = link
+            element = getattr(box, 'element', None)
+            # WeasyPrint's PDF writer consumes (x1, y1, x2, y2).
+            empty = rectangle[0] == rectangle[2] or rectangle[1] == rectangle[3]
+            if (kind in {'internal', 'external'} and empty
+                    and element is not None
+                    and element.get('data-rg-pdf-uri-break') == 'true'
+                    and getattr(box, 'element_tag', None) in {'wbr', 'wbr::before'}):
+                removed += 1
+            else:
+                retained.append(link)
+        page.links[:] = retained
+    return removed

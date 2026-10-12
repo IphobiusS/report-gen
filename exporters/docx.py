@@ -183,7 +183,12 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     def add_markdown(text, keep_tables=True, retest=False, workflow_key=None):
         from .richtext import write_markdown
         columns = WORKFLOW_COLUMNS.get(workflow_key)
-        if workflow_key == 'rg_retest':
+        if workflow_key == 'rg_assets':
+            # Word's body face needs more room for ordinary asset names such
+            # as DIRECTORY-05. Preserve type/notes space and reduce the wide
+            # target column without changing the HTML/PDF proportions.
+            columns = [18, 28, 16, 38]
+        elif workflow_key == 'rg_retest':
             # Word's body face needs room for ordinary owner names such as
             # Authentication. Retain enough width for the Spanish status
             # labels and ISO dates without changing the web/PDF layout.

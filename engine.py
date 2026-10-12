@@ -341,7 +341,7 @@ def _pdf_code_layout(source):
             for index in range(len(token) - 1):
                 if '\x21' <= token[index] <= '\x7e' and '\x21' <= token[index + 1] <= '\x7e':
                     append(token[start:index + 1])
-                    tail = html.Element('wbr')
+                    tail = html.Element('wbr', {'data-rg-pdf-uri-break': 'true'})
                     element.append(tail)
                     start = index + 1
             append(token[start:])
@@ -431,7 +431,7 @@ def _verify_pdf_code_lines(document):
 
 def render_pdf_weasyprint(html, out_pdf, base_url):
     from weasyprint import HTML
-    from pdf_pagination import keep_short_labelled_lists, relax_oversized_rows, verify_finding_tables
+    from pdf_pagination import keep_short_labelled_lists, relax_oversized_rows, verify_finding_tables, prune_pdf_uri_break_links
     renderer = HTML(string=_pdf_code_layout(keep_short_labelled_lists(html)), base_url=str(base_url), url_fetcher=restricted_fetcher(base_url, THEMES))
     document = renderer.render()
     verify_finding_tables(document)
@@ -444,6 +444,7 @@ def render_pdf_weasyprint(html, out_pdf, base_url):
     # visible glyph is .notdef. Inspect the actual selected fonts after drawing
     # and before touching the destination; textual extraction cannot prove
     # that these characters were rendered.
+    prune_pdf_uri_break_links(document)
     payload = document.write_pdf()
     missing = sorted({codepoint for font in document.fonts.values() for codepoint in font.missing})
     if missing:

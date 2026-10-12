@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.33.0
+# Guía de uso de report-gen 0.33.1
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -111,6 +111,10 @@ Los IDs existentes, como `F10`, no se renumeran al editar la lista. Los nuevos r
 Los enteros del proyecto deben estar entre −9.007.199.254.740.991 y 9.007.199.254.740.991 para conservar su valor al editar en el navegador. Guarda identificadores o valores documentales mayores como texto entre comillas en YAML/JSON. Las entradas que exceden ese rango se rechazan con la ruta del campo; no se redondean ni sustituyen por `null`.
 
 PDF comprueba presencia textual, incluidas celdas de tablas y elementos de listas, imágenes y destinos del índice. La comprobación textual es global: no prueba la posición ni asociación de una celda o elemento. Las envolturas de una línea de código se mantienen en una misma página; una línea que supera la altura imprimible se rechaza conservando la salida anterior. La extracción puede cambiar orden y espacios: no acredita indentación literal ni asociación de bloques. La ficha lo marca como revisión manual requerida. Ningún formato queda certificado visualmente por estos controles.
+
+Las tablas dentro de un hallazgo, incluido su procedimiento detallado, deben caber completas en una página junto a su encabezado. Si no caben, divide o reduce la tabla, o coloca el registro extenso en una sección narrativa o anexo del informe, donde puede continuar entre páginas. El proceso de exportación PDF tiene un límite de 120 segundos: si lo supera, conserva la salida anterior y retira sus archivos intermedios. Divide el contenido por exportación o reintenta con menos carga; el límite no se amplía automáticamente.
+
+Una prueba de estrés con 72 filas y una URL literal de unos 300 caracteres por fila superó ese tiempo incluso situada en una sección narrativa. No es un máximo universal de filas: influyen el contenido y los recursos disponibles. Para registros de ese tamaño, divide el informe o usa etiquetas breves con el destino completo del enlace; conservar el destino no exige mostrar toda la URL en cada celda.
 
 La verificación PDF reserva ocurrencias físicas independientes para cada línea de código y, dentro de cada categoría, para celdas, elementos de lista y párrafos distintos. Una celda larga no puede suplir simultáneamente otra celda ausente cuyo texto contiene. Las categorías se comprueban por separado porque un párrafo dentro de una lista pertenece legítimamente a ambas. Si una combinación de saltos ambiguos supera el presupuesto de comprobación, informa que no pudo completar la verificación y conserva la entrega anterior; no acusa pérdida de contenido sin demostrarla.
 
