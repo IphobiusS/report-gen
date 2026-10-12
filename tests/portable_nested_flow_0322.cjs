@@ -3,11 +3,15 @@ let chromium;try{({chromium}=require(process.env.REPORT_GEN_PLAYWRIGHT_MODULE||'
 let browser,states=0;
 (async()=>{try{
  browser=await chromium.launch({executablePath:process.env.REPORT_GEN_CHROMIUM,headless:true,args:['--no-sandbox']});
+ // Retain CSS-zoom coverage and add actual text enlargement at each width.
+ const modes=[...[320,390,1440].flatMap(width=>[1,2].map(zoom=>({width,zoom}))),
+  ...[320,390,1440].map(width=>({width,zoom:1,text200:true}))];
  for(const scripts of[true,false]){
   const context=await browser.newContext({javaScriptEnabled:scripts}),page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
-  for(const width of[320,390,1440])for(const zoom of[1,2]){
+  for(const {width,zoom,text200} of modes){
    await page.setViewportSize({width,height:1000});await page.goto(pathToFileURL(process.argv[2]).href);await page.evaluate(()=>document.fonts.ready);await page.evaluate(z=>document.body.style.zoom=z,zoom);
+   if(text200)await page.evaluate(()=>{const nodes=[document.body,...document.body.querySelectorAll('*')],sizes=nodes.map(e=>parseFloat(getComputedStyle(e).fontSize));nodes.forEach((e,i)=>e.style.fontSize=sizes[i]*2+'px');});
    const result=await page.locator('#F01').evaluate(finding=>{
     const field=finding.querySelector('.finding-field'),rect=e=>e.getBoundingClientRect(),pre=field.querySelector('pre'),range=document.createRange();
     range.selectNodeContents(pre);getSelection().removeAllRanges();getSelection().addRange(range);const selected=getSelection().toString();getSelection().removeAllRanges();
@@ -28,13 +32,33 @@ let browser,states=0;
    const top=await page.locator('.cover-top').evaluate(e=>({parent:e.getBoundingClientRect().toJSON(),fields:[...e.children].map(n=>{const walker=document.createTreeWalker(n,NodeFilter.SHOW_TEXT),words=[];let text;while(text=walker.nextNode())for(const m of text.textContent.matchAll(/\S+/g)){const range=document.createRange();range.setStart(text,m.index);range.setEnd(text,m.index+m[0].length);words.push({word:m[0],lines:range.getClientRects().length});}return{rect:n.getBoundingClientRect().toJSON(),words};})}));
    assert.ok(top.fields.every(f=>f.rect.left>=top.parent.left-1&&f.rect.right<=top.parent.right+1),'wordmark and classification stay inside cover');
    assert.ok(top.fields.every(f=>f.words.every(w=>w.lines===1)),`cover words wrap unnecessarily at ${width}/${zoom}: ${JSON.stringify(top)}`);
-   if(width<=390&&zoom===2)assert.ok(top.fields[1].rect.top>=top.fields[0].rect.bottom,'cover labels use separate rows when their natural widths do not fit');
+   if(width<=390&&(zoom===2||text200))assert.ok(top.fields[1].rect.top>=top.fields[0].rect.bottom,'cover labels use separate rows when their natural widths do not fit');
    if(width===1440&&zoom===1)assert.equal(top.fields[0].rect.top,top.fields[1].rect.top,'desktop cover labels keep a single row');
-   assert.equal(result.nodes.length,5,'two quote levels and three list levels retain native hierarchy');
+   assert.equal(result.nodes.length,9,'two quote levels, three nested list levels and four ordinary-counter items retain native hierarchy');
    assert.ok(result.nodes.every(n=>n.width/zoom>=30&&n.left>=0&&n.right<=width+1),`nested content collapsed at ${width}/${zoom}: ${JSON.stringify(result.nodes)}`);
    for(const marker of['QUOTE-ONE','QUOTE-TWO','LIST-ONE','LIST-TWO','LIST-THREE','TABLE-END','NARRATIVE-END'])assert.ok(result.text.includes(marker),`lost ${marker}`);
    assert.equal(result.source.replace(/\n$/,''),result.selected.replace(/\n$/,''),'visual reflow preserves selected command');
    assert.equal(result.tableRows.length,1);assert.equal(result.tableRows[0].length,8);assert.equal(result.tableRows[0][7],'TABLE-END');
+   // Range/element overflow checks cannot see native outside marker glyphs.
+   // Measure the loaded font's marker advance against actual list geometry.
+   for(const [start,prefix] of [[73,'TWO-DIGIT'],[973,'THREE-DIGIT']]){
+    const ordered=page.locator(`#F01 ol[start="${start}"]`);
+    const ordinary=await ordered.evaluate(ol=>{
+     const box=ol.getBoundingClientRect(),scale=parseFloat(getComputedStyle(document.body).zoom)||1;
+     const ctx=document.createElement('canvas').getContext('2d');
+     return{start:ol.start,wrapped:!!ol.closest('.report-list-region'),left:box.left,
+      items:[...ol.children].map((li,i)=>{const css=getComputedStyle(li,'::marker');
+       ctx.font=`${css.fontStyle} ${css.fontWeight} ${css.fontSize} ${css.fontFamily}`;
+       return{ordinal:ol.start+i,type:getComputedStyle(li).listStyleType,text:li.textContent.trim(),
+        markerLeft:li.getBoundingClientRect().left-ctx.measureText((ol.start+i)+'. ').width*scale};})};
+    });
+    assert.equal(ordinary.start,start);assert.equal(ordinary.items.length,2);
+    assert.equal(ordinary.wrapped,false,'ordinary counters do not require a scroll region');
+    assert.deepEqual(ordinary.items.map(i=>i.ordinal),[start,start+1]);
+    assert.ok(ordinary.items.every(i=>i.type==='decimal'&&i.text.startsWith(prefix)),'native ordinal semantics and source text are retained');
+    assert.ok(ordinary.items.every(i=>i.markerLeft>=0),`ordinary marker leaves the viewport at ${width}/${zoom}, text200=${!!text200}, JS=${scripts}: ${JSON.stringify(ordinary)}`);
+    assert.equal(await ordered.getByRole('listitem').count(),2,'native list item roles remain available');
+   }
    const counter=page.locator('#F01 .report-list-region');
    const numbers=await counter.evaluate(region=>{
     const ordered=region.querySelector('ol'),first=ordered.children[0],css=getComputedStyle(first),canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
@@ -52,7 +76,7 @@ let browser,states=0;
    assert.ok(numbers.markerLeft>=numbers.regionLeft-1,`large native marker escapes its scrollable content: ${JSON.stringify(numbers)}`);
    assert.ok(numbers.label);assert.equal(numbers.tab,0);
    assert.equal(await page.getByRole('list').filter({has:page.getByText('LARGE-COUNTER-ONE retains its complete native number.',{exact:true})}).count(),1,'native list semantics remain available');
-   if(width===320&&zoom===2){await counter.focus();await page.keyboard.press('ArrowRight');await page.waitForTimeout(150);assert.ok(await counter.evaluate(e=>e.scrollLeft)>0,'oversized native counters remain reachable by keyboard');}
+   if(width===320&&(zoom===2||text200)){await counter.focus();await page.keyboard.press('ArrowRight');await page.waitForTimeout(150);assert.ok(await counter.evaluate(e=>e.scrollLeft)>0,'oversized native counters remain reachable by keyboard');}
    const region=page.locator('#F01 .report-table-region');
    assert.ok(await region.evaluate(e=>e.scrollWidth>e.clientWidth),'wide table uses a local scrolling region');
    assert.equal(await region.getAttribute('tabindex'),'0');assert.ok(await region.getAttribute('aria-label'));

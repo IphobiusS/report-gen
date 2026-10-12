@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.33.1
+# report-gen 0.33.2
 
 <a id="qué-es"></a>
 
@@ -59,7 +59,9 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.33.1
+## Novedades de 0.33.2
+
+El HTML portátil reserva la sangría de las listas según sus dígitos y el tamaño del texto. Los marcadores de dos y tres dígitos permanecen completos en móvil al ampliar al 200 %, sin alterar la numeración, los enlaces ni el desplazamiento local de listas excepcionales. La tabla de activos de Word también da más espacio a los identificadores habituales.
 
 Los PDF con muchas URLs largas evitan crear anotaciones de enlace vacías por cada oportunidad de salto. Se conservan texto, destinos y ajuste visual. Si una tabla no cabe dentro de un hallazgo, el aviso explica cómo dividirla o moverla a una sección narrativa; el procedimiento del mismo hallazgo tiene el mismo límite. Una exportación que supera los 120 segundos muestra un aviso localizado, conserva la salida anterior y limpia sus archivos intermedios.
 
@@ -94,7 +96,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.33.1 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.33.2 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

@@ -28,6 +28,12 @@ def test_nested_quotes_lists_and_wide_table_keep_content_readable(tmp_path, lang
             '| --- | --- | --- | --- | --- | --- | --- | --- |\n'
             f'| F01 | Treasury | `{url}` | 123456.78 | Pending | Notes | Value | TABLE-END |\n\n'
             f'```text\ncurl --silent {url}\n```\n\n'
+            f'73. TWO-DIGIT-ONE [{url}]({url}).\n'
+            '74. TWO-DIGIT-TWO retains its native continuation.\n\nIndependent group.\n\n'
+            '973. THREE-DIGIT-ONE preserves a continued code block.\n\n'
+            '    ```text\n    key\tvalue\n    preserved_after_empty_line=true\n    ```\n\n'
+            '    Paragraph after code remains inside the first item.\n\n'
+            '974. THREE-DIGIT-TWO retains its native continuation.\n\nIndependent group.\n\n'
             '1234567890. LARGE-COUNTER-ONE retains its complete native number.\n'
             '1234567891. LARGE-COUNTER-TWO retains its complete native number.\n\nNARRATIVE-END')
     data = {'meta': {'report_title': 'Nested flow contract', 'theme': 'corporativo',

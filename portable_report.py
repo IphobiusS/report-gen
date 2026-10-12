@@ -84,9 +84,10 @@ TEXT_FLOW_STYLE = '''
 code{overflow-wrap:anywhere;word-break:normal;line-break:auto}
 pre,pre code,.report-literal-url,.report-literal-url code{overflow-wrap:anywhere;word-break:break-all;line-break:anywhere}
 .report-content blockquote{margin-inline:0;border-inline-start:3px solid #64778b;padding-inline-start:min(1em,5%)}
+.report-content ol:not(.report-counter-list){padding-inline-start:max(40px,calc((var(--report-counter-digits,1) + 1)*1ch))}
 @media(max-width:600px){
- .report-content ul:not(.toc-list),.report-content ol{padding-inline-start:min(24px,12%)}
- .report-content .steps{padding-inline-start:24px}
+ .report-content ul:not(.toc-list){padding-inline-start:1.5em}
+ .report-content ol:not(.report-counter-list){padding-inline-start:max(24px,calc((var(--report-counter-digits,1) + 1)*1ch))}
  pre{padding:12px}
 }
 .report-list-region{max-width:100%;min-width:0;overflow-x:auto;overscroll-behavior-inline:contain;margin:1em 0}
@@ -140,10 +141,10 @@ def prepare_text_flow(tree, en=False):
         count = len(ordered.xpath('./li'))
         start = int(ordered.get('start', '1'))
         digits = max(len(str(start)), len(str(start + max(0, count - 1))))
+        ordered.set('style', ordered.get('style', '').rstrip(';') + f';--report-counter-digits:{digits}')
         if digits <= 3:
             continue
         ordered.set('class', ' '.join([*(ordered.get('class') or '').split(), 'report-counter-list']))
-        ordered.set('style', ordered.get('style', '').rstrip(';') + f';--report-counter-digits:{digits}')
         region = html.Element('div', {'class': 'report-list-region', 'role': 'region', 'tabindex': '0',
                               'aria-label': ('Numbered list; horizontal scrolling' if en else
                                              'Lista numerada; desplazamiento horizontal'),

@@ -1,3 +1,8 @@
+# Cambios 0.33.2 (2026-10-12)
+
+- El HTML portátil reserva la sangría de las listas ordinarias según sus dígitos y el tamaño de la fuente. Evita recortar marcadores como 73 o 973 en móvil al ampliar el texto al 200 %. Conserva los contadores nativos, el texto y el desplazamiento local de las listas de muchos dígitos. Las viñetas también escalan su sangría con el texto.
+- La regresión de navegador comprueba marcadores de dos, tres y diez dígitos en 320, 390 y 1440 px, con texto al 100 y 200 %. No se modifican los renderizadores PDF, DOCX ni Markdown.
+
 # Cambios 0.33.1 (2026-10-12)
 
 - La tabla de activos de Word reserva más ancho a los nombres, para mantener completos identificadores corrientes como DIRECTORY-05 y RECOVERY-12. Conserva el espacio de tipo y notas y todos los valores; HTML y PDF mantienen sus proporciones.
