@@ -219,6 +219,16 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     def heading(text, level=1, sev=None, toc=False, anchor=None, new_page=False):
         p = doc.add_heading("", level=level)
         if new_page:
+            # Markdown tables get a bare spacer paragraph. At a chapter
+            # boundary the new heading supplies the separation; keeping the
+            # spacer can overflow a full table page into a blank page of its
+            # own before pageBreakBefore advances again. Never remove a
+            # paragraph with content, properties, bookmarks, or fields.
+            previous = p._p.getprevious()
+            if (previous is not None and previous.tag == qn("w:p")
+                    and len(previous) == 0 and previous.getprevious() is not None
+                    and previous.getprevious().tag == qn("w:tbl")):
+                previous.getparent().remove(previous)
             # A standalone break paragraph can overflow a full page before
             # breaking again, creating an entirely empty body page.
             p.paragraph_format.page_break_before = True
@@ -355,6 +365,10 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     sec1 = doc.sections[-1]
     sec1.page_width = Cm(21); sec1.page_height = Cm(29.7)
     sec1.left_margin = sec1.right_margin = Cm(1.8); sec1.top_margin = Cm(1.6); sec1.bottom_margin = Cm(1.6)
+    # The template's 1.27 cm header distance leaves its bottom rule against
+    # tables that continue at the top of a body page. Reserve a real gap
+    # above the unchanged 1.6 cm body margin, independently of cover geometry.
+    sec1.header_distance = Cm(0.95)
     conf = str(br.get("confidential_text") if br.get("confidential_text") is not None else "CONFIDENTIAL")
     rhright = "  |  ".join(str(value) for value in (conf, "v" + str(meta["version"]) if meta.get("version") else "", meta.get("date")) if value)
     sec1.header.is_linked_to_previous = False

@@ -58,6 +58,8 @@ class _WindowsJob:
                     'TotalTerminatedProcesses')]
 
         self.accounting_type = Accounting
+        self.limits_type = ExtendedLimits
+        self.process_handles = {}
         self.api = ctypes.WinDLL('kernel32', use_last_error=True)
         signatures = {
             'CreateJobObjectW': ([ctypes.c_void_p, wintypes.LPCWSTR], wintypes.HANDLE),
@@ -67,6 +69,10 @@ class _WindowsJob:
             'TerminateJobObject': ([wintypes.HANDLE, wintypes.UINT], wintypes.BOOL),
             'QueryInformationJobObject': ([wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p,
                                            wintypes.DWORD, ctypes.c_void_p], wintypes.BOOL),
+            'OpenProcess': ([wintypes.DWORD, wintypes.BOOL, wintypes.DWORD], wintypes.HANDLE),
+            'IsProcessInJob': ([wintypes.HANDLE, wintypes.HANDLE,
+                                ctypes.POINTER(wintypes.BOOL)], wintypes.BOOL),
+            'WaitForSingleObject': ([wintypes.HANDLE, wintypes.DWORD], wintypes.DWORD),
             'CloseHandle': ([wintypes.HANDLE], wintypes.BOOL),
         }
         for name, (args, result) in signatures.items():
@@ -80,7 +86,8 @@ class _WindowsJob:
         if not self.api.SetInformationJobObject(self.handle, 9, ctypes.byref(limits),
                                                 ctypes.sizeof(limits)):
             error = ctypes.WinError(ctypes.get_last_error())
-            self.close()
+            self.api.CloseHandle(self.handle)
+            self.handle = None
             raise error
 
     def assign(self, process):
@@ -89,12 +96,75 @@ class _WindowsJob:
         if not self.api.AssignProcessToJobObject(self.handle, int(process._handle)):
             raise ctypes.WinError(ctypes.get_last_error())
 
+    def _block_new_processes(self):
+        import ctypes
+        limits = self.limits_type()
+        # A zero active-process limit rejects new associations (including children)
+        # before they execute. Existing members remain ours and can be snapshotted.
+        limits.BasicLimitInformation.LimitFlags = 0x2000 | 0x8
+        limits.BasicLimitInformation.ActiveProcessLimit = 0
+        if not self.api.SetInformationJobObject(self.handle, 9, ctypes.byref(limits),
+                                                ctypes.sizeof(limits)):
+            raise ctypes.WinError(ctypes.get_last_error())
+
+    def _capture_process_handles(self, deadline):
+        import ctypes
+        from ctypes import wintypes
+        capacity = 16
+        while True:
+            class ProcessIds(ctypes.Structure):
+                _fields_ = [('assigned', wintypes.DWORD), ('count', wintypes.DWORD),
+                            ('ids', ctypes.c_size_t * capacity)]
+            members = ProcessIds()
+            ok = self.api.QueryInformationJobObject(self.handle, 3, ctypes.byref(members),
+                                                     ctypes.sizeof(members), None)
+            error = ctypes.get_last_error() if not ok else 0
+            if ok and members.count <= capacity and members.count == members.assigned:
+                break
+            if error not in (0, 234):  # ERROR_MORE_DATA: retry with the required buffer
+                raise ctypes.WinError(error)
+            if time.monotonic() >= deadline:
+                raise subprocess.TimeoutExpired('export process tree cleanup', 15)
+            capacity = max(capacity * 2, members.assigned)
+        for pid in members.ids[:members.count]:
+            if pid in self.process_handles:
+                continue
+            # Retain identity through termination; never act on a subsequently reused PID.
+            handle = self.api.OpenProcess(0x00101000, False, pid)  # synchronize + query limited
+            if not handle:
+                error = ctypes.get_last_error()
+                if error == 87:  # ERROR_INVALID_PARAMETER: the process is already gone
+                    continue
+                raise ctypes.WinError(error)
+            member = wintypes.BOOL()
+            if not self.api.IsProcessInJob(handle, self.handle, ctypes.byref(member)):
+                error = ctypes.WinError(ctypes.get_last_error())
+                self.api.CloseHandle(handle)
+                raise error
+            if member.value:
+                self.process_handles[pid] = handle
+            else:
+                self.api.CloseHandle(handle)
+
     def close(self):
         if self.handle is not None:
             import ctypes
-            if not self.api.TerminateJobObject(self.handle, 1):
-                raise ctypes.WinError(ctypes.get_last_error())
             deadline = time.monotonic() + 15
+            try:
+                self._block_new_processes()
+                self._capture_process_handles(deadline)
+            finally:
+                # Even a snapshot error must initiate tree termination. Retain the
+                # job and captured handles on failure so a caller can retry safely.
+                if not self.api.TerminateJobObject(self.handle, 1):
+                    raise ctypes.WinError(ctypes.get_last_error())
+            for handle in self.process_handles.values():
+                milliseconds = max(0, int((deadline - time.monotonic()) * 1000))
+                status = self.api.WaitForSingleObject(handle, milliseconds)
+                if status == 258:  # WAIT_TIMEOUT
+                    raise subprocess.TimeoutExpired('export process tree cleanup', 15)
+                if status != 0:  # WAIT_OBJECT_0 is actual process completion, not accounting
+                    raise ctypes.WinError(ctypes.get_last_error())
             while True:
                 accounting = self.accounting_type()
                 if not self.api.QueryInformationJobObject(self.handle, 1, ctypes.byref(accounting),
@@ -108,6 +178,35 @@ class _WindowsJob:
             if not self.api.CloseHandle(self.handle):
                 raise ctypes.WinError(ctypes.get_last_error())
             self.handle = None
+            for handle in self.process_handles.values():
+                self.api.CloseHandle(handle)
+            self.process_handles.clear()
+
+
+def _clean_job_files(root, keep_result=False, timeout=2):
+    """Bound transient sharing violations without abandoning the queue thread."""
+    deadline = time.monotonic() + timeout
+    while True:
+        errors = []
+        try:
+            if root.exists():
+                for path in root.iterdir():
+                    if keep_result and path.name == 'result':
+                        continue
+                    try:
+                        if path.is_dir() and not path.is_symlink():
+                            shutil.rmtree(path)
+                        else:
+                            path.unlink(missing_ok=True)
+                    except OSError as exc:
+                        errors.append(exc)
+        except OSError as exc:
+            errors.append(exc)
+        if not errors:
+            return
+        if time.monotonic() >= deadline:
+            raise errors[0]
+        time.sleep(.02)
 
 
 def _start_process(command):
@@ -337,21 +436,34 @@ class ExportQueue:
                     outcome = 'cancelled' if job['cancelled'] else 'error'
                     job['error'] = str(exc)[:2000]
             finally:
-                reset_language(language_token)
+                cleanup_errors = []
                 try:
                     self._stop(process)
-                except (OSError, subprocess.SubprocessError):
-                    pass
+                except Exception as exc:
+                    cleanup_errors.append(str(exc))
+                    outcome = 'error'
+                try:
+                    _clean_job_files(job['root'], keep_result=outcome == 'done')
+                except Exception as exc:
+                    cleanup_errors.append(str(exc))
+                    outcome = 'error'
+                if cleanup_errors:
+                    # A cleanup failure invalidates publication even if rendering
+                    # succeeded. Remove its deliverable too, when the OS permits.
+                    try:
+                        (job['root'] / 'result').unlink(missing_ok=True)
+                    except OSError as result_error:
+                        cleanup_errors.append(str(result_error))
                 with self.lock:
+                    if cleanup_errors:
+                        job['verification'] = None
+                        detail = '; '.join(cleanup_errors)
+                        job['error'] = backend_message(
+                            'No se pudo completar la limpieza de la exportación: {detail}',
+                            en='Export cleanup could not be completed: {detail}', detail=detail)[:2000]
                     job['updated'] = time.time()
-                    # Keep only a complete deliverable; sources and failed partials never linger.
-                    if job['root'].exists():
-                        for path in job['root'].iterdir():
-                            if path.name == 'result' and outcome == 'done':
-                                continue
-                            if path.is_dir(): shutil.rmtree(path, ignore_errors=True)
-                            else: path.unlink(missing_ok=True)
                     job['stage'] = outcome
+                reset_language(language_token)
 
     def close(self):
         with self.lock:

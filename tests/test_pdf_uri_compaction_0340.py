@@ -129,7 +129,8 @@ def test_pdf_uri_ligatures_preserve_every_letter_and_prose_typography(tmp_path, 
 
 
 @pytest.mark.parametrize('lang', ['es', 'en'])
-def test_real_72_literal_uri_rows_export_within_existing_timeout(tmp_path, lang):
+def test_real_72_literal_uri_rows_export_within_existing_timeout(tmp_path, lang, monkeypatch):
+    monkeypatch.setenv('REPORT_GEN_PDF_TIMEOUT', '120')
     urls = [(f'https://api.example/v1/tenants/tenant%2D{i:02d}/identity/'
              + 'authorization-scope_' * 10
              + '?a=one%20two&next=%2Fcontrol%3Fmode%3Dreview&z=1#request%2Dend')

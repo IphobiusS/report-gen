@@ -63,7 +63,7 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 
 ## Novedades de 0.34.1
 
-La revisión del PDF distingue apariciones repetidas o solapadas de encabezados y acepta títulos completos que se envuelven entre líneas. El tutorial devuelve el foco al botón que abrió la galería al cancelarla o cerrarla, en ambos idiomas. Las guías ya reflejan la corrección de rendimiento de las URLs aplicada en 0.34.0.
+La revisión del PDF distingue apariciones repetidas o solapadas de encabezados y acepta títulos completos que se envuelven entre líneas. El índice reutiliza el texto ya verificado y el motor dispone de 300 segundos por defecto, configurables entre 30 y 600 para informes extensos. Word separa mejor el encabezado y evita páginas vacías causadas por espaciadores después de tablas. El tutorial devuelve el foco al botón que abrió la galería al cancelarla o cerrarla, en ambos idiomas.
 
 **Tutorial visual** acompaña el primer acceso con una invitación opcional y queda disponible en el menú. Sus seis pasos incluyen capturas reales en español e inglés: plantilla, datos del informe, hallazgos, evidencias, revisión y entrega con respaldo. Puedes ampliar las capturas, continuar donde quedaste o reiniciar el recorrido sin cambiar tus proyectos. Funciona localmente y también cuando el navegador no permite guardar el progreso.
 

@@ -461,8 +461,9 @@ def render_pdf_weasyprint(html, out_pdf, base_url):
     # Detect ambiguous extraction (notably RTL plus a wrapped hyphen) before
     # replacing a prior export, using only the just-rendered PDF bytes.
     from export_contract import pdf_text_pages
-    pdf_text_pages(payload)
+    text_pages = pdf_text_pages(payload)
     Path(out_pdf).write_bytes(payload)
+    return text_pages
 
 
 def render_pdf_chromium(html, out_pdf, meta):
@@ -525,21 +526,33 @@ def resolve_backend(backend):
 
 def do_render(html, out_pdf, base_url, meta, backend):
     if backend == "weasyprint":
-        render_pdf_weasyprint(html, out_pdf, base_url)
+        return render_pdf_weasyprint(html, out_pdf, base_url)
     else:
         render_pdf_chromium(html, out_pdf, {**meta, "_resource_root": str(base_url)})
 
 
-def read_page_map(pdf_path, keys):
-    import pdfplumber
+def read_page_map(pdf_path, keys, *, text_pages=None):
+    """Resolve markers from the just-verified PDF text when it is available.
+
+    WeasyPrint already draws and extracts the whole first pass to verify its
+    text. Reuse those exact pages instead of parsing the same PDF a second time.
+    Chromium and standalone callers retain the independent PDF reader.
+    """
     found = {}
-    with pdfplumber.open(str(pdf_path)) as pdf:
-        for i, page in enumerate(pdf.pages, start=1):
-            txt = page.extract_text() or ""
+
+    def collect(pages):
+        for i, txt in enumerate(pages, start=1):
             norm = re.sub(r"\s+", "", txt)
             for key in keys:
                 if key not in found and f"PGMK{quote(str(key), safe='')}PGMK" in norm:
                     found[key] = i
+
+    if text_pages is None:
+        import pdfplumber
+        with pdfplumber.open(str(pdf_path)) as pdf:
+            collect(page.extract_text() or "" for page in pdf.pages)
+    else:
+        collect(text_pages)
     return found
 
 
@@ -611,8 +624,8 @@ def _run(args):
     with tempfile.NamedTemporaryFile(suffix=".pdf", dir=out_pdf.parent, delete=False) as tmp:
         tmp_pdf = Path(tmp.name)
     try:
-        do_render(html1, tmp_pdf, engagement_dir, meta, backend)
-        page_map = read_page_map(tmp_pdf, keys)
+        text_pages = do_render(html1, tmp_pdf, engagement_dir, meta, backend)
+        page_map = read_page_map(tmp_pdf, keys, text_pages=text_pages)
     finally:
         tmp_pdf.unlink(missing_ok=True)
     missing = [k for k in keys if k not in page_map]

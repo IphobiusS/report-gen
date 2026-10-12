@@ -12,6 +12,7 @@ from wizard import dump_yaml
 @pytest.mark.parametrize('lang', ['es', 'en'])
 @pytest.mark.parametrize('failure', ['timeout', 'renderer'])
 def test_pdf_failure_preserves_output_and_cleans_only_its_intermediates(tmp_path, monkeypatch, lang, failure):
+    monkeypatch.setenv('REPORT_GEN_PDF_TIMEOUT', '120')
     source = tmp_path / 'private-project.yaml'
     dump_yaml({'meta': {'lang': lang, 'report_title': 'Lifecycle'}, 'findings': []}, source)
     output = tmp_path / 'existing.pdf'

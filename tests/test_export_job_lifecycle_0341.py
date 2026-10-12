@@ -233,3 +233,147 @@ def test_queue_finally_stops_descendants_after_worker_exit(controlled_tree, monk
         assert not list(queue.jobs[key]['root'].iterdir())
     finally:
         queue.close()
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Native Windows Job Object shutdown barrier')
+def test_windows_shutdown_barrier_prevents_new_descendants(tmp_path):
+    ready, request, attempted, marker = [tmp_path / name for name in
+                                         ('ready', 'request', 'attempted', 'child-ran')]
+    code = (
+        'import subprocess,sys,time; from pathlib import Path\n'
+        'if sys.stdin.buffer.read(1) != b"1": raise SystemExit(99)\n'
+        'ready,request,attempted,marker=map(Path,sys.argv[1:])\n'
+        'ready.touch()\n'
+        'while not request.exists(): time.sleep(.01)\n'
+        'try:\n'
+        ' subprocess.run([sys.executable,"-c","from pathlib import Path; import sys; '
+        'Path(sys.argv[1]).write_text(\\\"ran\\\")",str(marker)],check=True)\n'
+        ' attempted.write_text("created")\n'
+        'except (OSError, subprocess.CalledProcessError):\n'
+        ' attempted.write_text("blocked")\n'
+        'while True: time.sleep(1)\n')
+    process = _start_process([sys.executable, '-c', code, *map(str, (ready, request, attempted, marker))])
+    try:
+        eventually(ready.exists)
+        process._report_gen_job._block_new_processes()
+        request.touch()
+        eventually(lambda: attempted.exists() and attempted.read_text() == 'blocked')
+        assert not marker.exists()
+        assert process.poll() is None
+        ExportQueue._stop(process)
+        assert process.returncode is not None
+    finally:
+        ExportQueue._stop(process)
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Native Windows handle ownership check')
+def test_windows_stale_snapshot_does_not_wait_for_unrelated_process(tmp_path, monkeypatch):
+    import ctypes
+    from ctypes import wintypes
+    unrelated = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(45)'])
+    process = _start_process([sys.executable, '-c',
+                              'import sys,time; sys.stdin.buffer.read(1); time.sleep(45)'])
+    job = process._report_gen_job
+    query = job.api.QueryInformationJobObject
+    def with_stale_pid(handle, information, buffer, length, returned):
+        ok = query(handle, information, buffer, length, returned)
+        if ok and information == 3:
+            # Model an ID recycled between the job snapshot and OpenProcess. The
+            # membership check must reject the real unrelated process handle.
+            counts = ctypes.cast(buffer, ctypes.POINTER(wintypes.DWORD))
+            pids = ctypes.cast(ctypes.addressof(buffer._obj) + 8,
+                               ctypes.POINTER(ctypes.c_size_t))
+            pids[counts[1]] = unrelated.pid
+            counts[0] += 1
+            counts[1] += 1
+        return ok
+    monkeypatch.setattr(job.api, 'QueryInformationJobObject', with_stale_pid)
+    try:
+        ExportQueue._stop(process)
+        assert process.returncode is not None
+        assert unrelated.poll() is None
+        assert not job.process_handles
+    finally:
+        ExportQueue._stop(process)
+        unrelated.kill()
+        unrelated.wait(timeout=5)
+
+
+def test_cleanup_retries_transient_file_lock_and_keeps_only_result(tmp_path, monkeypatch):
+    locked = tmp_path / 'held.txt'
+    locked.write_text('temporary')
+    (tmp_path / 'result').write_text('complete')
+    (tmp_path / 'source').mkdir()
+    (tmp_path / 'source' / 'private.txt').write_text('private')
+    unlink = Path.unlink
+    attempts = []
+    def briefly_locked(path, *args, **kwargs):
+        if path == locked:
+            attempts.append(path)
+            if len(attempts) <= 2:
+                raise PermissionError('controlled transient sharing violation')
+        return unlink(path, *args, **kwargs)
+    monkeypatch.setattr(Path, 'unlink', briefly_locked)
+    export_jobs._clean_job_files(tmp_path, keep_result=True)
+    assert len(attempts) == 3
+    assert [p.name for p in tmp_path.iterdir()] == ['result']
+    assert (tmp_path / 'result').read_text() == 'complete'
+
+
+@pytest.mark.parametrize('failure', ['stop', 'unlink'])
+def test_cleanup_failure_is_visible_and_queue_runs_next_job(tmp_path, monkeypatch, failure):
+    started = []
+    def start(command):
+        code = ('import sys; from pathlib import Path; '
+                'token=sys.stdin.buffer.read(1); '
+                'Path(sys.argv[1],"result").write_bytes(b"complete") if token==b"1" else None')
+        process = _start_process([sys.executable, '-c', code, command[-1]])
+        started.append(process)
+        return process
+    monkeypatch.setattr(export_jobs, '_start_process', start)
+    queue = ExportQueue(timeout=10)
+    real_stop, unlink = queue._stop, Path.unlink
+    blocked = {'active': True, 'path': None}
+    def fail_stop(process):
+        if failure == 'stop' and blocked['active']:
+            raise OSError('controlled process cleanup failure')
+        return real_stop(process)
+    def fail_unlink(path, *args, **kwargs):
+        if failure == 'unlink' and blocked['active'] and path == blocked['path']:
+            raise PermissionError('controlled persistent sharing violation')
+        return unlink(path, *args, **kwargs)
+    monkeypatch.setattr(queue, '_stop', fail_stop)
+    monkeypatch.setattr(Path, 'unlink', fail_unlink)
+    try:
+        def prepare(root):
+            root.mkdir()
+            if blocked['path'] is None:
+                blocked['path'] = root.parent / 'held.txt'
+                blocked['path'].write_text('private')
+            return {}
+        specification = {'label': 'controlled', 'revision': 'test', 'filename': 'x'}
+        key = queue.submit('owner', prepare, specification)['id']
+        eventually(lambda: queue.status('owner', key)['stage'] in export_jobs.TERMINAL)
+        status = queue.status('owner', key)
+        assert status['stage'] == 'error' and 'limpieza' in status['error']
+        assert not status['verification_available']
+        with pytest.raises(ValueError):
+            queue.result('owner', key)
+        assert not (queue.jobs[key]['root'] / 'result').exists()
+        assert not (queue.jobs[key]['root'] / 'source').exists()
+        assert queue.thread.is_alive()
+        blocked['active'] = False
+        for process in started:
+            real_stop(process)
+        export_jobs._clean_job_files(queue.jobs[key]['root'])
+        assert not list(queue.jobs[key]['root'].iterdir())
+        next_key = queue.submit('owner', prepare, specification)['id']
+        eventually(lambda: queue.status('owner', next_key)['stage'] in export_jobs.TERMINAL)
+        assert queue.status('owner', next_key)['stage'] == 'done'
+        assert queue.result('owner', next_key)[0] == b'complete'
+        assert queue.thread.is_alive()
+    finally:
+        blocked['active'] = False
+        for process in started:
+            real_stop(process)
+        queue.close()
