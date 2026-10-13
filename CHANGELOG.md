@@ -7,6 +7,9 @@
 - Los capítulos del cuerpo fluyen de forma continua en PDF y Word. Portada e
   índice mantienen sus páginas propias, y las evidencias conservan tamaño y
   orden. No se fuerzan páginas nuevas que dejen referencias aisladas.
+- Las tablas de verificación técnica pueden continuar por filas en PDF,
+  manteniendo su título y cabecera. Ya no saltan completas por compartir la
+  agrupación de las notas de retest; las notas narrativas conservan su protección.
 - El PDF aprovecha también la primera línea disponible para identificadores
   ASCII extensos después de una etiqueta, conservando sus caracteres y los
   saltos normales del texto Unicode.

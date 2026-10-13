@@ -4,6 +4,7 @@ from pathlib import Path
 from io import BytesIO
 from hashlib import sha256
 import engine
+from error_messages import message
 from .common import sev_label
 
 
@@ -110,24 +111,24 @@ def contracts_from_tree(tree):
     for svg in tree.xpath('.//svg[contains(concat(" ",normalize-space(@class)," ")," sevchart ")]'):
         labels = svg.xpath('./text[contains(concat(" ",normalize-space(@class)," ")," bar-lab ")]/text()')
         if labels != [L['severity'][key] for key in engine.SEVERITY_ORDER]:
-            raise ValueError('Unexpected canonical severity-chart labels')
+            raise ValueError(message('Etiquetas inesperadas en el gráfico canónico de severidad', en='Unexpected canonical severity-chart labels'))
         counts = {key: 0 for key in engine.SEVERITY_ORDER}
         colors = {key: '#888888' for key in engine.SEVERITY_ORDER}
         for bar in svg.xpath('./rect[contains(concat(" ",normalize-space(@class)," ")," bar ")]'):
             key = next((key for key in engine.SEVERITY_ORDER if 'bar-' + key in bar.get('class', '').split()), None)
             value = bar.getnext()
             if key is None or value is None or 'bar-val' not in value.get('class', '').split():
-                raise ValueError('Unexpected canonical severity-chart bar')
+                raise ValueError(message('Barra inesperada en el gráfico canónico de severidad', en='Unexpected canonical severity-chart bar'))
             counts[key] = int(value.text)
             colors[key] = bar.get('fill')
             if counts[key] < 1 or not re.fullmatch(r'#[0-9a-fA-F]{6}', colors[key] or ''):
-                raise ValueError('Invalid canonical severity-chart paint or count')
+                raise ValueError(message('Color o conteo inválido en el gráfico canónico de severidad', en='Invalid canonical severity-chart paint or count'))
         if not sum(counts.values()):
-            raise ValueError('Unexpected empty canonical severity chart')
+            raise ValueError(message('El gráfico canónico de severidad está vacío', en='Unexpected empty canonical severity chart'))
         asset = _asset(counts, colors, L['severity'], L['summary']['chart_scope'])
         section = next((p for p in svg.iterancestors() if p.tag == 'section' and p.get('id')), None)
         if section is None:
-            raise ValueError('Severity chart has no report section')
+            raise ValueError(message('El gráfico de severidad no tiene sección en el informe', en='Severity chart has no report section'))
         asset.pop('blob')
         asset['section'] = section.get('id')
         asset['lead'] = ' '.join(section.xpath('string(.//p[@class="sum-lead"])').split())
@@ -135,7 +136,6 @@ def contracts_from_tree(tree):
     return result
 def verify_markdown_charts(tree, digests, expected):
     """Check generated chart identity/order before excluding it from evidence checks."""
-    from error_messages import message
     def fail():
         raise ValueError(message('Gráfico Markdown ausente o alterado', en='Markdown chart missing or changed'))
     for chart in expected:

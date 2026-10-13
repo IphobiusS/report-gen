@@ -38,7 +38,11 @@ def test_unbroken_finding_title_keeps_itself_and_its_chip_inside_page(theme, mod
         text = pdf.pages[0].extract_text() or ''
     # Column placement of the identifier/chip can affect reading order, so
     # check the title in its layout tree and retain all metadata separately.
-    title = ''.join(box.text for box in boxes if box.element.get('class') == 'f-title')
+    heading = next(box for box in root.descendants()
+                   if type(box).__name__ == 'BlockBox'
+                   and box.element.get('class') == 'f-title')
+    title = ''.join(box.text for box in heading.descendants()
+                    if type(box).__name__ == 'TextBox')
     assert title == TOKEN
     assert 'F-001' in text
     assert ('High' if mode == 'vuln' else '192.0.2.31') in text
@@ -53,7 +57,10 @@ def test_authored_heading_token_wraps_without_hiding_or_changing_text(theme, lev
     root = document.pages[0]._page_box
     boxes = [box for box in root.descendants() if type(box).__name__ == 'TextBox']
     assert all(box.position_x + box.width <= root.content_box_x() + root.width + .1 for box in boxes)
-    assert ''.join(box.text for box in boxes if box.element.tag == f'h{level}') == TOKEN
+    heading = next(box for box in root.descendants()
+                   if type(box).__name__ == 'BlockBox' and box.element.tag == f'h{level}')
+    assert ''.join(box.text for box in heading.descendants()
+                   if type(box).__name__ == 'TextBox') == TOKEN
     assert len(document.pages) == 1
 
 

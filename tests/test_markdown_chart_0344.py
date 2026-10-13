@@ -104,3 +104,33 @@ def test_markdown_chart_matches_canonical_summary_for_every_theme(tmp_path,theme
     actual=summary_asset(data,engine.load_lang('es'))
     for key in ['path','sha256','alt','caption','counts']:
         assert expected[key]==actual[key]
+
+
+@pytest.mark.parametrize('language',['es','en'])
+@pytest.mark.parametrize('mutation,expected',[
+    ('labels',('Etiquetas inesperadas en el gráfico canónico de severidad','Unexpected canonical severity-chart labels')),
+    ('bar',('Barra inesperada en el gráfico canónico de severidad','Unexpected canonical severity-chart bar')),
+    ('count',('Color o conteo inválido en el gráfico canónico de severidad','Invalid canonical severity-chart paint or count')),
+    ('empty',('El gráfico canónico de severidad está vacío','Unexpected empty canonical severity chart')),
+    ('section',('El gráfico de severidad no tiene sección en el informe','Severity chart has no report section')),
+])
+def test_invalid_canonical_chart_uses_selected_error_language(tmp_path,language,mutation,expected):
+    import publication
+    from error_messages import language_scope
+    from exporters.charts import contracts_from_tree
+    data={'meta':{'report_title':'Chart rejection','theme':'corporativo','lang':'es'},
+          'report':{'sections':[{'key':'findings_summary'},{'key':'findings'}]},
+          'findings':[{'id':'F01','mode':'vuln','title':'Synthetic','severity':'high'}]}
+    workflows.normalize(data)
+    tree=publication.render(data,tmp_path)
+    svg=tree.xpath('.//svg[contains(@class,"sevchart")]')[0]
+    bar=svg.xpath('./rect[contains(@class,"bar-high")]')[0]
+    if mutation=='labels':svg.xpath('./text[contains(@class,"bar-lab")]')[0].text='Altered label'
+    elif mutation=='bar':bar.set('class','bar')
+    elif mutation=='count':bar.getnext().text='0'
+    elif mutation=='empty':svg.remove(bar)
+    else:
+        for section in svg.iterancestors('section'):section.attrib.pop('id',None)
+    with language_scope(language),pytest.raises(ValueError)as error:
+        contracts_from_tree(tree)
+    assert str(error.value)==expected[language=='en']

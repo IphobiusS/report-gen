@@ -72,7 +72,7 @@ def test_hundred_wrapped_lines_flow_without_blank_or_heading_only_pages(tmp_path
     capacity = int(document.pages[0]._page_box.height / pages[0][0].height)
     assert len(pages) == ceil(len(lines) / capacity)
     assert all(len(boxes) >= 4 for boxes in pages)
-    assert [box.element.text for boxes in pages for box in boxes] == lines
+    assert [''.join(box.element.itertext()) for boxes in pages for box in boxes] == lines
     for page, boxes in zip(document.pages, pages):
         assert boxes[0].position_y == pytest.approx(page._page_box.content_box_y())
     # Every authored line's visual wraps remain together and extract once.

@@ -7,6 +7,7 @@ import sys
 from lxml import html
 import pdfplumber
 import pytest
+from pypdf import PdfReader
 
 import engine
 import validate
@@ -134,7 +135,7 @@ def test_delivery_rejects_encoded_internal_marker_and_accepts_clean_final_pdf(tm
 
 
 @pytest.mark.parametrize('identity', ['conf', 'contacts', 'overview', 'summary', 'appendix'])
-def test_legacy_short_name_finding_keeps_its_own_page_and_toc_destination(identity, tmp_path):
+def test_legacy_short_name_finding_keeps_its_own_toc_destination(identity, tmp_path):
     import delivery
     data = document(); data['findings'][0]['id'] = identity
     data['findings'][0]['description_md'] = 'LEGACY_NAMESPACE_CANARY'
@@ -153,11 +154,32 @@ def test_legacy_short_name_finding_keeps_its_own_page_and_toc_destination(identi
     rendered = engine.render_html(engine.build_env(), data, tmp_path.resolve(), {}, True, engine.load_lang('en'))
     engine.render_pdf_weasyprint(rendered, first, tmp_path)
     mapping = engine.read_page_map(first, keys)
-    assert mapping[identity] != mapping['sec-' + identity]
+    reader = PdfReader(first)
+    destinations = reader.named_destinations
+    def position(key):
+        destination = destinations[key]
+        return (reader.get_destination_page_number(destination) + 1,
+                float(destination.left), float(destination.top))
+    finding_position = position(identity)
+    section_position = position('sec-' + identity)
+    # Continuous chapters may share a page. Distinct native destination
+    # coordinates, rather than distinct page numbers, establish identity.
+    assert finding_position != section_position
+    assert finding_position[0] == mapping[identity]
+    assert section_position[0] == mapping['sec-' + identity]
     with pdfplumber.open(first) as pdf:
-        assert 'LEGACY_NAMESPACE_CANARY' in (pdf.pages[mapping[identity]-1].extract_text() or '')
+        page = pdf.pages[mapping[identity]-1]
+        top = page.height - finding_position[2]
+        bottom = page.height
+        if section_position[0] == finding_position[0] and section_position[2] < finding_position[2]:
+            bottom = page.height - section_position[2]
+        finding_region = page.crop((finding_position[1], top, page.width, bottom))
+        assert 'LEGACY_NAMESPACE_CANARY' in (finding_region.extract_text() or '')
     rendered = engine.render_html(engine.build_env(), data, tmp_path.resolve(), mapping, False, engine.load_lang('en'))
     final = tmp_path / 'final-pass.pdf'; engine.render_pdf_weasyprint(rendered, final, tmp_path)
+    reader = PdfReader(final)
+    destinations = reader.named_destinations
+    assert position(identity) != position('sec-' + identity)
     assert delivery.inspect_pdf(final, 0)['toc_references_checked'] >= 6
     assert data == before
 

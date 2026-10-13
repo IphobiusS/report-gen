@@ -216,10 +216,13 @@ figure.rg-tall img { display: inline-block; width: auto; height: auto; max-width
 .sumtable > tbody > tr:nth-last-child(3),
 .sumtable > tbody > tr:nth-last-child(2),
 .frontsec > table > tbody > tr:nth-last-child(3),
-.frontsec > table > tbody > tr:nth-last-child(2) { break-after: avoid; page-break-after: avoid; }
+.frontsec > table > tbody > tr:nth-last-child(2),
+.retest-table-group > table > tbody > tr:nth-last-child(3),
+.retest-table-group > table > tbody > tr:nth-last-child(2) { break-after: avoid; page-break-after: avoid; }
 .sect-rg_retest > .md-table td:nth-child(4),
 .sect-rg_retest > .md-table td:nth-child(5) { white-space: nowrap; }
 .retest-entry { break-inside: avoid; }
+.retest-table-group { break-inside: auto; }
 .retest-entry h3, .retest-entry h3 + p { break-after: avoid; }
 .sevchart .bar-val { fill: var(--ink); }
 .sevchart .bar-lab { fill: var(--muted); }
