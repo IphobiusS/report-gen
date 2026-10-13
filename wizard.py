@@ -22,6 +22,8 @@ from datetime import date
 from pathlib import Path
 
 import yaml
+from languages import normalize_language, language_index, language_argument
+from error_messages import language_scope
 
 ROOT = Path(__file__).resolve().parent
 
@@ -36,7 +38,6 @@ MODELS = {
     "serio-en":       {"label": "iphobiuss Report (EN)", "theme": "serio", "lang": "en",
                        "subtitle": "Report of Findings", "confidential": "CONFIDENTIAL"},
 }
-SEVERITIES = ["critical", "high", "medium", "low", "info"]
 for _theme, _es, _en in [('ejecutivo', 'Ejecutivo editorial', 'Executive editorial'),
                         ('laboratorio', 'Laboratorio técnico', 'Technical laboratory'),
                         ('offsec', 'Técnico clásico', 'Classic technical'),
@@ -45,6 +46,121 @@ for _theme, _es, _en in [('ejecutivo', 'Ejecutivo editorial', 'Executive editori
         MODELS[_theme+'-'+_lang] = {'label':_label+' ('+_lang.upper()+')', 'theme':_theme,
                                   'lang':_lang, 'subtitle':'Informe de seguridad' if _lang=='es' else 'Security report',
                                   'confidential':'CONFIDENCIAL' if _lang=='es' else 'CONFIDENTIAL'}
+
+for _theme, _label in [('corporativo', 'Relatório corporativo'), ('serio', 'Relatório iphobiuss'),
+                        ('ejecutivo', 'Executivo editorial'), ('laboratorio', 'Laboratório técnico'),
+                        ('offsec', 'Técnico clássico'), ('htb', 'Laboratório escuro')]:
+    MODELS[_theme + '-pt'] = {'label': _label + ' (PT-BR)', 'theme': _theme, 'lang': 'pt',
+                            'subtitle': 'Relatório de achados' if _theme in ('corporativo', 'serio') else 'Relatório de segurança',
+                            'confidential': 'CONFIDENCIAL'}
+
+
+UI_LANGUAGE = "es"
+UI_TEXT = {'Numero': ('Number', 'Número'),
+ 'Opcion no valida.': ('Invalid option.', 'Opção inválida.'),
+ 'Ruta de imagen a insertar (vacio = sin figura)': ('Image path to insert (empty = no figure)',
+                                                    'Caminho da imagem a inserir (vazio = sem figura)'),
+ 'Epigrafe de la figura': ('Figure caption', 'Legenda da figura'),
+ 'Titulo en negrita del paso (lead), vacio para omitir': ('Bold step heading (lead), empty to omit',
+                                                          'Título do passo em negrito (lead), vazio para omitir'),
+ 'Texto del paso': ('Step text', 'Texto do passo'),
+ 'Comando / bloque de codigo (vacio para omitir)': ('Command / code block (empty to omit)',
+                                                    'Comando / bloco de código (vazio para omitir)'),
+ 'Tipo de hallazgo:': ('Finding type:', 'Tipo de achado:'),
+ 'Vulnerabilidad (CWE/CVSS, estilo COAE)': ('Vulnerability (CWE/CVSS, COAE style)',
+                                            'Vulnerabilidade (CWE/CVSS, estilo COAE)'),
+ 'Maquina (host/puertos/fases, estilo OSCP+)': ('Machine (host/ports/phases, OSCP+ style)',
+                                                'Máquina (host/portas/fases, estilo OSCP+)'),
+ 'Titulo del hallazgo': ('Finding title', 'Título do achado'),
+ 'Severidad:': ('Severity:', 'Severidade:'),
+ 'CVSS (ej 9.9)': ('CVSS (e.g. 9.9)', 'CVSS (ex. 9.9)'),
+ 'Vector CVSS (vacio para omitir)': ('CVSS vector (empty to omit)', 'Vetor CVSS (vazio para omitir)'),
+ 'CWE (vacio para omitir)': ('CWE (empty to omit)', 'CWE (vazio para omitir)'),
+ 'Dominio/host afectado (vacio para omitir)': ('Affected domain/host (empty to omit)',
+                                               'Domínio/host afetado (vazio para omitir)'),
+ 'Descripcion / causa raiz': ('Description / root cause', 'Descrição / causa raiz'),
+ 'Impacto de seguridad': ('Security impact', 'Impacto de segurança'),
+ 'Remediacion': ('Remediation', 'Remediação'),
+ 'Referencia (URL, vacio para terminar)': ('Reference (URL, empty to finish)', 'Referência (URL, vazio para terminar)'),
+ 'Procedimiento detallado': ('Detailed walkthrough', 'Procedimento detalhado'),
+ 'Agregar Resumen de remediacion (corto/mediano/largo)?': ('Add a remediation summary (short/medium/long term)?',
+                                                           'Adicionar resumo de remediação (curto/médio/longo prazo)?'),
+ 'Nombre de la maquina (ej TOASTER)': ('Machine name (e.g. TOASTER)', 'Nome da máquina (ex. TOASTER)'),
+ 'Direccion IP': ('IP address', 'Endereço IP'),
+ 'Sistema operativo (vacio para omitir)': ('Operating system (empty to omit)',
+                                           'Sistema operacional (vazio para omitir)'),
+ 'Puertos abiertos (TCP)': ('Open ports (TCP)', 'Portas abertas (TCP)'),
+ 'Ruta de ataque / resumen (vacio para omitir)': ('Attack path / summary (empty to omit)',
+                                                  'Caminho de ataque / resumo (vazio para omitir)'),
+ 'Nombre de la fase': ('Phase name', 'Nome da fase'),
+ 'Agregar entrada de evidencia (local.txt/proof.txt/flag)?': ('Add an evidence entry (local.txt/proof.txt/flag)?',
+                                                              'Adicionar uma evidência (local.txt/proof.txt/flag)?'),
+ 'Nombre (ej local.txt)': ('Name (e.g. local.txt)', 'Nome (ex. local.txt)'),
+ 'Valor / hash': ('Value / hash', 'Valor / hash'),
+ 'Modelo de plantilla': ('Template model', 'Modelo de template'),
+ 'Elige el modelo de informe:': ('Choose a report model:', 'Escolha o modelo de relatório:'),
+ 'Portada / Metadatos': ('Cover / metadata', 'Capa / metadados'),
+ 'Titulo del informe': ('Report title', 'Título do relatório'),
+ 'Subtitulo': ('Subtitle', 'Subtítulo'),
+ 'Cliente': ('Client', 'Cliente'),
+ 'Evaluador': ('Assessor', 'Avaliador'),
+ 'Cargo del evaluador': ('Assessor role', 'Cargo do avaliador'),
+ 'Fecha (YYYY-MM-DD)': ('Date (YYYY-MM-DD)', 'Data (YYYY-MM-DD)'),
+ 'Version': ('Version', 'Versão'),
+ 'Wordmark (franja/cabecera)': ('Wordmark (band/header)', 'Marca textual (faixa/cabeçalho)'),
+ 'Byline (pie)': ('Byline (footer)', 'Autoria (rodapé)'),
+ 'Color de acento': ('Accent color', 'Cor de destaque'),
+ 'Texto de confidencialidad': ('Confidentiality text', 'Texto de confidencialidade'),
+ 'Contactos': ('Contacts', 'Contatos'),
+ 'Agregar contacto de cliente?': ('Add a client contact?', 'Adicionar contato do cliente?'),
+ 'Nombre': ('Name', 'Nome'),
+ 'Cargo': ('Role', 'Cargo'),
+ 'Correo': ('Email', 'E-mail'),
+ 'Agregar contacto del equipo evaluador?': ('Add an assessment team contact?',
+                                            'Adicionar contato da equipe avaliadora?'),
+ 'Alcance': ('Scope', 'Escopo'),
+ 'Agregar objetivo al alcance?': ('Add a scope target?', 'Adicionar um alvo ao escopo?'),
+ 'Objetivo (host/URL/rango)': ('Target (host/URL/range)', 'Alvo (host/URL/intervalo)'),
+ 'Descripcion': ('Description', 'Descrição'),
+ 'Renderizar el PDF ahora?': ('Render the PDF now?', 'Gerar o PDF agora?'),
+ 'paso': ('step', 'passo'),
+ 'corto': ('short', 'curto'),
+ 'mediano': ('medium', 'médio'),
+ 'largo': ('long', 'longo'),
+ 'Agregar {label} {n}?': ('Add {label} {n}?', 'Adicionar {label} {n}?'),
+ 'Remediacion {term} plazo (vacio para omitir)': ('{term}-term remediation (empty to omit)',
+                                                  'Remediação de {term} prazo (vazio para omitir)'),
+ 'Agregar fase {n} (ej Acceso inicial, Escalada)?': ('Add phase {n} (e.g. Initial access, Escalation)?',
+                                                     'Adicionar fase {n} (ex. Acesso inicial, Escalada)?'),
+ 'Fase: {name}': ('Phase: {name}', 'Fase: {name}'),
+ 'Agregar hallazgo {id}?': ('Add finding {id}?', 'Adicionar achado {id}?'),
+ 'Hallazgo {id}': ('Finding {id}', 'Achado {id}'),
+ 'Nuevo hallazgo {id} en {name}': ('New finding {id} in {name}', 'Novo achado {id} em {name}'),
+ '[!] no existe: {path}. Se omite la figura.': ('[!] not found: {path}. The figure is omitted.',
+                                                '[!] não encontrado: {path}. A figura será omitida.'),
+ '[+] copiada a {path}': ('[+] copied to {path}', '[+] copiada para {path}'),
+ '-> {label} (tema {theme}, idioma {lang})': ('-> {label} (theme {theme}, language {lang})',
+                                              '-> {label} (tema {theme}, idioma {lang})'),
+ '[+] Escrito: {path}': ('[+] Written: {path}', '[+] Gravado: {path}'),
+ 'Luego: python engine.py {path}': ('Later: python engine.py {path}', 'Depois: python engine.py {path}'),
+ '[+] Actualizado: {path}': ('[+] Updated: {path}', '[+] Atualizado: {path}'),
+ ' (Markdown; termina con una linea que contenga solo un punto)': (' (Markdown; end with a line containing only a '
+                                                                   'period)',
+                                                                   ' (Markdown; termine com uma linha contendo apenas '
+                                                                   'um ponto)'),
+ 'Asistente de captura para report-gen': ('Guided report-gen data entry', 'Assistente de preenchimento do report-gen'),
+ 'crear un informe nuevo desde un modelo': ('create a new report from a model',
+                                            'criar um relatório a partir de um modelo'),
+ 'nombre de carpeta del engagement': ('engagement folder name', 'nome da pasta da avaliação'),
+ 'agregar un hallazgo a un informe existente': ('add a finding to an existing report',
+                                                'adicionar um achado a um relatório existente'),
+ 'ruta a engagement.yaml': ('path to engagement.yaml', 'caminho de engagement.yaml'),
+ 'idioma de la interfaz; no cambia el idioma del informe': ('interface language; does not change the report language',
+                                                            'idioma da interface; não altera o idioma do relatório')}
+
+def tr(text, **values):
+    translated = text if UI_LANGUAGE == "es" else UI_TEXT.get(text, (text, text))[language_index(UI_LANGUAGE) - 1]
+    return translated.format(**values) if values else translated
 
 
 # --- YAML con block scalars para la prosa multilinea -------------------------
@@ -74,14 +190,14 @@ def dump_yaml(data, path):
 def ask(prompt, default=""):
     tail = f" [{default}]" if default else ""
     try:
-        s = input(f"{prompt}{tail}: ").strip()
+        s = input(f"{tr(prompt)}{tail}: ").strip()
     except EOFError:
         s = ""
     return s or default
 
 
 def ask_block(prompt):
-    print(f"{prompt} (Markdown; termina con una linea que contenga solo un punto)")
+    print(tr(prompt) + tr(" (Markdown; termina con una linea que contenga solo un punto)"))
     lines = []
     while True:
         try:
@@ -95,29 +211,29 @@ def ask_block(prompt):
 
 
 def ask_yesno(prompt, default=False):
-    d = "s/N" if not default else "S/n"
-    s = ask(f"{prompt} ({d})")
+    d = (("y/N" if not default else "Y/n") if UI_LANGUAGE == "en" else ("s/N" if not default else "S/n"))
+    s = ask(f"{tr(prompt)} ({d})")
     if not s:
         return default
     return s.lower().startswith("s") or s.lower().startswith("y")
 
 
 def ask_choice(prompt, options):
-    print(prompt)
+    print(tr(prompt))
     for i, opt in enumerate(options, 1):
         label = opt[1] if isinstance(opt, tuple) else opt
-        print(f"  {i}) {label}")
+        print(f"  {i}) {tr(label)}")
     while True:
         s = ask("Numero")
         if s.isdigit() and 1 <= int(s) <= len(options):
             opt = options[int(s) - 1]
             return opt[0] if isinstance(opt, tuple) else opt
-        print("  Opcion no valida.")
+        print("  " + tr("Opcion no valida."))
 
 
 def section(title):
     print("\n" + "=" * 60)
-    print(f"  {title}")
+    print(f"  {tr(title)}")
     print("=" * 60)
 
 
@@ -128,12 +244,12 @@ def ask_figure(img_dir):
         return None
     p = Path(src).expanduser()
     if not p.exists():
-        print(f"  [!] no existe: {p}. Se omite la figura.")
+        print("  " + tr("[!] no existe: {path}. Se omite la figura.", path=p))
         return None
     img_dir.mkdir(parents=True, exist_ok=True)
     dest = img_dir / p.name
     shutil.copy(p, dest)
-    print(f"  [+] copiada a {dest.relative_to(img_dir.parent)}")
+    print("  " + tr("[+] copiada a {path}", path=dest.relative_to(img_dir.parent)))
     caption = ask("Epigrafe de la figura")
     return {"src": f"img/{p.name}", "caption": caption}
 
@@ -141,7 +257,7 @@ def ask_figure(img_dir):
 def ask_steps(img_dir, label="paso"):
     steps = []
     n = 1
-    while ask_yesno(f"Agregar {label} {n}?", default=(n == 1)):
+    while ask_yesno(tr("Agregar {label} {n}?", label=tr(label), n=n), default=(n == 1)):
         step = {}
         lead = ask("Titulo en negrita del paso (lead), vacio para omitir")
         if lead:
@@ -164,7 +280,8 @@ def ask_finding(fid, img_dir):
     f = {"id": fid, "mode": mode}
     if mode == "vuln":
         f["title"] = ask("Titulo del hallazgo")
-        f["severity"] = ask_choice("Severidad:", SEVERITIES)
+        from engine import load_lang
+        f["severity"] = ask_choice("Severidad:", list(load_lang(UI_LANGUAGE)["severity"].items()))
         f["cvss"] = ask("CVSS (ej 9.9)")
         vec = ask("Vector CVSS (vacio para omitir)")
         if vec:
@@ -191,7 +308,7 @@ def ask_finding(fid, img_dir):
         if ask_yesno("Agregar Resumen de remediacion (corto/mediano/largo)?"):
             rs = {}
             for key, lbl in [("short_md", "corto"), ("medium_md", "mediano"), ("long_md", "largo")]:
-                v = ask(f"Remediacion {lbl} plazo (vacio para omitir)")
+                v = ask(tr("Remediacion {term} plazo (vacio para omitir)", term=tr(lbl)))
                 if v:
                     rs[key] = v
             if rs:
@@ -211,9 +328,9 @@ def ask_finding(fid, img_dir):
             f["summary_md"] = summ
         phases = []
         pn = 1
-        while ask_yesno(f"Agregar fase {pn} (ej Acceso inicial, Escalada)?", default=(pn == 1)):
+        while ask_yesno(tr("Agregar fase {n} (ej Acceso inicial, Escalada)?", n=pn), default=(pn == 1)):
             pname = ask("Nombre de la fase")
-            section(f"Fase: {pname}")
+            section(tr("Fase: {name}", name=pname))
             phases.append({"name": pname, "steps": ask_steps(img_dir, label="paso")})
             pn += 1
         f["phases"] = phases
@@ -240,7 +357,7 @@ def cmd_new(args):
         model_key = ask_choice("Elige el modelo de informe:",
                                [(k, MODELS[k]["label"]) for k in keys])
     m = MODELS[model_key]
-    print(f"  -> {m['label']}  (tema {m['theme']}, idioma {m['lang']})")
+    print("  " + tr("-> {label} (tema {theme}, idioma {lang})", label=m["label"], theme=m["theme"], lang=m["lang"]))
 
     section("Portada / Metadatos")
     meta = {
@@ -286,19 +403,19 @@ def cmd_new(args):
     img_dir = eng_dir / "img"
 
     findings = []
-    while ask_yesno(f"Agregar hallazgo {next_fid(findings)}?", default=(len(findings) == 0)):
-        section(f"Hallazgo {next_fid(findings)}")
+    while ask_yesno(tr("Agregar hallazgo {id}?", id=next_fid(findings)), default=(len(findings) == 0)):
+        section(tr("Hallazgo {id}", id=next_fid(findings)))
         findings.append(ask_finding(next_fid(findings), img_dir))
 
     data = {"meta": meta, "findings": findings}
     out = eng_dir / "engagement.yaml"
     dump_yaml(data, out)
-    print(f"\n[+] Escrito: {out}")
+    print("\n" + tr("[+] Escrito: {path}", path=out))
 
     if ask_yesno("Renderizar el PDF ahora?", default=True):
-        subprocess.run([sys.executable, str(ROOT / "engine.py"), str(out)], check=False)
+        subprocess.run([sys.executable, str(ROOT / "engine.py"), str(out), "--error-language", UI_LANGUAGE], check=False)
     else:
-        print(f"    Luego:  python engine.py {out.relative_to(ROOT)}")
+        print("    " + tr("Luego: python engine.py {path}", path=out.relative_to(ROOT)))
 
 
 def cmd_add_finding(args):
@@ -308,26 +425,35 @@ def cmd_add_finding(args):
     data.setdefault("findings", [])
     img_dir = path.parent / "img"
     fid = next_fid(data["findings"])
-    section(f"Nuevo hallazgo {fid} en {path.name}")
+    section(tr("Nuevo hallazgo {id} en {name}", id=fid, name=path.name))
     data["findings"].append(ask_finding(fid, img_dir))
     dump_yaml(data, path)
-    print(f"\n[+] Actualizado: {path}")
+    print("\n" + tr("[+] Actualizado: {path}", path=path))
     if ask_yesno("Renderizar el PDF ahora?", default=True):
-        subprocess.run([sys.executable, str(ROOT / "engine.py"), str(path)], check=False)
+        subprocess.run([sys.executable, str(ROOT / "engine.py"), str(path), "--error-language", UI_LANGUAGE], check=False)
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Asistente de captura para report-gen")
+    global UI_LANGUAGE
+    probe = argparse.ArgumentParser(add_help=False)
+    probe.add_argument("--ui-language", type=language_argument, default="es")
+    initial, _ = probe.parse_known_args()
+    UI_LANGUAGE = normalize_language(initial.ui_language)
+    ap = argparse.ArgumentParser(description=tr("Asistente de captura para report-gen"), parents=[probe])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    p_new = sub.add_parser("new", help="crear un informe nuevo desde un modelo")
+    p_new = sub.add_parser("new", help=tr("crear un informe nuevo desde un modelo"))
     p_new.add_argument("--model", choices=list(MODELS))
-    p_new.add_argument("--slug", help="nombre de carpeta del engagement")
+    p_new.add_argument("--slug", help=tr("nombre de carpeta del engagement"))
     p_new.set_defaults(func=cmd_new)
-    p_add = sub.add_parser("add-finding", help="agregar un hallazgo a un informe existente")
-    p_add.add_argument("engagement", help="ruta a engagement.yaml")
+    p_add = sub.add_parser("add-finding", help=tr("agregar un hallazgo a un informe existente"))
+    p_add.add_argument("engagement", help=tr("ruta a engagement.yaml"))
     p_add.set_defaults(func=cmd_add_finding)
+    for subparser in (p_new, p_add):
+        subparser.add_argument("--ui-language", type=language_argument, default=argparse.SUPPRESS,
+                              help=tr("idioma de la interfaz; no cambia el idioma del informe"))
     args = ap.parse_args()
-    args.func(args)
+    with language_scope(UI_LANGUAGE):
+        args.func(args)
 
 
 if __name__ == "__main__":

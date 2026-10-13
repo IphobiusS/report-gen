@@ -1,9 +1,13 @@
 const {JSDOM} = require('jsdom');
 const fs = require('fs'), path = require('path'), assert = require('node:assert/strict');
-const base=process.argv[2], root=path.resolve(__dirname,'..');
+const useStdio=process.argv[2]==='--stdio';
+const bridge=useStdio?require('./flask_transport.cjs')(true):null;
+const base=useStdio?'http://127.0.0.1/':process.argv[2], root=path.resolve(__dirname,'..');
+if(!base)throw Error('Pass a seeded local server URL or --stdio.');
 let cookie='',dom;const downloads=[], requests=[];
 async function request(url,options={}) {
   requests.push({url,options});
+  if(bridge)return bridge.fetch(url,options);
   const headers={...options.headers};if(cookie)headers.Cookie=cookie;
   const response=await fetch(new URL(url,base),{...options,headers});
   const set=response.headers.get('set-cookie');if(set)cookie=set.split(';')[0];
@@ -11,11 +15,12 @@ async function request(url,options={}) {
 }
 async function until(predicate, attempts=150) {
   for(let i=0;i<attempts;i++){if(predicate())return;await new Promise(r=>setTimeout(r,20));}
-  throw new Error('UI timeout');
+  throw new Error('UI timeout: '+predicate+'; export status: '+(dom?.window.document.querySelector('#exportDrawer')?.textContent||'no drawer'));
 }
 (async()=>{
   dom=new JSDOM(fs.readFileSync(path.join(root,'webapp/static/index.html'),'utf8'),{url:base,runScripts:'outside-only',pretendToBeVisual:true});
   const w=dom.window;w.fetch=request;w.confirm=()=>true;w.alert=()=>{};
+  w.AbortController=AbortController;w.AbortSignal=AbortSignal;
   w.matchMedia=()=>({matches:false});
   // JSDOM has no layout: model the desktop preview pane's visibility rather
   // than treating its default empty rect list as a real hidden browser pane.
@@ -130,4 +135,4 @@ async function until(predicate, attempts=150) {
   assert.equal(await q.doSave(),false);assert.equal(q.projectStore.dirty,true);
   assert.equal((await request('/api/projects/b').then(r=>r.json())).meta.report_title,'Other tab');
   console.log('PASS: full editor + real Flask API: load, save/switch, CSRF, Markdown ZIP, validation, conflict retention, assets, coverage, review navigation, retest, history, library, backup, evidence redaction and full restore');
-})().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>{dom?.window.close();});
+})().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>{dom?.window.close();bridge?.close();});

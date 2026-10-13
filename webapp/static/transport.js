@@ -15,16 +15,18 @@ async function requireOk(response) {
 
 function create({fetch, workspace, getLanguage, getETag, baseURL, onWorkspaceChanged}) {
   let csrfPromise;
-  const language = () => getLanguage() === 'en' ? 'en' : 'es';
+  const language = () => { const value=String(getLanguage()||'es').toLowerCase();return value==='pt'||value==='pt-br'?'pt':value==='en'?'en':'es'; };
+  const messageFor=(lang,es,en,pt)=>lang==='pt'?pt:lang==='en'?en:es;
   // BrowserWorkspace is the sole identity used by HTTP and browser journals.
   const identity = () => { try { return workspace.current(); } catch (_) { return null; } };
   const workspaceHeaders = () => { const id = identity(); return id ? {'X-Report-Gen-Workspace':id} : {}; };
 
   function changedWorkspaceError() {
     workspace.block();
-    const message = language() === 'en'
-      ? 'The server changed workspace. This tab will not send changes. Download your draft before reloading.'
-      : 'El servidor cambió de espacio. Esta pestaña no enviará cambios. Descarga tu borrador antes de recargar.';
+    const message = messageFor(language(),
+      'El servidor cambió de espacio. Esta pestaña no enviará cambios. Descarga tu borrador antes de recargar.',
+      'The server changed workspace. This tab will not send changes. Download your draft before reloading.',
+      'O servidor mudou de espaço de trabalho. Esta aba não enviará alterações. Baixe seu rascunho antes de recarregar.');
     onWorkspaceChanged?.(message);
     const error = new Error(message); error.status = 409; return error;
   }
@@ -37,9 +39,10 @@ function create({fetch, workspace, getLanguage, getETag, baseURL, onWorkspaceCha
     if (received !== null || response.ok) throw changedWorkspaceError();
     // An intermediary can fail without the app's headers. Reject its unverified
     // body, retain the original scope and allow a deliberate retry.
-    const error = new Error(uiLanguage === 'en'
-      ? 'The server returned an unverified error. Your changes are still pending; try again.'
-      : 'El servidor devolvió un error sin verificar. Tus cambios siguen pendientes; vuelve a intentarlo.');
+    const error = new Error(messageFor(uiLanguage,
+      'El servidor devolvió un error sin verificar. Tus cambios siguen pendientes; vuelve a intentarlo.',
+      'The server returned an unverified error. Your changes are still pending; try again.',
+      'O servidor retornou um erro não verificado. Suas alterações continuam pendentes; tente novamente.'));
     error.status = response.status; throw error;
   }
 
@@ -52,7 +55,7 @@ function create({fetch, workspace, getLanguage, getETag, baseURL, onWorkspaceCha
       csrfPromise ||= fetch('/api/session', {headers:{'X-UI-Language':uiLanguage, ...workspaceHeaders()}}).then(async response => {
         checkResponseWorkspace(response, uiLanguage);
         if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error ||
-          (uiLanguage === 'en' ? 'Could not start the local session' : 'No se pudo iniciar la sesión local'));
+          messageFor(uiLanguage,'No se pudo iniciar la sesión local','Could not start the local session','Não foi possível iniciar a sessão local'));
         return (await response.json()).csrf;
       }).catch(error => { csrfPromise = null; throw error; });
       options = {...options, headers:{...options.headers, 'X-CSRF-Token':await csrfPromise}};
@@ -76,7 +79,7 @@ function create({fetch, workspace, getLanguage, getETag, baseURL, onWorkspaceCha
   function scopedResourceURL(value) {
     if (typeof value !== 'string' || !value.startsWith('/api/')) return value;
     const id = identity();
-    if (!id) throw Error('Espacio de trabajo todavía no preparado / Workspace is not ready');
+    if (!id) throw Error(messageFor(language(),'Espacio de trabajo todavía no preparado','Workspace is not ready','O espaço de trabalho ainda não está pronto'));
     const url = new URL(value, baseURL());
     url.searchParams.set('workspace_id', id);
     return url.pathname + url.search + url.hash;

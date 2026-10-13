@@ -4,13 +4,13 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.34.5
+# report-gen 0.35.0
 
 <a id="qué-es"></a>
 
 **Un editor local para convertir tus evaluaciones de seguridad en informes claros.** Organiza hallazgos, conecta evidencias, registra remediación y retest, y prepara **PDF, Word, Markdown con imágenes y HTML portátil** desde una revisión guardada.
 
-[English](README.en.md) · [Guía completa](docs/guide.es.md) · [Cambios](CHANGELOG.md) · [Seguridad](SECURITY.md)
+[English](README.en.md) · [Português (Brasil)](README.pt.md) · [Guía completa](docs/guide.es.md) · [Cambios](CHANGELOG.md) · [Seguridad](SECURITY.md)
 
 <a id="inicio-rápido"></a>
 
@@ -39,7 +39,7 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 2. En el proyecto, **Siguiente acción sugerida** te orienta según lo que ya has escrito. **Ver este paso en la guía** abre la ayuda correspondiente. La ayuda no completa ni valida los datos de tu evaluación por ti.
 3. Guarda, revisa el **Inspector de publicación** y genera los formatos que necesites desde **Entregar**. Abre los archivos antes de compartirlos y conserva un respaldo privado del proyecto.
 
-**Tutorial visual** está disponible desde el menú, con capturas ES/EN ampliables y progreso local. La invitación inicial se puede omitir.
+**Tutorial visual** está disponible desde el menú, con capturas ES/EN/PT ampliables y progreso local. La invitación inicial se puede omitir.
 
 [Recorrido completo y recomendaciones](docs/guide.es.md#primer-informe).
 
@@ -61,7 +61,13 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.34.5
+## Novedades de 0.35.0
+
+Portugués de Brasil se suma a español e inglés en el editor, los mensajes del servidor, el tutorial, la galería y los cuatro formatos de informe. El selector permite elegir el idioma de la interfaz de forma explícita; el idioma del informe continúa separado y cambiar cualquiera de ellos conserva el contenido redactado.
+
+Los títulos de las secciones se actualizan inmediatamente al cambiar el idioma del informe. Markdown conserva también la introducción del apéndice en informes por secciones. Las comprobaciones incluyen catálogos y marcadores de traducción, exportaciones en portugués y recorridos del tutorial en los tres idiomas.
+
+### Correcciones conservadas de 0.34.5
 
 El índice Word reserva espacio para el número de página cuando el título ocupa casi toda la línea. Las leyendas largas pueden continuar por páginas sin hacer desaparecer la figura; HTML, PDF y Markdown conservan sus saltos de línea. Markdown admite también leyendas vacías sin mostrar asteriscos. Las tablas de retest anidadas en citas o listas aprovechan el espacio disponible, y los retests sin fecha ya no muestran un separador vacío.
 
@@ -73,7 +79,7 @@ El [complemento opcional para LibreOffice](docs/guide.es.md#complemento-opcional
 
 ## Exportación y tutorial visual
 
-La alineación izquierda, centrada o derecha de las tablas Markdown se conserva al exportar. El verificador PDF comprueba el contenido de cada hallazgo dentro de su región, para que una copia en el índice o el resumen no oculte texto ausente. Las URLs largas escritas como texto común ya no desbordan el PDF; su verificación evita búsquedas ambiguas innecesarias. En Linux y macOS, un supervisor mantiene reservado el grupo del trabajo hasta detener sus procesos, incluso si el trabajador termina antes. La publicación exige también las comprobaciones de macOS, LibreOffice estable y WebKit, junto con un recorrido del proyecto y tutorial ES/EN en Safari nativo de escritorio. Este recorrido automatizado tiene un alcance concreto; no sustituye una revisión en Microsoft Word ni una evaluación humana con lector de pantalla.
+La alineación izquierda, centrada o derecha de las tablas Markdown se conserva al exportar. El verificador PDF comprueba el contenido de cada hallazgo dentro de su región, para que una copia en el índice o el resumen no oculte texto ausente. Las URLs largas escritas como texto común ya no desbordan el PDF; su verificación evita búsquedas ambiguas innecesarias. En Linux y macOS, un supervisor mantiene reservado el grupo del trabajo hasta detener sus procesos, incluso si el trabajador termina antes. La publicación exige también las comprobaciones de macOS, LibreOffice estable y WebKit, junto con un recorrido del proyecto y tutorial ES/EN/PT en Safari nativo de escritorio. Este recorrido automatizado tiene un alcance concreto; no sustituye una revisión en Microsoft Word ni una evaluación humana con lector de pantalla.
 
 **Tutorial visual** acompaña el primer acceso con una invitación opcional y queda disponible en el menú. Sus seis pasos incluyen capturas reales en español e inglés: plantilla, datos del informe, hallazgos, evidencias, revisión y entrega con respaldo. Puedes ampliar las capturas, continuar donde quedaste o reiniciar el recorrido sin cambiar tus proyectos. Funciona localmente y también cuando el navegador no permite guardar el progreso.
 
@@ -108,7 +114,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.34.5 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.35.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

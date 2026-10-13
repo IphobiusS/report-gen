@@ -4,6 +4,7 @@ The informational CSV is deliberately not an import format. Return templates use
 fixed columns and an explicit text marker so spreadsheet formula neutralisation
 is reversible; a stripped marker is rejected rather than guessed.
 """
+from languages import language_index, language_tag
 from copy import deepcopy
 import csv
 from datetime import date, datetime, timezone
@@ -273,12 +274,7 @@ def delivery(data, slug, finding_uids, fields, lang, source_revision):
     groups = {}
     for row in batch['rows']:
         groups.setdefault(row['base']['owner'], []).append(row)
-    instructions = ('Este ZIP y manifest.json reúnen todos los responsables seleccionados. No los envíes completos a un solo responsable. '
-                    'Extrae y comparte únicamente su carpeta owner-NNN, tras revisar index.html, las fichas y return.csv. '
-                    'El registro acredita solo generación local, no envío ni recepción por terceros.\n' if lang == 'es' else
-                    'This ZIP and manifest.json combine all selected owners. Do not send them in full to a single owner. '
-                    'Extract and share only their owner-NNN folder, after reviewing index.html, the cards and return.csv. '
-                    'The record describes local generation only, not external delivery or receipt.\n')
+    instructions = ((('Este ZIP y manifest.json reúnen todos los responsables seleccionados. No los envíes completos a un solo responsable. Extrae y comparte únicamente su carpeta owner-NNN, tras revisar index.html, las fichas y return.csv. El registro acredita solo generación local, no envío ni recepción por terceros.\n', 'This ZIP and manifest.json combine all selected owners. Do not send them in full to a single owner. Extract and share only their owner-NNN folder, after reviewing index.html, the cards and return.csv. The record describes local generation only, not external delivery or receipt.\n', 'Este ZIP e manifest.json reúnem todos os responsáveis selecionados. Não os envie completos a um único responsável. Extraia e compartilhe apenas sua pasta owner-NNN, após revisar index.html, as fichas e return.csv. O registro comprova apenas a geração local, não o envio nem o recebimento por terceiros.\n')[language_index(lang)]))
     files, owners = {'INSTRUCTIONS.txt': instructions.encode()}, []
     for index, (owner, rows) in enumerate(groups.items(), 1):
         prefix = f'owner-{index:03d}/'
@@ -288,14 +284,9 @@ def delivery(data, slug, finding_uids, fields, lang, source_revision):
             name = 'task-' + row['finding_uid'] + '.html'
             files[prefix + name] = tasks.card_html(cards[row['finding_uid']], fields, lang)
             links.append('<li><a href="' + name + '">' + escape(cards[row['finding_uid']]['id']) + '</a></li>')
-        heading = 'Entrega de tareas' if lang == 'es' else 'Task delivery'
-        note = ('Contenido seleccionado para este responsable. Edita solo owner, due_date y reported_remediation en return.csv. '
-                'Conserva referencias y el apóstrofo inicial de los campos de texto. Guarda CSV UTF-8 con comas. '
-                'Los avances comunicados no acreditan una corrección verificada.' if lang == 'es' else
-                'Selected content for this owner. Edit only owner, due_date and reported_remediation in return.csv. '
-                'Preserve references and the initial apostrophe in text fields. Save comma-separated UTF-8 CSV. '
-                'Reported progress does not prove a verified fix.')
-        files[prefix + 'index.html'] = ('<!doctype html><html lang="' + lang + '"><head><meta charset="utf-8">'
+        heading = (('Entrega de tareas', 'Task delivery', 'Entrega de tarefas')[language_index(lang)])
+        note = ((('Contenido seleccionado para este responsable. Edita solo owner, due_date y reported_remediation en return.csv. Conserva referencias y el apóstrofo inicial de los campos de texto. Guarda CSV UTF-8 con comas. Los avances comunicados no acreditan una corrección verificada.', 'Selected content for this owner. Edit only owner, due_date and reported_remediation in return.csv. Preserve references and the initial apostrophe in text fields. Save comma-separated UTF-8 CSV. Reported progress does not prove a verified fix.', 'Conteúdo selecionado para este responsável. Edite apenas owner, due_date e reported_remediation em return.csv. Preserve as referências e o apóstrofo inicial dos campos de texto. Salve como CSV UTF-8 separado por vírgulas. O progresso comunicado não comprova uma correção verificada.')[language_index(lang)]))
+        files[prefix + 'index.html'] = ('<!doctype html><html lang="' + language_tag(lang) + '"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             '<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;">'
             '<title>' + heading + '</title><style>body{font:16px/1.6 system-ui;max-width:54rem;margin:2rem auto;padding:0 1rem;'

@@ -98,7 +98,7 @@ def capture(data, directory, target):
         if row.get('required') and state['status']!='included':
             raise ValueError(backend_message('Anexo obligatorio pendiente: {p0} / Required annex not included', p0=row['name']))
         if not row.get('include'): continue
-        if state['status']!='included': raise ValueError(state.get('error','Anexo seleccionado sin archivo / Selected annex has no file'))
+        if state['status']!='included': raise ValueError(state.get('error', backend_message('Anexo seleccionado sin archivo / Selected annex has no file', en='Selected annex has no file', pt='O anexo selecionado não possui arquivo')))
         blob=read(directory,row);name='anexos/'+row['name']
         dest=Path(target)/name;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(blob)
         result[name]={'sha256':sha256(blob).hexdigest(),'bytes':len(blob)}

@@ -20,7 +20,7 @@ PROFILE = 'enterprise-control-review'
 
 def test_every_catalog_profile_has_bilingual_purpose_metadata():
     for profile in lib.catalog()['profiles']:
-        assert set(profile['description']) == {'es', 'en'}
+        assert set(profile['description']) == {'es', 'en', 'pt'}
         assert all(20 <= len(text) <= 180 for text in profile['description'].values())
         categories = profile['categories']
         assert len(categories) == len(set(categories))

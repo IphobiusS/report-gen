@@ -2,6 +2,7 @@
  * continue through the shared editor save manager. */
 const CVSSEditor = (() => {
 'use strict';
+const w=(es,en,pt)=>uiText(es,en,pt);
 const {metrics: CV, compute: cvssCompute, parse: cvssParse} = CVSS31;
 // Etiquetas de metricas 4.0 (solo UI; la logica vive en cvss40.js).
 const CVSS_TIP = {
@@ -35,12 +36,38 @@ const METRIC_NAME = {
   en: { AV:"Attack vector", AC:"Complexity", AT:"Requirements", PR:"Privileges", UI:"Interaction",
         VC:"Confidentiality", VI:"Integrity", VA:"Availability",
         SC:"Subseq. conf.", SI:"Subseq. integ.", SA:"Subseq. avail.",
-        S:"Scope", C:"Confidentiality", I:"Integrity", A:"Availability" }
+        S:"Scope", C:"Confidentiality", I:"Integrity", A:"Availability" },
+  pt: { AV:"Vetor de ataque", AC:"Complexidade", AT:"Requisitos", PR:"Privilégios", UI:"Interação",
+        VC:"Confidencialidade", VI:"Integridade", VA:"Disponibilidade",
+        SC:"Conf. subsequente", SI:"Integr. subsequente", SA:"Disp. subsequente",
+        S:"Escopo", C:"Confidencialidade", I:"Integridade", A:"Disponibilidade" }
 };
+const METRIC_TIP_PT = {
+  AV:"Vetor de ataque: por onde ocorre a exploração (Rede/Adjacente/Local/Físico)",
+  AC:"Complexidade do ataque: condições para explorar (Baixa/Alta)",
+  AT:"Requisitos do ataque: pré-requisitos (Nenhum/Presente)",
+  PR:"Privilégios necessários: privilégios prévios (Nenhum/Baixo/Alto)",
+  UI:"Interação do usuário: participação da vítima (Nenhuma/Passiva/Ativa)",
+  VC:"Confidencialidade do sistema vulnerável", VI:"Integridade do sistema vulnerável",
+  VA:"Disponibilidade do sistema vulnerável", SC:"Confidencialidade dos sistemas subsequentes",
+  SI:"Integridade dos sistemas subsequentes", SA:"Disponibilidade dos sistemas subsequentes",
+  S:"Escopo: mudança de escopo (Inalterado/Alterado)", C:"Impacto na confidencialidade",
+  I:"Impacto na integridade", A:"Impacto na disponibilidade"
+};
+const OPTION_NAMES = {
+  Network:['Red','Network','Rede'], Adjacent:['Adyacente','Adjacent','Adjacente'],
+  Local:['Local','Local','Local'], Physical:['Físico','Physical','Físico'],
+  Low:['Bajo','Low','Baixo'], High:['Alto','High','Alto'], None:['Ninguno','None','Nenhum'],
+  Present:['Presente','Present','Presente'], Passive:['Pasiva','Passive','Passiva'],
+  Active:['Activa','Active','Ativa'], Required:['Requerida','Required','Necessária'],
+  Unchanged:['Sin cambio','Unchanged','Inalterado'], Changed:['Cambiado','Changed','Alterado']
+};
+function metricOption(name){return OPTION_NAMES[name]?w(...OPTION_NAMES[name]):name;}
+function metricTip(key){return S.uiLang==='pt'?METRIC_TIP_PT[key]:S.uiLang==='en'?METRIC_NAME.en[key]:CVSS_TIP[key];}
 function cvssMetricLabel(k, val, version) {
   const opts = version === "4.0" ? CVSS4_OPTS[k] : (CV.OPTS || {})[k];
   const o = (opts || []).find(x => x[0] === val);
-  return o ? o[1] : (val || "—");
+  return o ? metricOption(o[1]) : (val || "—");
 }
 function cvssPanel(r, dict, version) {
   const lang = S.uiLang || "es";
@@ -49,7 +76,7 @@ function cvssPanel(r, dict, version) {
   const top = h("div", { class: "cvss-panel-top" });
   top.append(h("div", { class: "cvss-scorecard sc-" + r.severity },
     h("div", { class: "cvss-score-big" }, r.score.toFixed(1)),
-    h("div", { class: "tag sev-" + r.severity }, r.severity)));
+    h("div", { class: "tag sev-" + r.severity }, ({info:w('Informativa','Informational','Informativa'),low:w('Baja','Low','Baixa'),medium:w('Media','Medium','Média'),high:w('Alta','High','Alta'),critical:w('Crítica','Critical','Crítica')})[r.severity] || r.severity)));
   if (version === "4.0" && r.macrovector) {
     top.append(h("div", { class: "cvss-mvcard" },
       h("div", { class: "cvss-mv-lbl" }, "MacroVector"),
@@ -57,7 +84,7 @@ function cvssPanel(r, dict, version) {
       h("div", { class: "cvss-mv-sub" }, "CVSS 4.0")));
   } else {
     top.append(h("div", { class: "cvss-mvcard" },
-      h("div", { class: "cvss-mv-lbl" }, lang === "es" ? "Versión" : "Version"),
+      h("div", { class: "cvss-mv-lbl" }, w('Versión','Version','Versão')),
       h("div", { class: "cvss-mv-val" }, "CVSS " + version)));
   }
   wrap.append(top);
@@ -66,7 +93,7 @@ function cvssPanel(r, dict, version) {
   keys.forEach(k => grid.append(h("div", { class: "cvss-metric" },
     h("span", { class: "cm-k" }, nm[k] || k),
     h("span", { class: "cm-v" }, cvssMetricLabel(k, dict[k], version)))));
-  wrap.append(h("div", { class: "cvss-metrics-title" }, lang === "es" ? "Métricas principales" : "Key metrics"), grid);
+  wrap.append(h("div", { class: "cvss-metrics-title" }, w('Métricas principales','Key metrics','Métricas principais')), grid);
   wrap.append(h("div", { class: "cvss-vecrow" }, h("code", { class: "cvss-vec" }, r.vector), copyVectorBtn(r.vector)));
   return wrap;
 }
@@ -115,7 +142,7 @@ function applyPastedVector(f, raw, errEl) {
 function cvssWidget(f, sevSel) {
   const version=f.cvss_version||"3.1";
   const wrap = h("div", { style: "margin-top:10px" });
-  const verSel = h("select", { "aria-label":S.uiLang==="en"?"CVSS version":"Versión de CVSS", style: "width:auto;display:inline-block;margin-left:8px",
+  const verSel = h("select", { "aria-label":w('Versión de CVSS','CVSS version','Versão do CVSS'), style: "width:auto;display:inline-block;margin-left:8px",
     onchange: e => {
       f.cvss_version = e.target.value;
       f.cvss = ""; f.cvss_vector = ""; f.macrovector = "";  // estado incompatible entre versiones
@@ -150,8 +177,8 @@ function cvss31Widget(f, sevSel) {
     scheduleSave(); renderSidebar();
   }
   CV.M.forEach(k => {
-    const sel = h("select", { title: (S.uiLang==="en"?METRIC_NAME.en[k]:CVSS_TIP[k]) || "", onchange: e => { metrics[k] = e.target.value; refresh(); } },
-      CV.OPTS[k].map(o => h("option", { value: o[0], selected: metrics[k] === o[0] ? "" : null }, `${k}: ${o[1]}`)));
+    const sel = h("select", { title: metricTip(k) || "", onchange: e => { metrics[k] = e.target.value; refresh(); } },
+      CV.OPTS[k].map(o => h("option", { value: o[0], selected: metrics[k] === o[0] ? "" : null }, `${k}: ${metricOption(o[1])}`)));
     bx.append(h("div", { class: "m" }, sel));
   });
   c.append(bx, out);
@@ -162,7 +189,7 @@ function cvss31Widget(f, sevSel) {
 
 function cvss4Widget(f, sevSel) {
   const c = h("div", {});
-  if (!window.CVSS40) { c.append(h("p", { class: "cvss-vec" }, S.uiLang==="en"?"CVSS 4.0 calculator could not load":"No se pudo cargar la calculadora CVSS 4.0")); return c; }
+  if (!window.CVSS40) { c.append(h("p", { class: "cvss-vec" }, w('No se pudo cargar la calculadora CVSS 4.0','CVSS 4.0 calculator could not load','Não foi possível carregar a calculadora CVSS 4.0'))); return c; }
   const C = window.CVSS40;
   const base = {};
   // The controls edit base metrics, but the score and saved vector must retain
@@ -173,9 +200,10 @@ function cvss4Widget(f, sevSel) {
   }
   CVSS4_BASE.forEach(k => { if (!base[k]) base[k] = CVSS4_OPTS[k][0][0]; });
   if (Object.keys(base).some(k => !CVSS4_BASE.includes(k))) {
-    c.append(h('p', {class:'field-hint'}, S.uiLang === 'en'
-      ? 'Optional metrics in the pasted vector are included in the score and preserved when editing base metrics. Edit the full vector to change them.'
-      : 'Las métricas opcionales del vector pegado se incluyen en la puntuación y se conservan al editar las métricas base. Modifica el vector completo para cambiarlas.'));
+    c.append(h('p', {class:'field-hint'}, w(
+      'Las métricas opcionales del vector pegado se incluyen en la puntuación y se conservan al editar las métricas base. Modifica el vector completo para cambiarlas.',
+      'Optional metrics in the pasted vector are included in the score and preserved when editing base metrics. Edit the full vector to change them.',
+      'As métricas opcionais do vetor colado são incluídas na pontuação e preservadas ao editar as métricas base. Edite o vetor completo para alterá-las.')));
   }
   const bx = h("div", { class: "cvssbox" });
   const out = h("div", { class: "cvssout" });
@@ -190,8 +218,8 @@ function cvss4Widget(f, sevSel) {
     draw(r); scheduleSave(); renderSidebar();
   }
   CVSS4_BASE.forEach(k => {
-    const sel = h("select", { title: (S.uiLang==="en"?METRIC_NAME.en[k]:CVSS_TIP[k]) || "", onchange: e => { base[k] = e.target.value; refresh(); } },
-      CVSS4_OPTS[k].map(o => h("option", { value: o[0], selected: base[k] === o[0] ? "" : null }, `${k}: ${o[1]}`)));
+    const sel = h("select", { title: metricTip(k) || "", onchange: e => { base[k] = e.target.value; refresh(); } },
+      CVSS4_OPTS[k].map(o => h("option", { value: o[0], selected: base[k] === o[0] ? "" : null }, `${k}: ${metricOption(o[1])}`)));
     bx.append(h("div", { class: "m" }, sel));
   });
   c.append(bx, out);

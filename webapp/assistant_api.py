@@ -29,7 +29,7 @@ def register(api):
     @app.get('/api/assistant/capabilities')
     def capabilities():
         return jsonify(available=True, optional=True, endpoint=assistant.ENDPOINT, fields=assistant.FIELDS,
-                       cloud_warning=assistant.CLOUD_WARNING, connected=False,
+                       cloud_warning=assistant.cloud_warning(), connected=False,
                        requires='Ollama + downloaded GGUF + cloud disabled', auto_send=False)
 
     @app.post('/api/assistant/models')
@@ -37,7 +37,7 @@ def register(api):
         body = api._json_dict()
         if body:
             abort(422, backend_message('No se admiten URLs ni opciones de red / Network options are not accepted'))
-        return jsonify(models=assistant.models(deadline=time.monotonic() + 10), endpoint=assistant.ENDPOINT, cloud_warning=assistant.CLOUD_WARNING)
+        return jsonify(models=assistant.models(deadline=time.monotonic() + 10), endpoint=assistant.ENDPOINT, cloud_warning=assistant.cloud_warning())
 
     @app.post('/api/projects/<slug>/assistant')
     def proposal(slug):

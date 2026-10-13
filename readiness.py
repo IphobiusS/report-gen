@@ -3,6 +3,7 @@
 The saved project and its existing review remain authoritative. Nothing here
 stores a second copy of editorial decisions or acknowledges warnings.
 """
+from languages import language_index
 import attachments
 import publication
 import validate
@@ -58,7 +59,7 @@ def docx_url_compatibility(data, directory, lang='es'):
             key = section.get('id') if section is not None else 'cover'
             path = f'report.sections[{sections[key]}]' if key in sections else 'meta'
             heading = section.xpath('./h1|./h2') if section is not None else []
-            label = heading[0].text_content().strip() if heading else ('Portada' if lang == 'es' else 'Cover')
+            label = heading[0].text_content().strip() if heading else ('Portada', 'Cover', 'Capa')[language_index(lang)]
             location = dict(path=path, section_key=key, label=label)
         identity = (location.get('finding_uid'), location.get('section_key'), path)
         entry = locations.setdefault(identity, {**location, 'count': 0})
@@ -69,24 +70,24 @@ def docx_url_compatibility(data, directory, lang='es'):
 
 
 def checklist(data, directory, issues, lang='es'):
-    en = lang == 'en'
-    def tr(es, english): return english if en else es
+    index = language_index(lang)
+    def tr(es, english, portuguese): return (es, english, portuguese)[index]
     errors = sum(item['level'] == 'error' for item in issues)
     warnings = len(issues) - errors
     checks = [dict(key='review', status='blocked' if errors else 'attention' if warnings else 'checked',
-                   title=tr('Revisión del informe', 'Report review'),
+                   title=tr('Revisión del informe', 'Report review', 'Revisão do relatório'),
                    detail=tr(f'{errors} errores y {warnings} avisos en la revisión guardada.',
-                             f'{errors} errors and {warnings} warnings in the saved review.'),
+                             f'{errors} errors and {warnings} warnings in the saved review.', f'{errors} erros e {warnings} avisos na revisão salva.'),
                    counts=dict(errors=errors, warnings=warnings))]
     compatibility = None
     structural = validate.structure_issues(data, lang)
     if structural:
-        for key, title in [('annexes', tr('Anexos de la entrega', 'Delivery annexes')),
-                           ('secrets', tr('Posibles secretos', 'Possible secrets')),
-                           ('associations', tr('Asociaciones de evidencia', 'Evidence associations'))]:
+        for key, title in [('annexes', tr('Anexos de la entrega', 'Delivery annexes', 'Anexos da entrega')),
+                           ('secrets', tr('Posibles secretos', 'Possible secrets', 'Possíveis segredos')),
+                           ('associations', tr('Asociaciones de evidencia', 'Evidence associations', 'Associações de evidências'))]:
             checks.append(dict(key=key, status='not_checked', title=title,
                                detail=tr('Corrige la estructura del informe antes de comprobar este punto.',
-                                         'Correct the report structure before checking this item.')))
+                                         'Correct the report structure before checking this item.', 'Corrija a estrutura do relatório antes de verificar este item.')))
     else:
         rows = attachments.inventory(data, directory)
         selected = sum(row['status'] == 'included' for row in rows)
@@ -96,9 +97,9 @@ def checklist(data, directory, issues, lang='es'):
         pending_review = sum(not row['reviewed'] for row in rows)
         checks.append(dict(key='annexes',
             status='blocked' if required_pending or selected_missing else 'attention' if excluded or pending_review else 'checked',
-            title=tr('Anexos de la entrega', 'Delivery annexes'),
+            title=tr('Anexos de la entrega', 'Delivery annexes', 'Anexos da entrega'),
             detail=tr(f'{selected} incluidos; {excluded} excluidos; {pending_review} sin revisión registrada; {required_pending} obligatorios pendientes. La revisión registrada es una decisión humana; los anexos no se censuran automáticamente.',
-                      f'{selected} included; {excluded} excluded; {pending_review} without recorded review; {required_pending} required annexes pending. Recorded review is a human decision; annexes are not automatically redacted.'),
+                      f'{selected} included; {excluded} excluded; {pending_review} without recorded review; {required_pending} required annexes pending. Recorded review is a human decision; annexes are not automatically redacted.', f'{selected} incluídos; {excluded} excluídos; {pending_review} sem revisão registrada; {required_pending} anexos obrigatórios pendentes. A revisão registrada é uma decisão humana; os anexos não são ocultados automaticamente.'),
             counts=dict(included=selected, excluded=excluded, unreviewed=pending_review,
                         required_pending=required_pending, selected_missing=selected_missing)))
         try:
@@ -108,16 +109,16 @@ def checklist(data, directory, issues, lang='es'):
             exceptions = sum(bool(alert['reason'].strip()) for alert in alerts)
             pending = len(alerts) - exceptions
             checks.append(dict(key='secrets', status='attention' if pending else 'checked',
-                title=tr('Posibles secretos', 'Possible secrets'),
+                title=tr('Posibles secretos', 'Possible secrets', 'Possíveis segredos'),
                 detail=tr(f'{pending} coincidencias sin excepción y {exceptions} con justificación en el texto que se publicará. Los patrones pueden omitir secretos; las imágenes y el contenido de los anexos necesitan revisión manual.',
-                          f'{pending} matches without an exception and {exceptions} with a reason in outgoing text. Patterns can miss secrets; images and annex contents need manual review.'),
+                          f'{pending} matches without an exception and {exceptions} with a reason in outgoing text. Patterns can miss secrets; images and annex contents need manual review.', f'{pending} correspondências sem exceção e {exceptions} com justificativa no texto a publicar. Os padrões podem deixar de identificar segredos; imagens e conteúdo dos anexos exigem revisão manual.'),
                 counts=dict(unresolved=pending, excepted=exceptions), scope='outgoing_text_patterns'))
         except (ValueError, OSError):
             # Do not return rendered text, secret previews or resource paths in
             # this aggregate. The normal review/inspector provides diagnosis.
-            checks.append(dict(key='secrets', status='not_checked', title=tr('Posibles secretos', 'Possible secrets'),
+            checks.append(dict(key='secrets', status='not_checked', title=tr('Posibles secretos', 'Possible secrets', 'Possíveis segredos'),
                 detail=tr('No se pudo inspeccionar la publicación. Revisa los errores y vuelve a abrir el inspector.',
-                          'Publication could not be inspected. Review errors and reopen the inspector.')))
+                          'Publication could not be inspected. Review errors and reopen the inspector.', 'Não foi possível inspecionar a publicação. Revise os erros e abra o inspetor novamente.')))
         association_issues = [item for item in issues if
             item.get('path', '').endswith(('.asset_uids', '.evidence_uids', '.asset_uid')) or
             ('.retests[' in item.get('path', '') and item['level'] == 'error') or
@@ -129,13 +130,13 @@ def checklist(data, directory, issues, lang='es'):
                       for uid in row.get('evidence_uids', []))
         unassociated = sum(row['uid'] not in linked for row in data.get('evidence', []))
         checks.append(dict(key='associations', status='blocked' if broken else 'attention' if attention or unassociated else 'checked',
-            title=tr('Asociaciones de evidencia', 'Evidence associations'),
+            title=tr('Asociaciones de evidencia', 'Evidence associations', 'Associações de evidências'),
             detail=tr(f'{broken} errores de referencia; {attention} avisos de asociación; {unassociated} evidencias registradas sin asociación explícita a un hallazgo o retest. Una referencia válida no demuestra que la evidencia pruebe el hallazgo.',
-                      f'{broken} reference errors; {attention} association warnings; {unassociated} registered evidence items without an explicit finding or retest association. A valid reference does not establish that evidence proves the finding.'),
+                      f'{broken} reference errors; {attention} association warnings; {unassociated} registered evidence items without an explicit finding or retest association. A valid reference does not establish that evidence proves the finding.', f'{broken} erros de referência; {attention} avisos de associação; {unassociated} evidências registradas sem associação explícita a um achado ou reteste. Uma referência válida não demonstra que a evidência comprove o achado.'),
             counts=dict(errors=broken, warnings=attention, without_explicit_association=unassociated)))
-    checks.append(dict(key='human_review', status='manual', title=tr('Revisión humana', 'Human review'),
+    checks.append(dict(key='human_review', status='manual', title=tr('Revisión humana', 'Human review', 'Revisão humana'),
         detail=tr('Revisa alcance, hechos, severidad, reproducción y destinatario; abre los archivos generados antes de enviarlos. Esta lista no valida técnicamente el pentest ni autoriza su publicación.',
-                  'Review scope, facts, severity, reproduction and recipient; open generated files before sending. This checklist does not technically validate the pentest or authorize publication.')))
+                  'Review scope, facts, severity, reproduction and recipient; open generated files before sending. This checklist does not technically validate the pentest or authorize publication.', 'Revise o escopo, os fatos, a severidade, a reprodução e o destinatário; abra os arquivos gerados antes de enviá-los. Esta lista não valida tecnicamente o pentest nem autoriza sua publicação.')))
     result = dict(version=1, source='saved_project', technical_validation=False,
                   manual_review_required=True, checks=checks)
     if compatibility and compatibility['count']:

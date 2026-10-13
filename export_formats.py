@@ -11,6 +11,7 @@ class Format:
     filename: str
     label_es: str
     label_en: str
+    label_pt: str
     renderer: str
     inspector: str
     container: str
@@ -29,12 +30,12 @@ class Format:
 
 REGISTRY = {
     spec.key: spec for spec in (
-        Format('pdf', 'pdf', 'application/pdf', 'informe.pdf', 'PDF', 'PDF', '_write_pdf', 'inspect_pdf', 'pdf'),
+        Format('pdf', 'pdf', 'application/pdf', 'informe.pdf', 'PDF', 'PDF', 'PDF', '_write_pdf', 'inspect_pdf', 'pdf'),
         Format('docx', 'docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-               'informe.docx', 'Word', 'Word', '_write_docx', 'inspect_archive', 'zip'),
-        Format('md', 'zip', 'application/zip', 'markdown.zip', 'Markdown + imágenes', 'Markdown + images',
+               'informe.docx', 'Word', 'Word', 'Word', '_write_docx', 'inspect_archive', 'zip'),
+        Format('md', 'zip', 'application/zip', 'markdown.zip', 'Markdown + imágenes', 'Markdown + images', 'Markdown + imagens',
                '_write_markdown', 'inspect_archive', 'zip'),
-        Format('html', 'html', 'text/html', 'informe.html', 'HTML portátil', 'Portable HTML',
+        Format('html', 'html', 'text/html', 'informe.html', 'HTML portátil', 'Portable HTML', 'HTML portátil',
                '_write_html', 'inspect_html', 'html'),
     )
 }
@@ -49,4 +50,4 @@ def get(key):
 
 def catalog():
     return [dict(key=s.key, extension=s.extension, mime=s.mime, filename=s.filename,
-                 label_es=s.label_es, label_en=s.label_en, checks=s.inspector) for s in REGISTRY.values()]
+                 label_es=s.label_es, label_en=s.label_en, label_pt=s.label_pt, checks=s.inspector) for s in REGISTRY.values()]

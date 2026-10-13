@@ -2,11 +2,11 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.34.5
+# report-gen 0.35.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
-[Español](README.md) · [Full guide](docs/guide.en.md) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md)
+[Español](README.md) · [Português (Brasil)](README.pt.md) · [Full guide](docs/guide.en.md) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md)
 
 ## Install and launch
 
@@ -31,7 +31,7 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 2. In the project, **Suggested next action** follows what you have written so far. **View this step in the guide** opens the relevant help. Guidance does not fill in or validate assessment data for you.
 3. Save, review the **Publication inspector**, and generate the formats you need from **Deliver**. Open the files before sharing them and keep a private project backup.
 
-**Visual tutorial** is available from the menu, with enlargable ES/EN screenshots and local progress. The first-entry invitation can be skipped.
+**Visual tutorial** is available from the menu, with enlargable ES/EN/PT screenshots and local progress. The first-entry invitation can be skipped.
 
 [Complete walkthrough and recommendations](docs/guide.en.md#first-report).
 
@@ -51,7 +51,13 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
-## New in 0.34.5
+## New in 0.35.0
+
+Brazilian Portuguese joins Spanish and English across the editor, server messages, tutorial, design gallery and all four report formats. An explicit selector controls interface language; report language remains separate, and switching either preserves authored content.
+
+Section labels now refresh immediately when report language changes. Section-based Markdown reports also retain the appendix introduction. Checks cover translation catalogs and placeholders, Portuguese exports and tutorial journeys in all three languages.
+
+### Retained corrections from 0.34.5
 
 Word contents reserve room for the page number when a title fills almost the entire line. Long captions can continue across pages without making their figure disappear; HTML, PDF and Markdown preserve their line breaks. Markdown also supports empty captions without displaying asterisks. Retest tables nested in quotations or lists use the available page space, and undated retests no longer display an empty separator.
 
@@ -63,9 +69,9 @@ An [optional LibreOffice extension](docs/guide.en.md#optional-libreoffice-extens
 
 ## Export and visual tutorial
 
-Left, center and right alignment in Markdown tables is preserved on export. PDF verification checks each finding's content within its region, so a copy in the contents or summary cannot conceal missing text. Long URLs in ordinary text no longer overflow the PDF; verification avoids unnecessary ambiguous searches. On Linux and macOS, a supervisor keeps the job's process group reserved until cleanup, even if the worker exits early. Publication also requires macOS, stable LibreOffice and WebKit checks, plus a project and bilingual tutorial journey in native desktop Safari. This automated journey has a defined scope; it does not substitute for native Microsoft Word or human screen-reader review.
+Left, center and right alignment in Markdown tables is preserved on export. PDF verification checks each finding's content within its region, so a copy in the contents or summary cannot conceal missing text. Long URLs in ordinary text no longer overflow the PDF; verification avoids unnecessary ambiguous searches. On Linux and macOS, a supervisor keeps the job's process group reserved until cleanup, even if the worker exits early. Publication also requires macOS, stable LibreOffice and WebKit checks, plus a project and trilingual tutorial journey in native desktop Safari. This automated journey has a defined scope; it does not substitute for native Microsoft Word or human screen-reader review.
 
-**Visual tutorial** offers an optional invitation on first entry and remains available in the menu. Its six steps include real Spanish and English screenshots: template, report details, findings, evidence, review, and delivery with a backup. Enlarge screenshots, resume your place or restart without changing your projects. It works locally, including when the browser cannot save progress.
+**Visual tutorial** offers an optional invitation on first entry and remains available in the menu. Its six steps include real Spanish, English and Portuguese screenshots: template, report details, findings, evidence, review, and delivery with a backup. Enlarge screenshots, resume your place or restart without changing your projects. It works locally, including when the browser cannot save progress.
 
 PDF export reduces layout work for long literal URLs. It preserves selectable text and complete destinations with a default 300-second budget, configurable from 30 to 600, and without removing report checks. Regressions cover tables with 72 URLs longer than 300 characters, both languages and the six general designs. A paragraph is no longer falsely rejected when a complete URL continues across pages.
 
@@ -93,7 +99,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.34.5 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.35.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

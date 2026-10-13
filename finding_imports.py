@@ -17,16 +17,16 @@ MAX_BYTES = 4 * 1024 * 1024
 MAX_ROWS = 500
 FIELDS = ('title', 'severity', 'affected', 'description_md', 'impact_md', 'remediation_md',
           'cvss_vector', 'cwe', 'references', 'external_id')
-ALIASES = {'title': ('title', 'name', 'titulo', 'título'), 'severity': ('severity', 'severidad', 'risk'),
-           'affected': ('affected', 'host', 'url', 'target', 'objetivo'),
-           'description_md': ('description_md', 'description', 'descripción', 'descripcion'),
+ALIASES = {'title': ('title', 'name', 'titulo', 'título'), 'severity': ('severity', 'severidad', 'risk', 'severidade'),
+           'affected': ('affected', 'host', 'url', 'target', 'objetivo', 'alvo'),
+           'description_md': ('description_md', 'description', 'descripción', 'descripcion', 'descrição', 'descricao'),
            'impact_md': ('impact_md', 'impact', 'impacto'),
-           'remediation_md': ('remediation_md', 'remediation', 'remediación', 'solución'),
+           'remediation_md': ('remediation_md', 'remediation', 'remediación', 'solución', 'remediação', 'remediacao', 'solução', 'solucao'),
            'cvss_vector': ('cvss_vector', 'vector'), 'cwe': ('cwe',),
-           'references': ('references', 'referencias'), 'external_id': ('external_id', 'id')}
+           'references': ('references', 'referencias', 'referências'), 'external_id': ('external_id', 'id')}
 SEVERITIES = {'critical': 'critical', 'crítica': 'critical', 'critica': 'critical',
-              'high': 'high', 'alta': 'high', 'medium': 'medium', 'media': 'medium',
-              'low': 'low', 'baja': 'low', 'information': 'info', 'informational': 'info',
+              'high': 'high', 'alta': 'high', 'medium': 'medium', 'media': 'medium', 'média': 'medium',
+              'low': 'low', 'baja': 'low', 'baixa': 'low', 'information': 'info', 'informational': 'info',
               'info': 'info', 'informativa': 'info'}
 
 
@@ -148,7 +148,7 @@ def preview(body, data):
     if kind == 'nmap':
         return scanner_imports.nmap_preview(raw, data, origin)
     headers, mapping, rows = (_csv(raw, body.get('mapping')) if kind == 'csv' else
-                              scanner_imports.nuclei(raw) if kind == 'nuclei' else _burp(raw))
+                              scanner_imports.nuclei(raw, data.get('meta', {}).get('lang', 'es')) if kind == 'nuclei' else _burp(raw))
     seen = {fingerprint(f) for f in data.get('findings', [])}
     seen.update(f['import_source']['fingerprint'] for f in data.get('findings', []) if f.get('import_source'))
     project_seen=set(seen)
@@ -161,15 +161,15 @@ def preview(body, data):
         refs = source.get('references', [])
         f['references'] = refs if isinstance(refs, list) else [x.strip() for x in refs.splitlines() if x.strip()]
         errors = []
-        if not f['title'].strip(): errors.append('Falta título / Missing title')
-        if not f['severity']: errors.append('Severidad desconocida / Unknown severity')
+        if not f['title'].strip(): errors.append(backend_message('Falta título / Missing title', en='Missing title', pt='Título ausente'))
+        if not f['severity']: errors.append(backend_message('Severidad desconocida / Unknown severity', en='Unknown severity', pt='Severidade desconhecida'))
         if f['cvss_vector']:
             try:
                 score = cvss.score(f['cvss_vector'])
                 f.update(cvss=score['score'], cvss_version=f['cvss_vector'].split('/')[0].split(':')[1])
-                if score['severity'] != f['severity']: errors.append('La severidad no coincide con CVSS / Severity differs from CVSS')
+                if score['severity'] != f['severity']: errors.append(backend_message('La severidad no coincide con CVSS / Severity differs from CVSS', en='Severity differs from CVSS', pt='A severidade não corresponde ao CVSS'))
             except ValueError:
-                errors.append('Vector CVSS inválido / Invalid CVSS vector')
+                errors.append(backend_message('Vector CVSS inválido / Invalid CVSS vector', en='Invalid CVSS vector', pt='Vetor CVSS inválido'))
         key = fingerprint(f)
         duplicate = key in seen
         if not errors: seen.add(key)

@@ -29,7 +29,7 @@ jobs:
           python -m pip install -e '.[dev]' -c requirements-audited.txt
       - name: Enable Apple's native WebDriver
         run: sudo /usr/bin/safaridriver --enable
-      - name: Real bilingual project and tutorial in native Safari
+      - name: Real trilingual project and tutorial in native Safari
         timeout-minutes: 6
         run: python scripts/verify-native-safari.py --output out/native-safari
       - name: Preserve native browser identity, checks and screenshots

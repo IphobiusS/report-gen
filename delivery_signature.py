@@ -4,6 +4,7 @@ The detached JSON binds the entire ZIP and the exact manifest bytes. The ZIP is
 never modified or extracted. No server endpoint accepts or stores private keys.
 Cryptography is loaded only when an Ed25519 operation is explicitly requested.
 """
+from languages import language_argument, language_index
 from contextlib import contextmanager
 from hashlib import sha256
 from pathlib import Path
@@ -428,54 +429,54 @@ def verify_delivery(archive, signature, public_key):
 def main(argv=None):
     argv = list(sys.argv[1:] if argv is None else argv)
     selector = argparse.ArgumentParser(add_help=False)
-    selector.add_argument('--lang', choices=('es', 'en'), default='es')
+    selector.add_argument('--lang', type=language_argument, choices=('es', 'en', 'pt'), default='es')
     selected, argv = selector.parse_known_args(argv)
     with language_scope(selected.lang):
-        def prose(es, en):
+        def prose(es, en, pt):
             # Console help/status prose is authored here, not user content.
-            return en if current_language() == 'en' else es
+            return (es, en, pt)[language_index(current_language())]
         parser = argparse.ArgumentParser(description=prose('Firma local opcional de entregas exactas',
-            'Optional local signing of exact deliveries'), parents=[selector])
+            'Optional local signing of exact deliveries', 'Assinatura local opcional de entregas exatas'), parents=[selector])
         commands = parser.add_subparsers(dest='command', required=True)
-        generate = commands.add_parser('keygen', help=prose('Genera claves Ed25519 nuevas', 'Generate new Ed25519 keys'))
+        generate = commands.add_parser('keygen', help=prose('Genera claves Ed25519 nuevas', 'Generate new Ed25519 keys', 'Gera novas chaves Ed25519'))
         generate.add_argument('--private-key', required=True, help=prose('PEM fuera de app/proyectos, 0600',
-                                                                       'PEM outside app/projects, mode 0600'))
+                                                                       'PEM outside app/projects, mode 0600', 'PEM fora do aplicativo/projetos, modo 0600'))
         generate.add_argument('--public-key', required=True)
-        sign = commands.add_parser('sign', help=prose('Firma un ZIP de entrega existente', 'Sign an existing delivery ZIP'))
+        sign = commands.add_parser('sign', help=prose('Firma un ZIP de entrega existente', 'Sign an existing delivery ZIP', 'Assina um ZIP de entrega existente'))
         sign.add_argument('archive')
         sign.add_argument('--private-key', required=True)
         sign.add_argument('--signature', required=True)
         verify = commands.add_parser('verify', help=prose('Verifica con una clave pública externa fijada',
-                                                        'Verify with an externally pinned public key'))
+                                                        'Verify with an externally pinned public key', 'Verifica com uma chave pública externa previamente fixada'))
         verify.add_argument('archive')
         verify.add_argument('--signature', required=True)
         verify.add_argument('--public-key', required=True)
         fingerprint = commands.add_parser('fingerprint', help=prose('Calcula la huella de una clave pública Ed25519',
-            'Compute the fingerprint of an Ed25519 public key'))
+            'Compute the fingerprint of an Ed25519 public key', 'Calcula a impressão digital de uma chave pública Ed25519'))
         fingerprint.add_argument('--public-key', required=True)
         args = parser.parse_args(argv)
         try:
             if args.command == 'keygen':
                 result = generate_keypair(args.private_key, args.public_key)
                 message = prose('Claves locales creadas; conserva la privada fuera de entregas y comparte la pública por un canal confiable',
-                    'Local keys created; keep the private key outside deliveries and share the public key through a trusted channel')
+                    'Local keys created; keep the private key outside deliveries and share the public key through a trusted channel', 'Chaves locais criadas; mantenha a chave privada fora das entregas e compartilhe a pública por um canal confiável')
             elif args.command == 'sign':
                 result = sign_delivery(args.archive, args.private_key, args.signature)
                 message = prose('Firma separada creada para los bytes exactos del ZIP y manifiesto',
-                    'Detached signature created for the exact ZIP and manifest bytes')
+                    'Detached signature created for the exact ZIP and manifest bytes', 'Assinatura separada criada para os bytes exatos do ZIP e do manifesto')
             elif args.command == 'fingerprint':
                 result = public_key_fingerprint(args.public_key)
                 message = prose('Huella SHA-256 de los 32 bytes públicos Ed25519; confirma su origen por un canal confiable',
-                    'SHA-256 fingerprint of the 32 Ed25519 public bytes; confirm its origin through a trusted channel')
+                    'SHA-256 fingerprint of the 32 Ed25519 public bytes; confirm its origin through a trusted channel', 'Impressão digital SHA-256 dos 32 bytes públicos Ed25519; confirme a origem por um canal confiável')
             else:
                 result = verify_delivery(args.archive, args.signature, args.public_key)
                 message = prose('Firma verificada con la clave pública externa; no certifica identidad real, hallazgos ni cifrado',
-                    'Signature verified with the external public key; it does not certify real identity, findings or encryption')
+                    'Signature verified with the external public key; it does not certify real identity, findings or encryption', 'Assinatura verificada com a chave pública externa; não certifica identidade real, achados nem criptografia')
             print(json.dumps(dict(result, message=message, language=current_language()), ensure_ascii=False))
             return 0
         except (ValueError, OSError) as exc:
             detail = str(exc) if isinstance(exc, ValueError) else prose('No se pudo acceder al archivo local de firma',
-                                                                       'Unable to access the local signing file')
+                                                                       'Unable to access the local signing file', 'Não foi possível acessar o arquivo local de assinatura')
             print(json.dumps({'error': detail, 'language': current_language()}, ensure_ascii=False), file=sys.stderr)
             return 1
 

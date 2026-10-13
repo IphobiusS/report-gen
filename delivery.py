@@ -1,4 +1,5 @@
 """Client deliveries built from one private, immutable source snapshot."""
+from languages import normalize_language, language_index
 from error_messages import message as backend_message
 from error_messages import current_language
 from copy import deepcopy
@@ -27,26 +28,24 @@ def public_warnings(issues, language='es'):
     history, or source text before redaction. The client manifest must not copy
     messages, paths, finding identities, or help strings across that boundary.
     """
-    en = language == 'en'
     labels = {
-        'findings': ('Aviso de hallazgo revisado', 'Finding warning reviewed'),
-        'coverage': ('Aviso de cobertura revisado', 'Coverage warning reviewed'),
-        'root_cause_groups': ('Aviso de causa raíz revisado', 'Root cause warning reviewed'),
-        'attachments': ('Aviso de anexo revisado', 'Annex warning reviewed'),
-        'publication': ('Aviso de publicación revisado', 'Publication warning reviewed'),
-        'report': ('Aviso de validación revisado', 'Validation warning reviewed'),
-        'audience': ('Aviso de alcance del extracto revisado', 'Derivative scope warning reviewed'),
+        'findings': ('Aviso de hallazgo revisado', 'Finding warning reviewed', 'Aviso de achado revisado'),
+        'coverage': ('Aviso de cobertura revisado', 'Coverage warning reviewed', 'Aviso de cobertura revisado'),
+        'root_cause_groups': ('Aviso de causa raíz revisado', 'Root cause warning reviewed', 'Aviso de causa raiz revisado'),
+        'attachments': ('Aviso de anexo revisado', 'Annex warning reviewed', 'Aviso de anexo revisado'),
+        'publication': ('Aviso de publicación revisado', 'Publication warning reviewed', 'Aviso de publicação revisado'),
+        'report': ('Aviso de validación revisado', 'Validation warning reviewed', 'Aviso de validação revisado'),
+        'audience': ('Aviso de alcance del extracto revisado', 'Derivative scope warning reviewed', 'Aviso de escopo da versão derivada revisado'),
     }
     rows = []
     for issue in issues:
         # Only fixed categories leave the source context. Unknown/private paths
         # deliberately share a generic label rather than exposing field names.
         root = re.split(r'[.\[]', str(issue.get('path', '')), maxsplit=1)[0]
-        label = labels.get(root, ('Aviso privado revisado', 'Private warning reviewed'))
+        label = labels.get(root, ('Aviso privado revisado', 'Private warning reviewed', 'Aviso privado revisado'))
         rows.append({'level': 'warning', 'category': root if root in labels else 'private',
-                     'message': label[1 if en else 0],
-                     'details': ('Diagnostic details remain in the private project; review does not establish technical validity.' if en else
-                                 'El detalle del diagnóstico permanece en el proyecto privado; la revisión no acredita validez técnica.')})
+                     'message': label[language_index(language)],
+                     'details': ((('El detalle del diagnóstico permanece en el proyecto privado; la revisión no acredita validez técnica.', 'Diagnostic details remain in the private project; review does not establish technical validity.', 'Os detalhes do diagnóstico permanecem no projeto privado; a revisão não comprova validade técnica.')[language_index(language)]))})
     return rows
 
 
@@ -222,8 +221,8 @@ def build(snapshot, formats, identity, label, captured, output_dir, progress=lam
                 'source_revision': identity, 'files': {}}
     from design_library import guidance
     document=engine.load_engagement(snapshot / 'engagement.yaml')
-    en=document['meta'].get('lang')=='en'
-    manifest['warnings'] = public_warnings(captured['issues'], 'en' if en else 'es')
+    lang=normalize_language(document['meta'].get('lang'))
+    manifest['warnings'] = public_warnings(captured['issues'], lang)
     guide=guidance(document)
     if guide: manifest["design_guidance"]=guide
     output_dir.mkdir()
@@ -249,11 +248,10 @@ def build(snapshot, formats, identity, label, captured, output_dir, progress=lam
         for name in manifest['files']:
             package.write(output_dir / name, name)
         package.writestr('verificacion.json', json.dumps(manifest, ensure_ascii=False, indent=2)+'\n')
-        package.writestr('README.txt' if en else 'LEEME.txt',
-                         (('Delivery: ' if en else 'Entrega: ')+label.strip()+'\n'+
-                          ('Generated with report-gen ' if en else 'Generada con report-gen ')+VERSION+'\n'+
-                          ('All formats come from the same saved revision.\nChecks cover files and basic layout, not the technical validity of findings.\nReviewed warnings: ' if en else
-                           'Todos los formatos proceden de la misma revisión.\nEl registro verifica archivos y composición básica, no la validez técnica de los hallazgos.\nAvisos revisados: ')+str(len(captured['issues']))+'\n'+
-                          ((guide['name']+': '+guide['note']+'\n'+guide['source']+'\n'+('Checked: ' if en else 'Consultado: ')+guide['checked']+'\n') if guide else '')))
+        package.writestr((('LEEME.txt', 'README.txt', 'LEIAME.txt')[language_index(lang)]),
+                         (((('Entrega: ', 'Delivery: ', 'Entrega: ')[language_index(lang)]))+label.strip()+'\n'+
+                          ((('Generada con report-gen ', 'Generated with report-gen ', 'Gerada com report-gen ')[language_index(lang)]))+VERSION+'\n'+
+                          ((('Todos los formatos proceden de la misma revisión.\nEl registro verifica archivos y composición básica, no la validez técnica de los hallazgos.\nAvisos revisados: ', 'All formats come from the same saved revision.\nChecks cover files and basic layout, not the technical validity of findings.\nReviewed warnings: ', 'Todos os formatos vêm da mesma revisão salva.\nAs verificações cobrem os arquivos e a composição básica, não a validade técnica dos achados.\nAvisos revisados: ')[language_index(lang)]))+str(len(captured['issues']))+'\n'+
+                          ((guide['name']+': '+guide['note']+'\n'+guide['source']+'\n'+((('Consultado: ', 'Checked: ', 'Consultado: ')[language_index(lang)]))+guide['checked']+'\n') if guide else '')))
 
     return result.getvalue()

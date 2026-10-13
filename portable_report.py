@@ -163,8 +163,16 @@ RECORD_STYLE = ("""
 """)
 
 
-def prepare_text_flow(tree, en=False):
+def _reader_words(en=False, lang=None):
+    # Boolean arguments remain compatible with older direct callers.
+    from languages import language_index
+    index = language_index(lang if lang is not None else ('en' if en else 'es'))
+    return lambda es, english, pt: (es, english, pt)[index]
+
+
+def prepare_text_flow(tree, en=False, *, lang=None):
     """Wrap literal runs while preserving authored text and ordinary prose."""
+    w = _reader_words(en, lang)
     for node in tree.xpath('//a[@href]|//code[not(ancestor::pre)]|//ul[contains(concat(" ",normalize-space(@class)," ")," refs ")]/li'):
         if re.fullmatch(r'(?:https?|ftp)://\S+', ''.join(node.itertext()).strip(), re.IGNORECASE):
             node.set('class', ' '.join([*(node.get('class') or '').split(), 'report-literal-url']))
@@ -214,16 +222,18 @@ def prepare_text_flow(tree, en=False):
             continue
         ordered.set('class', ' '.join([*(ordered.get('class') or '').split(), 'report-counter-list']))
         region = html.Element('div', {'class': 'report-list-region', 'role': 'region', 'tabindex': '0',
-                              'aria-label': ('Numbered list' if en else 'Lista numerada'),
-                              'data-scroll-hint': ('Scroll horizontally to read the complete numbered list.' if en else
-                                                   'Desplázate horizontalmente para leer toda la lista numerada.')})
+                              'aria-label': w('Lista numerada', 'Numbered list', 'Lista numerada'),
+                              'data-scroll-hint': w('Desplázate horizontalmente para leer toda la lista numerada.',
+                                                   'Scroll horizontally to read the complete numbered list.',
+                                                   'Role horizontalmente para ler toda a lista numerada.')})
         region.tail, ordered.tail = ordered.tail, None
         ordered.addprevious(region)
         region.append(ordered)
 
 
-def prepare_tables(tree, en=False):
+def prepare_tables(tree, en=False, *, lang=None):
     """Keep native table content; give field rows and wide data distinct layouts."""
+    w = _reader_words(en, lang)
     for number, table in enumerate(tree.xpath('//table'), 1):
         rows = table.xpath('./tr|./thead/tr|./tbody/tr|./tfoot/tr')
         def span(cell):
@@ -265,7 +275,7 @@ def prepare_tables(tree, en=False):
                 for group in table.xpath('./thead|./tbody|./tfoot'):
                     group.set('role', 'rowgroup')
                 labels = [' '.join(cell.text_content().split()) or
-                          (('Column ' if en else 'Columna ') + str(index + 1))
+                          (w('Columna ', 'Column ', 'Coluna ') + str(index + 1))
                           for index, cell in enumerate(headers[0])]
                 for row in rows:
                     row.set('role', 'row')
@@ -283,17 +293,19 @@ def prepare_tables(tree, en=False):
             heading = next((ancestor.xpath('string(.//h1|.//h2|.//h3)').strip()
                             for ancestor in table.iterancestors()
                             if ancestor.tag == 'section'), '')
-            label = ('Data table ' if en else 'Tabla de datos ') + str(number)
+            label = w('Tabla de datos ', 'Data table ', 'Tabela de dados ') + str(number)
             if heading:
                 label += ': ' + ' '.join(heading.split())[:160]
             if 'report-records' not in table.get('class', '').split():
-                label += '; horizontal scrolling' if en else '; desplazamiento horizontal'
+                label += w('; desplazamiento horizontal', '; horizontal scrolling', '; rolagem horizontal')
             region = html.Element('div', {'class': 'report-table-region',
                                   'role': 'region', 'tabindex': '0', 'aria-label': label,
-                                  'data-record-hint': ('Table shown by record; each value follows its column heading.' if en else
-                                                       'Tabla por registros: cada valor aparece bajo su columna.'),
-                                  'data-scroll-hint': ('Scroll horizontally to see every column.' if en
-                                      else 'Desplázate horizontalmente para ver todas las columnas.')})
+                                  'data-record-hint': w('Tabla por registros: cada valor aparece bajo su columna.',
+                                                       'Table shown by record; each value follows its column heading.',
+                                                       'Tabela por registros: cada valor aparece abaixo do cabeçalho de sua coluna.'),
+                                  'data-scroll-hint': w('Desplázate horizontalmente para ver todas las columnas.',
+                                      'Scroll horizontally to see every column.',
+                                      'Role horizontalmente para ver todas as colunas.')})
             region.tail, table.tail = table.tail, None
             table.addprevious(region)
             region.append(table)
@@ -304,8 +316,8 @@ def build(directory):
     directory=Path(directory)
     data=engine.load_engagement(directory/'engagement.yaml')
     tree=publication.render(data,directory)
-    en=engine.report_language(data)=='en'
-    w=lambda es,eng:eng if en else es
+    lang = engine.report_language(data)
+    w = _reader_words(lang=lang)
     resources=publication.images(tree,directory)
     for image in tree.xpath('//img[@src]'):
         path=next(p for p in resources.values() if unquote(p.as_uri())==unquote(image.get('src')))
@@ -319,8 +331,8 @@ def build(directory):
         finding=by_id.get(node.get('id'),{})
         node.set('data-report-kind',finding.get('mode','vuln'))
         node.set('data-report-severity',finding.get('severity') or ('pending' if finding.get('mode')!='machine' else ''))
-    prepare_tables(tree, en)
-    prepare_text_flow(tree, en)
+    prepare_tables(tree, lang=lang)
+    prepare_text_flow(tree, lang=lang)
     body=tree.find('body')
     contents=''.join(html.tostring(child,encoding='unicode') for child in body)
     font=b64encode((Path(__file__).parent/'themes/fonts/Carlito-Regular.ttf').read_bytes()).decode()
@@ -334,20 +346,20 @@ def build(directory):
             style+='\n.cover.layout-editorial,.layout-editorial .cover-foot{text-align:left}.layout-editorial .cover-main{border-top:3px solid '+pal['--cover-rule']+';padding-top:24px}'
     script_hashes=' '.join("'sha256-"+b64encode(sha256(script.encode()).digest()).decode()+"'"
                            for script in (BOOTSTRAP, SCRIPT))
-    toolbar='<nav hidden class="report-toolbar" aria-label="'+w('Lectura del informe','Report reading')+'">'
-    toolbar+='<label>'+w('Vista','View')+'<select id="view"><option value="technical">'+w('Completo','Full report')+'</option><option value="executive">'+w('Ejecutivo','Executive view')+'</option></select></label>'
-    toolbar+='<label>'+w('Tipo','Type')+'<select id="kind"><option value="">'+w('Todos','All')+'</option><option value="vuln">'+w('Hallazgos','Findings')+'</option><option value="machine">'+w('Máquinas','Machines')+'</option></select></label>'
-    toolbar+='<label>'+w('Buscar en hallazgos','Search findings')+'<input id="query" type="search"></label><label>'+w('Severidad','Severity')+'<select id="severity"><option value="">'+w('Todas','All')+'</option>'
-    toolbar+=''.join('<option value="'+key+'">'+value+'</option>' for key,value in engine.load_lang('en' if en else 'es')['severity'].items())+'<option value="pending">'+w('Pendiente','Pending')+'</option></select></label>'
+    toolbar='<nav hidden class="report-toolbar" aria-label="'+w('Lectura del informe','Report reading','Leitura do relatório')+'">'
+    toolbar+='<label>'+w('Vista','View','Visualização')+'<select id="view"><option value="technical">'+w('Completo','Full report','Relatório completo')+'</option><option value="executive">'+w('Ejecutivo','Executive view','Visão executiva')+'</option></select></label>'
+    toolbar+='<label>'+w('Tipo','Type','Tipo')+'<select id="kind"><option value="">'+w('Todos','All','Todos')+'</option><option value="vuln">'+w('Hallazgos','Findings','Achados')+'</option><option value="machine">'+w('Máquinas','Machines','Máquinas')+'</option></select></label>'
+    toolbar+='<label>'+w('Buscar en hallazgos','Search findings','Pesquisar nos achados')+'<input id="query" type="search"></label><label>'+w('Severidad','Severity','Severidade')+'<select id="severity"><option value="">'+w('Todas','All','Todas')+'</option>'
+    toolbar+=''.join('<option value="'+key+'">'+value+'</option>' for key,value in engine.load_lang(lang)['severity'].items())+'<option value="pending">'+w('Pendiente','Pending','Pendente')+'</option></select></label>'
     finding_count=len(tree.xpath('//*[contains(concat(" ",normalize-space(@class)," ")," finding ")]'))
-    toolbar+='<button id="clear-filters" type="button">'+w('Limpiar filtros','Clear filters')+'</button><output id="results" aria-live="polite">'+str(finding_count)+' / '+str(finding_count)+'</output><button id="print" type="button">'+w('Imprimir vista','Print view')+'</button></nav>'
+    toolbar+='<button id="clear-filters" type="button">'+w('Limpiar filtros','Clear filters','Limpar filtros')+'</button><output id="results" aria-live="polite">'+str(finding_count)+' / '+str(finding_count)+'</output><button id="print" type="button">'+w('Imprimir vista','Print view','Imprimir visualização')+'</button></nav>'
     if not finding_count:
         toolbar=''
     if data['meta'].get('report_density')=='compact':style+='\n.finding,.frontsec{padding:18px;margin:16px 0}td,th{padding:7px}p{margin-top:6px;margin-bottom:8px}'
     style += REFLOW_STYLE + RECORD_STYLE
-    note=w('Documento de solo lectura. Las vistas y los filtros cambian la presentación; el archivo contiene el informe completo. Sin JavaScript, se muestra todo.','Read-only document. Views and filters change presentation; the file contains the full report. Without JavaScript, everything remains visible.')
+    note=w('Documento de solo lectura. Las vistas y los filtros cambian la presentación; el archivo contiene el informe completo. Sin JavaScript, se muestra todo.','Read-only document. Views and filters change presentation; the file contains the full report. Without JavaScript, everything remains visible.','Documento somente para leitura. As visualizações e os filtros alteram a apresentação; o arquivo contém o relatório completo. Sem JavaScript, todo o conteúdo permanece visível.')
     if not finding_count:
-        note=w('Documento de solo lectura. Se conserva el contenido de las secciones incluidas.','Read-only document. The included sections retain their content.')
-    note+=' '+w('HTML exportado con report-gen ','HTML exported with report-gen ')+__version__+'.'
-    empty='<p id="empty-results" class="report-note" hidden role="status">'+w('No hay hallazgos que coincidan. Prueba otros filtros o límpialos.','No matching findings. Try other filters or clear them.')+'</p>'
-    return '<!doctype html><html lang="'+('en' if en else 'es')+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; font-src data:; style-src \'unsafe-inline\'; script-src '+script_hashes+'; base-uri \'none\'; form-action \'none\'"><title>'+escape(engine.report_title(data))+'</title><script>'+BOOTSTRAP+'</script><style>'+style+'</style></head><body>'+toolbar+'<main><p class="report-note">'+note+'</p>'+empty+'<div class="report-content">'+contents+'</div></main><script>'+SCRIPT+'</script></body></html>'
+        note=w('Documento de solo lectura. Se conserva el contenido de las secciones incluidas.','Read-only document. The included sections retain their content.','Documento somente para leitura. O conteúdo das seções incluídas é preservado.')
+    note+=' '+w('HTML exportado con report-gen ','HTML exported with report-gen ','HTML exportado com report-gen ')+__version__+'.'
+    empty='<p id="empty-results" class="report-note" hidden role="status">'+w('No hay hallazgos que coincidan. Prueba otros filtros o límpialos.','No matching findings. Try other filters or clear them.','Nenhum achado correspondente. Tente outros filtros ou limpe-os.')+'</p>'
+    return '<!doctype html><html lang="'+engine.language_tag(lang)+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; font-src data:; style-src \'unsafe-inline\'; script-src '+script_hashes+'; base-uri \'none\'; form-action \'none\'"><title>'+escape(engine.report_title(data))+'</title><script>'+BOOTSTRAP+'</script><style>'+style+'</style></head><body>'+toolbar+'<main><p class="report-note">'+note+'</p>'+empty+'<div class="report-content">'+contents+'</div></main><script>'+SCRIPT+'</script></body></html>'

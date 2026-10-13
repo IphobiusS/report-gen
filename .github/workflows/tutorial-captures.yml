@@ -1,0 +1,36 @@
+name: Capture localized tutorial
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/portuguese-r16]
+
+permissions:
+  contents: read
+
+jobs:
+  captures:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+      - run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Capture real Spanish, English and Portuguese scenes using fictional data
+        env:
+          RG_PYTHON: python
+        run: node scripts/capture-tutorial.cjs --output out/tutorial-captures
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: tutorial-captures-${{ github.sha }}
+          path: out/tutorial-captures/
+          if-no-files-found: error

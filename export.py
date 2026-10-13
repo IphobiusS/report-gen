@@ -101,12 +101,20 @@ def export(yaml_path, fmt, out_path=None):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Exporta un engagement a pdf/docx/md/html")
+    from error_messages import language_scope
+    from languages import language_argument, language_index
+    probe = argparse.ArgumentParser(add_help=False)
+    probe.add_argument("--error-language", default="es", type=language_argument)
+    initial, _ = probe.parse_known_args()
+    ap = argparse.ArgumentParser(description=("Exporta un engagement a pdf/docx/md/html",
+        "Export an engagement to pdf/docx/md/html", "Exporta uma avaliação para pdf/docx/md/html")[
+            language_index(initial.error_language)], parents=[probe])
     ap.add_argument("engagement")
     ap.add_argument("--format", "-f", required=True, choices=[*__import__("export_formats").REGISTRY, "mdzip"])
     ap.add_argument("-o", "--out")
     args = ap.parse_args()
-    out = export(args.engagement, args.format, args.out)
+    with language_scope(args.error_language):
+        out = export(args.engagement, args.format, args.out)
     print(f"[+] {args.format}: {out}")
 
 

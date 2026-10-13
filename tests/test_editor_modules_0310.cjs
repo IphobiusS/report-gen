@@ -18,10 +18,10 @@ const invalid=[
 function projectSearch(language, data){
   const app=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8');
   const source=app.slice(app.indexOf('function searchTargets()'),app.indexOf('function navTo(nav)'));
-  return new Function('S',source+'\nreturn searchProject;')({uiLang:language,data,catBy:{}});
+  return new Function('S',app.slice(0,app.indexOf('// ---- shared transport'))+source+'\nreturn searchProject;')({uiLang:language,data,catBy:{}});
 }
 
-for(const language of ['es','en']){
+for(const language of ['es','en','pt']){
   test(language+': search matches canonically equivalent accents and authored whitespace without mutating content',()=>{
     const data={meta:{},report:{sections:[{key:'unicode',title:'Synthetic chapter',body:'La remediacio\u0301n conserva café y corrective\n\t action.',private_note:'PRIVATE_UNICODE_CANARY'}]},findings:[]};
     const before=JSON.stringify(data),search=projectSearch(language,data);
@@ -128,7 +128,7 @@ function editor(language, finding){
   return dom;
 }
 
-for(const language of ['es','en']){
+for(const language of ['es','en','pt']){
   test(language+': CVSS 4.0 displays and preserves threat, environmental and supplemental metrics',()=>{
     const vector='CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:U/CR:L/IR:L/AR:L/MAV:P/S:N/AU:Y/R:U/V:C/RE:H/U:Red';
     const result=CVSS40.score(vector),finding={title:'Contextual score',cvss_version:'4.0',cvss:String(result.score),cvss_vector:vector,severity:result.severity,macrovector:result.macrovector};

@@ -24,8 +24,9 @@
     <h1>Preparando report-gen</h1>
     <p>El editor se habilita cuando termina de cargar. Si no aparece, recarga esta página y comprueba que JavaScript esté habilitado.</p>
     <p lang="en">The editor becomes available when it finishes loading. If it does not appear, reload this page and check that JavaScript is enabled.</p>
-    <noscript><p>Este editor necesita JavaScript. / This editor requires JavaScript.</p></noscript>
-    <a class="btn" href="">Recargar / Reload</a>
+    <p lang="pt-BR">O editor estará disponível após o carregamento. Se não aparecer, recarregue esta página e verifique se o JavaScript está ativado.</p>
+    <noscript><p>Este editor necesita JavaScript. / This editor requires JavaScript. / Este editor precisa de JavaScript.</p></noscript>
+    <a class="btn" href="">Recargar / Reload / Recarregar</a>
   </div>
 </div>
 <a class="skip-link" href="#editor" data-workspace-text="skip" inert>Saltar al contenido</a>
@@ -44,13 +45,17 @@
   </div>
   <div class="workspace-preferences">
     <button id="themeToggle" class="btn sm" title="Tema claro/oscuro" aria-label="Tema">☾</button>
-    <button id="langToggle" class="btn sm" data-i18n-title="ui_lang_title" aria-label="ES: Idioma de la interfaz">ES</button>
+    <select id="langToggle" class="btn sm" data-i18n-title="ui_lang_title" aria-label="Idioma de la interfaz">
+      <option value="es" lang="es">Español</option>
+      <option value="en" lang="en">English</option>
+      <option value="pt" lang="pt-BR">Português (Brasil)</option>
+    </select>
   </div>
  </div>
  <div class="workspace-toolbar">
   <button id="sidebarToggle" type="button" class="btn sm" aria-controls="workspaceSidebar" aria-expanded="false" data-workspace-text="navigation">Navegación</button>
   <span id="workspaceContext" class="workspace-context"></span>
-  <span id="saveState" class="savestate" role="status">cargando / loading</span>
+  <span id="saveState" class="savestate" role="status">cargando / loading / carregando</span>
   <div class="spacer"></div>
   <button id="newProjectBtn" class="btn sm" data-i18n="new_project">Nuevo proyecto</button>
   <details class="action-menu" id="projectActions">
@@ -151,6 +156,7 @@
       <select id="mLang">
         <option value="corporativo-es">Español</option>
         <option value="corporativo-en">English</option>
+        <option value="corporativo-pt">Português (Brasil)</option>
       </select>
     </label>
     <label><span data-i18n="report_title">Título del informe</span> <input id="mTitle" data-i18n-ph="report_title_ph" placeholder="Evaluación de Seguridad ..."></label>

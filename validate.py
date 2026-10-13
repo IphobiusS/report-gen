@@ -9,6 +9,7 @@ catalogo canonico.
 """
 from error_messages import message as backend_message
 from error_messages import language_argument
+from languages import LANGUAGES, normalize_language
 import re
 import math
 from collections import Counter
@@ -22,7 +23,7 @@ except Exception:  # pragma: no cover - catalogo opcional en validacion aislada
 
 SEVERITIES = {"critical", "high", "medium", "low", "info"}
 MODES = {"vuln", "machine"}
-LANGS = {"es", "en"}
+LANGS = set(LANGUAGES)
 # The portable shell owns these destinations. A contract checks them against
 # the generated shell so a new control cannot silently steal a report anchor.
 PORTABLE_CONTROL_IDS = {'view', 'kind', 'query', 'severity', 'clear-filters',
@@ -31,7 +32,7 @@ PORTABLE_CONTROL_IDS = {'view', 'kind', 'query', 'severity', 'clear-filters',
 
 _MSG = {
     "title_empty": {"es": "meta.report_title esta vacio", "en": "meta.report_title is empty"},
-    "lang_invalid": {"es": "meta.lang invalido: {lang!r} (usa es o en)", "en": "meta.lang invalid: {lang!r} (use es or en)"},
+    "lang_invalid": {"es": "meta.lang invalido: {lang!r} (usa es, en o pt)", "en": "meta.lang invalid: {lang!r} (use es, en or pt)"},
     "mode_invalid": {"es": "{fid}: mode invalido {mode!r} (usa vuln o machine)", "en": "{fid}: invalid mode {mode!r} (use vuln or machine)"},
     "sev_invalid": {"es": "{fid}: severidad invalida {sev!r}", "en": "{fid}: invalid severity {sev!r}"},
     "machine_no_host": {"es": "{fid}: hallazgo 'machine' sin bloque host", "en": "{fid}: 'machine' finding without host block"},
@@ -51,6 +52,10 @@ _MSG = {
     "dup_anchors": {"es": "Anclas de informe duplicadas o reservadas: {ids}. Cambia el id del hallazgo o la clave de sección en conflicto.",
                     "en": "Duplicate or reserved report anchors: {ids}. Change the conflicting finding id or section key."},
 }
+
+
+for _key, _text in {'title_empty': 'meta.report_title está vazio', 'lang_invalid': 'meta.lang inválido: {lang!r} (use es, en ou pt)', 'mode_invalid': '{fid}: mode inválido {mode!r} (use vuln ou machine)', 'sev_invalid': '{fid}: severidade inválida {sev!r}', 'machine_no_host': "{fid}: achado 'machine' sem bloco host", 'no_title': '{fid}: achado sem título', 'no_cvss': '{fid}: achado sem pontuação CVSS', 'bad_vector': '{fid}: vetor CVSS com formato inesperado: {vec}', 'sev_mismatch': "{fid}: severidade declarada '{sev}' não corresponde ao CVSS {cvss} (indica '{band}')", 'dup_ids': 'IDs de achados duplicados: {ids}', 'no_id': 'há achados sem id', 'catalog_fail': 'não foi possível carregar o catálogo para validar as seções: {exc}', 'no_catalog': 'seções não validadas: catálogo indisponível', 'unknown_section': 'seção desconhecida no catálogo: {key!r}', 'fid_no_id': '(achado #{n} sem id)', 'dup_anchors': 'Âncoras de relatório duplicadas ou reservadas: {ids}. Altere o id do achado ou a chave de seção em conflito.'}.items():
+    _MSG[_key]["pt"] = _text
 
 
 def _m(code, language, **kw):
@@ -163,8 +168,8 @@ def markdown_control_issues(data, lang=None):
 def validate(data, known_section_keys=None, lang=None):
     """Valida un dict de engagement. known_section_keys permite inyectar el
     catalogo en tests; si es None se intenta cargar el catalogo real.
-    lang controla el idioma de los mensajes (es/en)."""
-    lang = lang if isinstance(lang, str) and lang in LANGS else "es"
+    lang controla el idioma de los mensajes (es/en/pt)."""
+    lang = normalize_language(lang)
     issues = structure_issues(data, lang)
     if issues:
         return issues
@@ -178,7 +183,7 @@ def validate(data, known_section_keys=None, lang=None):
         issues.append(("warning", _m("title_empty", lang)))
     if "theme" in meta and meta["theme"] not in THEMES:
         issues.append(("error", backend_message('meta.theme no soportado')))
-    if meta.get("lang") not in (None, *LANGS):
+    if meta.get("lang") is not None and normalize_language(meta.get("lang"), None) is None:
         issues.append(("error", _m("lang_invalid", lang, lang=meta.get("lang"))))
 
     findings = data.get("findings") or []
@@ -210,13 +215,13 @@ def validate(data, known_section_keys=None, lang=None):
             issues.append(("error", _m("bad_vector", lang, fid=fid, vec=vec)))
         supplied = f.get("cvss") is not None and str(f.get("cvss")).strip() != ""
         if supplied and severity_from_score(f["cvss"]) is None:
-            issues.append(("error", f"{fid}: CVSS debe ser un número finito entre 0 y 10" if lang == "es" else f"{fid}: CVSS must be a finite number between 0 and 10"))
+            issues.append(("error", backend_message("{fid}: CVSS debe ser un número finito entre 0 y 10", en="{fid}: CVSS must be a finite number between 0 and 10", pt="{fid}: CVSS deve ser um número finito entre 0 e 10", language=lang, fid=fid)))
         vector_score = None
         if vector_valid:
             import cvss
             vector_score = cvss.score(vec)["score"]
             if supplied and severity_from_score(f["cvss"]) is not None and not math.isclose(float(f["cvss"]), vector_score, abs_tol=1e-8):
-                issues.append(("error", f"{fid}: CVSS {f['cvss']} no coincide con el vector ({vector_score})" if lang == "es" else f"{fid}: CVSS {f['cvss']} does not match vector ({vector_score})"))
+                issues.append(("error", backend_message("{fid}: CVSS {score} no coincide con el vector ({vector_score})", en="{fid}: CVSS {score} does not match vector ({vector_score})", pt="{fid}: CVSS {score} não corresponde ao vetor ({vector_score})", language=lang, fid=fid, score=f["cvss"], vector_score=vector_score)))
         elif vec and vec.startswith("CVSS:3.0/"):
             issues.append(("error", backend_message('{p0}: CVSS 3.0 no soportado; utiliza 3.1 o 4.0', p0=fid)))
         # Vector-only reports retain their absent/nullable score in every
@@ -273,7 +278,7 @@ def structure_issues(data, lang=None):
         return [('error', str(exc))]
     issues = []
     def error(path, expected):
-        issues.append(("error", f"{path}: se esperaba {expected}" if lang == "es" else f"{path}: expected {expected}"))
+        issues.append(("error", backend_message("{path}: se esperaba {expected}", en="{path}: expected {expected}", pt="{path}: era esperado {expected}", language=lang, path=path, expected=expected)))
     def obj(value, path):
         if not isinstance(value, dict):
             error(path, backend_message('object')); return False

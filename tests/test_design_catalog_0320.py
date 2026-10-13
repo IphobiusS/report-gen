@@ -44,7 +44,7 @@ def test_catalog_structures_are_bilingual_distinct_and_do_not_invent_results():
         p = lib.profile(ident)
         assert p['guidance']['source'].startswith('https://')
         assert p['guidance']['checked'] == '2026-10-11'
-        assert set(p['guidance']['note']) == {'es', 'en'}
+        assert set(p['guidance']['note']) == {'es', 'en', 'pt'}
         assert p['guidance']['formats'] == ['pdf', 'docx', 'md']
         lib.validate_sections(p['sections'])
         outline = tuple(s['key'] for s in p['sections'])

@@ -1,4 +1,5 @@
 """Readable, offline comparison of two immutable project versions."""
+from languages import language_index, language_tag
 from base64 import b64encode
 from difflib import SequenceMatcher
 from hashlib import sha256
@@ -9,12 +10,12 @@ import mimetypes
 import workflows
 
 FIELDS = {
-    'title': ('Título', 'Title'), 'severity': ('Severidad', 'Severity'), 'status': ('Estado', 'Status'),
-    'description_md': ('Descripción', 'Description'), 'impact_md': ('Impacto', 'Impact'),
-    'remediation_md': ('Remediación', 'Remediation'), 'affected': ('Objetivo', 'Target'),
-    'cvss': ('CVSS', 'CVSS'), 'cvss_vector': ('Vector CVSS', 'CVSS vector'),
-    'walkthrough': ('Reproducción', 'Reproduction'), 'evidence_uids': ('Evidencias vinculadas', 'Linked evidence'),
-    'report_title': ('Título del informe', 'Report title'), 'report': ('Secciones del informe', 'Report sections')}
+    'title': ('Título', 'Title', 'Título'), 'severity': ('Severidad', 'Severity', 'Severidade'), 'status': ('Estado', 'Status', 'Estado'),
+    'description_md': ('Descripción', 'Description', 'Descrição'), 'impact_md': ('Impacto', 'Impact', 'Impacto'),
+    'remediation_md': ('Remediación', 'Remediation', 'Remediação'), 'affected': ('Objetivo', 'Target', 'Alvo'),
+    'cvss': ('CVSS', 'CVSS', 'CVSS'), 'cvss_vector': ('Vector CVSS', 'CVSS vector', 'Vetor CVSS'),
+    'walkthrough': ('Reproducción', 'Reproduction', 'Reprodução'), 'evidence_uids': ('Evidencias vinculadas', 'Linked evidence', 'Evidências vinculadas'),
+    'report_title': ('Título del informe', 'Report title', 'Título do relatório'), 'report': ('Secciones del informe', 'Report sections', 'Seções do relatório')}
 
 
 def _text(value, lang="es"):
@@ -23,7 +24,7 @@ def _text(value, lang="es"):
     if isinstance(value, list):
         return '\n\n'.join(_text(item, lang) for item in value) or '—'
     if isinstance(value, dict):
-        return '\n\n'.join(FIELDS.get(key, (key.replace('_', ' '), key.replace('_', ' ')))[lang == 'en'] + ': ' + _text(item, lang) for key, item in value.items())
+        return '\n\n'.join(FIELDS.get(key, (key.replace('_', ' '),) * 3)[language_index(lang)] + ': ' + _text(item, lang) for key, item in value.items())
     return str(value)
 
 
@@ -58,34 +59,34 @@ def render(before, after, old_files, new_files, old_label, new_label, lang='es',
     else:
         old_files={k:clean_image(v) for k,v in old_files.items() if k.startswith('img/')}
         new_files={k:clean_image(v) for k,v in new_files.items() if k.startswith('img/')}
-    en = lang == 'en'
-    w = lambda es, english: english if en else es
+    index = language_index(lang)
+    w = lambda es, english, portuguese: (es, english, portuguese)[index]
     old = {f.get('uid', f.get('id')): f for f in before.get('findings', [])}
     new = {f.get('uid', f.get('id')): f for f in after.get('findings', [])}
     added, removed = len(new.keys() - old.keys()), len(old.keys() - new.keys())
     changed = sum(old[k] != new[k] for k in old.keys() & new.keys())
-    parts = [f'<header><p>report-gen / {escape(w("Comparación de entregas", "Delivery comparison"))}</p>',
+    parts = [f'<header><p>report-gen / {escape(w("Comparación de entregas", "Delivery comparison", "Comparação de entregas"))}</p>',
              '<h1>' + escape(after.get('meta', {}).get('report_title', '')) + '</h1>',
              '<p>' + escape(old_label) + ' → ' + escape(new_label) + '</p></header>',
              '<p class="summary">' + escape(w(f'{added} añadidos · {removed} retirados · {changed} modificados',
-                                                      f'{added} added · {removed} removed · {changed} modified')) + '</p>',
+                                                      f'{added} added · {removed} removed · {changed} modified', f'{added} adicionados · {removed} removidos · {changed} modificados')) + '</p>',
              '<p>' + escape(w('Retirado significa que ya no está en el informe; no acredita una corrección. Los cambios de estado reflejan lo registrado por el evaluador.',
-                               'Removed means no longer in the report; it does not prove remediation. Status changes reflect the assessor’s records.')) + '</p>']
-    parts.append('<p><strong>'+escape(w('INTERNA: contiene borradores y datos privados. No entregar al cliente.','INTERNAL: contains drafts and private data. Do not deliver to clients.') if internal else w('Compartible: solo contenido publicado. Las imágenes anteriores se omiten para no recuperar evidencias que después se censuraron. Revisa también el texto histórico antes de compartir.','Shareable: published content only. Earlier images are omitted to avoid restoring evidence later redacted. Review historical text before sharing.'))+'</strong></p>')
+                               'Removed means no longer in the report; it does not prove remediation. Status changes reflect the assessor’s records.', 'Removido significa que não está mais no relatório; não comprova remediação. As alterações de estado refletem os registros do avaliador.')) + '</p>']
+    parts.append('<p><strong>'+escape(w('INTERNA: contiene borradores y datos privados. No entregar al cliente.','INTERNAL: contains drafts and private data. Do not deliver to clients.', 'INTERNA: contém rascunhos e dados privados. Não entregar a clientes.') if internal else w('Compartible: solo contenido publicado. Las imágenes anteriores se omiten para no recuperar evidencias que después se censuraron. Revisa también el texto histórico antes de compartir.','Shareable: published content only. Earlier images are omitted to avoid restoring evidence later redacted. Review historical text before sharing.', 'Compartilhável: apenas conteúdo publicado. Imagens anteriores são omitidas para evitar restaurar evidências ocultadas posteriormente. Revise também o texto histórico antes de compartilhar.'))+'</strong></p>')
     changes = workflows.compare(before, after)
     for change in changes:
         uid, path = change['finding_uid'], change['path']
         finding = new.get(uid) or old.get(uid)
         field = path.split('.')[-1]
-        label = (w('Añadido', 'Added') if uid and uid not in old else w('Retirado', 'Removed') if uid and uid not in new else FIELDS.get(field, (field.replace('_', ' '), field.replace('_', ' ')))[en])
+        label = (w('Añadido', 'Added', 'Adicionado') if uid and uid not in old else w('Retirado', 'Removed', 'Removido') if uid and uid not in new else FIELDS.get(field, (field.replace('_', ' '),) * 3)[index])
         heading = ((finding.get('id', '') + ' / ' + finding.get('title', '') + ' / ') if finding else '') + label
         a, b = change['before'], change['after']
         if field == 'status':
             a, b = (workflows.label(workflows.STATUSES, value, lang) if isinstance(value, str) else value for value in (a, b))
         left, right = diff(a, b, lang)
-        parts.append('<section><h2>' + escape(heading) + '</h2><details class="path"><summary>' + w('Referencia técnica', 'Technical reference') + '</summary>' + escape(path) + '</details><div class="pair">'
-                     '<div><h3>' + w('Antes', 'Before') + '</h3><pre>' + left + '</pre></div>'
-                     '<div><h3>' + w('Después', 'After') + '</h3><pre>' + right + '</pre></div></div></section>')
+        parts.append('<section><h2>' + escape(heading) + '</h2><details class="path"><summary>' + w('Referencia técnica', 'Technical reference', 'Referência técnica') + '</summary>' + escape(path) + '</details><div class="pair">'
+                     '<div><h3>' + w('Antes', 'Before', 'Antes') + '</h3><pre>' + left + '</pre></div>'
+                     '<div><h3>' + w('Después', 'After', 'Depois') + '</h3><pre>' + right + '</pre></div></div></section>')
     images = 0
     # Include processed report resources only, never confidential evidence originals.
     for name in sorted(old_files.keys() | new_files.keys()):
@@ -97,13 +98,13 @@ def render(before, after, old_files, new_files, old_label, new_label, lang='es',
         if mimetype not in ('image/png', 'image/jpeg', 'image/webp', 'image/gif'): continue
         images += 1
         pair = []
-        for blob, title in ((a if internal else None, w('Antes (solo interna)', 'Before (internal only)')), (b, w('Después', 'After'))):
+        for blob, title in ((a if internal else None, w('Antes (solo interna)', 'Before (internal only)', 'Antes (somente interna)')), (b, w('Después', 'After', 'Depois'))):
             figure = ('<img alt="' + escape(name, quote=True) + '" src="data:' + mimetype + ';base64,' + b64encode(blob).decode() + '">'
                       '<p class="hash">SHA-256 ' + sha256(blob).hexdigest() + '</p>') if blob else '<p>—</p>'
             pair.append('<div><h3>' + title + '</h3>' + figure + '</div>')
-        parts.append('<section><h2>' + w('Evidencia / ', 'Evidence / ') + escape(name) + '</h2><div class="pair">' + ''.join(pair) + '</div></section>')
+        parts.append('<section><h2>' + w('Evidencia / ', 'Evidence / ', 'Evidência / ') + escape(name) + '</h2><div class="pair">' + ''.join(pair) + '</div></section>')
     if not changes and not images:
-        parts.append('<p>' + w('No hay diferencias entre estas versiones.', 'There are no differences between these versions.') + '</p>')
+        parts.append('<p>' + w('No hay diferencias entre estas versiones.', 'There are no differences between these versions.', 'Não há diferenças entre estas versões.') + '</p>')
     # Same bundled fallback font used by the report exporters; standalone/offline.
     font = b64encode((Path(__file__).parent / 'themes/fonts/Carlito-Regular.ttf').read_bytes()).decode()
     style = '''@font-face{font-family:Report;src:url(data:font/ttf;base64,FONT)}
@@ -115,6 +116,6 @@ pre{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}ins{backgr
 img{display:block;max-width:100%;max-height:650px;object-fit:contain}@media(max-width:650px){body{padding:16px}.pair{grid-template-columns:1fr}}
 @page{size:A4;margin:18mm}@media print{body{padding:0;font-size:10pt}h1,h2,h3{break-after:avoid}img{max-height:110mm}.pair{display:block}.pair>div{margin-bottom:14px}*{print-color-adjust:exact}}
 '''.replace('FONT', font)
-    return '<!doctype html><html lang="' + ('en' if en else 'es') + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' \
+    return '<!doctype html><html lang="' + language_tag(lang) + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' \
         '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\'; font-src data:">' \
-        '<title>' + w('Comparación de entregas', 'Delivery comparison') + '</title><style>' + style + '</style></head><body>' + ''.join(parts) + '</body></html>'
+        '<title>' + w('Comparación de entregas', 'Delivery comparison', 'Comparação de entregas') + '</title><style>' + style + '</style></head><body>' + ''.join(parts) + '</body></html>'

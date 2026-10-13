@@ -37,10 +37,10 @@ import validate as validatelib  # noqa: E402
 from storage import revision, atomic_write  # noqa: E402
 import project_history  # noqa: E402
 import workflows  # noqa: E402
+from languages import normalize_language, language_tag, language_index
 from error_messages import message as backend_message, current_language, normalized_language, set_language, reset_language  # noqa: E402
 
 from report_designs import THEMES as ALLOWED_THEMES  # noqa: E402
-ALLOWED_LANGS = {"es", "en"}
 
 
 def sanitize_meta(data):
@@ -48,8 +48,7 @@ def sanitize_meta(data):
     m = data.setdefault("meta", {})
     if m.get("theme") not in ALLOWED_THEMES:
         m["theme"] = "serio" if "serio" in ALLOWED_THEMES else (next(iter(ALLOWED_THEMES), "serio"))
-    if m.get("lang") not in ALLOWED_LANGS:
-        m["lang"] = engine.report_language(data) if not m.get("lang") else "es"
+    m["lang"] = normalize_language(m.get("lang"), engine.report_language(data) if not m.get("lang") else "es")
     return data
 
 app = Flask(__name__, static_folder=str(HERE / "static"), static_url_path="/static")
@@ -142,7 +141,7 @@ def security_headers(response):
         if getattr(g, 'browser_workspace_id', None):
             response.headers['X-Report-Gen-Workspace'] = g.browser_workspace_id
         if response.status_code >= 400:
-            response.headers['Content-Language'] = normalized_language(request.headers.get('X-UI-Language', 'es'))
+            response.headers['Content-Language'] = language_tag(request.headers.get('X-UI-Language', 'es'))
     return response
 
 
@@ -150,17 +149,40 @@ from werkzeug.exceptions import HTTPException  # noqa: E402
 
 @app.errorhandler(HTTPException)
 def api_error(error):
-    response = jsonify({"error": error.description})
+    detail = error.description
+    # Bare aborts and router/body-limit failures use Werkzeug's fixed English
+    # defaults. Translate only those authored framework defaults; a custom
+    # diagnostic can contain opaque user data and must stay untouched.
+    if detail == type(error).description:
+        lang = request.headers.get('X-UI-Language', 'es')
+        defaults = {
+            400: ('Solicitud no válida', 'Invalid request', 'Solicitação inválida'),
+            401: ('Autenticación requerida', 'Authentication required', 'Autenticação obrigatória'),
+            403: ('Acceso no permitido', 'Access is not allowed', 'Acesso não permitido'),
+            404: ('Recurso no encontrado', 'Resource not found', 'Recurso não encontrado'),
+            405: ('Método no permitido', 'Method is not allowed', 'Método não permitido'),
+            408: ('La solicitud agotó el tiempo de espera', 'Request timed out', 'A solicitação excedeu o tempo limite'),
+            409: ('La solicitud entra en conflicto con el estado actual', 'Request conflicts with the current state', 'A solicitação conflita com o estado atual'),
+            413: ('Solicitud demasiado grande', 'Request is too large', 'Solicitação grande demais'),
+            415: ('Tipo de contenido no compatible', 'Unsupported content type', 'Tipo de conteúdo incompatível'),
+            422: ('No se pudo procesar la solicitud', 'Request could not be processed', 'Não foi possível processar a solicitação'),
+            429: ('Demasiadas solicitudes; vuelve a intentarlo', 'Too many requests; try again', 'Solicitações em excesso; tente novamente'),
+            500: ('Error interno al procesar la solicitud', 'Internal error while processing the request', 'Erro interno ao processar a solicitação'),
+            503: ('Servicio no disponible', 'Service unavailable', 'Serviço indisponível'),
+        }
+        if error.code in defaults:
+            detail = defaults[error.code][language_index(lang)]
+    response = jsonify({"error": detail})
     # Host/routing errors can precede before_request; inspect only the explicit
     # preference here, without loading a project or bypassing the host guard.
-    response.headers['Content-Language'] = normalized_language(request.headers.get('X-UI-Language', 'es'))
+    response.headers['Content-Language'] = language_tag(request.headers.get('X-UI-Language', 'es'))
     return response, error.code
 
 
 @app.errorhandler(ValueError)
 def invalid_data(error):
     response = jsonify({'error': str(error)})
-    response.headers['Content-Language'] = current_language()
+    response.headers['Content-Language'] = language_tag(current_language())
     return response, 422
 
 
@@ -168,7 +190,7 @@ def invalid_data(error):
 def storage_error(error):
     app.logger.error('No se pudo completar la operación de almacenamiento: %s', error)
     response = jsonify({'error': backend_message('No se pudo completar la operación. Revisa el espacio y los permisos, y vuelve a abrir el proyecto.')})
-    response.headers['Content-Language'] = current_language()
+    response.headers['Content-Language'] = language_tag(current_language())
     return response, 503
 
 
@@ -289,7 +311,9 @@ def validate_engagement():
     meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
     lang = current_language() if 'X-UI-Language' in request.headers else request.args.get("lang") or meta.get("lang") or "es"
     issues = validatelib.validate(data, lang=lang)
-    return jsonify({"issues": [{"level": lvl, "message": msg} for lvl, msg in issues]})
+    response = jsonify({"issues": [{"level": lvl, "message": msg} for lvl, msg in issues]})
+    response.headers["Content-Language"] = language_tag(lang)
+    return response
 
 
 @app.route("/api/sections/catalog")
@@ -383,7 +407,7 @@ def create_project():
         abort(422, backend_message('Diseño general desconocido'))
     meta = {
         "lang": model["lang"],
-        "report_title": body.get("title", "Nuevo informe"),
+        "report_title": body.get("title", ("Nuevo informe", "New report", "Novo relatório")[language_index(model["lang"])]),
         "report_subtitle": model["subtitle"],
         "client": body.get("client", ""),
         "assessor": "",

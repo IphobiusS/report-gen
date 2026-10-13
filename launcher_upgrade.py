@@ -12,6 +12,7 @@ import stat
 import tempfile
 
 from error_messages import language_scope, message
+from languages import console_language, language_argument, language_index
 import workspace_backup as backup
 from workspace_paths import select_workspace
 
@@ -301,11 +302,14 @@ def upgrade(source, destination, *, backup_directory=None, lang='es', workspace=
 def main(argv=None):
     import argparse
     import sys
-    parser = argparse.ArgumentParser(description=__doc__)
+    lang = console_language(argv)
+    def w(es, en, pt):
+        return (es, en, pt)[language_index(lang)]
+    parser = argparse.ArgumentParser(description=w('Migración local explícita con respaldo integral.', 'Explicit local migration with an integral backup.', 'Migração local explícita com backup integral.'))
     parser.add_argument('--source', required=True)
     parser.add_argument('--destination', required=True)
-    parser.add_argument('--workspace', help='External destination for data / destino externo de datos')
-    parser.add_argument('--lang', choices=['es', 'en'], default='es')
+    parser.add_argument('--workspace', help=w('Destino externo de datos', 'External destination for data', 'Destino externo dos dados'))
+    parser.add_argument('--lang', type=language_argument, choices=['es', 'en', 'pt'], default='es')
     args = parser.parse_args(argv)
     try:
         result = upgrade(args.source, args.destination, lang=args.lang, workspace=args.workspace)

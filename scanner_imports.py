@@ -1,4 +1,5 @@
 """Offline scanner documents. Observations never imply a confirmed vulnerability."""
+from languages import language_index
 from error_messages import message as backend_message
 from copy import deepcopy
 from hashlib import sha256
@@ -41,7 +42,7 @@ def _strings(value, label):
     return value
 
 
-def nuclei(raw):
+def nuclei(raw, lang='es'):
     """Accept Nuclei JSONL, including -irr HTTP messages as literal evidence."""
     rows = []
     for line_number, line in enumerate(raw.splitlines(), 1):
@@ -68,10 +69,10 @@ def nuclei(raw):
         for key in ('request', 'response'):
             value = _text(item, key, strip=False)
             if value:
-                walkthrough.append({'lead': 'Nuclei HTTP ' + key, 'command': value})
+                walkthrough.append({'lead': 'Nuclei HTTP ' + {'request': ('solicitud', 'request', 'requisição'), 'response': ('respuesta', 'response', 'resposta')}[key][language_index(lang)], 'command': value})
         extracted = _strings(item.get('extracted-results', []), 'extracted-results')
         if extracted:
-            walkthrough.append({'lead': 'Nuclei: extracted results / resultados extraídos', 'command': '\n'.join(extracted)})
+            walkthrough.append({'lead': ('Nuclei: resultados extraídos', 'Nuclei: extracted results', 'Nuclei: resultados extraídos')[language_index(lang)], 'command': '\n'.join(extracted)})
         rows.append(dict(title=title, affected=affected, severity=_text(info, 'severity'),
                          description_md=_text(info, 'description'), remediation_md=_text(info, 'remediation'),
                          impact_md='', cvss_vector=_text(classification, 'cvss-metrics'),
@@ -177,12 +178,12 @@ def nmap_preview(raw, data, origin):
     return dict(format='nmap', kind='inventory', sha256=origin['file_sha256'], headers=[], mapping={}, rows=rows,
                 counts=dict(rows=len(rows), services=sum(len(r['inventory']['services']) for r in rows),
                             duplicates=sum(r['duplicate'] for r in rows), valid=len(rows)),
-                notice='Inventario pendiente de revisión. No crea vulnerabilidades. Los scripts NSE no se importan. / '
-                       'Inventory awaiting review. Creates no vulnerabilities. NSE scripts are not imported.')
+                notice=backend_message('Inventario pendiente de revisión. No crea vulnerabilidades. Los scripts NSE no se importan.', en='Inventory awaiting review. Creates no vulnerabilities. NSE scripts are not imported.', pt='Inventário aguardando revisão. Não cria vulnerabilidades. Os scripts NSE não são importados.'))
 
 
 def nmap_apply(result, data, selected):
     out = deepcopy(data)
+    lang = data.get('meta', {}).get('lang', 'es')
     assets = {_target(a.get('target', '')): a for a in out.setdefault('assets', [])}
     selected_keys = set()
     for index in selected:
@@ -198,24 +199,23 @@ def nmap_apply(result, data, selected):
         asset = assets.get(target)
         if asset is None:
             asset = dict(uid=workflows.new_uid(), name=item['hostnames'][0] if item['hostnames'] else target,
-                         target=target, kind='host', notes='Nmap: inventario pendiente de revisión / inventory awaiting review',
+                         target=target, kind='host', notes=('Nmap: inventario pendiente de revisión / inventory awaiting review', 'Nmap: inventory awaiting review', 'Nmap: inventário aguardando revisão')[language_index(lang)],
                          import_source=deepcopy(source))
             out['assets'].append(asset)
             assets[target] = asset
-        notes = ['Nmap: observaciones importadas; validar alcance y servicios antes de marcar la prueba como realizada. / '
-                 'Imported observations; review scope and services before marking the test performed.',
-                 'Host: ' + item['state'], 'Addresses / Direcciones: ' + ', '.join(item['addresses'])]
+        notes = [('Nmap: observaciones importadas; validar alcance y servicios antes de marcar la prueba como realizada.', 'Nmap: imported observations; review scope and services before marking the test performed.', 'Nmap: observações importadas; revise o escopo e os serviços antes de marcar o teste como realizado.')[language_index(lang)],
+                 'Host: ' + item['state'], ('Direcciones: ', 'Addresses: ', 'Endereços: ')[language_index(lang)] + ', '.join(item['addresses'])]
         if item['hostnames']:
-            notes.append('Hostnames: ' + ', '.join(item['hostnames']))
-        notes.extend('Scan: ' + scan['type'] + ' ' + scan['protocol'] + ' / ' + scan['services'] for scan in item['scaninfo'])
+            notes.append(('Nombres de host: ', 'Hostnames: ', 'Nomes de host: ')[language_index(lang)] + ', '.join(item['hostnames']))
+        notes.extend(('Escaneo: ', 'Scan: ', 'Varredura: ')[language_index(lang)] + scan['type'] + ' ' + scan['protocol'] + ' / ' + scan['services'] for scan in item['scaninfo'])
         notes.extend(f"{s['port']}/{s['protocol']} · {s['state']} · " + ' '.join(filter(None, (s['tunnel'], s['name'], s['product'], s['version'], s['extrainfo']))) for s in item['services'])
-        notes.extend('Extraports: ' + p['state'] + ' (' + p['count'] + ')' for p in item['extraports'])
+        notes.extend(('Puertos adicionales: ', 'Extraports: ', 'Portas adicionais: ')[language_index(lang)] + p['state'] + ' (' + p['count'] + ')' for p in item['extraports'])
         if not item['scan_complete']:
-            notes.append('Escaneo sin cierre satisfactorio acreditado; cobertura parcial / Successful completion not recorded; partial coverage')
+            notes.append(('Escaneo sin cierre satisfactorio acreditado; cobertura parcial / Successful completion not recorded; partial coverage', 'Successful completion not recorded; partial coverage', 'Conclusão satisfatória da varredura não registrada; cobertura parcial')[language_index(lang)])
         if source['omitted_scripts']:
-            notes.append(f"NSE: {source['omitted_scripts']} scripts omitidos / scripts omitted")
+            notes.append(backend_message('NSE: {count} scripts omitidos', en='NSE: {count} scripts omitted', pt='NSE: {count} scripts omitidos', language=lang, count=source['omitted_scripts']))
         out.setdefault('coverage', []).append(dict(uid=workflows.new_uid(), asset_uid=asset['uid'],
-            test='Nmap: inventario de servicios / service inventory', status='pending', notes='\n'.join(notes),
+            test=('Nmap: inventario de servicios / service inventory', 'Nmap: service inventory', 'Nmap: inventário de serviços')[language_index(lang)], status='pending', notes='\n'.join(notes),
             services=deepcopy(item['services']), import_source=source))
     ensure_data_tree(out)
     return out, len(selected)

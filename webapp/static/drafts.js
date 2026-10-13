@@ -1,12 +1,14 @@
 /* Private, per-tab journals. IndexedDB completion, not an input event, means recoverable. */
 (function(root){
 'use strict';
+// Resolve language when an error is raised, after the editor restores its preference.
+const message=(es,en,pt)=>typeof uiText==='function'?uiText(es,en,pt):es+' / '+en;
 const clone=v=>v===undefined?undefined:JSON.parse(JSON.stringify(v));
 const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 let workspace=null,workspaceBlocked=false;
-const scope=value=>{if(typeof value!=='string'||!/^[a-f0-9]{64}$/.test(value))throw Error('Identidad de espacio no disponible / Workspace identity unavailable');return value;};
+const scope=value=>{if(typeof value!=='string'||!/^[a-f0-9]{64}$/.test(value))throw Error(message("Identidad de espacio no disponible","Workspace identity unavailable","Identidade do espaço de trabalho indisponível"));return value;};
 const BrowserWorkspace={
-  bind(value){value=scope(value);if(workspace&&workspace!==value)throw Error('El espacio de esta pestaña cambió / This tab workspace changed');workspace=value;return value;},
+  bind(value){value=scope(value);if(workspace&&workspace!==value)throw Error(message("El espacio de esta pestaña cambió","This tab workspace changed","O espaço de trabalho desta aba mudou"));workspace=value;return value;},
   current(){return scope(workspace);},
   blocked(){return workspaceBlocked;},
   block(){workspaceBlocked=true;},
@@ -16,11 +18,11 @@ class DraftJournal{
   async open(){
     if(this.db)return this.db;
     this.workspace=scope(this.workspace||BrowserWorkspace.current());
-    if(!root.indexedDB)throw Error('El navegador no permite borradores locales / Browser draft storage unavailable');
-    this.db=await new Promise((resolve,reject)=>{const r=root.indexedDB.open('report-gen-drafts-'+this.workspace,1);r.onupgradeneeded=()=>r.result.createObjectStore('drafts',{keyPath:'id'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.onblocked=()=>reject(Error('Borradores bloqueados / Draft storage blocked'));});
+    if(!root.indexedDB)throw Error(message("El navegador no permite borradores locales","Browser draft storage unavailable","O navegador não permite armazenar rascunhos locais"));
+    this.db=await new Promise((resolve,reject)=>{const r=root.indexedDB.open('report-gen-drafts-'+this.workspace,1);r.onupgradeneeded=()=>r.result.createObjectStore('drafts',{keyPath:'id'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.onblocked=()=>reject(Error(message("Borradores bloqueados","Draft storage blocked","Armazenamento de rascunhos bloqueado")));});
     return this.db;
   }
-  run(mode,fn){const job=this.tail.catch(()=>{}).then(async()=>{const db=await this.open();return new Promise((resolve,reject)=>{const tx=db.transaction('drafts',mode),store=tx.objectStore('drafts');let value;fn(store,x=>value=x);tx.oncomplete=()=>resolve(value);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error('Draft transaction aborted'));});});this.tail=job;return job;}
+  run(mode,fn){const job=this.tail.catch(()=>{}).then(async()=>{const db=await this.open();return new Promise((resolve,reject)=>{const tx=db.transaction('drafts',mode),store=tx.objectStore('drafts');let value;fn(store,x=>value=x);tx.oncomplete=()=>resolve(value);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||Error(message("Transacción de borrador cancelada","Draft transaction aborted","Transação do rascunho cancelada")));});});this.tail=job;return job;}
   put(record){return this.run('readwrite',store=>store.put({...record,workspace_id:this.workspace,id:this.id+':'+record.slug,format:'report-gen-draft',version:1,updated:Date.now()}));}
   remove(id){return this.run('readwrite',store=>store.delete(id));}
   removeUnchanged(record){return this.run('readwrite',(store,done)=>{const r=store.get(record.id);r.onsuccess=()=>{const unchanged=equal(r.result,record);if(unchanged)store.delete(record.id);done(unchanged);};});}
@@ -33,13 +35,13 @@ class PendingJournal {
   async open(){
     if(this.db)return this.db;
     this.workspace=scope(this.workspace||BrowserWorkspace.current());
-    if(!root.indexedDB)throw Error('Almacenamiento local no disponible / Local storage unavailable');
-    this.db=await new Promise((resolve,reject)=>{const r=root.indexedDB.open('report-gen-pending-'+this.workspace,1);r.onupgradeneeded=()=>r.result.createObjectStore('pending',{keyPath:'id'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.onblocked=()=>reject(Error('Almacenamiento local bloqueado / Local storage blocked'));});return this.db;
+    if(!root.indexedDB)throw Error(message("Almacenamiento local no disponible","Local storage unavailable","Armazenamento local indisponível"));
+    this.db=await new Promise((resolve,reject)=>{const r=root.indexedDB.open('report-gen-pending-'+this.workspace,1);r.onupgradeneeded=()=>r.result.createObjectStore('pending',{keyPath:'id'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.onblocked=()=>reject(Error(message("Almacenamiento local bloqueado","Local storage blocked","Armazenamento local bloqueado")));});return this.db;
   }
-  run(fn){const job=this.tail.catch(()=>{}).then(async()=>{const db=await this.open();return new Promise((resolve,reject)=>{const tx=db.transaction('pending','readwrite'),store=tx.objectStore('pending');let value;try{fn(store,x=>value=x,tx);}catch(e){tx.abort();reject(e);}tx.oncomplete=()=>resolve(value);tx.onerror=()=>reject(tx.error||Error('No se pudo guardar / Could not save'));tx.onabort=()=>reject(tx.error||Error('Límite local de 64 MiB / Local 64 MiB limit'));});});this.tail=job;return job;}
+  run(fn){const job=this.tail.catch(()=>{}).then(async()=>{const db=await this.open();return new Promise((resolve,reject)=>{const tx=db.transaction('pending','readwrite'),store=tx.objectStore('pending');let value;try{fn(store,x=>value=x,tx);}catch(e){tx.abort();reject(e);}tx.oncomplete=()=>resolve(value);tx.onerror=()=>reject(tx.error||Error(message("No se pudo guardar","Could not save","Não foi possível salvar")));tx.onabort=()=>reject(tx.error||Error(message("Límite local de 64 MiB","Local 64 MiB limit","Limite local de 64 MiB")));});});this.tail=job;return job;}
   put(input){
     const data=clone(input.data),file=input.file||null,bytes=new Blob([JSON.stringify(data)]).size+(file?.size||0);
-    if(new Blob([JSON.stringify(data)]).size>1024*1024||file?.size>16*1024*1024)return Promise.reject(Error('Máximo 1 MiB de texto y 16 MiB por imagen / Maximum 1 MiB text and 16 MiB per image'));
+    if(new Blob([JSON.stringify(data)]).size>1024*1024||file?.size>16*1024*1024)return Promise.reject(Error(message("Máximo 1 MiB de texto y 16 MiB por imagen","Maximum 1 MiB text and 16 MiB per image","Máximo de 1 MiB de texto e 16 MiB por imagem")));
     const row={...input,data,file,id:this.id+':'+input.slug+':'+input.key,format:'report-gen-pending',version:1,bytes,updated:Date.now(),token:root.crypto?.randomUUID?.()||String(Date.now())+Math.random()};
     return this.run((store,done,tx)=>{row.workspace_id=this.workspace;const r=store.getAll();r.onsuccess=()=>{let size=bytes;for(const old of r.result){if(old.workspace_id===this.workspace&&old.updated<Date.now()-30*86400000)store.delete(old.id);else if(old.id!==row.id)size+=old.bytes||0;}if(size>64*1024*1024){tx.abort();return;}store.put(row);done(row);};});
   }
@@ -49,12 +51,12 @@ class PendingJournal {
 // Unscoped databases predate workspaces. Reading is explicit, without expiry,
 // adoption or deletion on launch; their ownership cannot be inferred from slug.
 async function legacyDatabase(kind){
- if(!['drafts','pending'].includes(kind))throw Error('Unknown legacy store');
- if(!root.indexedDB)throw Error('Almacenamiento local no disponible / Local storage unavailable');
+ if(!['drafts','pending'].includes(kind))throw Error(message("Almacén antiguo desconocido","Unknown legacy store","Armazenamento legado desconhecido"));
+ if(!root.indexedDB)throw Error(message("Almacenamiento local no disponible","Local storage unavailable","Armazenamento local indisponível"));
  return new Promise((resolve,reject)=>{const request=root.indexedDB.open('report-gen-'+kind,1);let absent=false;
   request.onupgradeneeded=()=>{absent=true;request.transaction.abort();};
   request.onsuccess=()=>resolve(request.result);request.onerror=()=>absent?resolve(null):reject(request.error);
-  request.onblocked=()=>reject(Error('Copias anteriores bloqueadas / Legacy copies blocked'));
+  request.onblocked=()=>reject(Error(message("Copias anteriores bloqueadas","Legacy copies blocked","Cópias legadas bloqueadas")));
  });
 }
 const LegacyBrowserCopies={

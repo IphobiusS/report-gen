@@ -27,7 +27,7 @@ async function sample(page,lang,shown,name){
   const label=initial+' '+(shown?'visible':'hidden');await sample(page,initial,shown,label+' startup labels');
   if(!await page.evaluate(()=>S.slug))await page.getByRole('button',{name:initial==='es'?'Probar demo Nimbus':'Try Nimbus demo',exact:true}).click();await page.waitForFunction(()=>S.slug&&!projectStore.loading&&!projectBusyCount);await idle(page);
   const before=await page.evaluate(()=>({data:JSON.stringify(S.data),etag:projectStore.etag}));
-  await more(page);if(!await page.locator('#studioPreferences').evaluate(el=>el.open))await page.locator('#studioPreferences > summary').click();await page.locator('#langToggle').click();const changed=initial==='es'?'en':'es';await sample(page,changed,shown,label+' language switch labels');
+  await more(page);if(!await page.locator('#studioPreferences').evaluate(el=>el.open))await page.locator('#studioPreferences > summary').click();const changed=initial==='es'?'en':'es';await page.locator('#langToggle').selectOption(changed);await sample(page,changed,shown,label+' language switch labels');
   check(label+' interface switch preserves authored report and revision',await page.evaluate(before=>JSON.stringify(S.data)===before.data&&projectStore.etag===before.etag,before));
   await page.reload();await idle(page);await sample(page,changed,shown,label+' restored labels after real reload');
   if(initial==='es'){

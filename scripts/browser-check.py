@@ -53,7 +53,7 @@ def main():
                 check('Autosave persisted', engine.load_engagement(project/'engagement.yaml')['meta']['report_title']=='Informe de auditoría de interfaz')
                 for lang in ['en','es']:
                     if page.locator('html').get_attribute('lang') != lang:
-                        page.locator('#langToggle').click()
+                        page.locator('#langToggle').select_option(lang)
                     check('Editor language '+lang, page.locator('html').get_attribute('lang') == lang)
                 wait('!projectStore.dirty')
                 page.locator('#previewLoading').wait_for(state='hidden')

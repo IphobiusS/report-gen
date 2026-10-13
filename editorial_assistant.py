@@ -1,5 +1,6 @@
 """Explicit field-only Ollama adapter. Never follows redirects or environment proxies."""
-from error_messages import message as backend_message
+from error_messages import message as backend_message, current_language
+from languages import language_index
 from copy import deepcopy
 from hashlib import sha256
 import http.client
@@ -18,6 +19,12 @@ CLOUD_WARNING = ('Desactiva la nube en el servidor Ollama: OLLAMA_NO_CLOUD=1 y r
                  'report-gen rechaza modelos remotos conocidos; no puede verificar el aislamiento '
                  'de red de otro proceso. / Disable cloud in Ollama and restart it. '
                  'report-gen cannot certify the network isolation of another process.')
+
+
+def cloud_warning():
+    return (CLOUD_WARNING,
+            'Disable cloud in the Ollama server: OLLAMA_NO_CLOUD=1, then restart it. report-gen rejects known remote models; it cannot verify another process’s network isolation.',
+            'Desative a nuvem no servidor Ollama: OLLAMA_NO_CLOUD=1 e reinicie-o. O report-gen rejeita modelos remotos conhecidos; não pode verificar o isolamento de rede de outro processo.')[language_index(current_language())]
 
 
 def digest(text):
@@ -180,7 +187,7 @@ def propose(data, body):
         proposals.append(dict(field=field, before=texts[field], after=after))
     return dict(model=body['model'], finding_uid=body['finding_uid'], proposals=proposals,
                 sources=[dict(field=field, sha256=digest(text)) for field, text in texts.items()],
-                warnings=[CLOUD_WARNING, 'Propuesta no verificada: revisa hechos y significado antes de aceptar. / Unverified proposal: review facts before accepting.'])
+                warnings=[cloud_warning(), backend_message('Propuesta no verificada: revisa hechos y significado antes de aceptar. / Unverified proposal: review facts before accepting.', en='Unverified proposal: review facts and meaning before accepting.', pt='Proposta não verificada: revise os fatos e o significado antes de aceitar.')])
 
 
 def apply(data, proposal, fields):

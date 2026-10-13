@@ -1,6 +1,6 @@
 # report-gen 0.34.5 user guide
 
-[Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
+[Welcome](../README.en.md) · [Español](guide.es.md) · [Português (Brasil)](guide.pt.md) · [Changelog](../CHANGELOG.md)
 
 Unless stated otherwise, run commands from the project root containing `start.py`. Initial setup and optional downloads need a connection; ordinary editing and exports run locally.
 
@@ -59,7 +59,7 @@ Read each engine status in the diagnostic output; its exit code alone does not e
 
 On Overview, choose **Try Nimbus demo** or **Create my project**. With a project open, **Suggested next action** proposes a step based on its title and client, scope objectives, findings, evidence associations and actual results of the last saved review. **View this step in the guide** opens the corresponding explanation. You can also open **Visual tutorial** under **More**, on desktop and mobile and revisit any of its six steps.
 
-First entry offers an optional invitation: **Start tutorial** or **Not now**. The tutorial uses real screenshots with fictional data in Spanish and English, with controls to enlarge them or view actual size. **Escape** closes the screenshot and restores focus to its trigger. It remembers your step in this browser; **Restart tutorial** resets only tutorial progress, without changing projects. If storage is blocked, the tutorial still works during the session. It does not send screenshots to an external service.
+First entry offers an optional invitation: **Start tutorial** or **Not now**. The tutorial uses real screenshots with fictional data in Spanish, English and Brazilian Portuguese, with controls to enlarge them or view actual size. **Escape** closes the screenshot and restores focus to its trigger. It remembers your step in this browser; **Restart tutorial** resets only tutorial progress, without changing projects. If storage is blocked, the tutorial still works during the session. It does not send screenshots to an external service.
 
 Suggestions support writing without requiring a fabricated finding or screenshot: go directly to review when a recommendation does not apply to your assessment. A review with no issues suggests preparing delivery, but does not approve its content. If you edit the draft after review, repeat the saved review before delivery.
 
@@ -74,7 +74,7 @@ CVSS expresses technical severity, not business risk by itself. **Risk Posture a
 
 **Library** recommends Serious as a general starting point. Compare the same sample page: cover, summary or technical page. The gallery contains six general designs, 26 certification and practice profiles, four business report structures and personal templates. Filter by purpose or provider, search by name and compare Brand/Quiet variants. **Enterprise Control Review** adds an editorial composition and eight sections covering control design and operation, sampling, exceptions and retesting. If your project already uses a specialized design, the library opens in that context; browsing does not change its appearance. Appearance and initial structure are separate choices; changing a preset does not replace the selected design.
 
-Every profile supports English and Spanish. Applying an appearance preserves findings. Word uses Calibri; PDF and HTML use compatible Carlito. Commands retain their monospaced font.
+Every profile supports English, Spanish and Brazilian Portuguese. Applying an appearance preserves findings. Word uses Calibri; PDF and HTML use compatible Carlito. Commands retain their monospaced font.
 
 The default WeasyPrint PDF export detects characters lacking a glyph in available fonts and stops before replacing the previous output. The error identifies codes such as `U+1F3E6`: install a font containing those characters or revise the text and export again. Extractable text alone does not prove that the symbol renders correctly. This check does not certify fonts or visual composition in the optional Chromium engine.
 
@@ -246,7 +246,7 @@ Existing IDs are retained. Since 0.21.2, the `finding_sequence` counter prevents
 
 Development and interface tests require Node.js 22+ and an installed Python environment. Run these commands from the project root.
 
-API clients select error language with `X-UI-Language: es` or `en`. An absent or unsupported header keeps the historical Spanish default. URLs opened directly use that default; external library and tool diagnostics remain verbatim. This does not change report language or authored content.
+API clients select error language with `X-UI-Language: es`, `en` or `pt` (`pt-BR` is also accepted). An absent or unsupported header keeps the historical Spanish default. URLs opened directly use that default; external library and tool diagnostics remain verbatim. This does not change report language or authored content.
 
 ```bash
 .venv/bin/python export.py /path/to/data/projects/my-project/engagement.yaml -f html -o report.html

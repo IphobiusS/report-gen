@@ -2,6 +2,7 @@
 from pathlib import Path
 
 import engine
+from languages import language_tag
 
 from .common import sev_label, cvss_label, summary_sev
 from .images import word_image, fit_width, figure_layout, align_inline_picture
@@ -43,7 +44,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     properties = doc.core_properties
     properties.title = str(meta.get("report_title") or "")[:255]
     properties.author = str(meta.get("assessor") or "")[:255]
-    properties.language = str(meta.get("lang") or "")[:255]
+    properties.language = language_tag(engine.report_language(data))
     properties.last_modified_by = ""
     properties.comments = ""
     # The bundled Word template carries 2013 timestamps. Omit these unknown
@@ -52,6 +53,25 @@ def to_docx(data, meta, L, engagement_dir, out_path):
         inherited_date = properties._element.find(qn(date_key))
         if inherited_date is not None:
             properties._element.remove(inherited_date)
+    # Word proofreading and speech inherit the report locale. Technical ASCII
+    # literals receive their existing special locale in the final pass below.
+    defaults = doc.styles.element.find(qn("w:docDefaults"))
+    if defaults is None:
+        defaults = OxmlElement("w:docDefaults")
+        doc.styles.element.insert(0, defaults)
+    rpr_default = defaults.find(qn("w:rPrDefault"))
+    if rpr_default is None:
+        rpr_default = OxmlElement("w:rPrDefault")
+        defaults.insert(0, rpr_default)
+    rpr = rpr_default.find(qn("w:rPr"))
+    if rpr is None:
+        rpr = OxmlElement("w:rPr")
+        rpr_default.append(rpr)
+    locale = rpr.find(qn("w:lang"))
+    if locale is None:
+        locale = OxmlElement("w:lang")
+        rpr.append(locale)
+    locale.set(qn("w:val"), language_tag(engine.report_language(data)))
     doc.styles["Normal"].font.name = "Calibri"
     doc.styles["Normal"].font.size = Pt(10.5)
     theme = meta.get('theme', 'serio')
@@ -307,7 +327,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     # tables that continue at the top of a body page. Reserve a real gap
     # above the unchanged 1.6 cm body margin, independently of cover geometry.
     sec1.header_distance = Cm(0.95)
-    conf = str(br.get("confidential_text") if br.get("confidential_text") is not None else "CONFIDENTIAL")
+    conf = str(br.get("confidential_text") if br.get("confidential_text") is not None else lab["default_confidential"])
     rhright = "  |  ".join(str(value) for value in (conf, "v" + str(meta["version"]) if meta.get("version") else "", meta.get("date")) if value)
     sec1.header.is_linked_to_previous = False
     hp = sec1.header.paragraphs[0]; hp.paragraph_format.tab_stops.add_tab_stop(Cm(17.4), WD_TAB_ALIGNMENT.RIGHT)
@@ -439,7 +459,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
                     render_one_finding(f)
             elif sp == "appendix":
                 render_generic(s)
-                appx = engine.appendix_rows(data["findings"])
+                appx = engine.appendix_rows(data["findings"], L)
                 if appx:
                     heading(lab["appendix"], 2)
                     doc.add_paragraph(L.get("appendix_intro", ""))
@@ -492,7 +512,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
         render_one_finding(finding)
 
     # Appendix
-    appx = engine.appendix_rows(data["findings"])
+    appx = engine.appendix_rows(data["findings"], L)
     if appx:
         heading(lab["appendix"], 1, anchor='sec-appendix', chapter_start=True)
         doc.add_paragraph(L.get("appendix_intro", ""))

@@ -31,7 +31,7 @@ with tempfile.TemporaryDirectory(prefix='rg-studio-0200-',ignore_cleanup_errors=
    pg.screenshot(path=str(out/'dashboard-es-1366.png'))
    for lang in ('es','en'):
     if pg.evaluate('S.uiLang')!=lang:
-     pg.locator('#studioMore').evaluate('(e)=>e.open=true');pg.locator('#studioPreferences').evaluate('(e)=>e.open=true');pg.locator('#langToggle').click();pg.locator('#studioMore').evaluate('(e)=>e.open=false')
+     pg.locator('#studioMore').evaluate('(e)=>e.open=true');pg.locator('#studioPreferences').evaluate('(e)=>e.open=true');pg.locator('#langToggle').select_option('en');pg.locator('#studioMore').evaluate('(e)=>e.open=false')
     for theme in ('dark','light'):
      if pg.evaluate('document.documentElement.dataset.theme')!=theme:
       pg.locator('#studioMore').evaluate('(e)=>e.open=true');pg.locator('#studioPreferences').evaluate('(e)=>e.open=true');pg.locator('#themeToggle').click();pg.locator('#studioMore').evaluate('(e)=>e.open=false')

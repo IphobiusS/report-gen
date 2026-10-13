@@ -28,6 +28,19 @@ WORDS = {
         'evidence_scope': 'These figures were linked to this machine finding. Their collection is not an attack phase.',
         'alternative': 'Text version',
     },
+    'pt': {
+        'title': 'Percurso documentado', 'phase': 'Fase', 'step': 'Passo', 'steps': 'Passos registrados',
+        'no_lead': 'Sem título de passo registrado',
+        'figures': 'Figuras', 'no_figures': 'Sem figura numerada para este passo',
+        'empty_phase': 'Fase sem nome', 'no_phases': 'Nenhuma fase registrada. Nenhum percurso é inferido.',
+        'scope': 'O diagrama agrupa os passos registrados por fase. As setas mostram a ordem de documentação, '
+                 'não causalidade comprovada nem exploração bem-sucedida. Os rótulos abreviados têm (...). '
+                 'Os títulos completos e os passos detalhados aparecem a seguir; comandos não são usados como rótulos do diagrama.',
+        'part': 'Parte', 'of': 'de', 'continued': 'Continuação da parte anterior',
+        'continues': 'Continua na próxima parte', 'evidence': 'Evidência vinculada fora do percurso',
+        'evidence_scope': 'Estas figuras foram vinculadas ao achado desta máquina. Sua coleta não é uma fase de ataque.',
+        'alternative': 'Versão textual',
+    },
     'es': {
         'title': 'Recorrido documentado', 'phase': 'Fase', 'step': 'Paso', 'steps': 'Pasos registrados',
         'no_lead': 'Sin encabezado de paso registrado',
@@ -152,7 +165,8 @@ def build(finding, documented_phase_count, lang='en'):
     documented_phase_count is a structural count captured before workflow adds
     its evidence collection. It contributes no source text or identity.
     """
-    words = WORDS['es' if lang == 'es' else 'en']
+    from languages import normalize_language
+    words = WORDS[normalize_language(lang, default='en')]
     phases = finding.get('phases', [])
     nodes = []
     for i, phase in enumerate(phases[:documented_phase_count]):

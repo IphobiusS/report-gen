@@ -15,6 +15,7 @@ from resources import restricted_fetcher
 from markupsafe import Markup
 import validate as validatelib
 from error_messages import language_scope, message
+from languages import normalize_language, language_tag, language_argument, language_index
 
 ROOT = Path(__file__).resolve().parent
 TEMPLATES = ROOT / "templates"
@@ -33,22 +34,16 @@ def load_engagement(path):
     return data
 
 
-def _deep_merge(base, over):
-    for k, v in (over or {}).items():
-        if isinstance(v, dict) and isinstance(base.get(k), dict):
-            _deep_merge(base[k], v)
-        else:
-            base[k] = v
-    return base
-
-
 def report_language(data):
     """Resolve legacy absent/nullable language without modifying source metadata.
 
     English is the renderer's historical fallback. The wizard continues to
     select Spanish explicitly for new projects.
     """
-    return (data.get("meta") or {}).get("lang") or "en"
+    value = (data.get("meta") or {}).get("lang") or "en"
+    # Preserve an unsupported explicit value so load_lang/validation reject it;
+    # only legacy absent/nullable metadata receives the English default.
+    return normalize_language(value, default=value)
 
 
 def report_title(data):
@@ -56,22 +51,15 @@ def report_title(data):
     title = (data.get("meta") or {}).get("report_title")
     if title is not None and str(title).strip():
         return title
-    return "Informe sin título" if report_language(data) == "es" else "Untitled report"
+    return load_lang(report_language(data))["labels"]["untitled"]
 
 
 def load_lang(lang):
-    """Carga en.yaml como base y superpone el idioma pedido (rellena huecos)."""
-    base = yaml.safe_load((ROOT / "lang" / "en.yaml").read_text(encoding="utf-8"))
-    lang = lang or "en"
-    if lang not in {"en", "es"}:
+    """Load an explicit complete report catalog; absent legacy language stays English."""
+    lang = normalize_language(lang or "en", default=None)
+    if lang is None:
         raise ValueError(message("Idioma no soportado"))
-    if lang != "en":
-        p = ROOT / "lang" / f"{lang}.yaml"
-        if p.exists():
-            _deep_merge(base, yaml.safe_load(p.read_text(encoding="utf-8")))
-        else:
-            print(f"[i] idioma '{lang}' sin paquete, uso en.yaml")
-    return base
+    return yaml.safe_load((ROOT / "lang" / f"{lang}.yaml").read_text(encoding="utf-8"))
 
 
 def number_figures(findings):
@@ -140,7 +128,8 @@ def summary_text(findings, L):
     return text + "."
 
 
-def appendix_rows(findings):
+def appendix_rows(findings, L=None):
+    proof_note = (L or load_lang("en"))["labels"]["proof_note"]
     rows = []
     for f in findings:
         if f.get("host") and f["host"].get("name"):
@@ -151,7 +140,7 @@ def appendix_rows(findings):
             host = f.get("affected", "")
         for p in f.get("proof", []) or []:
             rows.append({"host": host, "item": p.get("name", ""), "value": p.get("value", ""),
-                         "notes": p.get("notes", "Proof file on target")})
+                         "notes": p.get("notes", proof_note)})
         for fl in f.get("flags", []) or []:
             rows.append({"host": fl.get("host", host), "item": fl.get("name", "flag"),
                          "value": fl.get("value", ""), "notes": fl.get("location") or fl.get("method", "")})
@@ -165,7 +154,9 @@ def select_findings(findings, only):
     chosen = [f for f in findings if f.get("id") in wanted]
     missing = wanted - {f.get("id") for f in chosen}
     if missing:
-        sys.exit(f"[!] findings no encontrados: {', '.join(sorted(missing))}")
+        sys.exit(message("[!] hallazgos no encontrados: {ids}",
+                         en="[!] findings not found: {ids}", pt="[!] achados não encontrados: {ids}",
+                         ids=", ".join(sorted(missing))))
     return chosen
 
 
@@ -245,14 +236,15 @@ def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=No
                sev_counts=severity_counts(findings), sev_order=SEVERITY_ORDER,
                summary_text=summary_text(findings, L), unclassified_count=unclassified_count(findings),
                machine_count=machine_count(findings),
-               appendix=appendix_rows(findings),
+               appendix=appendix_rows(findings, L),
+               language_tag=language_tag(report_language(data)),
                theme_css=theme_href or theme_css.as_uri(),
                engagement_dir=img_base or (engagement_dir.as_uri() + "/"), page_map=page_map,
                pagemarks=pagemarks, L=L)
     ctx['machine_graphs'] = []
     if machine_graphs:
         from exporters.machine_graph import build
-        ctx['machine_graphs'] = [build(f, count, meta['lang']) if f.get('mode') == 'machine' else None
+        ctx['machine_graphs'] = [build(f, count, report_language(data)) if f.get('mode') == 'machine' else None
                                  for f, count in zip(findings, documented_phase_counts)]
         ctx['machine_graph_css'] = (THEMES / '_machine_graph.css').read_text(encoding='utf-8')
     if section_based:
@@ -578,7 +570,9 @@ def resolve_backend(backend):
                     "[!] WeasyPrint no disponible ({error}): instala sus librerias de sistema (GTK) o usa --backend chromium",
                     en="[!] WeasyPrint unavailable ({error}): install its system libraries (GTK) or use --backend chromium",
                     error=exc.__class__.__name__))
-            print("[i] Backend PDF: Chromium (WeasyPrint no disponible)")
+            print(message("[i] Backend PDF: Chromium (WeasyPrint no disponible)",
+                          en="[i] PDF backend: Chromium (WeasyPrint unavailable)",
+                          pt="[i] Renderizador PDF: Chromium (WeasyPrint indisponível)"))
             return "chromium"
     return backend
 
@@ -635,16 +629,28 @@ def toc_keys(data):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Generador de informes de pentest (iphobiuss)")
+    probe = argparse.ArgumentParser(add_help=False)
+    probe.add_argument("--error-language", default="es", type=language_argument)
+    initial, _ = probe.parse_known_args()
+    index = language_index(initial.error_language)
+    w = lambda es, en, pt: (es, en, pt)[index]
+    ap = argparse.ArgumentParser(description=w("Generador de informes de pentest (iphobiuss)",
+        "Pentest report generator (iphobiuss)", "Gerador de relatórios de pentest (iphobiuss)"))
     ap.add_argument("engagement")
     ap.add_argument("-o", "--out")
     ap.add_argument("--only")
     ap.add_argument("--html", action="store_true")
     ap.add_argument("--backend", default="auto", choices=["auto", "weasyprint", "chromium"])
-    ap.add_argument("--lang", help="idioma del informe (en, es); sobreescribe meta.lang")
-    ap.add_argument("--theme", help="tema/diseno; sobreescribe meta.theme")
-    ap.add_argument("--error-language", default="es", choices=["es", "en"],
-                    help="idioma de los errores; no cambia el idioma del informe")
+    ap.add_argument("--lang", type=language_argument, help=w(
+        "idioma del informe (es, en, pt/pt-BR); sobreescribe meta.lang",
+        "report language (es, en, pt/pt-BR); overrides meta.lang",
+        "idioma do relatório (es, en, pt/pt-BR); substitui meta.lang"))
+    ap.add_argument("--theme", help=w("tema/diseno; sobreescribe meta.theme",
+        "theme/design; overrides meta.theme", "tema/design; substitui meta.theme"))
+    ap.add_argument("--error-language", default="es", type=language_argument,
+                    help=w("idioma de los errores; no cambia el idioma del informe",
+                           "error language; does not change the report language",
+                           "idioma dos erros; não altera o idioma do relatório"))
     args = ap.parse_args()
     with language_scope(args.error_language):
         return _run(args)
@@ -660,7 +666,7 @@ def _run(args):
     data["findings"] = select_findings(data["findings"], args.only)
     meta = data["meta"]
     if args.lang:
-        meta["lang"] = args.lang
+        meta["lang"] = normalize_language(args.lang, default=args.lang)
     if args.theme:
         meta["theme"] = args.theme
     issues = validatelib.require_valid(data, final=True)
@@ -689,7 +695,8 @@ def _run(args):
         tmp_pdf.unlink(missing_ok=True)
     missing = [k for k in keys if k not in page_map]
     if missing:
-        print(f"[i] sin pagina resuelta para: {', '.join(missing)}")
+        print(message("[i] sin página resuelta para: {ids}", en="[i] unresolved page for: {ids}",
+                      pt="[i] página não resolvida para: {ids}", ids=", ".join(missing)))
 
     html2 = render_html(env, data, engagement_dir, page_map=page_map, pagemarks=False, L=L, machine_graphs=True)
     if args.html:

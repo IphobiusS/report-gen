@@ -2,6 +2,7 @@ import pathlib
 """Catalogo canonico de secciones y resolucion para el renderizador."""
 from pathlib import Path
 import yaml
+from languages import normalize_language
 
 ROOT = Path(__file__).resolve().parent
 CATALOG_PATH = ROOT / "designs" / "report_sections.yaml"
@@ -41,6 +42,7 @@ def preset_by_id(preset_id):
 def preset_sections(preset_id, lang="es"):
     """Devuelve la lista de secciones (con contenido base en el idioma dado) del
     preset. Si el preset no existe o su lista esta vacia, usa default_enabled()."""
+    lang = normalize_language(lang)
     p = preset_by_id(preset_id)
     if not p or not p.get("sections"):
         return default_enabled()
@@ -80,6 +82,7 @@ def is_empty_appendix(section, data, schema=None):
 
 def resolve_sections(data, L, lang):
     """Convierte report.sections (activas + datos) en una lista lista para render."""
+    lang = normalize_language(lang, default="en")
     bykey = catalog_by_key()
     from workflows import report_sections
     enabled = list((data.get("report") or {}).get("sections") or []) + report_sections(data)

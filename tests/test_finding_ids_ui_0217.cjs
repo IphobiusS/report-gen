@@ -9,7 +9,7 @@ const add=source.slice(source.indexOf('function addFinding('),source.indexOf('fu
 const insert=source.slice(source.indexOf('function insertOwasp('),source.indexOf('// ---- preview / descarga'));
 let calls=[];const S={uiLang:'es',data:null};
 const context={S,console,Number,Error,JSON,WorkflowUI:{uid:()=> 'UID'},toast:(message,kind)=>calls.push({message,kind}),finishAdd:()=>calls.push({add:true}),closeModal:()=>{},$:()=>null,openOwasp:()=>{}};
-vm.createContext(context);vm.runInContext(allocation+ensure+add+insert,context);
+vm.createContext(context);vm.runInContext(source.slice(0,source.indexOf('// ---- shared transport'))+allocation+ensure+add+insert,context);
 let checks=0;function check(name,fn){fn();checks++;console.log('PASS '+name);}
 for(const language of ['es','en']) {
  S.uiLang=language;

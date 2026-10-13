@@ -1,4 +1,5 @@
 """Explicit-field, offline remediation deliveries from one saved project revision."""
+from languages import normalize_language, language_index, language_tag
 import csv
 import io
 import unicodedata
@@ -10,18 +11,18 @@ from error_messages import message
 
 
 FIELDS = {
-    'id': ('ID del hallazgo', 'Finding ID'),
-    'finding_uid': ('Referencia permanente', 'Permanent reference'),
-    'title': ('Título', 'Title'),
-    'assets': ('Activos afectados', 'Affected assets'),
-    'action': ('Acción de remediación', 'Remediation action'),
-    'owner': ('Responsable', 'Owner'),
-    'due_date': ('Plazo', 'Due date'),
-    'closure_criteria': ('Criterio de cierre', 'Closure criteria'),
-    'status': ('Estado registrado', 'Recorded status'),
-    'group_uid': ('Referencia del grupo', 'Group reference'),
-    'group_name': ('Grupo por causa raíz', 'Root-cause group'),
-    'shared_action': ('Acción común del grupo', 'Shared group action'),
+    'id': ('ID del hallazgo', 'Finding ID', 'ID do achado'),
+    'finding_uid': ('Referencia permanente', 'Permanent reference', 'Referência permanente'),
+    'title': ('Título', 'Title', 'Título'),
+    'assets': ('Activos afectados', 'Affected assets', 'Ativos afetados'),
+    'action': ('Acción de remediación', 'Remediation action', 'Ação de remediação'),
+    'owner': ('Responsable', 'Owner', 'Responsável'),
+    'due_date': ('Plazo', 'Due date', 'Prazo'),
+    'closure_criteria': ('Criterio de cierre', 'Closure criteria', 'Critério de encerramento'),
+    'status': ('Estado registrado', 'Recorded status', 'Estado registrado'),
+    'group_uid': ('Referencia del grupo', 'Group reference', 'Referência do grupo'),
+    'group_name': ('Grupo por causa raíz', 'Root-cause group', 'Grupo de causa raiz'),
+    'shared_action': ('Acción común del grupo', 'Shared group action', 'Ação comum do grupo'),
 }
 REQUIRED = ('id', 'finding_uid')
 PRIVATE = frozenset({'title', 'assets', 'action', 'owner', 'closure_criteria', 'group_name', 'shared_action'})
@@ -38,8 +39,8 @@ def options(body):
         raise ValueError(message('Confirmación de datos privados inválida', en='Invalid private-data acknowledgement'))
     if PRIVATE.intersection(fields) and body.get('ack_private') is not True:
         raise ValueError(message('Confirma que revisaste los campos que pueden contener datos privados', en='Confirm review of fields that may contain private data'))
-    lang = body.get('lang', 'es')
-    if lang not in ('es', 'en'):
+    lang = normalize_language(body.get('lang', 'es'), None)
+    if lang is None:
         raise ValueError(message('Idioma inválido', en='Invalid language'))
     # A single canonical order keeps preview, CSV and cards consistent.
     return [key for key in FIELDS if key in fields], lang
@@ -70,7 +71,7 @@ def rows(data, fields, lang='es'):
             'title': finding.get('title', ''), 'assets': '\n'.join(asset_lines),
             'action': resolved_action(data, finding), 'owner': finding.get('owner', ''),
             'due_date': finding.get('due_date', ''), 'closure_criteria': finding.get('closure_criteria_md', ''),
-            'status': workflows.STATUSES[finding.get('status', 'open')][lang == 'en'],
+            'status': workflows.STATUSES[finding.get('status', 'open')][language_index(lang)],
             'group_uid': group.get('uid', ''), 'group_name': group.get('name', ''),
             'shared_action': group.get('remediation_md', ''),
         }
@@ -81,7 +82,7 @@ def rows(data, fields, lang='es'):
 
 
 def labels(fields, lang='es'):
-    return {key: FIELDS[key][lang == 'en'] for key in fields}
+    return {key: FIELDS[key][language_index(lang)] for key in fields}
 
 
 def csv_cell(value):
@@ -105,15 +106,12 @@ def csv_bytes(project_rows, fields, lang='es'):
 
 
 def card_html(row, fields, lang='es'):
-    title = 'Tarea de remediación' if lang == 'es' else 'Remediation task'
-    missing = 'Sin registrar' if lang == 'es' else 'Not recorded'
-    note = ('Los campos vacíos no se han completado automáticamente. Esta ficha recoge datos registrados; '
-            'no acredita la corrección. El contenido se muestra como texto.' if lang == 'es' else
-            'Empty fields have not been filled automatically. This card contains recorded data; '
-            'it does not prove remediation. Content is displayed as text.')
+    title = (('Tarea de remediación', 'Remediation task', 'Tarefa de remediação')[language_index(lang)])
+    missing = (('Sin registrar', 'Not recorded', 'Sem registro')[language_index(lang)])
+    note = ((('Los campos vacíos no se han completado automáticamente. Esta ficha recoge datos registrados; no acredita la corrección. El contenido se muestra como texto.', 'Empty fields have not been filled automatically. This card contains recorded data; it does not prove remediation. Content is displayed as text.', 'Os campos vazios não foram preenchidos automaticamente. Esta ficha contém dados registrados; não comprova remediação. O conteúdo é exibido como texto.')[language_index(lang)]))
     entries = ''.join('<dt>' + escape(label) + '</dt><dd>' + escape(row[key] or missing) + '</dd>'
                       for key, label in labels(fields, lang).items())
-    return ('<!doctype html><html lang="' + lang + '"><head><meta charset="utf-8">'
+    return ('<!doctype html><html lang="' + language_tag(lang) + '"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
             '<meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;">'
             '<title>' + title + '</title><style>body{font:16px/1.6 system-ui,sans-serif;max-width:54rem;'

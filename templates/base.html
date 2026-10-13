@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="{{ meta.lang or 'en' }}">
+<html lang="{{ language_tag }}">
 {% set br = meta.branding or {} %}
 {% set wordmark = br.wordmark or 'iphobiuss' %}
 {% set byline = br.byline or meta.assessor or 'iphobiuss' %}
-{% set conf = br.confidential_text or 'CONFIDENTIAL' %}
+{% set conf = br.confidential_text or L.labels.default_confidential %}
 {% set rhright = conf ~ '  |  v' ~ (meta.version or '') ~ '  |  ' ~ (meta.date or '') %}
 <head>
 <meta charset="utf-8">

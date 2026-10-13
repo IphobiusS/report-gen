@@ -1,4 +1,5 @@
 """Release 0.17 workflows: queued exports, assisted intake and visual comparisons."""
+from languages import language_index
 from error_messages import message as backend_message
 from io import BytesIO
 from flask import request, jsonify, abort, send_file, session, Response
@@ -116,7 +117,7 @@ def register(api):
             label = record2['label'] + ' / ' + record2['created']
         else:
             new = dict(project_history.project_files(directory))
-            label = 'Current / Actual / ' + revision(directory / 'engagement.yaml')[:12]
+            label = ('Actual / ', 'Current / ', 'Atual / ')[language_index(request.args.get('lang', 'es'))] + revision(directory / 'engagement.yaml')[:12]
             for name, blob in new.items():
                 if name.startswith('attachments/'):
                     __import__('attachments').validate_blob(name,blob)

@@ -11,6 +11,15 @@ function h(tag, attrs, ...kids) {
   for (const c of kids.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c));
   return e;
 }
+// Language selection only affects product prose. Authored report content is never translated.
+function normalizeUiLanguage(value, fallback = "es") {
+  const language = String(value || "").toLowerCase();
+  if (language === "pt-br" || language === "pt") return "pt";
+  return ["es", "en"].includes(language) ? language : fallback;
+}
+function languageTag(language = S.uiLang) { return normalizeUiLanguage(language) === "pt" ? "pt-BR" : normalizeUiLanguage(language); }
+function uiText(es, en, pt, language = S.uiLang) { return ({es, en, pt})[normalizeUiLanguage(language)]; }
+
 // ---- shared transport and preview interfaces -------------------------------
 const transport = ReportTransport.create({
   fetch: (...args) => fetch(...args), workspace: BrowserWorkspace,
@@ -141,7 +150,196 @@ const I18N = {
     cvss_paste_bad:"invalid vector for this version", duplicate_finding:"Duplicate", save_to_lib:"\u2605 Template", lib_open:"\u2605 Library", lib_title:"Findings library", lib_empty:"No saved templates yet. Use \u201c\u2605 Template\u201d on a finding.", lib_insert:"Insert", lib_delete:"Delete", lib_saved:"Saved to library", export_findings:"\u21e3 Export", import_findings:"\u21e1 Import", findings_imported:"finding(s) imported", lib_name_prompt:"Template name:",
     unsaved:"You have unsaved changes. Leave anyway?",
     create_fail:"Could not create", delete_confirm:"Delete project \"{n}\"?\nThis permanently removes its report and images."
-  }
+  },
+  pt: {
+  "new_project": "Novo projeto",
+  "new_project_start": "Etapa 2 de 2. Revise o modelo e preencha os dados do projeto.",
+  "new_project_options": "Alterar a estrutura inicial",
+  "new_project_library": "Voltar à galeria",
+  "delete": "Excluir",
+  "delete_title": "Excluir o projeto atual",
+  "hide_preview": "Ocultar prévia",
+  "show_preview": "Mostrar prévia",
+  "preview_toggle_title": "Mostrar ou ocultar a prévia",
+  "ui_lang_title": "Idioma da interface",
+  "validate_title": "Validar relatório",
+  "translating": "Atualizando…",
+  "toast_created": "Projeto criado",
+  "toast_exported": "Exportado",
+  "toast_copied": "Copiado",
+  "exporting": "Gerando",
+  "validate_ok": "Nenhum aviso",
+  "validate_issues": "aviso(s)",
+  "dash_sort_sev": "Severidade",
+  "dash_sort_manual": "Manual",
+  "dash_incomplete": "CVSS ou CWE não registrados (opcionais). A exportação continua disponível.",
+  "theme_light": "Tema claro",
+  "theme_dark": "Tema escuro",
+  "update_preview": "Atualizar prévia",
+  "export": "Exportar",
+  "rename": "Renomear",
+  "rename_title": "Alterar o nome do projeto (título do relatório)",
+  "rename_prompt": "Novo nome do projeto:",
+  "credit_by": "Desenvolvido por",
+  "recommended": "recomendada",
+  "sec_title": "Título da seção",
+  "sec_body": "Conteúdo (Markdown)",
+  "lang_label": "Idioma",
+  "cert_label": "Certificação",
+  "htb_family": "HTB (certificação)",
+  "preset_label": "Modelo",
+  "preset_note": "Os nomes «estilo OSCP/HTB» são descritivos; sem afiliação à OffSec ou à Hack The Box.",
+  "search_ph": "Pesquisar no projeto…",
+  "search_none": "Nenhum resultado",
+  "export_format_title": "Formato de exportação",
+  "project_title": "Projeto",
+  "loading": "carregando…",
+  "restore": "Restaurar",
+  "restore_title": "Restaurar a versão anterior",
+  "restore_pending": "Salve as alterações antes de restaurar",
+  "markdown_bundle": "Markdown + imagens (ZIP)",
+  "saved": "salvo",
+  "saving": "salvando…",
+  "ready": "pronto",
+  "uptodate": "atualizado",
+  "updating": "atualizando…",
+  "err": "erro",
+  "report": "Relatório",
+  "sections_head": "Seções do relatório",
+  "manage_sections": "Gerenciar seções",
+  "findings_head": "Achados",
+  "add_finding": "Adicionar achado",
+  "blank": "Em branco",
+  "empty": "Crie um projeto em «Novo projeto» (acima) ou selecione um na lista.",
+  "cover_meta": "Capa / Metadados",
+  "report_title": "Título do relatório",
+  "subtitle": "Subtítulo",
+  "client": "Cliente",
+  "subtitle_ph": "ex.: Relatório de achados — Aplicação web",
+  "assessor_ph": "ex.: Nome Sobrenome",
+  "assessor_title_ph": "ex.: Ethical Hacker / Pentester",
+  "version_ph": "ex.: 1.0",
+  "osid": "ID do avaliador",
+  "osid_ph": "ex.: OS-12345 (opcional)",
+  "email_ph": "ex.: nome@exemplo.com",
+  "wordmark_ph": "ex.: sua marca",
+  "byline_ph": "ex.: Nome / marca",
+  "target_ph": "ex.: https://app.cliente.com",
+  "date": "Data (YYYY-MM-DD)",
+  "assessor": "Avaliador",
+  "assessor_title": "Cargo do avaliador",
+  "version": "Versão",
+  "design": "Design",
+  "report_lang": "Idioma",
+  "wordmark": "Marca em texto",
+  "byline": "Autoria (rodapé)",
+  "cover_image": "Imagem de capa",
+  "own_logo": "Seu logotipo",
+  "client_logo": "Logotipo do cliente",
+  "remove": "Remover",
+  "conf_text": "Texto de confidencialidade",
+  "accent": "Cor de destaque",
+  "contacts_scope_note": "Os contatos e o escopo são editados nas respectivas seções (Contatos do trabalho e Escopo e objetivos).",
+  "client_contacts": "Contatos do cliente",
+  "assessor_team": "Equipe avaliadora",
+  "scope_targets": "Escopo (objetivos / alvos)",
+  "name": "Nome",
+  "role": "Cargo",
+  "email": "E-mail",
+  "target": "Alvo",
+  "description": "Descrição",
+  "add_row": "+ Adicionar",
+  "vuln": "Vulnerabilidade",
+  "machine": "Máquina",
+  "delete_finding": "Excluir achado",
+  "finding_data": "Dados do achado",
+  "title": "Título",
+  "severity": "Severidade",
+  "cwe": "CWE",
+  "cwe_ph": "digite um número ou nome (ex.: 312 ou XSS)",
+  "cwe_notfound": "(não consta na lista carregada)",
+  "affected": "Domínio/host afetado",
+  "content": "Conteúdo",
+  "desc_root": "Descrição / causa raiz",
+  "impact": "Impacto de segurança",
+  "remediation": "Remediação",
+  "references": "Referências",
+  "rem_summary": "Resumo da remediação",
+  "calculator": "Calculadora ",
+  "untitled": "(sem título)",
+  "new_finding": "Novo achado",
+  "host": "Host",
+  "machine_name": "Nome da máquina",
+  "attack_path": "Caminho de ataque / resumo",
+  "phase_name_ph": "ex.: Acesso inicial",
+  "ip": "Endereço IP",
+  "ip_ph": "ex.: 10.10.10.5",
+  "os": "Sistema operacional",
+  "os_ph": "ex.: Windows Server 2019 / Ubuntu 22.04",
+  "ports": "Portas abertas (TCP)",
+  "ports_ph": "ex.: 22, 80, 443, 445",
+  "attack_path_ph": "ex.: Enumeração -> acesso inicial -> escalada de privilégios",
+  "machine_hint": "Cada fase agrupa etapas. O comando de cada etapa deve ficar em «Bloco de código», e não no nome da fase.",
+  "step": "Etapa",
+  "add_step": "+ Bloco / etapa",
+  "lead": "Destaque (negrito)",
+  "step_text": "Texto (Markdown)",
+  "code_block": "Bloco de código / comando",
+  "image": "Imagem",
+  "caption_ph": "Legenda",
+  "remove_image": "Remover imagem",
+  "phase": "Fase",
+  "remove_phase": "✕ fase",
+  "add_phase": "+ Fase",
+  "procedure": "Procedimento detalhado",
+  "add_ref": "+ Referência",
+  "evidence": "Evidência (local.txt / proof.txt / flags)",
+  "ev_name": "Nome",
+  "ev_value": "Valor / hash",
+  "note_summary": "Gerado automaticamente a partir dos achados e suas severidades.",
+  "dash_sev": "Severidade",
+  "dash_finding": "Achado",
+  "dash_cwe": "CWE",
+  "dash_cvss": "CVSS",
+  "dash_empty": "Ainda não há achados. Adicione um em «Adicionar achado».",
+  "dash_machine": "Máquina",
+  "note_appendix": "A tabela de evidências (hosts, flags, hashes) é gerada a partir dos achados; acima você pode adicionar apêndices de texto.",
+  "report_title_ph": "Avaliação de Segurança ...",
+  "client_ph": "Cliente Ltda.",
+  "slug_label": "Nome da pasta (slug)",
+  "slug_ph": "cliente-2026",
+  "cancel": "Cancelar",
+  "create": "Criar",
+  "close": "Fechar",
+  "sections_modal_h": "Seções do relatório",
+  "sections_hint": "Ative as seções necessárias. As obrigatórias não podem ser desmarcadas.",
+  "done": "Pronto",
+  "preview_head": "Prévia",
+  "live": "HTML",
+  "delete_finding_confirm": "Excluir este achado?",
+  "copy_vector": "Copiar vetor",
+  "copied": "Copiado",
+  "copy_vector_failed": "Não foi possível copiar. Selecione o vetor e copie-o manualmente.",
+  "cvss_paste_label": "Colar vetor",
+  "cvss_paste_ph": "cole um vetor completo (com ou sem CVSS:x.x/) para calcular automaticamente",
+  "cvss_paste_bad": "vetor inválido para esta versão",
+  "duplicate_finding": "Duplicar",
+  "save_to_lib": "★ Modelo",
+  "lib_open": "★ Biblioteca",
+  "lib_title": "Biblioteca de achados",
+  "lib_empty": "Nenhum modelo salvo. Use «★ Modelo» em um achado.",
+  "lib_insert": "Inserir",
+  "lib_delete": "Excluir",
+  "lib_saved": "Salvo na biblioteca",
+  "export_findings": "⇣ Exportar",
+  "import_findings": "⇡ Importar",
+  "findings_imported": "achado(s) importado(s)",
+  "lib_name_prompt": "Nome do modelo:",
+  "unsaved": "Há alterações não salvas. Sair mesmo assim?",
+  "create_fail": "Não foi possível criar",
+  "delete_confirm": "Excluir o projeto \"{n}\"?\nIsso exclui permanentemente o relatório e suas imagens."
+}
+
 };
 function t(key) { const L = S.uiLang || "es"; return (I18N[L] && I18N[L][key]) || I18N.es[key] || key; }
 function applyStaticI18n() {
@@ -153,38 +351,39 @@ function applyStaticI18n() {
   if (previewToggle) previewToggle.textContent = S.previewVisible ? t("hide_preview") : t("show_preview");
   const validateButton = $("#validateBtn");
   if (validateButton) validateButton.setAttribute("aria-label", t("validate_title"));
-  document.documentElement.lang = S.uiLang || "es";
+  document.documentElement.lang = languageTag();
+  $(".brand-caption").textContent = uiText("Informes de pentest", "Pentest reporting", "Relatórios de pentest") + (S.version ? " / v"+S.version : "");
   renderProjectSelect();
   if (S.formats) {
     const format = $("#exportFormat"), selected = format.value;
-    format.replaceChildren(...S.formats.map(spec => h("option", {value:spec.key}, spec["label_"+(S.uiLang === "en" ? "en" : "es")])));
+    format.replaceChildren(...S.formats.map(spec => h("option", {value:spec.key}, spec["label_"+S.uiLang])));
     if (S.formats.some(spec => spec.key === selected)) format.value = selected;
   }
 }
 function setUiLang(lang) {
   invalidateValidation();
+  lang = normalizeUiLanguage(lang);
   S.uiLang = lang;
   try { localStorage.setItem("rg.uiLang", lang); } catch (_) {}
-  const b = document.getElementById("langToggle"); if (b) b.textContent = lang.toUpperCase();
+  updateLangBtn();
   applyStaticI18n();
   if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.update();
   // Interface language is a preference. Report language is edited explicitly in metadata.
   renderSidebar(); renderMain();
   if (S.previewVisible && S.previewMode === "live") refreshLivePreview();
 }
-function toggleUiLang() { setUiLang(S.uiLang === "en" ? "es" : "en"); }
 
 const SEV_RANK = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
 const SEV = [["critical", "Crítica"], ["high", "Alta"], ["medium", "Media"], ["low", "Baja"], ["info", "Informativa"]];
 function severityLabel(key) {
-  if (!key) return S.uiLang === "en" ? "Pending assessment" : "Pendiente de valoración";
-  return S.uiLang === "en" ? ({critical:"Critical",high:"High",medium:"Medium",low:"Low",info:"Informational"}[key] || key) : (SEV.find(s=>s[0]===key)?.[1] || key);
+  if (!key) return uiText("Pendiente de valoración", "Pending assessment", "Avaliação pendente");
+  return ({en:{critical:"Critical",high:"High",medium:"Medium",low:"Low",info:"Informational"},pt:{critical:"Crítica",high:"Alta",medium:"Média",low:"Baixa",info:"Informativa"}}[S.uiLang]?.[key] || SEV.find(s=>s[0]===key)?.[1] || key);
 }
 
 // ---- reordenar arrastrando --------------------------------------------------
 let dragCtx = null;
 function dragHandle(arr, i) {
-  return h("span", { class: "drag", draggable: "true", title: S.uiLang==="en"?"Drag to reorder":"Arrastrar para reordenar",
+  return h("span", { class: "drag", draggable: "true", title: uiText("Arrastrar para reordenar", "Drag to reorder", "Arrastar para reordenar"),
     ondragstart: e => { dragCtx = { arr, from: i }; e.dataTransfer.effectAllowed = "move"; e.stopPropagation(); } }, "\u283F");
 }
 function makeDropZone(el, arr, i) {
@@ -331,7 +530,7 @@ function showValidationPanel(issues) {
 function setPvStatus(t) { $("#pvStatus").textContent = t; }
 
 function updateLangBtn() {
-  $("#langToggle").textContent = (S.uiLang || "es").toUpperCase();
+  $("#langToggle").value = normalizeUiLanguage(S.uiLang);
 }
 
 // ---- carga -----------------------------------------------------------------
@@ -340,9 +539,8 @@ async function init() {
   const sessionInfo = await api.get("/api/session");
   S.workspace_id=transport.bindSession(sessionInfo);
   // Restore the preference before modules create their first controls.
-  { let l = ["es","en"].includes(sessionInfo.ui_language) ? sessionInfo.ui_language : "es"; try { const stored = localStorage.getItem("rg.uiLang"); if (["es","en"].includes(stored)) l = stored; } catch (_) {} S.uiLang = l; }
+  { let l = normalizeUiLanguage(sessionInfo.ui_language); try { l = normalizeUiLanguage(localStorage.getItem("rg.uiLang"), l); } catch (_) {} S.uiLang = l; }
   S.version=sessionInfo.version;
-  $(".brand-caption").textContent="Pentest reporting / v"+S.version;
   S.formats = await api.get("/api/export-formats");
   S.designs = await api.get("/api/designs");
   S.owasp.web = await api.get("/api/owasp/web");
@@ -384,7 +582,7 @@ function renderProjectSelect() {
   if (!sel) return;
   const selected = S.slug || sel.value;
   sel.innerHTML = "";
-  S.projects.forEach(p => sel.append(h("option", { value: p.slug }, (p.title || p.slug)+(p.archived?" ["+(S.uiLang==='en'?'Archived':'Archivado')+"]":""))));
+  S.projects.forEach(p => sel.append(h("option", { value: p.slug }, (p.title || p.slug)+(p.archived?" ["+(uiText('Archivado', 'Archived', "Arquivado"))+"]":""))));
   if (S.projects.some(project => project.slug === selected)) sel.value = selected;
 }
 async function loadProject(slug) {
@@ -411,13 +609,13 @@ async function loadProject(slug) {
 // ---- sidebar ---------------------------------------------------------------
 const findingPageState = { slug:null, sidebar:0, board:0, boardKey:"" };
 function workspacePageBar(area, total, page, size, change) {
-  const pages=Math.max(1,Math.ceil(total/size)), english=S.uiLang==="en";
-  const nav=h("nav",{class:"workspace-pagebar","data-workspace-pagination":area,"aria-label":english?"Pagination":"Paginación"});
+  const pages=Math.max(1,Math.ceil(total/size));
+  const nav=h("nav",{class:"workspace-pagebar","data-workspace-pagination":area,"aria-label":uiText("Paginación", "Pagination", "Paginação")});
   const update=next=>{change(Math.max(0,Math.min(pages-1,next)));requestAnimationFrame(()=>document.querySelector('[data-workspace-pagination="'+area+'"] select')?.focus({preventScroll:true}));};
-  const selectPage=h("select",{"aria-label":english?"Choose page":"Elegir página",onchange:e=>update(Number(e.target.value))},Array.from({length:pages},(_,index)=>h("option",{value:index,selected:index===page?"":null},String(index+1)+" / "+pages)));
-  nav.append(h("span",{class:"workspace-pagebar-count",role:"status"},total?String(page*size+1)+"–"+Math.min(total,(page+1)*size)+(english?" of ":" de ")+total:(english?"0 items":"0 elementos")),
-    h("button",{type:"button",class:"btn sm","aria-label":english?"Previous page":"Página anterior",disabled:page===0?"":null,onclick:()=>update(page-1)},"‹"),selectPage,
-    h("button",{type:"button",class:"btn sm","aria-label":english?"Next page":"Página siguiente",disabled:page===pages-1?"":null,onclick:()=>update(page+1)},"›"));
+  const selectPage=h("select",{"aria-label":uiText("Elegir página", "Choose page", "Escolher página"),onchange:e=>update(Number(e.target.value))},Array.from({length:pages},(_,index)=>h("option",{value:index,selected:index===page?"":null},String(index+1)+" / "+pages)));
+  nav.append(h("span",{class:"workspace-pagebar-count",role:"status"},total?String(page*size+1)+"–"+Math.min(total,(page+1)*size)+(uiText(" de ", " of ", " de "))+total:(uiText("0 elementos", "0 items", "0 itens"))),
+    h("button",{type:"button",class:"btn sm","aria-label":uiText("Página anterior", "Previous page", "Página anterior"),disabled:page===0?"":null,onclick:()=>update(page-1)},"‹"),selectPage,
+    h("button",{type:"button",class:"btn sm","aria-label":uiText("Página siguiente", "Next page", "Próxima página"),disabled:page===pages-1?"":null,onclick:()=>update(page+1)},"›"));
   return nav;
 }
 function renderSidebar(pageOverride) {
@@ -428,7 +626,7 @@ function renderSidebar(pageOverride) {
   const secs = (S.data && S.data.report && S.data.report.sections) || [];
   secs.forEach((sec, i) => {
     const schema = S.catBy[sec.key] || {};
-    const lang = (S.data.meta.lang || "en");
+    const lang = normalizeUiLanguage(S.data.meta.lang, "en");
     const title = sec.title || schema["title_" + lang] || schema.title_es || sec.key;
     const active = S.sel.type === "section" && S.sel.key === sec.key;
     const li = h("li", { draggable: "true", class: active ? "active" : "" },
@@ -437,7 +635,7 @@ function renderSidebar(pageOverride) {
       schema.special ? h("span", { class: "sect-badge" }, schema.special) : null));
     li.addEventListener("dragstart", e => { dragCtx = { arr: secs, from: i }; e.dataTransfer.effectAllowed = "move"; });
     makeDropZone(li, secs, i);
-    if(secs.length>1)li.append(h("button",{type:"button",class:"btn sm","data-section-move":sec.key,"aria-label":(S.uiLang==="en"?"Move ":"Mover ")+title,onclick:()=>moveFindingDialog(sec.key,true)},S.uiLang==="en"?"Move":"Mover"));
+    if(secs.length>1)li.append(h("button",{type:"button",class:"btn sm","data-section-move":sec.key,"aria-label":(uiText("Mover ", "Move ", "Mover "))+title,onclick:()=>moveFindingDialog(sec.key,true)},uiText("Mover", "Move", "Mover")));
     sl.append(li);
   });
   // hallazgos
@@ -468,14 +666,14 @@ function renderSidebar(pageOverride) {
 // ---- buscador global -------------------------------------------------------
 function searchTargets() {
   const d = S.data, out = [];
-  const w = (es,en) => S.uiLang === "en" ? en : es;
+  const w = uiText;
   if (!d) return out;
   const m = d.meta || {}, rep = { type: "report" };
-  [["report_title", w("Título", "Title")], ["report_subtitle", w("Subtítulo", "Subtitle")], ["client", w("Cliente", "Client")], ["assessor", w("Evaluador", "Assessor")], ["assessor_title", w("Cargo", "Role")], ["version", w("Versión", "Version")]]
-    .forEach(([k, lab]) => { if (m[k]) out.push({ nav: rep, where: w("Informe", "Report") + " / " + lab, text: String(m[k]) }); });
-  ((m.contacts && m.contacts.client) || []).forEach(c => out.push({ nav: { type: "section", key: "contacts" }, where: w("Contactos del cliente", "Client contacts"), text: [c.name, c.title, c.email].filter(Boolean).join(" ") }));
-  ((m.contacts && m.contacts.assessor) || []).forEach(c => out.push({ nav: { type: "section", key: "contacts" }, where: w("Equipo evaluador", "Assessment team"), text: [c.name, c.title, c.email].filter(Boolean).join(" ") }));
-  (m.scope || []).forEach(s => out.push({ nav: { type: "section", key: "scope" }, where: w("Alcance", "Scope"), text: [s.target, s.description].filter(Boolean).join(" ") }));
+  [["report_title", w("Título", "Title", "Título")], ["report_subtitle", w("Subtítulo", "Subtitle", "Subtítulo")], ["client", w("Cliente", "Client", "Cliente")], ["assessor", w("Evaluador", "Assessor", "Avaliador")], ["assessor_title", w("Cargo", "Role", "Cargo")], ["version", w("Versión", "Version", "Versão")]]
+    .forEach(([k, lab]) => { if (m[k]) out.push({ nav: rep, where: w("Informe", "Report", "Relatório") + " / " + lab, text: String(m[k]) }); });
+  ((m.contacts && m.contacts.client) || []).forEach(c => out.push({ nav: { type: "section", key: "contacts" }, where: w("Contactos del cliente", "Client contacts", "Contatos do cliente"), text: [c.name, c.title, c.email].filter(Boolean).join(" ") }));
+  ((m.contacts && m.contacts.assessor) || []).forEach(c => out.push({ nav: { type: "section", key: "contacts" }, where: w("Equipo evaluador", "Assessment team", "Equipe avaliadora"), text: [c.name, c.title, c.email].filter(Boolean).join(" ") }));
+  (m.scope || []).forEach(s => out.push({ nav: { type: "section", key: "scope" }, where: w("Alcance", "Scope", "Escopo"), text: [s.target, s.description].filter(Boolean).join(" ") }));
   ((d.report && d.report.sections) || []).forEach(sec => {
     const schema = S.catBy[sec.key] || {};
     const nav = { type: "section", key: sec.key }, where = sec.title || schema["title_" + (S.uiLang || "es")] || schema.title_es || sec.key;
@@ -486,16 +684,16 @@ function searchTargets() {
   (d.findings || []).forEach((f, idx) => {
     const nav = { type: "finding", idx }, location = f.id + (f.title ? " " + f.title : "");
     if (f.id) out.push({ nav, where: location + " \u00b7 ID", text: String(f.id), findingId: true });
-    [["title", w("Título", "Title")], ["cwe", "CWE"], ["affected", "Host"], ["description_md", w("Descripción", "Description")], ["impact_md", w("Impacto", "Impact")], ["remediation_md", w("Remediación", "Remediation")]]
+    [["title", w("Título", "Title", "Título")], ["cwe", "CWE"], ["affected", "Host"], ["description_md", w("Descripción", "Description", "Descrição")], ["impact_md", w("Impacto", "Impact", "Impacto")], ["remediation_md", w("Remediación", "Remediation", "Remediação")]]
       .forEach(([k, lab]) => { if (f[k]) out.push({ nav, where: location + " \u00b7 " + lab, text: String(f[k]) }); });
     (f.references || []).forEach(r => { if (r) out.push({ nav, where: location + " \u00b7 Ref", text: r }); });
-    if (f.host) [["name", w("Máquina", "Machine")], ["ip", "IP"], ["os", w("SO", "OS")]].forEach(([k, lab]) => { if (f.host[k]) out.push({ nav, where: location + " \u00b7 " + lab, text: f.host[k] }); });
-    if (f.open_ports) out.push({ nav, where: location + " / " + w("Puertos", "Ports"), text: f.open_ports });
-    if (f.summary_md) out.push({ nav, where: location + " / " + w("Ruta", "Path"), text: f.summary_md });
-    const addStep = st => ["lead", "text_md", "command"].forEach(k => { if(st[k])out.push({nav,where:location+" / "+w("Paso","Step"),text:String(st[k])}); });
+    if (f.host) [["name", w("Máquina", "Machine", "Máquina")], ["ip", "IP"], ["os", w("SO", "OS", "SO")]].forEach(([k, lab]) => { if (f.host[k]) out.push({ nav, where: location + " \u00b7 " + lab, text: f.host[k] }); });
+    if (f.open_ports) out.push({ nav, where: location + " / " + w("Puertos", "Ports", "Portas"), text: f.open_ports });
+    if (f.summary_md) out.push({ nav, where: location + " / " + w("Ruta", "Path", "Caminho"), text: f.summary_md });
+    const addStep = st => ["lead", "text_md", "command"].forEach(k => { if(st[k])out.push({nav,where:location+" / "+w("Paso", "Step", "Etapa"),text:String(st[k])}); });
     (f.walkthrough || []).forEach(addStep);
     (f.phases || []).forEach(ph => {
-      if (ph.name) out.push({ nav, where: location + " / " + w("Fase", "Phase"), text: ph.name });
+      if (ph.name) out.push({ nav, where: location + " / " + w("Fase", "Phase", "Fase"), text: ph.name });
       (ph.steps || []).forEach(addStep);
     });
   });
@@ -568,7 +766,7 @@ function renderSearch(q) {
 
 function select(type, val) { if(typeof WorkbenchUI!=="undefined")WorkbenchUI.position(); S.sel = (type === "section") ? { type, key: val } : { type, idx: val }; renderSidebar(); renderMain(); }
 function findingSequenceError() {
-  return Error(S.uiLang === "en" ? "The finding identifier counter is exhausted. Existing findings can still be edited and exported." : "Se agotó el contador de identificadores de hallazgos. Puedes seguir editando y exportando los hallazgos existentes.");
+  return Error(uiText("Se agotó el contador de identificadores de hallazgos. Puedes seguir editando y exportando los hallazgos existentes.", "The finding identifier counter is exhausted. Existing findings can still be edited and exported.", "O contador de identificadores de achados se esgotou. Os achados existentes ainda podem ser editados e exportados."));
 }
 function findingSequence(data) {
   let sequence=data.finding_sequence||0;
@@ -624,7 +822,7 @@ function renderMain() {
   }
   if (!S.data) { el.append(h("div", { class: "empty" }, t("empty"))); return; }
   if(S.sel.type === "studio")StudioUI.render(el,S.sel.idx);
-  else if (S.sel.type === "findings") el.append(h("h2",{},S.uiLang==="en"?"Findings":"Hallazgos"),findingsDashboard());
+  else if (S.sel.type === "findings") el.append(h("h2",{},uiText("Hallazgos", "Findings", "Achados")),findingsDashboard());
   else if (S.sel.type === "capture") WorkbenchUI.inbox(el);
   else if (S.sel.type === "report") el.append(reportEditor());
   else if (S.sel.type === "section") el.append(sectionEditor(S.sel.key));
@@ -641,7 +839,7 @@ async function adoptSavedProject(data, etag) {
   projectStore.revision++;projectStore.savedRevision=projectStore.revision;projectStore.lastSavedAt=new Date();projectStore.lastError=null;
   let draftCleanupFailed=false;
   try{if(projectStore.journal)await projectStore.journal.clearOwn(S.slug);projectStore.recoverableRevision=0;projectStore.draftError=null;}
-  catch(error){projectStore.draftError=error;draftCleanupFailed=true;toast(S.uiLang==='en'?'Saved. An older browser draft could not be removed; review Stored private data.':'Guardado. No se pudo eliminar un borrador anterior del navegador; revisa Datos privados guardados.','err');}
+  catch(error){projectStore.draftError=error;draftCleanupFailed=true;toast(uiText('Guardado. No se pudo eliminar un borrador anterior del navegador; revisa Datos privados guardados.', 'Saved. An older browser draft could not be removed; review Stored private data.', "Salvo. Não foi possível remover um rascunho anterior do navegador; revise Dados privados armazenados."),'err');}
   UndoUI.clear();WorkbenchUI.dirty();WorkflowUI.resetReview?.();ProgressUI.saveState('saved');
   return {draftCleanupFailed};
 }
@@ -650,15 +848,15 @@ function moveFindingDialog(identity, section=false) {
   if(index<0)return;
   const previous=document.activeElement, slug=S.slug, titleId="finding-move-"+WorkflowUI.uid();
   const dialog=h("dialog",{class:"experience-dialog","aria-labelledby":titleId}),body=h("div",{class:"experience-body"});
-  const close=h("button",{type:"button",class:"btn",onclick:()=>dialog.close()},S.uiLang==="en"?"Close":"Cerrar");
+  const close=h("button",{type:"button",class:"btn",onclick:()=>dialog.close()},uiText("Cerrar", "Close", "Fechar"));
   const position=h("input",{type:"number",min:1,max:findings.length,value:index+1,"data-finding-position":section?null:"","data-section-position":section?"":null});
-  const label=S.uiLang==="en"?"Destination position":"Posición de destino";
+  const label=uiText("Posición de destino", "Destination position", "Posição de destino");
   const error=h("p",{role:"alert"});
-  body.append(h("p",{},S.uiLang==="en"?(section?"Change section order without changing its content.":"Change the manual order across pages. Finding IDs and evidence links stay unchanged."):(section?"Cambia el orden de las secciones sin modificar su contenido.":"Cambia el orden manual entre páginas. Los IDs y vínculos de evidencia se conservan.")),h("label",{},label,position),error,
+  body.append(h("p",{},section?uiText("Cambia el orden de las secciones sin modificar su contenido.","Change section order without changing its content.","Altere a ordem das seções sem modificar o conteúdo."):uiText("Cambia el orden manual entre páginas. Los IDs y vínculos de evidencia se conservan.","Change the manual order across pages. Finding IDs and evidence links stay unchanged.","Altere a ordem manual entre as páginas. Os IDs dos achados e os vínculos de evidências são preservados.")),h("label",{},label,position),error,
     h("button",{type:"button",class:"btn primary","data-finding-move-apply":section?null:"","data-section-move-apply":section?"":null,onclick:()=>{
-      if(S.slug!==slug||(section?S.data?.report?.sections:S.data?.findings)!==findings||projectBusyCount>0){error.textContent=S.uiLang==="en"?"The project changed. Reopen the move dialog.":"El proyecto cambió. Vuelve a abrir el diálogo de orden.";return;}
+      if(S.slug!==slug||(section?S.data?.report?.sections:S.data?.findings)!==findings||projectBusyCount>0){error.textContent=uiText("El proyecto cambió. Vuelve a abrir el diálogo de orden.", "The project changed. Reopen the move dialog.", "O projeto mudou. Abra novamente a janela de ordenação.");return;}
       const to=Number(position.value), from=findings.findIndex(f=>f[idKey]===identity);
-      if(!position.value.trim()||!Number.isInteger(to)||to<1||to>findings.length||from<0){error.textContent=S.uiLang==="en"?"Choose an existing position.":"Elige una posición existente.";position.focus();return;}
+      if(!position.value.trim()||!Number.isInteger(to)||to<1||to>findings.length||from<0){error.textContent=uiText("Elige una posición existente.", "Choose an existing position.", "Escolha uma posição existente.");position.focus();return;}
       if(from===to-1){dialog.close();return;}
       const selected=!section&&S.sel.type==="finding"?findings[S.sel.idx]?.uid:null;
       UndoUI.move(findings,from,to-1);
@@ -666,8 +864,8 @@ function moveFindingDialog(identity, section=false) {
       scheduleSave();renderSidebar();renderMain();
       if(!section&&S.sel.type==="findings"){findingPageState.board=Math.floor((to-1)/50);renderMain();}
       dialog.close();
-    }},S.uiLang==="en"?(section?"Move section":"Move finding"):(section?"Mover sección":"Mover hallazgo")));
-  dialog.append(h("div",{class:"experience-heading"},h("h2",{id:titleId},(section?(findings[index].title||findings[index].key):findings[index].id)+" · "+(S.uiLang==="en"?"Manual order":"Orden manual")),close),body);
+    }},section?uiText("Mover sección","Move section","Mover seção"):uiText("Mover hallazgo","Move finding","Mover achado")));
+  dialog.append(h("div",{class:"experience-heading"},h("h2",{id:titleId},(section?(findings[index].title||findings[index].key):findings[index].id)+" · "+(uiText("Orden manual", "Manual order", "Ordem manual"))),close),body);
   dialog.addEventListener("close",()=>{dialog.remove();const replacement=document.querySelector('['+(section?'data-section-move':'data-finding-move')+'="'+CSS.escape(identity)+'"]');(previous?.isConnected?previous:replacement||$("#editor")).focus({preventScroll:true});});
   document.body.append(dialog);dialog.showModal();position.focus();position.select();
 }
@@ -675,8 +873,8 @@ function findingsDashboard() {
   const box = h("div", {});
   const actions=h("div",{class:"finding-create-actions"},
     h("button",{type:"button",class:"btn primary","data-finding-create":"blank",onclick:()=>{addFinding("blank");$("#editor").focus({preventScroll:true});}},t("add_finding")),
-    h("button",{type:"button",class:"btn","data-finding-create":"library",onclick:()=>$("#libBtn").click()},S.uiLang==="en"?"Use finding library":"Usar biblioteca de hallazgos"));
-  if(typeof BulkUI!=="undefined")actions.append(h("button",{type:"button",class:"btn","data-bulk-open":"",onclick:()=>BulkUI.open()},S.uiLang==="en"?"Bulk edit":"Editar por lotes"));
+    h("button",{type:"button",class:"btn","data-finding-create":"library",onclick:()=>$("#libBtn").click()},uiText("Usar biblioteca de hallazgos", "Use finding library", "Usar biblioteca de achados")));
+  if(typeof BulkUI!=="undefined")actions.append(h("button",{type:"button",class:"btn","data-bulk-open":"",onclick:()=>BulkUI.open()},uiText("Editar por lotes", "Bulk edit", "Editar em lote")));
   box.append(actions);
   const all = (S.data.findings || []);
   const vulns = all.filter(f => f.mode !== "machine");
@@ -745,7 +943,7 @@ function findingsDashboard() {
     title.append(WorkbenchUI.findingChips(f));
     if (incomplete) title.append(h("span", { class: "dash-warn", title: t("dash_incomplete") }, "!"));
     const tr = h("tr", { class: "dash-row", "data-finding-uid":f.uid, onclick: e => { if (!e.target.closest(".drag")) select("finding", idx); } },
-      canDrag ? h("td", { class: "c-drag" }, dragHandle(S.data.findings, idx),h("button",{type:"button",class:"btn sm","data-finding-move":f.uid,"aria-label":(S.uiLang==="en"?"Move ":"Mover ")+f.id,onclick:event=>{event.stopPropagation();moveFindingDialog(f.uid);}},S.uiLang==="en"?"Move":"Mover")) : null,
+      canDrag ? h("td", { class: "c-drag" }, dragHandle(S.data.findings, idx),h("button",{type:"button",class:"btn sm","data-finding-move":f.uid,"aria-label":(uiText("Mover ", "Move ", "Mover "))+f.id,onclick:event=>{event.stopPropagation();moveFindingDialog(f.uid);}},uiText("Mover", "Move", "Mover"))) : null,
       h("td", { class: "c-n" }, f.id || ("F" + (idx + 1))),
       h("td", {}, sevCell), title,
       h("td", { class: "c-cwe" }, isM ? host : (cwe || "—")),
@@ -754,8 +952,8 @@ function findingsDashboard() {
     tb.append(tr);
   });
   tbl.append(tb);
-  if(!rows.length)box.append(h("p",{role:"status"},S.uiLang==="en"?"No findings match these filters. Use Clear filters to see all findings.":"No hay hallazgos con estos filtros. Usa Limpiar filtros para verlos todos."));
-  box.append(h("div",{class:"findings-table-scroll",role:"region",tabindex:"0","aria-label":S.uiLang==="en"?"Findings table. Scroll horizontally on small screens.":"Tabla de hallazgos. Desplazamiento horizontal en pantallas pequeñas."},tbl));
+  if(!rows.length)box.append(h("p",{role:"status"},uiText("No hay hallazgos con estos filtros. Usa Limpiar filtros para verlos todos.", "No findings match these filters. Use Clear filters to see all findings.", "Nenhum achado corresponde a estes filtros. Use Limpar filtros para ver todos os achados.")));
+  box.append(h("div",{class:"findings-table-scroll",role:"region",tabindex:"0","aria-label":uiText("Tabla de hallazgos. Desplazamiento horizontal en pantallas pequeñas.", "Findings table. Scroll horizontally on small screens.", "Tabela de achados. Role horizontalmente em telas pequenas.")},tbl));
   return box;
 }
 function noteCard(text) {
@@ -780,7 +978,7 @@ function scopeListEditor() {
 
 function sectionEditor(key) {
   const schema = S.catBy[key] || {};
-  const lang = (S.data.meta.lang || "en");
+  const lang = normalizeUiLanguage(S.data.meta.lang, "en");
   const sec = S.data.report.sections.find(s => s.key === key) || {};
   const wrap = h("div", {});
   const isGeneric = !S.catBy[key];
@@ -853,24 +1051,24 @@ function field(label, obj, key, opts = {}) {
   if (opts.ph) inp.setAttribute("placeholder", opts.ph);
   const control=h("label", {}, label, inp);
   if(opts.area&&key.endsWith('_md'))return h('div',{class:'markdown-field'},control,
-    h('button',{type:'button',class:'btn sm','data-markdown-link':key,onclick:()=>openMarkdownLink(inp,()=>inp.dispatchEvent(new Event('input',{bubbles:true})))},S.uiLang==='en'?'Link':'Enlace'));
+    h('button',{type:'button',class:'btn sm','data-markdown-link':key,onclick:()=>openMarkdownLink(inp,()=>inp.dispatchEvent(new Event('input',{bubbles:true})))},uiText('Enlace', 'Link', "Link")));
   return control;
 }
 
 function openMarkdownLink(ta, apply, onInserted = () => {}) {
-const w = (es, en) => S.uiLang === "en" ? en : es;
+  const w = uiText;
   const start=ta.selectionStart,end=ta.selectionEnd,original=ta.value,slug=S.slug;
   const selected=original.slice(start,end),isUrl=/^https?:\/\/\S+$/i.test(selected);
   const name=h('input',{type:'text',required:'','data-link-name':'',value:isUrl?'':selected,maxlength:500});
   const target=h('input',{type:'url',required:'','data-link-url':'',value:isUrl?selected:'',placeholder:'https://'});
   const status=h('p',{role:'alert','data-link-error':''});
-  const cancel=h('button',{type:'button',class:'btn'},w('Cancelar','Cancel'));
-  const submit=h('button',{type:'submit',class:'btn primary'},w('Insertar enlace','Insert link'));
-  const form=h('form',{class:'modal-box'},h('h3',{},w('Insertar enlace','Insert link')),
-    h('p',{},w('Escribe el texto que verá el lector. El destino conserva la URL completa.','Enter the text the reader will see. The destination retains the complete URL.')),
-    h('label',{},w('Nombre descriptivo','Descriptive name'),name),h('label',{},'URL',target),status,
+  const cancel=h('button',{type:'button',class:'btn'},w('Cancelar', 'Cancel', "Cancelar"));
+  const submit=h('button',{type:'submit',class:'btn primary'},w('Insertar enlace', 'Insert link', "Inserir link"));
+  const form=h('form',{class:'modal-box'},h('h3',{},w('Insertar enlace', 'Insert link', "Inserir link")),
+    h('p',{},w('Escribe el texto que verá el lector. El destino conserva la URL completa.', 'Enter the text the reader will see. The destination retains the complete URL.', "Digite o texto que o leitor verá. O destino mantém a URL completa.")),
+    h('label',{},w('Nombre descriptivo', 'Descriptive name', "Nome descritivo"),name),h('label',{},'URL',target),status,
     h('div',{class:'row'},cancel,submit));
-  const dialog=h('dialog',{class:'modal','aria-label':w('Insertar enlace','Insert link'),'data-link-dialog':''},form);
+  const dialog=h('dialog',{class:'modal','aria-label':w('Insertar enlace', 'Insert link', "Inserir link"),'data-link-dialog':''},form);
   for(const input of [name,target])input.addEventListener('input',()=>{status.textContent='';});
   cancel.addEventListener('click',()=>dialog.close());
   dialog.addEventListener('close',()=>{dialog.remove();if(ta.isConnected)ta.focus({preventScroll:true});});
@@ -880,11 +1078,11 @@ const w = (es, en) => S.uiLang === "en" ? en : es;
     let valid=false;
     try{const parsed=new URL(url);valid=/^https?:\/\//i.test(url)&&['http:','https:'].includes(parsed.protocol)&&!/[\s<>\\]/.test(url);}catch(_){}
     if(!label.trim()||/[\r\n]/.test(label)||!valid){
-      status.textContent=w('Escribe un nombre y una URL HTTP o HTTPS completa, sin espacios.','Enter a name and a complete HTTP or HTTPS URL without spaces.');
+      status.textContent=w('Escribe un nombre y una URL HTTP o HTTPS completa, sin espacios.', 'Enter a name and a complete HTTP or HTTPS URL without spaces.', "Digite um nome e uma URL HTTP ou HTTPS completa, sem espaços.");
       (!label.trim()?name:target).focus();return;
     }
     if(S.slug!==slug||!ta.isConnected||ta.value!==original){
-      status.textContent=w('El texto o el proyecto cambió. Cierra el diálogo y vuelve a insertar el enlace.','The text or project changed. Close this dialog and insert the link again.');return;
+      status.textContent=w('El texto o el proyecto cambió. Cierra el diálogo y vuelve a insertar el enlace.', 'The text or project changed. Close this dialog and insert the link again.', "O texto ou o projeto mudou. Feche esta janela e insira o link novamente.");return;
     }
     // Angle-delimited Markdown destinations retain parentheses, query
     // strings and percent escapes. Never normalize through URL.href.
@@ -899,7 +1097,7 @@ const w = (es, en) => S.uiLang === "en" ? en : es;
 
 // Editor Markdown estilo SysReptor: barra + Write/Preview + imagen + tabla.
 function mdEditor(label, obj, key, opts = {}) {
-  const w = (es, en) => S.uiLang === "en" ? en : es;
+  const w = uiText;
   const ta = h("textarea", { rows: opts.rows || 10, class: "grow", "aria-label":label });
   ta.id = "markdown-" + WorkflowUI.uid(); ta.value = obj[key] || ""; ta.dataset.field = key;
   const prev = h("div", { class: "mded-prev", style: "display:none" });
@@ -936,26 +1134,26 @@ function mdEditor(label, obj, key, opts = {}) {
       const file = e.target.files[0]; if (!file) return;
       const r = await sendImage(file);
       if (!r) return;
-      insertAtCursor(`\n![${w("epígrafe de la imagen", "image caption")}](${r.src}){width="auto"}\n`);
+      insertAtCursor(`\n![${w("epígrafe de la imagen", "image caption", "legenda da imagem")}](${r.src}){width="auto"}\n`);
       setSaveState(t("saved"));
     } });
 
   const tb = (txt, title, fn) => h("button", { class: "mded-btn", type: "button", title, "aria-label":title, onclick: fn }, txt);
   const bar = h("div", { class: "mded-bar" },
-    tb("B", w("Negrita", "Bold"), () => insert("**", "**", w("texto", "text"))),
-    tb("i", w("Cursiva", "Italic"), () => insert("*", "*", w("texto", "text"))),
-    tb("</>", w("Código en línea", "Inline code"), () => insert("`", "`", w("código", "code"))),
-    tb("{ }", w("Bloque de código", "Code block"), () => insert("```bash\n", "\n```", w("comando", "command"))),
-    tb("H", w("Encabezado en negrita", "Bold heading"), () => insert("**", "**", w("encabezado", "heading"))),
-    tb("•", w("Lista", "List"), () => prefixLines("- ")),
-    tb("1.", w("Lista numerada", "Numbered list"), () => prefixLines("1. ")),
-    tb("❝", w("Cita", "Quote"), () => prefixLines("> ")),
-    tb(w("Enlace", "Link"), w("Enlace", "Link"), () => openMarkdownLink(ta,apply,()=>{if(ta.style.display==='none')wTab.click();})),
-    tb(w("Imagen", "Image"), w("Subir imagen", "Upload image"), () => fileInp.click()),
-    tb(w("Tabla", "Table"), w("Insertar tabla", "Insert table"), () => insertAtCursor("\n| Col1 | Col2 |\n|---|---|\n| a | b |\n")),
+    tb("B", w("Negrita", "Bold", "Negrito"), () => insert("**", "**", w("texto", "text", "texto"))),
+    tb("i", w("Cursiva", "Italic", "Itálico"), () => insert("*", "*", w("texto", "text", "texto"))),
+    tb("</>", w("Código en línea", "Inline code", "Código em linha"), () => insert("`", "`", w("código", "code", "código"))),
+    tb("{ }", w("Bloque de código", "Code block", "Bloco de código"), () => insert("```bash\n", "\n```", w("comando", "command", "comando"))),
+    tb("H", w("Encabezado en negrita", "Bold heading", "Título em negrito"), () => insert("**", "**", w("encabezado", "heading", "título"))),
+    tb("•", w("Lista", "List", "Lista"), () => prefixLines("- ")),
+    tb("1.", w("Lista numerada", "Numbered list", "Lista numerada"), () => prefixLines("1. ")),
+    tb("❝", w("Cita", "Quote", "Citação"), () => prefixLines("> ")),
+    tb(w("Enlace", "Link", "Link"), w("Enlace", "Link", "Link"), () => openMarkdownLink(ta,apply,()=>{if(ta.style.display==='none')wTab.click();})),
+    tb(w("Imagen", "Image", "Imagem"), w("Subir imagen", "Upload image", "Enviar imagem"), () => fileInp.click()),
+    tb(w("Tabla", "Table", "Tabela"), w("Insertar tabla", "Insert table", "Inserir tabela"), () => insertAtCursor("\n| Col1 | Col2 |\n|---|---|\n| a | b |\n")),
     h("span", { class: "mded-sp" }),
-    (() => { const b = h("button", { class: "mded-tab active", type: "button" }, w("Editar", "Write")); b.dataset.role = "w"; return b; })(),
-    (() => { const b = h("button", { class: "mded-tab", type: "button" }, w("Vista previa", "Preview")); b.dataset.role = "p"; return b; })(),
+    (() => { const b = h("button", { class: "mded-tab active", type: "button" }, w("Editar", "Write", "Editar")); b.dataset.role = "w"; return b; })(),
+    (() => { const b = h("button", { class: "mded-tab", type: "button" }, w("Vista previa", "Preview", "Prévia")); b.dataset.role = "p"; return b; })(),
     fileInp
   );
   const wTab = bar.querySelector('[data-role="w"]'), pTab = bar.querySelector('[data-role="p"]');
@@ -968,8 +1166,8 @@ function mdEditor(label, obj, key, opts = {}) {
     try {
       const r = await api.post("/api/md", { text, slug }).then(requireOk).then(x => x.json());
       if (!current()) return;
-      prev.innerHTML = r.html || "<em>" + w("(vacío)", "(empty)") + "</em>";
-    } catch (_) { if (current()) prev.innerHTML = "<em>" + w("error al renderizar", "rendering failed") + "</em>"; }
+      prev.innerHTML = r.html || "<em>" + w("(vacío)", "(empty)", "(vazio)") + "</em>";
+    } catch (_) { if (current()) prev.innerHTML = "<em>" + w("error al renderizar", "rendering failed", "falha na renderização") + "</em>"; }
   });
   const box = h("div", { class: "mded" }, bar, ta, prev);
   return h("div", { class: "mdedlabel" }, h("label", { for: ta.id }, label), box);
@@ -991,13 +1189,13 @@ function reportEditor() {
            field(t("osid"), m, "osid", { ph: t("osid_ph") }), field(t("email"), m, "email", { ph: t("email_ph") }));
   // diseño (theme) e idioma
   const themeSel = h("select", { "data-field":"theme", onchange: e => { m.theme = e.target.value; delete m.design; scheduleSave(); renderMain(); } },
-    ["serio", "corporativo", "offsec", "htb", "ejecutivo", "laboratorio"].map(t => h("option", { value: t, selected: m.theme === t ? "" : null }, t)));
-  const langSel = h("select", { onchange: e => { m.lang = e.target.value; scheduleSave(); } },
-    ["es", "en"].map(t => h("option", { value: t, selected: (m.lang || "en") === t ? "" : null }, t)));
+    [["serio",uiText("Formal","Formal","Formal")],["corporativo",uiText("Corporativo","Corporate","Corporativo")],["offsec","OffSec"],["htb","HTB"],["ejecutivo",uiText("Ejecutivo","Executive","Executivo")],["laboratorio",uiText("Laboratorio","Laboratory","Laboratório")]].map(([theme, label]) => h("option", { value: theme, selected: m.theme === theme ? "" : null }, label)));
+  const langSel = h("select", { "data-field":"lang", onchange: e => { m.lang = e.target.value; scheduleSave(); renderSidebar(); renderMain(); $('#editor [data-field="lang"]')?.focus(); } },
+    [ ["es", "Español"], ["en", "English"], ["pt", "Português (Brasil)"] ].map(([code, name]) => h("option", { value: code, selected: normalizeUiLanguage(m.lang, "en") === code ? "" : null }, name)));
   g.append(h("label", {}, t("design"), themeSel), h("label", {}, t("report_lang"), langSel));
   const density=h("select", {"data-field":"report_density", onchange:e=>{m.report_density=e.target.value;scheduleSave();}},
-    [ ["comfortable",S.uiLang==="en"?"Comfortable":"Cómoda"], ["compact",S.uiLang==="en"?"Compact":"Compacta"] ].map(([v,label])=>h("option",{value:v,selected:(m.report_density||"comfortable")===v?"":null},label)));
-  g.append(h("label",{},S.uiLang==="en"?"Report spacing":"Espaciado del informe",density));
+    [ ["comfortable",uiText("Cómoda", "Comfortable", "Confortável")], ["compact",uiText("Compacta", "Compact", "Compacto")] ].map(([v,label])=>h("option",{value:v,selected:(m.report_density||"comfortable")===v?"":null},label)));
+  g.append(h("label",{},uiText("Espaciado del informe", "Report spacing", "Espaçamento do relatório"),density));
   c1.append(g);
   const b = m.branding = m.branding || {};
   const g2 = h("div", { class: "grid2" });
@@ -1029,7 +1227,7 @@ function listCard(title, arr, factory, rowFields, beforeEdit=()=>{}) {
 function findingEditor(f) {
   const wrap = h("div", {});
   const head = h("h2", {}, `${f.id} `);
-  const modeSel = h("select", { "aria-label":S.uiLang === "en" ? "Finding type" : "Tipo de hallazgo", style: "width:auto;display:inline-block;margin-left:8px", onchange: e => { f.mode = e.target.value; scheduleSave(); renderMain(); } },
+  const modeSel = h("select", { "aria-label":uiText("Tipo de hallazgo", "Finding type", "Tipo de achado"), style: "width:auto;display:inline-block;margin-left:8px", onchange: e => { f.mode = e.target.value; scheduleSave(); renderMain(); } },
     [["vuln", t("vuln")], ["machine", t("machine")]].map(o => h("option", { value: o[0], selected: f.mode === o[0] ? "" : null }, o[1])));
   head.append(modeSel);
   head.append(h("button", { class: "btn sm", style: "float:right;margin-left:8px", onclick: () => {
@@ -1042,9 +1240,9 @@ function findingEditor(f) {
   wrap.append(head);
   wrap.append(f.mode === "machine" ? machineEditor(f) : vulnEditor(f));
   const tracking=WorkflowUI.findingPanel(f);
-  const evidencePart=h("section",{"data-workpart":"evidence",class:"finding-part"},h("h3",{},S.uiLang==="en"?"Evidence":"Evidencias"));
+  const evidencePart=h("section",{"data-workpart":"evidence",class:"finding-part"},h("h3",{},uiText("Evidencias", "Evidence", "Evidências")));
   const evidenceLinks=tracking.querySelector('[data-field="evidence_uids"]');if(evidenceLinks)evidencePart.append(evidenceLinks);
-  evidencePart.append(h("button",{type:"button",class:"btn",onclick:()=>select("workflow","evidence")},S.uiLang==="en"?"Open evidence gallery":"Abrir galería de evidencias"));
+  evidencePart.append(h("button",{type:"button",class:"btn",onclick:()=>select("workflow","evidence")},uiText("Abrir galería de evidencias", "Open evidence gallery", "Abrir galeria de evidências")));
   WorkbenchUI.findingWorkspace(evidencePart,f);
   const remediationPart=wrap.querySelector('[data-workpart="remediation"]');
   if(remediationPart)remediationPart.before(evidencePart);else wrap.append(evidencePart);
@@ -1126,7 +1324,7 @@ function vulnEditor(f) {
   const rs=f.remediation_summary||{}, persistRemediation=()=>f.remediation_summary=rs;
   const c3 = h("div", { class: "card" }, h("h4", {}, t("rem_summary")));
   c3.append(field(t("remediation"),f,"remediation_md",{area:true,rows:4}));
-  c3.append(field(S.uiLang==="en"?"Short term":"Corto plazo", rs, "short_md",{onChange:persistRemediation}), field(S.uiLang==="en"?"Medium term":"Mediano plazo", rs, "medium_md",{onChange:persistRemediation}), field(S.uiLang==="en"?"Long term":"Largo plazo", rs, "long_md",{onChange:persistRemediation}));
+  c3.append(field(uiText("Corto plazo", "Short term", "Curto prazo"), rs, "short_md",{onChange:persistRemediation}), field(uiText("Mediano plazo", "Medium term", "Médio prazo"), rs, "medium_md",{onChange:persistRemediation}), field(uiText("Largo plazo", "Long term", "Longo prazo"), rs, "long_md",{onChange:persistRemediation}));
   box.append(h("section",{"data-workpart":"remediation",class:"finding-part"},c3));
   return box;
 }
@@ -1232,9 +1430,7 @@ function saveToLibrary(f) { WorkflowUI.saveTemplate(f).catch(error => toast(erro
 function openLibrary() { WorkflowUI.openLibrary(); }
 function exportFindings() {
   if (!S.data) return;
-  if ((S.data.findings || []).some(f => f.root_cause_uid) && !confirm(S.uiLang === "en"
-    ? "This JSON contains individual findings, without their root-cause groups or shared actions. Finding-specific remediation stays unchanged. Use a full project backup to preserve those relationships, or Remediation tasks to export resolved actions. Continue?"
-    : "Este JSON contiene los hallazgos individuales, sin sus grupos de causa raíz ni acciones comunes. La remediación específica se conserva sin cambios. Usa un respaldo completo del proyecto para conservar los vínculos, o Tareas de remediación para exportar las acciones resueltas. ¿Continuar?")) return;
+  if ((S.data.findings || []).some(f => f.root_cause_uid) && !confirm(uiText("Este JSON contiene los hallazgos individuales, sin sus grupos de causa raíz ni acciones comunes. La remediación específica se conserva sin cambios. Usa un respaldo completo del proyecto para conservar los vínculos, o Tareas de remediación para exportar las acciones resueltas. ¿Continuar?", "This JSON contains individual findings, without their root-cause groups or shared actions. Finding-specific remediation stays unchanged. Use a full project backup to preserve those relationships, or Remediation tasks to export resolved actions. Continue?", "Este JSON contém achados individuais, sem os grupos de causa raiz ou as ações compartilhadas. A remediação específica de cada achado permanece inalterada. Use um backup completo do projeto para preservar esses vínculos, ou Tarefas de remediação para exportar ações resolvidas. Continuar?"))) return;
   const blob = new Blob([JSON.stringify(S.data.findings || [], null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = h("a", { href: url, download: (S.slug || "hallazgos") + "-findings.json" }); a.click(); URL.revokeObjectURL(url);
@@ -1244,29 +1440,27 @@ async function importFindings(ev) {
   const slug=S.slug, current=S.data, revision=projectStore.revision, etag=projectStore.etag, snapshot=JSON.stringify(current);
   const unchanged=()=>S.slug===slug && S.data===current && projectStore.revision===revision && projectStore.etag===etag && JSON.stringify(S.data)===snapshot;
   try {
-    if (file.size>24*1024*1024) throw Error(S.uiLang === "en" ? "The file exceeds 24 MiB." : "El archivo supera 24 MiB.");
-    const text=await new Promise((resolve,reject)=>{const rd=new FileReader();rd.onload=()=>resolve(rd.result);rd.onerror=()=>reject(Error(S.uiLang === "en" ? "Could not read the file." : "No se pudo leer el archivo."));rd.readAsText(file);});
+    if (file.size>24*1024*1024) throw Error(uiText("El archivo supera 24 MiB.", "The file exceeds 24 MiB.", "O arquivo excede 24 MiB."));
+    const text=await new Promise((resolve,reject)=>{const rd=new FileReader();rd.onload=()=>resolve(rd.result);rd.onerror=()=>reject(Error(uiText("No se pudo leer el archivo.", "Could not read the file.", "Não foi possível ler o arquivo.")));rd.readAsText(file);});
     const parsed=JSON.parse(text), arr=Array.isArray(parsed)?parsed:parsed && typeof parsed==='object' && Array.isArray(parsed.findings)?parsed.findings:null;
-    if (!arr || arr.some(f=>!f || typeof f!=='object' || Array.isArray(f) || (f.mode!==undefined && !['vuln','machine'].includes(f.mode)))) throw Error(S.uiLang === "en" ? "Use an array of findings or an object with a findings array. Each finding must be an object with type vuln or machine." : "Usa una lista de hallazgos o un objeto con la lista findings. Cada hallazgo debe ser un objeto de tipo vuln o machine.");
+    if (!arr || arr.some(f=>!f || typeof f!=='object' || Array.isArray(f) || (f.mode!==undefined && !['vuln','machine'].includes(f.mode)))) throw Error(uiText("Usa una lista de hallazgos o un objeto con la lista findings. Cada hallazgo debe ser un objeto de tipo vuln o machine.", "Use an array of findings or an object with a findings array. Each finding must be an object with type vuln or machine.", "Use uma lista de achados ou um objeto com uma lista findings. Cada achado deve ser um objeto do tipo vuln ou machine."));
     if (!arr.length) { toast("0 "+t("findings_imported"),"ok"); return; }
-    if (arr.some(f=>f.root_cause_uid) && !confirm(S.uiLang === "en"
-      ? "These findings reference root-cause groups from their original project. This import removes those links and does not transfer groups or shared actions. Finding-specific remediation stays unchanged. To preserve everything, import a full project backup. Continue?"
-      : "Estos hallazgos contienen vínculos a grupos de causa raíz del proyecto de origen. Esta importación retira esos vínculos y no incorpora grupos ni acciones comunes. La remediación específica se conserva sin cambios. Para conservar todo, importa un respaldo completo del proyecto. ¿Continuar?")) return;
+    if (arr.some(f=>f.root_cause_uid) && !confirm(uiText("Estos hallazgos contienen vínculos a grupos de causa raíz del proyecto de origen. Esta importación retira esos vínculos y no incorpora grupos ni acciones comunes. La remediación específica se conserva sin cambios. Para conservar todo, importa un respaldo completo del proyecto. ¿Continuar?", "These findings reference root-cause groups from their original project. This import removes those links and does not transfer groups or shared actions. Finding-specific remediation stays unchanged. To preserve everything, import a full project backup. Continue?", "Estes achados fazem referência a grupos de causa raiz do projeto original. Esta importação remove esses vínculos e não transfere grupos ou ações compartilhadas. A remediação específica de cada achado permanece inalterada. Para preservar tudo, importe um backup completo do projeto. Continuar?"))) return;
     const candidate=JSON.parse(snapshot);
     for (const f of arr) {
       const g=JSON.parse(JSON.stringify(f));g.id='F'+nextFid(candidate).slice(1).padStart(2,'0');g.uid=WorkflowUI.uid();g.mode ??= 'vuln';
       delete g.__name;delete g.asset_uids;delete g.evidence_uids;delete g.retests;delete g.root_cause_uid;delete g.reported_remediation;
       g.status='open';g.verification='unverified';if(g.import_source)g.import_source.reviewed=false;candidate.findings.push(g);
     }
-    if (!unchanged()) throw Error(S.uiLang === "en" ? "The project changed. Import the file again." : "El proyecto cambió. Importa el archivo otra vez.");
+    if (!unchanged()) throw Error(uiText("El proyecto cambió. Importa el archivo otra vez.", "The project changed. Import the file again.", "O projeto mudou. Importe o arquivo novamente."));
     const response=await requireOk(await appFetch('/api/projects/'+encodeURIComponent(slug)+'/draft-check',{method:'POST',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(candidate)}));
     const accepted=(await response.json()).data;
-    if (!unchanged()) throw Error(S.uiLang === "en" ? "The project changed. Import the file again." : "El proyecto cambió. Importa el archivo otra vez.");
+    if (!unchanged()) throw Error(uiText("El proyecto cambió. Importa el archivo otra vez.", "The project changed. Import the file again.", "O projeto mudou. Importe o arquivo novamente."));
     // Undo records refer to the existing model arrays; adopt only the approved additions.
     current.findings.push(...accepted.findings.slice(current.findings.length));
     current.finding_sequence=accepted.finding_sequence;
     scheduleSave();renderSidebar();renderMain();toast(arr.length+" "+t("findings_imported"),"ok");
-  } catch (error) { toast(error instanceof SyntaxError ? (S.uiLang === "en" ? "Invalid JSON file." : "Archivo JSON inválido.") : error.message,"err"); }
+  } catch (error) { toast(error instanceof SyntaxError ? (uiText("Archivo JSON inválido.", "Invalid JSON file.", "Arquivo JSON inválido.")) : error.message,"err"); }
   finally { ev.target.value=""; }
 }
 function addFinding(kind) {
@@ -1283,23 +1477,23 @@ function openOwasp(kind) {
   const cat = S.owasp[kind];
   $("#owaspTitle").textContent = cat.catalog;
   const list = $("#owaspList"); list.innerHTML = "";
-  const es = (S.data.meta.lang || "en") === "es";
+  const reportLanguage = normalizeUiLanguage(S.data.meta.lang, "en");
   cat.items.forEach(it => {
     list.append(h("li", {},
-      h("div", { class: "oid" }, `${it.id}  ${es ? it.name_es : it.name}`),
-      h("div", { class: "osum" }, es ? it.summary_es : it.summary),
-      h("button", { class: "btn sm primary", onclick: () => insertOwasp(it) }, S.uiLang === "en" ? "Insert as finding" : "Insertar como hallazgo")));
+      h("div", { class: "oid" }, `${it.id}  ${uiText(it.name_es, it.name, it.name_pt, reportLanguage)}`),
+      h("div", { class: "osum" }, uiText(it.summary_es, it.summary, it.summary_pt, reportLanguage)),
+      h("button", { class: "btn sm primary", onclick: () => insertOwasp(it) }, uiText("Insertar como hallazgo", "Insert as finding", "Inserir como achado"))));
   });
   openModal($("#owaspModal"));
 }
 function insertOwasp(it) {
-  const es = (S.data.meta.lang || "en") === "es";
+  const reportLanguage = normalizeUiLanguage(S.data.meta.lang, "en");
   const id=requestedFindingId(); if (!id) return;
   S.data.findings.push({
     id, mode: "vuln",
-    title: `${it.id} ${es ? it.name_es : it.name}`,
+    title: `${it.id} ${uiText(it.name_es, it.name, it.name_pt, reportLanguage)}`,
     severity: "high", cvss: "", cvss_vector: "",
-    cwe: it.cwe || "", description_md: es ? it.summary_es : it.summary,
+    cwe: it.cwe || "", description_md: uiText(it.summary_es, it.summary, it.summary_pt, reportLanguage),
     references: it.ref ? [it.ref] : [],
   });
   closeModal($("#owaspModal"));
@@ -1333,13 +1527,14 @@ function toggleSection(key, on) { on ? enableSection(key) : disableSection(key);
 function openSectionsModal() {
   const focusedKey=document.activeElement?.dataset.sectionKey;
   const cat = S.catalog, box = $("#sectionCatalog"); box.innerHTML = "";
-  const lang = (S.data.meta.lang || "en");
+  const lang = normalizeUiLanguage(S.data.meta.lang, "en");
   const enabled = new Set(S.data.report.sections.map(s => s.key));
   const groups = cat.groups || [...new Set(cat.sections.map(s => s.group))];
   groups.forEach(g => {
     const secs = cat.sections.filter(s => s.group === g).sort((a, b) => (a.order || 999) - (b.order || 999));
     if (!secs.length) return;
-    box.append(h("div", { class: "grp" }, g));
+    const groupNames = {portada:["Portada", "Cover", "Capa"], ejecutivo:["Ejecutivo", "Executive", "Executivo"], alcance:["Alcance", "Scope", "Escopo"], hallazgos:["Hallazgos", "Findings", "Achados"], apendices:["Apéndices", "Appendices", "Apêndices"]};
+    box.append(h("div", { class: "grp" }, groupNames[g] ? uiText(...groupNames[g]) : g));
     secs.forEach(s => {
       const cb = h("input", { type: "checkbox", "data-section-key":s.key });
       cb.checked = enabled.has(s.key);
@@ -1372,7 +1567,7 @@ function refreshPresetDesc() {
   const d = sel ? (sel["desc_" + lg] || sel.desc_es || "") : "";
   $("#mPresetDesc").textContent = d ? d + "  —  " + t("preset_note") : t("preset_note");
   const label=sel?(sel["name_"+lg]||sel.name_es||sel.id):selectedPresetId();
-  $("#mPresetSelected").textContent=(lg==='en'?'Selected structure: ':'Estructura seleccionada: ')+label+(sel?.id==='base'?(lg==='en'?' · Recommended starting point':' · Inicio recomendado'):'');
+  $("#mPresetSelected").textContent=(uiText('Estructura seleccionada: ', 'Selected structure: ', "Estrutura selecionada: "))+label+(sel?.id==='base'?(uiText(' · Inicio recomendado', ' · Recommended starting point', " · Ponto de partida recomendado")):'');
 }
 function populatePresetSelector() {
   const pm = $("#mPreset"); if (!pm) return;
@@ -1414,7 +1609,7 @@ function bindUI() {
   { let v = true; try { v = localStorage.getItem("rg.previewVisible") !== "0"; } catch (_) {} setPreviewVisible(v); }
   $("#pvLive").addEventListener("click", () => setPreviewMode("live"));
   $("#pvPdf").addEventListener("click", () => setPreviewMode("pdf"));
-  $("#langToggle").addEventListener("click", toggleUiLang);
+  $("#langToggle").addEventListener("change", e => setUiLang(e.target.value));
   $("#themeToggle").addEventListener("click", toggleUiTheme);
   $("#validateBtn").addEventListener("click", runValidation);
   document.addEventListener("keydown", e => {
@@ -1481,7 +1676,7 @@ async function deleteProject() {
 
 async function restoreProject() {
   if (!S.slug || projectStore.dirty) { toast(t("restore_pending"), "err"); return; }
-  if (!confirm(S.uiLang === "en" ? "Restore the previous saved version?" : "¿Restaurar la versión anterior guardada?")) return;
+  if (!confirm(uiText("¿Restaurar la versión anterior guardada?", "Restore the previous saved version?", "Restaurar a versão anterior salva?"))) return;
   const slug = S.slug;
   busyProject(true);
   try {
@@ -1503,7 +1698,7 @@ async function createProject() {
   $("#newProjectError")?.remove();
   creatingProject=true;$("#mCreate").disabled=true;
   try {
-    if(S.slug&&!await doSave())throw Error(S.uiLang==='en'?'The open project could not be saved. Resolve its save warning before creating another project.':'No se pudo guardar el proyecto abierto. Resuelve su aviso de guardado antes de crear otro proyecto.');
+    if(S.slug&&!await doSave())throw Error(uiText('No se pudo guardar el proyecto abierto. Resuelve su aviso de guardado antes de crear otro proyecto.', 'The open project could not be saved. Resolve its save warning before creating another project.', "Não foi possível salvar o projeto aberto. Resolva o aviso de salvamento antes de criar outro projeto."));
     const request = DesignLibraryUI.projectRequest();
     const r = await requireOk(await api.post(request.url, request.body));
     const { slug } = await r.json();
@@ -1524,15 +1719,16 @@ function startupFailed(error) {
   hideSplash();
   let language=S.uiLang;
   try { language=localStorage.getItem("rg.uiLang")||language; } catch (_) {}
-  const english=language==="en";
+  language=normalizeUiLanguage(language);
+  document.documentElement.lang=languageTag(language);
   document.querySelectorAll("button,select,input,textarea").forEach(control=>{control.disabled=true;});
   const editor=$("#editor");
   editor.replaceChildren(h("section",{class:"card",role:"alert"},
-    h("h2",{},english?"report-gen could not start":"No se pudo iniciar report-gen"),
-    h("p",{},english?"The local application did not finish loading. Reload it to retry. Your saved projects and browser drafts have not been replaced.":"La aplicación local no terminó de cargar. Recárgala para reintentar. Tus proyectos guardados y borradores del navegador no se han reemplazado."),
+    h("h2",{},uiText("No se pudo iniciar report-gen", "report-gen could not start", "Não foi possível iniciar o report-gen", language)),
+    h("p",{},uiText("La aplicación local no terminó de cargar. Recárgala para reintentar. Tus proyectos guardados y borradores del navegador no se han reemplazado.", "The local application did not finish loading. Reload it to retry. Your saved projects and browser drafts have not been replaced.", "A aplicação local não terminou de carregar. Recarregue-a para tentar novamente. Seus projetos salvos e rascunhos do navegador não foram substituídos.", language)),
     h("p",{},error.message),
-    h("button",{type:"button",class:"btn primary",onclick:()=>location.reload()},english?"Reload application":"Recargar aplicación")));
-  $("#saveState").textContent=english?"startup error":"error de inicio";
+    h("button",{type:"button",class:"btn primary",onclick:()=>location.reload()},uiText("Recargar aplicación", "Reload application", "Recarregar aplicação", language))));
+  $("#saveState").textContent=uiText("error de inicio", "startup error", "erro de inicialização", language);
   editor.focus({preventScroll:true});
 }
 init().catch(error => { console.error(error); startupFailed(error); }).finally(() => { try { hideSplash(); } catch (_) {} });

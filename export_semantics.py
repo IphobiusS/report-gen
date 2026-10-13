@@ -308,7 +308,7 @@ def check(scope, actual, fmt):
     expected = scope['semantic']
     for field in expected['fields']:
         if field not in actual['fields']:
-            raise ValueError(backend_message('Metadato alterado ({p0}: {p1}) / Metadata changed', p0=scope['id'] or 'informe', p1=field[0]))
+            raise ValueError(backend_message('Metadato alterado ({p0}: {p1}) / Metadata changed', p0=scope['id'] or backend_message('informe', en='report', pt='relatório'), p1=field[0]))
     if scope['id'] and expected['severity'] != actual['severity']:
         raise ValueError(backend_message('Severidad alterada ({p0}) / Severity changed', p0=scope['id']))
     links = expected['links']
@@ -317,7 +317,7 @@ def check(scope, actual, fmt):
         links = [[label, '#'+reference_name(target[1:]) if target.startswith('#') else target] for label,target in links]
     if not (_word_links_match(links, actual, expected.get('link_parts', ()), expected.get('link_raw_labels', ()))
             if fmt == 'docx' else links == actual['links']):
-        raise ValueError(backend_message('Destino u orden de enlaces alterado ({p0}) / Links changed', p0=scope['id'] or 'informe'))
+        raise ValueError(backend_message('Destino u orden de enlaces alterado ({p0}) / Links changed', p0=scope['id'] or backend_message('informe', en='report', pt='relatório')))
     images_ok=len(expected['images'])==len(actual['images'])
     for wanted,found in zip(expected['images'],actual['images']):
         digest = wanted.get('docx_sha256', wanted['sha256']) if fmt == 'docx' else wanted['sha256']
@@ -328,5 +328,5 @@ def check(scope, actual, fmt):
             if target.startswith('#'): target = '#' + reference_name(target[1:])
             images_ok = images_ok and target == found.get('link_target', '')
     if not images_ok:
-        raise ValueError(backend_message('Asociación de evidencia alterada ({p0}) / Evidence placement changed', p0=scope['id'] or 'informe'))
+        raise ValueError(backend_message('Asociación de evidencia alterada ({p0}) / Evidence placement changed', p0=scope['id'] or backend_message('informe', en='report', pt='relatório')))
     return len(expected['fields'])+bool(expected['severity']),len(links),len(expected['images'])

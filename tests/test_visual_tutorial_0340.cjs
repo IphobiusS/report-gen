@@ -56,7 +56,7 @@ async function state(target) { return target.evaluate(() => JSON.stringify({slug
   const empty=await state(page), mutations=[];
   page.on('request', request=>{if(!['GET','HEAD'].includes(request.method()))mutations.push(request.url());});
   await open(page);
-  for(const language of ['es','en']) {
+  for(const language of ['es','en','pt']) {
     await page.evaluate(language=>setUiLang(language),language);
     await page.locator('[data-guide-step="0"]').click();
     const createTrigger=page.locator('[data-guide-action="new"]');
@@ -64,7 +64,7 @@ async function state(target) { return target.evaluate(() => JSON.stringify({slug
       await createTrigger.focus();await page.keyboard.press('Enter');
       await page.locator('dialog.design-dialog[open]').waitFor();
       if(route!=='escape') {
-        await page.getByRole('button',{name:language==='es'?'Continuar con esta plantilla':'Continue with this design',exact:true}).click();
+        await page.getByRole('button',{name:({es:'Continuar con esta plantilla',en:'Continue with this design',pt:'Continuar com este modelo'})[language],exact:true}).click();
         await page.locator('#newModal[open]').waitFor();
         if(route==='back') {
           await page.locator('#newProjectLibrary button').click();
@@ -86,7 +86,7 @@ async function state(target) { return target.evaluate(() => JSON.stringify({slug
     }
   }
   await page.locator('[data-tutorial-complete]').click();
-  check('Completion explicitly records only tutorial progress', await page.locator('[data-tutorial-progress]').innerText()==='Tutorial completed. You can revisit any step.' && await state(page)===empty);
+  check('Completion explicitly records only tutorial progress', await page.locator('[data-tutorial-progress]').innerText()==='Tutorial concluído. Você pode revisitar qualquer etapa.' && await state(page)===empty);
   await page.reload(); await ready(page); await open(page);
   check('Completed tutorial can be reopened at the saved step after reload', await page.locator('[data-guide-current="5"]').count()===1 && await page.locator('[data-tutorial-complete]').isDisabled());
   await page.locator('[data-tutorial-reset]').click();
@@ -106,7 +106,7 @@ async function state(target) { return target.evaluate(() => JSON.stringify({slug
   check('Actual size is explicit and accessible', await page.locator('[data-tutorial-scale]').getAttribute('aria-pressed')==='true' && await page.locator('[data-tutorial-image-region]').getAttribute('tabindex')==='0');
   await page.keyboard.press('Escape'); await page.locator('dialog.tutorial-image-dialog').waitFor({state:'detached'});
   check('Escape restores screenshot trigger focus', await imageButton.evaluate(node=>node===document.activeElement));
-  for(const sample of [{width:1366,zoom:100,lang:'es',theme:'dark'},{width:390,zoom:100,lang:'en',theme:'light'},{width:320,zoom:200,lang:'en',theme:'dark'}]) {
+  for(const sample of [{width:1366,zoom:100,lang:'es',theme:'dark'},{width:390,zoom:100,lang:'en',theme:'light'},{width:320,zoom:200,lang:'en',theme:'dark'},{width:1440,zoom:100,lang:'pt',theme:'light'},{width:320,zoom:200,lang:'pt',theme:'dark'}]) {
     await page.setViewportSize({width:sample.width,height:1000});
     await page.evaluate(sample=>{document.documentElement.style.fontSize=sample.zoom+'%';setUiLang(sample.lang);applyUiTheme(sample.theme);},sample);
     const label=sample.lang+'-'+sample.width+'-'+sample.zoom;
@@ -127,12 +127,12 @@ async function state(target) { return target.evaluate(() => JSON.stringify({slug
   }
   check('Reading, completion, restart and images make no modifying API requests',mutations.length===0,mutations);
   await first.context.close();
-  for(const language of ['es','en']) {
+  for(const language of ['es','en','pt']) {
     const missing=await launch(language);page=missing.page;
     await page.route('**/static/tutorial/*.webp', route=>route.abort());
     await open(page);
     await page.waitForFunction(()=>document.querySelector('.tutorial-screenshot-button')?.disabled);
-    const fallback=language==='es'?'Captura no disponible. Las instrucciones siguen debajo.':'Screenshot unavailable. The instructions remain below.';
+    const fallback=({es:'Captura no disponible. Las instrucciones siguen debajo.',en:'Screenshot unavailable. The instructions remain below.',pt:'Captura indisponível. As instruções continuam abaixo.'})[language];
     check(language+' missing screenshot leaves a readable fallback and a 44px control', await page.locator('.tutorial-screenshot-button').evaluate((node,text)=>node.getBoundingClientRect().height>=44&&node.textContent.includes(text),fallback) && await page.locator('.tutorial-screenshot figcaption').isVisible());
     check(language+' missing screenshot accessible name matches its visible fallback', await page.locator('.tutorial-screenshot-button').getAttribute('aria-label')===fallback);
     await page.locator('#guideNext').click();

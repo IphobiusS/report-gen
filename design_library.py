@@ -1,5 +1,6 @@
 """Versioned, portable report appearances and original certification writing aids."""
 from error_messages import message as backend_message
+from languages import LANGUAGES, normalize_language
 from copy import deepcopy
 from pathlib import Path
 import json
@@ -22,7 +23,11 @@ def catalog():
 def localized(value, lang='es'):
     # Personal templates may intentionally provide just one language. Preserve
     # that authored text when the report language has no translation yet.
-    return value.get(lang, value.get('es', value.get('en', ''))) if isinstance(value, dict) else value
+    return value.get(normalize_language(lang), value.get('es', value.get('en', value.get('pt', '')))) if isinstance(value, dict) else value
+
+
+def profile_name(value, lang='es'):
+    return value.get('name_'+normalize_language(lang), value['name'])
 
 
 def text(value, name, limit=160):
@@ -78,10 +83,11 @@ def apply(data, p, variant=None):
 
 
 def new_report(p, title, lang='es', variant=None):
-    if lang not in ('es','en'): raise ValueError(backend_message('Idioma no soportado'))
+    lang = normalize_language(lang, None)
+    if lang is None: raise ValueError(backend_message('Idioma no soportado'))
     return {'meta':{'lang':lang,'theme':'ejecutivo','report_title':text(title,'Título',300),
-                    'report_subtitle':p['name'], 'client':'','assessor':'','date':'','version':'1.0',
-                    'branding':{'wordmark':'report-gen','confidential_text':'CONFIDENCIAL' if lang=='es' else 'CONFIDENTIAL'},
+                    'report_subtitle':profile_name(p,lang), 'client':'','assessor':'','date':'','version':'1.0',
+                    'branding':{'wordmark':'report-gen','confidential_text':'CONFIDENTIAL' if lang=='en' else 'CONFIDENCIAL'},
                     'design':appearance(p,variant)},
             'report':{'sections':starter_sections(p,lang)},'findings':[]}
 
@@ -90,7 +96,7 @@ def guidance(data):
     d=(data.get('meta') or {}).get('design')
     if not d: return None
     d=validate_design(d); p=profile(d['guidance_id']); g=deepcopy(p['guidance'])
-    g['note']=localized(g['note'],data['meta'].get('lang','es')); g['name']=p['name']
+    g['note']=localized(g['note'],data['meta'].get('lang','es')); g['name']=profile_name(p,data['meta'].get('lang','es'))
     return g
 
 
@@ -127,7 +133,7 @@ def validate_sections(sections):
             if k in s:
                 value=s[k]
                 if isinstance(value,dict):
-                    if set(value)-{'es','en'}: raise ValueError(backend_message('Idioma de sección inválido'))
+                    if set(value)-set(LANGUAGES): raise ValueError(backend_message('Idioma de sección inválido'))
                     value={lang:text(v,k,200 if k=='title' else 4000) for lang,v in value.items()}
                 else: value=text(value,k,200 if k=='title' else 4000)
                 row[k]=value

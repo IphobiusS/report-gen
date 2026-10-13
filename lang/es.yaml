@@ -57,6 +57,12 @@ labels:
   cover_email: "Email"
   cover_date: "Fecha"
   cover_version: "Versión"
+  untitled: "Informe sin título"
+  assessor_logo: "Logo del evaluador"
+  client_logo: "Logo del cliente"
+  cover_image: "Imagen de portada"
+  default_confidential: "CONFIDENTIAL"
+  proof_note: "Proof file on target"
 summary:
   identified: "El informe contiene"
   finding: "hallazgo"

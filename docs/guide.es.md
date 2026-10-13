@@ -1,6 +1,6 @@
 # Guía de uso de report-gen 0.34.5
 
-[Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
+[Bienvenida](../README.md) · [English](guide.en.md) · [Português (Brasil)](guide.pt.md) · [Cambios](../CHANGELOG.md)
 
 Todos los comandos se ejecutan desde la raíz del proyecto, donde está `start.py`, salvo indicación contraria. La primera instalación y las descargas opcionales requieren conexión; la edición normal y las exportaciones trabajan localmente.
 
@@ -55,7 +55,7 @@ Chromium es un motor PDF alternativo, opcional:
 
 En Inicio, elige **Probar demo Nimbus** o **Crear mi proyecto**. Con un proyecto abierto, la tarjeta **Siguiente acción sugerida** propone un paso según el título y cliente, objetivos de alcance, hallazgos, asociaciones de evidencia y resultados reales de la última revisión guardada. **Ver este paso en la guía** abre su explicación. También puedes abrir **Tutorial visual** desde **Más**, tanto en escritorio como en móvil y consultar cualquiera de sus seis pasos.
 
-El primer acceso muestra una invitación opcional: **Empezar recorrido** o **Ahora no**. El tutorial tiene capturas reales de datos ficticios en español e inglés y controles para ampliarlas o verlas a tamaño real. **Escape** cierra la captura y devuelve el foco al botón que la abrió. Conserva el paso consultado en este navegador; **Reiniciar recorrido** solo reinicia ese progreso, sin cambiar proyectos. Si el almacenamiento está bloqueado, el recorrido sigue funcionando durante la sesión. No envía las capturas a un servicio externo.
+El primer acceso muestra una invitación opcional: **Empezar recorrido** o **Ahora no**. El tutorial tiene capturas reales de datos ficticios en español, inglés y portugués de Brasil y controles para ampliarlas o verlas a tamaño real. **Escape** cierra la captura y devuelve el foco al botón que la abrió. Conserva el paso consultado en este navegador; **Reiniciar recorrido** solo reinicia ese progreso, sin cambiar proyectos. Si el almacenamiento está bloqueado, el recorrido sigue funcionando durante la sesión. No envía las capturas a un servicio externo.
 
 La sugerencia orienta la escritura, sin exigir que inventes un hallazgo o una captura: puedes ir directamente a la revisión cuando una recomendación no corresponda a tu evaluación. Una revisión sin avisos sugiere preparar la entrega, pero no aprueba su contenido. Si cambias el borrador después de revisarlo, repite la revisión guardada antes de entregar.
 
@@ -70,7 +70,7 @@ CVSS expresa severidad técnica, no el riesgo empresarial por sí solo. **Postur
 
 **Biblioteca** recomienda Serio como punto de partida general. Compara la misma página de muestra: portada, resumen o página técnica. La galería reúne seis diseños generales, 26 perfiles de certificación y práctica, cuatro estructuras empresariales y tus plantillas personales. Filtra por propósito o proveedor, busca por nombre y compara las variantes Marca/Sobria. **Enterprise Control Review** añade una composición editorial y ocho apartados sobre diseño y operación de controles, muestreo, excepciones y retest. Si tu proyecto ya tiene un diseño especializado, la biblioteca abre ese contexto; navegar no cambia su apariencia. La apariencia y la estructura inicial son elecciones distintas; cambiar un preset no sustituye el diseño elegido.
 
-Todos los perfiles permiten español e inglés. Cambiar apariencia no reemplaza los hallazgos. Word usa Calibri; PDF y HTML emplean Carlito como fuente compatible. Los comandos conservan su monoespaciada.
+Todos los perfiles permiten español, inglés y portugués de Brasil. Cambiar apariencia no reemplaza los hallazgos. Word usa Calibri; PDF y HTML emplean Carlito como fuente compatible. Los comandos conservan su monoespaciada.
 
 La exportación PDF predeterminada con WeasyPrint detecta caracteres sin glifo en las fuentes disponibles y detiene la entrega antes de sustituir la salida anterior. El error identifica códigos como `U+1F3E6`: instala una fuente que contenga esos caracteres o corrige el texto y vuelve a exportar. La presencia de texto extraíble no demuestra que el símbolo se vea correctamente. Esta comprobación no certifica fuentes ni composición visual del motor Chromium opcional.
 
@@ -260,7 +260,7 @@ Una lista de Word cuyo inicio supera 65.535 utiliza campos `SEQ` para evitar el 
 
 Estas pruebas requieren Node.js 22+ y un entorno Python instalado. Ejecuta los comandos desde la raíz del proyecto.
 
-Los clientes API seleccionan el idioma de error con `X-UI-Language: es` o `en`. Sin ese encabezado, o con otro valor, se conserva el español predeterminado. Las URL abiertas directamente usan ese valor predeterminado; los diagnósticos de bibliotecas y herramientas externas se conservan sin sustituciones. Esto no cambia el idioma ni el contenido del informe.
+Los clientes API seleccionan el idioma de error con `X-UI-Language: es`, `en` o `pt` (también se acepta `pt-BR`). Sin ese encabezado, o con otro valor, se conserva el español predeterminado. Las URL abiertas directamente usan ese valor predeterminado; los diagnósticos de bibliotecas y herramientas externas se conservan sin sustituciones. Esto no cambia el idioma ni el contenido del informe.
 
 ```bash
 .venv/bin/python -m pip install -e '.[dev]' -c requirements-audited.txt

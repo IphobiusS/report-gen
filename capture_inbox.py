@@ -1,4 +1,5 @@
 """Private, bounded field notes. Explicit linking is the only report promotion."""
+from languages import language_index
 from error_messages import message as backend_message
 from copy import deepcopy
 from hashlib import sha256
@@ -95,7 +96,7 @@ def link(data, directory, uid, finding_uid):
             step.update(command=item['raw_text'], text_md='\n\n'.join(workflows.md_text(line) for line in item['note'].splitlines()))
         if finding.get('mode') == 'machine':
             phases = finding.setdefault('phases', [])
-            if not phases: phases.append(dict(name='Capturas' if out.get('meta', {}).get('lang') == 'es' else 'Captures', steps=[]))
+            if not phases: phases.append(dict(name=('Capturas', 'Captures', 'Capturas')[language_index(out.get('meta', {}).get('lang'))], steps=[]))
             phases[-1].setdefault('steps', []).append(step)
         else: finding.setdefault('walkthrough', []).append(step)
     if item.get('finding_uid'): item['previous_finding_uid'] = item['finding_uid']

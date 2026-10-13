@@ -31,13 +31,13 @@ with tempfile.TemporaryDirectory() as temp:
    while not pending and time.monotonic()<end:pg.wait_for_timeout(25)
    check('GET held during project switch',pending)
    blocked=pg.locator('#langToggle').is_disabled();check('Report language locked during project switch',blocked)
-   if not blocked:pg.locator('#langToggle').click()
+   if not blocked:pg.locator('#langToggle').select_option('en')
    pending[0].fulfill(response=pending[0].fetch());wait(pg,"S.slug==='b' && !projectStore.loading && projectBusyCount===0")
    # The user must not lose an accepted language edit on A while B loads.
    lang=engine.load_engagement(webapp.PROJECTS/'a/engagement.yaml')['meta']['lang']
    check('No accepted report edit lost during navigation',blocked or lang=='en')
    pg.clock.resume();check('Report language unlocks afterwards',not pg.locator('#langToggle').is_disabled())
-   expected=engine.load_engagement(webapp.PROJECTS/'b/engagement.yaml')['meta']['lang'];pg.locator('#langToggle').click();wait(pg,'!projectStore.dirty')
+   expected=engine.load_engagement(webapp.PROJECTS/'b/engagement.yaml')['meta']['lang'];pg.locator('#langToggle').select_option('en');wait(pg,'!projectStore.dirty')
    check('UI language leaves report language unchanged after navigation',engine.load_engagement(webapp.PROJECTS/'b/engagement.yaml')['meta']['lang']==expected)
    pg.wait_for_load_state('networkidle')
    result={'browser':browser.version,'checks':checks,'passed':all(x['passed'] for x in checks)};browser.close()

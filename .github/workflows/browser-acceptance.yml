@@ -47,6 +47,11 @@ jobs:
       - name: Restored interface language and accessible labels
         if: matrix.browser == 'chromium'
         run: node tests/test_restore_language_0345_browser.cjs --browser chromium --output out/restore-language-chromium
+      - name: Spanish, English and Portuguese interface and report language independence
+        if: matrix.browser == 'chromium'
+        env:
+          RG_PYTHON: python
+        run: node tests/test_language_0350_browser.cjs --output out/language-0350
       - name: Painted native select contrast in both interface themes
         if: matrix.browser == 'chromium'
         run: node tests/test_select_contrast_0345_browser.cjs --browser chromium --output out/select-contrast-chromium
@@ -65,5 +70,6 @@ jobs:
             out/editor-chromium/
             out/jobs-lifecycle-${{ matrix.browser }}/
             out/restore-language-chromium/
+            out/language-0350/
             out/select-contrast-chromium/
             out/markdown-caption-chromium/

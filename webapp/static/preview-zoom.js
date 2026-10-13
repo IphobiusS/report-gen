@@ -4,11 +4,10 @@ const PreviewZoomUI=(()=>{
   let mode='fit';
   function update(){
     if(!control)return;
-    const en=S.uiLang==='en';
-    label.textContent=en?'HTML zoom':'Zoom HTML';
-    fitOption.textContent=en?'Fit width':'Ajustar al ancho';
+    label.textContent=uiText('Zoom HTML','HTML zoom','Zoom HTML');
+    fitOption.textContent=uiText('Ajustar al ancho','Fit width','Ajustar à largura');
     control.disabled=S.previewMode!=='live';
-    control.title=en?'PDF has its own viewer controls.':'El PDF tiene sus propios controles de visualización.';
+    control.title=uiText('El PDF tiene sus propios controles de visualización.','PDF has its own viewer controls.','O PDF tem seus próprios controles de visualização.');
     if(control.disabled)output.textContent='';
   }
   function apply(){

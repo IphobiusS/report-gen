@@ -1,4 +1,5 @@
 """Demo, diagnostics and immutable client delivery endpoints."""
+from languages import normalize_language, language_index
 from error_messages import message as backend_message
 from pathlib import Path
 from io import BytesIO
@@ -30,8 +31,8 @@ def register(api):
 
     @app.post('/api/diagnostics')
     def diagnostics():
-        body=api._json_dict();lang=body.get('lang','es')
-        if lang not in ('es','en'): abort(422,backend_message('Idioma inválido / Invalid language'))
+        body=api._json_dict();lang=normalize_language(body.get('lang','es'), None)
+        if lang is None: abort(422,backend_message('Idioma inválido / Invalid language'))
         try:
             result = subprocess.run([sys.executable, str(api.REPORT_ROOT/'diagnostics.py'),'--lang',lang],
                                     capture_output=True, text=True, timeout=40, cwd=api.REPORT_ROOT)
@@ -47,8 +48,8 @@ def register(api):
                 writable = True
             except OSError:
                 writable = False
-        report['checks'].append({'id':'storage', 'label':'Project directory' if lang=='en' else 'Carpeta de proyectos', 'ready':writable,
-                                 'detail':('Writable' if writable else 'Check project directory permissions') if lang=='en' else ('Escritura disponible' if writable else 'Revisa los permisos de la carpeta de proyectos')})
+        report['checks'].append({'id':'storage', 'label':(('Carpeta de proyectos', 'Project directory', 'Diretório de projetos')[language_index(lang)]), 'ready':writable,
+                                 'detail':(('Escritura disponible' if writable else 'Revisa los permisos de la carpeta de proyectos', 'Writable' if writable else 'Check project directory permissions', 'Gravação disponível' if writable else 'Verifique as permissões do diretório de projetos')[language_index(lang)])})
         report['support_report'] = support_report.project(report)
         report['support_token'] = support_report.token(report['support_report'], api.app.secret_key)
         return jsonify(report)

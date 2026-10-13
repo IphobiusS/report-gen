@@ -302,8 +302,9 @@ def main():
         check('Native keyboard action creates and loads Nimbus', driver.script("return S.sel.type === 'home' && S.data.findings.length === 12;"))
         state = "return JSON.stringify({slug:S.slug,data:S.data,revision:projectStore.revision,etag:projectStore.etag,dirty:projectStore.dirty});"
         original = driver.script(state)
-        for language in ('es', 'en'):
-            driver.script('setUiLang(arguments[0]);applyUiTheme(arguments[1]);', language, 'dark' if language == 'es' else 'light')
+        for language in ('es', 'en', 'pt'):
+            driver.script("const control=document.querySelector('#langToggle');control.value=arguments[0];control.dispatchEvent(new Event('change',{bubbles:true}));applyUiTheme(arguments[1]);", language, 'dark' if language == 'es' else 'light')
+            check(f'{language} language selector updates the UI and document language', driver.script("return S.uiLang===arguments[0] && document.querySelector('#langToggle').value===arguments[0] && document.documentElement.lang===(arguments[0]==='pt'?'pt-BR':arguments[0]);", language))
             # Safari can report descendant rectangles for a closed details.
             # Test the disclosure state, then use the actual visible control.
             if not driver.script("return document.querySelector('#studioMore').open;"):

@@ -105,7 +105,7 @@ def test_api_failure_preserves_codes_revision_and_saved_files(local, language, c
     assert messages.current_language() == 'es'
 
 
-@pytest.mark.parametrize('language', [None, 'es', 'EN', 'en-US', 'fr', ''])
+@pytest.mark.parametrize('language', [None, 'es', 'en-US', 'fr', ''])
 def test_unsupported_header_preserves_spanish_ignoring_browser_language(local, language):
     client, _ = local; headers = {'Accept-Language': 'en-US,en;q=0.9'}
     if language is not None: headers['X-UI-Language'] = language

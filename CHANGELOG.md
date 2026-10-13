@@ -1,3 +1,21 @@
+# Cambios 0.35.0 (2026-10-13)
+
+- Portugués de Brasil en la interfaz, los mensajes del servidor, el tutorial,
+  los catálogos de plantillas y las exportaciones PDF, DOCX, Markdown y HTML.
+  La clave interna es `pt`; se admite el alias `pt-BR` en las entradas de idioma.
+  Los documentos publican la etiqueta `pt-BR` en sus metadatos de idioma.
+- Un selector explícito sustituye la alternancia binaria de la interfaz.
+  El idioma del informe es independiente; cambiar idioma no traduce ni altera
+  el contenido redactado, sus evidencias ni la revisión guardada del proyecto.
+- Los títulos de secciones se actualizan al cambiar el idioma del informe,
+  conservando el foco en el control de metadatos.
+- Markdown conserva la introducción del apéndice en los informes por secciones;
+  antes el comprobador detectaba su ausencia y rechazaba la entrega incompleta.
+- La revisión editorial distingue el marcador `TODO` de la palabra portuguesa
+  «todo», evitando avisos incorrectos sobre texto de evaluación pendiente.
+- Guía y bienvenida de GitHub en portugués; los comandos de inicio, diagnóstico,
+  migración, creación y firma admiten mensajes en los tres idiomas.
+
 # Cambios 0.34.5 (2026-10-13)
 
 - El sondeo de exportaciones se suspende al salir de la página y se reanuda

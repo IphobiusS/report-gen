@@ -1,4 +1,5 @@
 """Portable project model, delivery checks and report projection (no network access)."""
+from languages import normalize_language, language_index
 from error_messages import message as backend_message
 from datetime import date
 from pathlib import Path
@@ -6,16 +7,16 @@ import re
 import uuid
 from urllib.parse import unquote
 
-STATUSES = {'open': ('Abierto', 'Open'), 'in_progress': ('En corrección', 'In progress'),
-            'reported_fixed': ('Corrección comunicada', 'Reported fixed'),
-            'verified_fixed': ('Corregido y verificado', 'Verified fixed'),
-            'accepted': ('Riesgo aceptado', 'Risk accepted'), 'not_verified': ('No verificable', 'Not verifiable')}
-VERIFICATIONS = {'unverified': ('Sin verificar', 'Unverified'), 'confirmed': ('Confirmado', 'Confirmed'),
-                 'not_reproduced': ('No reproducido', 'Not reproduced'), 'inconclusive': ('Inconcluso', 'Inconclusive')}
-RESULTS = {'fixed': ('Corregido', 'Fixed'), 'open': ('Sigue abierto', 'Still open'),
-           'partial': ('Corrección parcial', 'Partially fixed'), 'not_verified': ('No verificable', 'Not verifiable')}
-COVERAGE = {'pending': ('Pendiente', 'Pending'), 'done': ('Realizada', 'Performed'),
-            'blocked': ('Bloqueada', 'Blocked'), 'not_applicable': ('No aplica', 'Not applicable')}
+STATUSES = {'open': ('Abierto', 'Open', 'Aberto'), 'in_progress': ('En corrección', 'In progress', 'Em correção'),
+            'reported_fixed': ('Corrección comunicada', 'Reported fixed', 'Correção comunicada'),
+            'verified_fixed': ('Corregido y verificado', 'Verified fixed', 'Corrigido e verificado'),
+            'accepted': ('Riesgo aceptado', 'Risk accepted', 'Risco aceito'), 'not_verified': ('No verificable', 'Not verifiable', 'Não verificável')}
+VERIFICATIONS = {'unverified': ('Sin verificar', 'Unverified', 'Não verificado'), 'confirmed': ('Confirmado', 'Confirmed', 'Confirmado'),
+                 'not_reproduced': ('No reproducido', 'Not reproduced', 'Não reproduzido'), 'inconclusive': ('Inconcluso', 'Inconclusive', 'Inconclusivo')}
+RESULTS = {'fixed': ('Corregido', 'Fixed', 'Corrigido'), 'open': ('Sigue abierto', 'Still open', 'Continua aberto'),
+           'partial': ('Corrección parcial', 'Partially fixed', 'Correção parcial'), 'not_verified': ('No verificable', 'Not verifiable', 'Não verificável')}
+COVERAGE = {'pending': ('Pendiente', 'Pending', 'Pendente'), 'done': ('Realizada', 'Performed', 'Realizada'),
+            'blocked': ('Bloqueada', 'Blocked', 'Bloqueada'), 'not_applicable': ('No aplica', 'Not applicable', 'Não se aplica')}
 UID = re.compile(r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$')
 MAX_SEQUENCE = 2**53 - 1
 
@@ -159,9 +160,9 @@ def structure_errors(data):
                 for i, service in enumerate(rows(row, 'services', path)):
                     sp = path + f'.services[{i}]'
                     if type(service.get('port')) is not int or not 0 <= service['port'] <= 65535:
-                        err(sp, 'puerto inválido / invalid port')
+                        err(sp, backend_message('puerto inválido / invalid port', en='invalid port', pt='porta inválida'))
                     if service.get('protocol') not in ('tcp', 'udp', 'sctp', 'ip'):
-                        err(sp, 'protocolo inválido / invalid protocol')
+                        err(sp, backend_message('protocolo inválido / invalid protocol', en='invalid protocol', pt='protocolo inválido'))
                     for field in ('state', 'name', 'product', 'version', 'extrainfo', 'tunnel', 'method', 'conf'):
                         text(service, field, sp)
             if group == 'findings':
@@ -275,8 +276,8 @@ def review(data, directory, lang="es"):
     # only translates warnings. In Spanish, ordinary "todo"/"Todo" are words,
     # while the explicit uppercase editorial marker remains actionable.
     content_language = (data.get('meta') or {}).get('lang') or 'en'
-    todo_marker = r'TODO' if content_language == 'es' else r'(?i:TODO)'
-    placeholder = re.compile(r'\b' + todo_marker + r'\b|(?i:\b(?:TBD|FIXME|pendiente de completar|lorem ipsum)\b|\{\{[^}]+\}\}|<COMPLETAR>)')
+    todo_marker = r'TODO' if normalize_language(content_language) in ('es', 'pt') else r'(?i:TODO)'
+    placeholder = re.compile(r'\b' + todo_marker + r'\b|(?i:\b(?:TBD|FIXME|pendiente de completar|pendente de preenchimento|lorem ipsum)\b|\{\{[^}]+\}\}|<COMPLETAR>)')
     for path, value in strings(data):
         # Optional reasoning/review is private author material. In particular a
         # comment containing a placeholder must not leak into the client-facing
@@ -307,19 +308,24 @@ def review(data, directory, lang="es"):
         path=issue['path']
         es='Abre el campo, documenta el dato que falta y contrástalo con la evidencia; después vuelve a revisar.'
         en='Open the field, document the missing information and check it against the evidence; then review again.'
+        pt='Abra o campo, documente a informação ausente e confira-a com a evidência; depois revise novamente.'
         if path.startswith('findings') and path.endswith('.status'):
             es='El último retest se elige por fecha ISO; si empatan, por orden de registro. Comprueba ese resultado antes de marcar como corregido.'
             en='Latest retest uses the ISO test date, with record order breaking ties. Check that result before marking the finding fixed.'
+            pt='O último reteste usa a data ISO; em caso de empate, vale a ordem dos registros. Confira esse resultado antes de marcar o achado como corrigido.'
         elif path.startswith('coverage'):
             es='Documenta si la prueba se realizó, quedó bloqueada o no aplica; explica la limitación sin marcar como realizada una prueba pendiente.'
             en='Document whether the test was performed, blocked or not applicable; explain the limitation without marking a pending test as performed.'
+            pt='Documente se o teste foi realizado, bloqueado ou não se aplica; explique a limitação sem marcar um teste pendente como realizado.'
         elif 'capture_inbox' in path:
             es='La captura conserva su original. Abre la bandeja y elige un hallazgo existente para reincorporarla.'
             en='The original capture is retained. Open the inbox and choose an existing finding to link it again.'
+            pt='A captura original foi preservada. Abra a caixa de entrada e escolha um achado existente para vinculá-la novamente.'
         elif 'import_source' in path:
             es='Revisa objetivo, severidad, reproducción y posibles secretos. Confirmar la importación no confirma la vulnerabilidad.'
             en='Review the target, severity, reproduction and possible secrets. Acknowledging the import does not confirm the vulnerability.'
-        issue['help']=en if lang=='en' else es
+            pt='Revise o alvo, a severidade, a reprodução e os possíveis segredos. Confirmar a importação não confirma a vulnerabilidade.'
+        issue['help']=(es, en, pt)[language_index(lang)]
     return issues
 
 
@@ -331,7 +337,7 @@ def preflight(data, directory, lang="es"):
     same issue. Invalid document structures must not enter workflow traversal.
     """
     import validate
-    lang = lang if isinstance(lang, str) and lang in validate.LANGS else "es"
+    lang = normalize_language(lang)
     structure = validate.structure_issues(data, lang)
     controls = [] if structure else validate.markdown_control_issues(data, lang)
     issues = [] if structure or controls else review(data, directory, lang)
@@ -339,9 +345,7 @@ def preflight(data, directory, lang="es"):
         finding = re.match(r'^findings\[(\d+)\]', path)
         uid = data['findings'][int(finding[1])].get('uid') if finding else None
         issues.append(dict(level='error', message=f'{path}: {message}', path=path, finding_uid=uid,
-                           help=('Use code formatting or escape the ampersand to display the character reference literally.'
-                                 if lang == 'en' else
-                                 'Usa formato de código o escapa el ampersand para mostrar la referencia como texto literal.')))
+                           help=((('Usa formato de código o escapa el ampersand para mostrar la referencia como texto literal.', 'Use code formatting or escape the ampersand to display the character reference literally.', 'Use formatação de código ou escape o e comercial para exibir a referência de caractere literalmente.')[language_index(lang)]))))
     validation = structure or ([] if controls else validate.validate(data, lang=lang))
     seen = {(issue['level'], issue['message']) for issue in issues}
     for level, message in validation:
@@ -349,9 +353,7 @@ def preflight(data, directory, lang="es"):
             continue
         seen.add((level, message))
         issues.append(dict(level=level, message=message, path='report', finding_uid=None,
-                           help=('Review the report data and its evidence. Warnings require a documented decision; errors must be corrected before export.'
-                                 if lang == 'en' else
-                                 'Revisa los datos del informe y su evidencia. Los avisos requieren una decisión documentada; los errores deben corregirse antes de exportar.')))
+                           help=((('Revisa los datos del informe y su evidencia. Los avisos requieren una decisión documentada; los errores deben corregirse antes de exportar.', 'Review the report data and its evidence. Warnings require a documented decision; errors must be corrected before export.', 'Revise os dados do relatório e suas evidências. Avisos exigem uma decisão documentada; erros devem ser corrigidos antes de exportar.')[language_index(lang)]))))
     return issues
 
 
@@ -380,7 +382,7 @@ def compare(before, after):
 
 
 def label(group, key, lang):
-    return group.get(key, (key, key))[lang != 'es']
+    return group.get(key, (key, key, key))[language_index(lang)]
 
 
 def md_text(value):
@@ -398,7 +400,7 @@ def table(headers, rows):
 
 def report_sections(data):
     from engine import report_language
-    lang = report_language(data); es = lang == 'es'
+    lang = report_language(data)
     cfg = data.get('report', {}).get('workflow', {})
     asset_rows = data.get('assets', [])
     # The inventory is a list of records. Legacy rows without permanent IDs
@@ -408,49 +410,49 @@ def report_sections(data):
     out = []
     def add(key, title, body): out.append(dict(key=key, title=title, body=body))
     if cfg.get('include_assets', True) and asset_rows:
-        add('rg_assets', 'Inventario de activos' if es else 'Asset inventory', table(
-            ['Activo', 'Objetivo', 'Tipo', 'Notas'] if es else ['Asset', 'Target', 'Type', 'Notes'],
+        add('rg_assets', (('Inventario de activos', 'Asset inventory', 'Inventário de ativos')[language_index(lang)]), table(
+            ((['Activo', 'Objetivo', 'Tipo', 'Notas'], ['Asset', 'Target', 'Type', 'Notes'], ['Ativo', 'Alvo', 'Tipo', 'Notas'])[language_index(lang)]),
             [[a.get(k, '') for k in ('name', 'target', 'kind', 'notes')] for a in asset_rows]))
     if cfg.get('include_coverage', True) and (data.get('coverage') or data.get('limitations_md')):
-        body = table(['Prueba', 'Activo', 'Estado', 'Observaciones'] if es else ['Test', 'Asset', 'Status', 'Notes'],
+        body = table(((['Prueba', 'Activo', 'Estado', 'Observaciones'], ['Test', 'Asset', 'Status', 'Notes'], ['Teste', 'Ativo', 'Estado', 'Observações'])[language_index(lang)]),
                      [[c.get('test'), assets.get(c.get('asset_uid'), {}).get('target', ''), label(COVERAGE, c.get('status', 'pending'), lang), c.get('notes')]
                       for c in data.get('coverage', [])]) if data.get('coverage') else ''
-        if data.get('limitations_md'): body += '\n\n### ' + ('Limitaciones' if es else 'Limitations') + '\n\n' + data['limitations_md']
-        add('rg_coverage', 'Cobertura y limitaciones' if es else 'Coverage and limitations', body)
+        if data.get('limitations_md'): body += '\n\n### ' + ((('Limitaciones', 'Limitations', 'Limitações')[language_index(lang)])) + '\n\n' + data['limitations_md']
+        add('rg_coverage', (('Cobertura y limitaciones', 'Coverage and limitations', 'Cobertura e limitações')[language_index(lang)]), body)
     if cfg.get('include_root_causes', False):
         from root_cause import selected_groups
         groups = selected_groups(data)
         if groups:
             blocks = []
             for group, members in groups:
-                block = '### ' + md_text(group.get('name') or ('Grupo sin nombre' if es else 'Unnamed group'))
-                block += '\n\n' + ('Hallazgos: ' if es else 'Findings: ') + ', '.join(md_text(f.get('id', '')) for f in members)
-                block += '\n\n**' + ('Causa raíz' if es else 'Root cause') + '**\n\n' + group.get('cause_md', '')
-                block += '\n\n**' + ('Acción común' if es else 'Shared action') + '**\n\n' + group.get('remediation_md', '')
+                block = '### ' + md_text(group.get('name') or ((('Grupo sin nombre', 'Unnamed group', 'Grupo sem nome')[language_index(lang)])))
+                block += '\n\n' + ((('Hallazgos: ', 'Findings: ', 'Achados: ')[language_index(lang)])) + ', '.join(md_text(f.get('id', '')) for f in members)
+                block += '\n\n**' + ((('Causa raíz', 'Root cause', 'Causa raiz')[language_index(lang)])) + '**\n\n' + group.get('cause_md', '')
+                block += '\n\n**' + ((('Acción común', 'Shared action', 'Ação comum')[language_index(lang)])) + '**\n\n' + group.get('remediation_md', '')
                 blocks.append(block)
-            add('rg_root_causes', 'Causas raíz y acciones comunes' if es else 'Root causes and shared actions', '\n\n'.join(blocks))
+            add('rg_root_causes', (('Causas raíz y acciones comunes', 'Root causes and shared actions', 'Causas raiz e ações comuns')[language_index(lang)]), '\n\n'.join(blocks))
     fs = data.get('findings', [])
     if cfg.get('include_retest', True) and any(f.get('retests') or f.get('owner') or f.get('due_date') or f.get('status', 'open') != 'open' or f.get('verification') for f in fs):
         counts = {key: sum(f.get('status', 'open') == key for f in fs) for key in STATUSES}
         overview = ' · '.join(label(STATUSES, key, lang) + ': ' + str(value) for key, value in counts.items() if value)
-        body = md_text(overview) + '\n\n' + table(['Hallazgo', 'Estado', 'Responsable', 'Fecha objetivo', 'Último retest'] if es else ['Finding', 'Status', 'Owner', 'Due date', 'Last retest'],
+        body = md_text(overview) + '\n\n' + table(((['Hallazgo', 'Estado', 'Responsable', 'Fecha objetivo', 'Último retest'], ['Finding', 'Status', 'Owner', 'Due date', 'Last retest'], ['Achado', 'Estado', 'Responsável', 'Prazo', 'Último reteste'])[language_index(lang)]),
                      [[f.get('id', '') + ' · ' + (f.get('title') or ''), label(STATUSES, f.get('status', 'open'), lang), f.get('owner'), f.get('due_date'),
                        latest_retest(f).get('tested_on')] for f in fs])
         if any(f.get('verification') for f in fs):
-            body += '\n\n### ' + ('Verificación técnica' if es else 'Technical verification') + '\n\n'
-            body += table(['Hallazgo', 'Verificación'] if es else ['Finding', 'Verification'],
-                          [[f.get('id', ''), label(VERIFICATIONS, f.get('verification'), lang) if f.get('verification') else ('Sin registrar' if es else 'Not recorded')] for f in fs])
+            body += '\n\n### ' + ((('Verificación técnica', 'Technical verification', 'Verificação técnica')[language_index(lang)])) + '\n\n'
+            body += table(((['Hallazgo', 'Verificación'], ['Finding', 'Verification'], ['Achado', 'Verificação'])[language_index(lang)]),
+                          [[f.get('id', ''), label(VERIFICATIONS, f.get('verification'), lang) if f.get('verification') else ((('Sin registrar', 'Not recorded', 'Sem registro')[language_index(lang)]))] for f in fs])
         for f in fs:
             for r in f.get('retests', []):
                 retest_heading = ' · '.join(value for value in (
                     f.get('id', ''), r.get('tested_on', ''), label(RESULTS, r['result'], lang)) if value)
                 body += '\n\n### ' + md_text(retest_heading)
-                body += '\n\n' + ('Evaluador: ' if es else 'Assessor: ') + md_text(r.get('assessor', '')) + '\n\n' + r.get('notes_md', '')
+                body += '\n\n' + ((('Evaluador: ', 'Assessor: ', 'Avaliador: ')[language_index(lang)])) + md_text(r.get('assessor', '')) + '\n\n' + r.get('notes_md', '')
                 by_uid = {e.get('uid'): e for e in data.get('evidence', [])}
                 for uid in r.get('evidence_uids', []):
                     e = by_uid.get(uid)
-                    if e: body += '\n\n![' + md_text(e.get('caption') or e.get('title') or 'Evidence') + '](' + e['src'] + ')'
-        add('rg_retest', 'Seguimiento de correcciones y retest' if es else 'Remediation tracking and retest', body)
+                    if e: body += '\n\n![' + md_text(e.get('caption') or e.get('title') or ('Evidencia', 'Evidence', 'Evidência')[language_index(lang)]) + '](' + e['src'] + ')'
+        add('rg_retest', (('Seguimiento de correcciones y retest', 'Remediation tracking and retest', 'Acompanhamento de correções e reteste')[language_index(lang)]), body)
     return out
 
 
@@ -476,20 +478,20 @@ def project_report(source):
             f['title'] = ''
         for key, pool in [('asset_uids', assets), ('evidence_uids', evidence)]:
             if any(ref not in pool for ref in f.get(key, [])):
-                raise ValueError(backend_message('{p0}: referencia inexistente en {p1}', p0=str(f.get('id', 'Hallazgo')), p1=key))
+                raise ValueError(backend_message('{p0}: referencia inexistente en {p1}', p0=str(f.get('id', backend_message('Hallazgo', en='Finding', pt='Achado'))), p1=key))
         for r in f.get('retests', []):
             if any(ref not in evidence for ref in r.get('evidence_uids', [])):
-                raise ValueError(backend_message('{p0}: evidencia de retest inexistente', p0=str(f.get('id', 'Hallazgo'))))
+                raise ValueError(backend_message('{p0}: evidencia de retest inexistente', p0=str(f.get('id', backend_message('Hallazgo', en='Finding', pt='Achado')))))
         extra = []
         targets = [assets[x].get('target', '') for x in f.get('asset_uids', []) if x in assets]
         if targets:
-            extra.append({'text_md': '**' + ('Activos afectados' if data.get('meta', {}).get('lang') == 'es' else 'Affected assets') + '**\n\n' + '\n'.join('- ' + md_text(x) for x in targets)})
+            extra.append({'text_md': '**' + ((('Activos afectados', 'Affected assets', 'Ativos afetados')[language_index(data.get('meta', {}).get('lang'))])) + '**\n\n' + '\n'.join('- ' + md_text(x) for x in targets)})
         existing = {value for path, value in strings(f) if path.endswith('.src')}
         for uid in f.get('evidence_uids', []):
             e = evidence.get(uid)
             if e and e['src'] not in existing:
                 extra.append({'figure': {'src': e['src'], 'caption': e.get('caption') or e.get('title', '')}})
         if extra:
-            if f.get('mode') == 'machine': f.setdefault('phases', []).append({'name': 'Evidencias' if data.get('meta', {}).get('lang') == 'es' else 'Evidence', 'steps': extra})
+            if f.get('mode') == 'machine': f.setdefault('phases', []).append({'name': (('Evidencias', 'Evidence', 'Evidências')[language_index(data.get('meta', {}).get('lang'))]), 'steps': extra})
             else: f.setdefault('walkthrough', []).extend(extra)
     return data

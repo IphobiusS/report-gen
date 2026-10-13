@@ -3,7 +3,8 @@
 This is a local, single-process operation. It is not a merge or an encrypted archive.
 Project archives retain their existing validation, evidence and history contracts.
 """
-from error_messages import message as backend_message
+from error_messages import message as backend_message, current_language
+from languages import language_index
 from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
@@ -284,7 +285,10 @@ def restore_workspace(blob, projects, findings, designs):
             _move(stage/'new'/str(i), path)
         record['committed'] = True
         atomic_write(_journal(paths), history.dumps(record))
-        if recover(*paths): result['warnings'] = [CLEANUP_WARNING]
+        if recover(*paths):
+            result['warnings'] = [(CLEANUP_WARNING,
+                'Restoration completed; private cleanup is pending and will be retried when the application is used.',
+                'Restauração concluída; há limpeza privada pendente. Ela será repetida ao usar o aplicativo.')[language_index(current_language())]]
         return result
     except (zipfile.BadZipFile, KeyError, TypeError, RuntimeError, EOFError, zlib.error) as exc:
         raise ValueError(backend_message('Respaldo integral inválido')) from exc

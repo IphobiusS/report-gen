@@ -84,11 +84,10 @@ def _cover_details(W, meta, L):
                          (lab['cover_version'], meta.get('version'))]:
         if value: W(f"- **{label}:** {md_text(value)}")
     W('')
-    es = meta.get('lang') == 'es'
     branding = meta.get('branding') or {}
-    for key, label in [('logo', 'Logo del evaluador' if es else 'Assessor logo'),
-                       ('client_logo', 'Logo del cliente' if es else 'Client logo'),
-                       ('cover_image', 'Imagen de portada' if es else 'Cover image')]:
+    for key, label in [('logo', lab['assessor_logo']),
+                       ('client_logo', lab['client_logo']),
+                       ('cover_image', lab['cover_image'])]:
         if branding.get(key): W(_image(label, branding[key]) + '\n')
 
 
@@ -102,7 +101,7 @@ def _md_sections(data, meta, L):
     W(f"# {md_text(meta.get('report_title',''))}\n")
     if meta.get("report_subtitle"):
         W(f"*{md_text(meta['report_subtitle'])}*\n")
-    W(f"> {md_text((meta.get('branding') or {}).get('confidential_text','CONFIDENTIAL'))}\n")
+    W(f"> {md_text((meta.get('branding') or {}).get('confidential_text',lab['default_confidential']))}\n")
     _cover_details(W, meta, L)
     client = (meta.get("client") or lab["client"]).rstrip(".")
 
@@ -176,9 +175,10 @@ def _md_sections(data, meta, L):
                     _md_vuln(W, f, L, lab)
         elif sp == "appendix":
             gen(s)
-            appx = engine.appendix_rows(data["findings"])
+            appx = engine.appendix_rows(data["findings"], L)
             if appx:
                 W(f"### {lab['appendix']}\n")
+                W(L.get("appendix_intro", "") + "\n")
                 W(f"| {lab['host']} | {lab['item']} | {lab['value']} | {lab['notes']} |")
                 W("|---|---|---|---|")
                 for r in appx:
@@ -201,7 +201,7 @@ def to_markdown(data, meta, L, engagement_dir):
     out = []
     W = out.append
     br = meta.get("branding") or {}
-    conf = br.get("confidential_text", "CONFIDENTIAL")
+    conf = br.get("confidential_text", lab["default_confidential"])
 
     W(f"# {md_text(meta.get('report_title',''))}\n")
     if meta.get("report_subtitle"):
@@ -272,7 +272,7 @@ def to_markdown(data, meta, L, engagement_dir):
             _md_vuln(W, f, L, lab)
 
     # Appendix
-    appx = engine.appendix_rows(data["findings"])
+    appx = engine.appendix_rows(data["findings"], L)
     if appx:
         W(anchor("sec-appendix") + f"## {lab['appendix']}\n")
         W(L.get("appendix_intro", "") + "\n")

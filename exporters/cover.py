@@ -149,7 +149,7 @@ def add_cover(doc, meta, labels, engagement_dir, hx):
     hp = paragraph(header, first=True)
     identity_width = Cm(15.6 if theme=='laboratorio' else 16.2)
     wordmark = branding.get('wordmark', 'iphobiuss')
-    classification = branding.get('confidential_text','CONFIDENTIAL')
+    classification = branding.get('confidential_text',labels['default_confidential'])
     wordmark = '' if wordmark is None else str(wordmark)
     classification = '' if classification is None else str(classification)
     if _identity_needs_columns(wordmark, classification, identity_width):
@@ -259,4 +259,4 @@ def add_cover(doc, meta, labels, engagement_dir, hx):
     p=bottom.paragraphs[-1]
     p.paragraph_format.space_before=Pt(14);p.paragraph_format.space_after=Pt(0)
     p.alignment=WD_ALIGN_PARAGRAPH.RIGHT if theme=='htb' else (WD_ALIGN_PARAGRAPH.LEFT if theme in ('serio','laboratorio','profile-editorial') else WD_ALIGN_PARAGRAPH.CENTER)
-    run(p,branding.get('confidential_text','CONFIDENTIAL'),7.5,muted)
+    run(p,branding.get('confidential_text',labels['default_confidential']),7.5,muted)

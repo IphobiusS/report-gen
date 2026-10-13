@@ -4,6 +4,7 @@ Reading a view does not normalize, add identities, edit fields or write files.
 An editorial decision refers to documentary content and referenced image bytes;
 it neither authenticates the self-declared reviewer nor verifies a vulnerability.
 """
+from languages import normalize_language, language_index
 from error_messages import message as backend_message
 from copy import deepcopy
 from datetime import date, datetime
@@ -34,15 +35,15 @@ _FIELDS = {
 }
 RULES = [
     {'id': 'scope_absolute', 'es': 'Una afirmación absoluta de alcance necesita límites y evidencia explícitos.',
-     'en': 'An absolute scope claim needs explicit limits and evidence.'},
+     'en': 'An absolute scope claim needs explicit limits and evidence.', 'pt': 'Uma afirmação absoluta de escopo exige limites e evidências explícitos.'},
     {'id': 'security_absolute', 'es': 'Una evaluación no acredita seguridad completa o ausencia de vulnerabilidades.',
-     'en': 'An assessment does not establish complete security or absence of vulnerabilities.'},
+     'en': 'An assessment does not establish complete security or absence of vulnerabilities.', 'pt': 'Uma avaliação não comprova segurança completa nem ausência de vulnerabilidades.'},
     {'id': 'fixed_without_retest', 'es': 'Una corrección comunicada no equivale a un retest documentado.',
-     'en': 'A reported fix is not equivalent to a documented retest.'},
+     'en': 'A reported fix is not equivalent to a documented retest.', 'pt': 'Uma correção comunicada não equivale a um reteste documentado.'},
     {'id': 'claim_without_evidence', 'es': 'Una observación declarada necesita la evidencia que sustenta esta afirmación.',
-     'en': 'A declared observation needs the evidence supporting that specific claim.'},
+     'en': 'A declared observation needs the evidence supporting that specific claim.', 'pt': 'Uma observação declarada exige evidência que sustente essa afirmação específica.'},
     {'id': 'priority_without_basis', 'es': 'La prioridad de intervención necesita una justificación y una fuente.',
-     'en': 'An intervention priority needs a rationale and a source.'},
+     'en': 'An intervention priority needs a rationale and a source.', 'pt': 'A prioridade de intervenção exige uma justificativa e uma fonte.'},
 ]
 
 
@@ -251,27 +252,25 @@ def relationship_map(data):
 
 def editorial(data, language='es'):
     """Transparent deterministic prompts, with no invented technical conclusion."""
-    es = language != 'en'
     findings = data.get('findings', [])
     live = {row.get('uid'): row for row in findings}
-    messages = {rule['id']: rule['es' if es else 'en'] for rule in RULES}
+    messages = {rule['id']: rule[normalize_language(language)] for rule in RULES}
     issues = []
 
     def add(rule, path, uid=None):
         issues.append(dict(rule=rule, level='warning', message=messages[rule],
-                           help=('Revisa el contexto y documenta los límites; no se modificó ningún texto.' if es
-                                 else 'Review the context and document limits; no text was changed.'),
+                           help=((('Revisa el contexto y documenta los límites; no se modificó ningún texto.', 'Review the context and document limits; no text was changed.', 'Revise o contexto e documente os limites; nenhum texto foi alterado.')[language_index(language)])),
                            path=path, finding_uid=uid, technical_verification=False))
 
     for idx, finding in enumerate(findings):
         text = ' '.join(str(finding.get(key) or '') for key in
                         ('description_md', 'summary_md', 'impact_md', 'remediation_md'))
         path = f'findings[{idx}]'
-        if re.search(r'\b(acceso total|todos los documentos|total access|all documents)\b', text, re.I):
+        if re.search(r'\b(acceso total|todos los documentos|acesso total|todos os documentos|total access|all documents)\b', text, re.I):
             add('scope_absolute', path, finding.get('uid'))
-        if re.search(r'\b(completamente segur[oa]|sin vulnerabilidades|completely secure|no vulnerabilities)\b', text, re.I):
+        if re.search(r'\b(completamente segur[oa]|sin vulnerabilidades|sem vulnerabilidades|completely secure|no vulnerabilities)\b', text, re.I):
             add('security_absolute', path, finding.get('uid'))
-        fixed = re.search(r'\b(corregid[oa]|fixed|resolved)\b', text, re.I) or finding.get('status') in ('reported_fixed', 'verified_fixed')
+        fixed = re.search(r'\b(corregid[oa]|corrigid[oa]|fixed|resolved)\b', text, re.I) or finding.get('status') in ('reported_fixed', 'verified_fixed')
         last = workflows.latest_retest(finding)
         if fixed and not (last.get('result') == 'fixed' and last.get('evidence_uids')):
             add('fixed_without_retest', path, finding.get('uid'))
@@ -288,8 +287,8 @@ def editorial(data, language='es'):
         for idx, row in enumerate(model.get(group, [])):
             if row['finding_uid'] not in live or any(ref not in evidence for ref in row.get('evidence_uids', [])):
                 issues.append(dict(rule='missing_reference', level='warning',
-                                   message='Referencia histórica ausente' if es else 'Missing historical reference',
-                                   help='Revisa el vínculo' if es else 'Review the link',
+                                   message=(('Referencia histórica ausente', 'Missing historical reference', 'Referência histórica ausente')[language_index(language)]),
+                                   help=(('Revisa el vínculo', 'Review the link', 'Revise o vínculo')[language_index(language)]),
                                    path=f'insights.{group}[{idx}]', finding_uid=row['finding_uid'],
                                    technical_verification=False))
     return issues

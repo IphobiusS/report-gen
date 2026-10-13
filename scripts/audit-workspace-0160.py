@@ -71,7 +71,7 @@ with tempfile.TemporaryDirectory(prefix='workspace-browser-') as temp:
                     check(f'Action targets at {width} / {theme}',not bad,bad)
                     if width in (390,1440):page.screenshot(path=str(out/f'dashboard-{theme}-{width}.png'),full_page=True)
             page.set_viewport_size({'width':1366,'height':1000})
-            page.locator('#langToggle').click()
+            page.locator('#langToggle').select_option('en')
             check('Interface switch preserves full report',page.evaluate('S.data')==snapshot)
             check('Interface switch leaves revision clean',page.evaluate('!projectStore.dirty'))
             check('English overview labels',page.get_by_role('button',name='Continue report',exact=True).is_visible())

@@ -57,6 +57,12 @@ labels:
   cover_email: "Email"
   cover_date: "Date"
   cover_version: "Version"
+  untitled: "Untitled report"
+  assessor_logo: "Assessor logo"
+  client_logo: "Client logo"
+  cover_image: "Cover image"
+  default_confidential: "CONFIDENTIAL"
+  proof_note: "Proof file on target"
 summary:
   identified: "The report contains"
   finding: "finding"

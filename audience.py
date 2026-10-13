@@ -1,4 +1,5 @@
 """Explicit, independently rendered audience projections. No source writes or network."""
+from languages import language_index
 from error_messages import message as backend_message
 from copy import deepcopy
 from io import BytesIO
@@ -51,16 +52,16 @@ def _aliases(options):
     return deepcopy(rows)
 
 
-def _markdown_text(value):
+def _markdown_text(value, lang='es'):
     """Keep prose, never command/code blocks, embedded images, or link targets."""
     from safe_markup import _parsed
     tree = html.fragment_fromstring(_parsed(str(value or '')), create_parent='div')
     for node in tree.xpath('.//pre|.//code|.//img|.//script|.//style'):
         node.drop_tree()
     text = publication.rendered_text(tree)
-    text = re.sub(r'(?i)\b(?:https?|ftp|file)://\S+', '[detalle técnico omitido / technical detail omitted]', text)
+    text = re.sub(r'(?i)\b(?:https?|ftp|file)://\S+', ('[detalle técnico omitido]', '[technical detail omitted]', '[detalhe técnico omitido]')[language_index(lang)], text)
     text = re.sub(r'(?<!\w)(?:/(?:home|var|etc|tmp|root|Users|opt|srv|mnt|workspace)/[^\s]*|[A-Za-z]:\\[^\s]*)',
-                  '[ruta omitida / path omitted]', text)
+                  ('[ruta omitida]', '[path omitted]', '[caminho omitido]')[language_index(lang)], text)
     return text.strip()
 
 
@@ -74,37 +75,34 @@ def _plain_md(value):
 
 def _meta(source, options, profile):
     original = source.get('meta') or {}
-    en = engine.report_language(source) == 'en'
-    defaults = {'executive': 'Executive summary' if en else 'Resumen de dirección',
-                'public': 'Public case study' if en else 'Caso público'}
-    result = {'lang': 'en' if en else 'es', 'theme': original.get('theme', 'serio'),
+    lang = engine.report_language(source)
+    defaults = {'executive': (('Resumen de dirección', 'Executive summary', 'Resumo executivo')[language_index(lang)]),
+                'public': (('Caso público', 'Public case study', 'Estudo de caso público')[language_index(lang)])}
+    result = {'lang': lang, 'theme': original.get('theme', 'serio'),
               'report_title': _text(options.get('title', defaults[profile]), 'title', 300, True),
               'client': _text(options.get('client_alias', original.get('client', '') if profile == 'executive' else ''),
                               'client_alias', 300, profile == 'public'),
               'version': '1.0', 'branding': {'wordmark': 'report-gen', 'byline': 'report-gen',
-                  'confidential_text': ('PUBLIC DERIVATIVE' if en else 'EXTRACTO PÚBLICO') if profile == 'public'
-                  else ('EXECUTIVE SUMMARY' if en else 'RESUMEN DE DIRECCIÓN')}}
+                  'confidential_text': ((('EXTRACTO PÚBLICO', 'PUBLIC DERIVATIVE', 'VERSÃO DERIVADA PÚBLICA')[language_index(lang)])) if profile == 'public'
+                  else ((('RESUMEN DE DIRECCIÓN', 'EXECUTIVE SUMMARY', 'RESUMO EXECUTIVO')[language_index(lang)]))}}
     # No contacts, private branding, source title, source date, internal layout,
     # document identifiers, author names, custom metadata, or resource paths.
     return result
 
 
-def _risk_body(risks, finding_uid, en, redact=lambda value: value):
-    labels = dict(zip(RISK_FIELDS, ('Service', 'Business objective', 'Consequence', 'Agreed tolerance',
-                      'Criterion source', 'Assumptions', 'Intervention priority', 'Rationale', 'Owner') if en else
-                     ('Servicio', 'Objetivo de negocio', 'Consecuencia', 'Tolerancia acordada',
-                      'Fuente del criterio', 'Supuestos', 'Prioridad de intervención', 'Justificación', 'Responsable')))
+def _risk_body(risks, finding_uid, lang, redact=lambda value: value):
+    labels = dict(zip(RISK_FIELDS, ((('Servicio', 'Objetivo de negocio', 'Consecuencia', 'Tolerancia acordada', 'Fuente del criterio', 'Supuestos', 'Prioridad de intervención', 'Justificación', 'Responsable'), ('Service', 'Business objective', 'Consequence', 'Agreed tolerance', 'Criterion source', 'Assumptions', 'Intervention priority', 'Rationale', 'Owner'), ('Serviço', 'Objetivo de negócio', 'Consequência', 'Tolerância acordada', 'Fonte do critério', 'Premissas', 'Prioridade de intervenção', 'Justificativa', 'Responsável'))[language_index(lang)])))
     rows = [row for row in risks if isinstance(row, dict) and row.get('finding_uid') == finding_uid]
     parts = []
     for row in rows:
         for key in RISK_FIELDS:
             value = row.get(key, '')
             if key == 'tolerance' and not value:
-                value = 'Not agreed' if en else 'No acordado'
+                value = (('No acordado', 'Not agreed', 'Não acordada')[language_index(lang)])
             if key == 'priority' and value == 'unassigned':
-                value = 'Unassigned' if en else 'Sin asignar'
+                value = (('Sin asignar', 'Unassigned', 'Não atribuída')[language_index(lang)])
             if value:
-                parts.append('**' + labels[key] + ':** ' + _plain_md(_markdown_text(redact(str(value)))))
+                parts.append('**' + labels[key] + ':** ' + _plain_md(_markdown_text(redact(str(value)), lang)))
     return '\n\n'.join(parts)
 
 
@@ -129,7 +127,7 @@ def project(source, options):
     else:
         selected = _selection(options.get('finding_uids'), pool, 'finding_uids', profile == 'public')
     aliases = _aliases(options)
-    en = engine.report_language(source) == 'en'
+    lang = engine.report_language(source)
     excluded = ['originals', 'capture_inbox', 'private_backup', 'private_history', 'review_comments', 'editorial_reviews']
     selected_rows = [pool[uid] for uid in selected]
     if profile == 'technical':
@@ -148,8 +146,8 @@ def project(source, options):
             if not kept:
                 # [] triggers the engine's legacy full-report fallback. A
                 # deliberately empty authored section prevents that fallback.
-                kept = [{'key': 'audience-selection', 'title': 'Selección técnica' if not en else 'Technical selection',
-                         'body': 'Solo los bloques seleccionados.' if not en else 'Selected blocks only.'}]
+                kept = [{'key': 'audience-selection', 'title': (('Selección técnica', 'Technical selection', 'Seleção técnica')[language_index(lang)]),
+                         'body': (('Solo los bloques seleccionados.', 'Selected blocks only.', 'Apenas os blocos selecionados.')[language_index(lang)])}]
             data.setdefault('report', {})['sections'] = kept
             config = data['report'].setdefault('workflow', {})
             for key, section_key in [('include_assets', 'rg_assets'), ('include_coverage', 'rg_coverage'),
@@ -199,7 +197,7 @@ def project(source, options):
     data = {'meta': meta, 'report': {'sections': []}, 'findings': []}
     excluded += ['commands', 'raw_targets_paths', 'images', 'attachments', 'contacts', 'assets', 'coverage',
                  'retests', 'root_cause_groups', 'raw_evidence', 'unselected_findings', 'source_sections', 'custom_metadata']
-    prefix = 'Executive summary' if en else 'Resumen de dirección'
+    prefix = (('Resumen de dirección', 'Executive summary', 'Resumo executivo')[language_index(lang)])
     if profile == 'public':
         if any(type(options.get(key)) is not bool or options.get(key) is not True
                for key in ('review_confirmed', 'publish_consent')):
@@ -218,16 +216,13 @@ def project(source, options):
                     or row.get('finding_uid') not in selected or row['finding_uid'] in approved):
                 raise ValueError(backend_message('Contenido público inválido / Invalid public content'))
             approved[row['finding_uid']] = {key: _text(row[key], key, 300 if key == 'title' else MAX_TEXT, required=True) for key in PUBLIC_FIELDS}
-        prefix = ('SIMULATION · FICTIONAL CASE · NO NEW RETEST' if en else 'SIMULACIÓN · CASO FICTICIO · SIN RETEST NUEVO') if provenance == 'simulation' else (
-            'PUBLICATION PERMISSION DECLARED BY THE AUTHOR' if en else 'AUTORIZACIÓN DE PUBLICACIÓN DECLARADA POR EL AUTOR')
+        prefix = ((('SIMULACIÓN · CASO FICTICIO · SIN RETEST NUEVO', 'SIMULATION · FICTIONAL CASE · NO NEW RETEST', 'SIMULAÇÃO · CASO FICTÍCIO · SEM NOVO RETESTE')[language_index(lang)])) if provenance == 'simulation' else (
+            (('AUTORIZACIÓN DE PUBLICACIÓN DECLARADA POR EL AUTOR', 'PUBLICATION PERMISSION DECLARED BY THE AUTHOR', 'AUTORIZAÇÃO DE PUBLICAÇÃO DECLARADA PELO AUTOR')[language_index(lang)]))
         data['meta']['report_subtitle'] = prefix
         data['meta']['branding']['confidential_text'] = (
-            ('SIMULATION · FICTIONAL CASE' if en else 'SIMULACIÓN · CASO FICTICIO') if provenance == 'simulation'
-            else ('PERMISSION DECLARED BY AUTHOR' if en else 'PERMISO DECLARADO POR AUTOR'))
-        body = ('Explicitly selected and reviewed public derivative. It excludes the private assessment and original evidence. '
-                'An author declaration is not independent verification of permission.' if en else
-                'Extracto público seleccionado y revisado expresamente. Excluye la evaluación privada y las evidencias originales. '
-                'La declaración del autor no acredita por sí sola la autorización de un tercero.')
+            ((('SIMULACIÓN · CASO FICTICIO', 'SIMULATION · FICTIONAL CASE', 'SIMULAÇÃO · CASO FICTÍCIO')[language_index(lang)])) if provenance == 'simulation'
+            else ((('PERMISO DECLARADO POR AUTOR', 'PERMISSION DECLARED BY AUTHOR', 'AUTORIZAÇÃO DECLARADA PELO AUTOR')[language_index(lang)])))
+        body = ((('Extracto público seleccionado y revisado expresamente. Excluye la evaluación privada y las evidencias originales. La declaración del autor no acredita por sí sola la autorización de un tercero.', 'Explicitly selected and reviewed public derivative. It excludes the private assessment and original evidence. An author declaration is not independent verification of permission.', 'Versão derivada pública explicitamente selecionada e revisada. Exclui a avaliação privada e as evidências originais. Uma declaração do autor não constitui verificação independente da autorização.')[language_index(lang)]))
         for number, uid in enumerate(selected, 1):
             row = approved[uid]
             data['findings'].append({'id': f'F{number:03d}', 'mode': 'vuln', 'title': redact(row['title']),
@@ -237,22 +232,19 @@ def project(source, options):
         excluded += ['source_titles', 'source_descriptions', 'source_impacts', 'source_remediations',
                      'technical_scores', 'source_finding_ids_uids', 'all_insights']
     else:
-        body = ('Decision-oriented derivative. Technical severity and business priority are distinct. '
-                'Risk tolerance remains “Not agreed” unless documented. No original evidence is included.' if en else
-                'Extracto para decisiones. Severidad técnica y prioridad de negocio son distintas. '
-                'La tolerancia permanece «No acordado» si no está documentada. No incluye evidencias originales.')
+        body = ((('Extracto para decisiones. Severidad técnica y prioridad de negocio son distintas. La tolerancia permanece «No acordado» si no está documentada. No incluye evidencias originales.', 'Decision-oriented derivative. Technical severity and business priority are distinct. Risk tolerance remains “Not agreed” unless documented. No original evidence is included.', 'Versão derivada para decisões. Severidade técnica e prioridade de negócio são distintas. A tolerância ao risco permanece “Não acordada” se não estiver documentada. Nenhuma evidência original é incluída.')[language_index(lang)]))
         risks = (source.get('insights') or {}).get('risks', [])
         for number, (uid, row) in enumerate(zip(selected, selected_rows), 1):
-            finding = {'id': f'F{number:03d}', 'mode': 'vuln', 'title': _markdown_text(redact(row.get('title', ''))),
-                       'description_md': _plain_md(_markdown_text(redact(row.get('description_md') or row.get('summary_md', '')))),
-                       'impact_md': _plain_md(_markdown_text(redact(row.get('impact_md', '')))),
-                       'remediation_md': _plain_md(_markdown_text(redact(row.get('remediation_md', ''))))}
+            finding = {'id': f'F{number:03d}', 'mode': 'vuln', 'title': _markdown_text(redact(row.get('title', '')), lang),
+                       'description_md': _plain_md(_markdown_text(redact(row.get('description_md') or row.get('summary_md', '')), lang)),
+                       'impact_md': _plain_md(_markdown_text(redact(row.get('impact_md', '')), lang)),
+                       'remediation_md': _plain_md(_markdown_text(redact(row.get('remediation_md', '')), lang))}
             for key in ('severity', 'cvss', 'cvss_vector', 'cvss_version'):
                 if key in row:
                     finding[key] = deepcopy(row[key])
-            risk = _risk_body(risks, uid, en, redact)
+            risk = _risk_body(risks, uid, lang, redact)
             if risk:
-                finding['remediation_md'] += '\n\n' + ('### Business decision' if en else '### Decisión de negocio') + '\n\n' + risk
+                finding['remediation_md'] += '\n\n' + ((('### Decisión de negocio', '### Business decision', '### Decisão de negócio')[language_index(lang)])) + '\n\n' + risk
             data['findings'].append(finding)
         included = ['prose_titles_descriptions_impacts_remediation', 'technical_severity_cvss',
                     'structured_business_decisions', 'selected_client_alias_or_client']
@@ -272,26 +264,25 @@ def _issues(data, directory, profile):
         issues = workflows.preflight(data, directory, language)
     else:
         issues = [dict(level=level, message=message, path='audience', finding_uid=None,
-                       help='Review the selected derivative / Revisa el extracto seleccionado')
+                       help=backend_message('Review the selected derivative / Revisa el extracto seleccionado', en='Review the selected derivative', pt='Revise a versão derivada selecionada', language=language))
                   for level, message in validate.validate(data, lang=language)]
-        issues.append(dict(level='warning', message=('This derivative intentionally omits reproduction and original evidence; it is not a complete technical report.' if language == 'en' else
-            'Este extracto omite deliberadamente reproducción y evidencia original; no es el informe técnico completo.'),
-            path='audience', finding_uid=None, help='Keep the complete technical report private / Conserva el informe técnico completo en privado'))
+        issues.append(dict(level='warning', message=((('Este extracto omite deliberadamente reproducción y evidencia original; no es el informe técnico completo.', 'This derivative intentionally omits reproduction and original evidence; it is not a complete technical report.', 'Esta versão derivada omite deliberadamente a reprodução e as evidências originais; não é um relatório técnico completo.')[language_index(language)])),
+            path='audience', finding_uid=None, help=backend_message('Conserva el informe técnico completo en privado', en='Keep the complete technical report private', pt='Mantenha o relatório técnico completo em privado', language=language)))
     content = ''
     if not any(row['level'] == 'error' for row in issues):
         tree = publication.render(data, directory)
         content = publication.rendered_text(tree.find('body'))
         if profile != 'technical' and any(
-                not re.search(r'(?i)\[(?:redacted|censurado)\]$', match[0])
+                not re.search(r'(?i)\[(?:redacted|censurado|ocultado)\]$', match[0])
                 for _, pattern in publication.PATTERNS for match in pattern.finditer(content)):
-            issues.append(dict(level='error', message='El extracto contiene posibles secretos; censúralos antes de exportar / The derivative contains potential secrets; redact them before export',
-                               path='audience', finding_uid=None, help='Use explicit literal substitutions / Usa sustituciones literales explícitas'))
+            issues.append(dict(level='error', message=backend_message('El extracto contiene posibles secretos; censúralos antes de exportar / The derivative contains potential secrets; redact them before export', en='The derivative contains potential secrets; redact them before export', pt='A versão derivada contém possíveis segredos; oculte-os antes de exportar', language=language),
+                               path='audience', finding_uid=None, help=backend_message('Use explicit literal substitutions / Usa sustituciones literales explícitas', en='Use explicit literal substitutions', pt='Use substituições literais explícitas', language=language)))
         from urllib.parse import unquote
         ids = set(tree.xpath('//*[@id]/@id'))
         missing = [ref for ref in tree.xpath('//a[starts-with(@href,"#")]/@href') if ref != '#' and unquote(ref[1:]) not in ids]
         if missing:
-            issues.append(dict(level='error', message='La selección deja referencias internas sin destino / Selection leaves broken internal references',
-                               path='audience', finding_uid=None, help='Include the referenced finding or section / Incluye el hallazgo o la sección referenciada'))
+            issues.append(dict(level='error', message=backend_message('La selección deja referencias internas sin destino / Selection leaves broken internal references', en='Selection leaves broken internal references', pt='A seleção deixa referências internas sem destino', language=language),
+                               path='audience', finding_uid=None, help=backend_message('Include the referenced finding or section / Incluye el hallazgo o la sección referenciada', en='Include the referenced finding or section', pt='Inclua o achado ou a seção referenciada', language=language)))
     return issues, content
 
 

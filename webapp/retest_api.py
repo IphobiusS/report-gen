@@ -1,4 +1,5 @@
 """Read-only, revision-bound retest views using existing private project guards."""
+from languages import normalize_language, language_index
 from error_messages import message as backend_message
 from flask import abort, jsonify, request, Response
 import engine
@@ -23,8 +24,8 @@ def register(api):
     def options(allowed):
         if set(request.args) - allowed or any(len(request.args.getlist(key)) != 1 for key in request.args):
             abort(422, backend_message('Opciones de comparación inválidas / Invalid comparison options'))
-        lang = request.args.get('lang', 'es')
-        if lang not in ('es', 'en'):
+        lang = normalize_language(request.args.get('lang', 'es'), None)
+        if lang is None:
             abort(422, backend_message('Idioma inválido / Invalid language'))
         return lang
 
@@ -72,9 +73,9 @@ def register(api):
                 history.validate_image_blob(name, blob)
         # Snapshot labels can contain internal client data. Shareable captions use
         # documentary identifiers and dates, never an unprojected private label.
-        label = ('Versión / Version ' + baseline + ' / ' + chosen['created'])
+        label = (('Versión ', 'Version ', 'Versão ')[language_index(lang)] + baseline + ' / ' + chosen['created'])
         markup = report_compare.render(before, after, old, new, label,
-                                       'Actual / Current / ' + current[:12], lang, internal=internal)
+                                       ('Actual / ', 'Current / ', 'Atual / ')[language_index(lang)] + current[:12], lang, internal=internal)
         response = Response(markup, mimetype='text/html')
         response.set_etag(current)
         response.headers['X-Report-Gen-Baseline'] = chosen['snapshot_sha256']

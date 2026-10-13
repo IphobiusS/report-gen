@@ -102,7 +102,8 @@ async function preference(page, id) {
     if (!await page.locator('#studioMore').evaluate(element => element.open)) await page.locator('#studioMore > summary').click();
     if (!await page.locator('#studioPreferences').evaluate(element => element.open)) await page.locator('#studioPreferences > summary').click();
   }
-  await page.locator('#' + id).click();
+  if (id === 'langToggle') await page.locator('#' + id).selectOption(await page.evaluate(() => S.uiLang === 'es' ? 'en' : 'es'));
+  else await page.locator('#' + id).click();
   if (await page.locator('#studioMore').evaluate(element => element.open)) await page.locator('#studioMore > summary').click();
 }
 async function guideFocusContract(page) {

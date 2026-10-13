@@ -779,7 +779,7 @@ def _paragraphs(units, paragraphs, scope):
                 if combined==unit:found=end+1;break
                 if len(combined)>=len(unit):break
             if found is not None:break
-        if found is None:raise ValueError(backend_message('Párrafo ({p0}) ausente o alterado / Missing or changed paragraph', p0=scope or 'informe'))
+        if found is None:raise ValueError(backend_message('Párrafo ({p0}) ausente o alterado / Missing or changed paragraph', p0=scope or backend_message('informe', en='report', pt='relatório')))
         cursor=found
 
 
@@ -1111,7 +1111,12 @@ def _pdf_present(units, actual, label_es, label_en):
     raise ValueError(backend_message(
         'Texto de {label} PDF ausente o alterado',
         en='Missing or changed PDF {label} text',
-        label=label_en if current_language() == 'en' else label_es))
+        label=({'heading': 'cabeçalho', 'table': 'tabela', 'list': 'lista', 'paragraph': 'parágrafo',
+                'heading in finding region': 'cabeçalho na região do achado',
+                'paragraph in finding region': 'parágrafo na região do achado',
+                'table in finding region': 'tabela na região do achado',
+                'list in finding region': 'lista na região do achado'}[label_en]
+               if current_language() == 'pt' else label_en if current_language() == 'en' else label_es)))
 
 
 def _pdf_text_check_incomplete():
@@ -1550,7 +1555,7 @@ def inspect(path, fmt, expected):
         m,l,p=check(scope,actual['semantic'],fmt)
         metadata+=m;links+=l;placements+=p
         if scope['codes'] != actual['codes']:
-            raise ValueError(backend_message('Código literal alterado ({p0}) / Literal code changed', p0=scope['id'] or 'informe'))
+            raise ValueError(backend_message('Código literal alterado ({p0}) / Literal code changed', p0=scope['id'] or backend_message('informe', en='report', pt='relatório')))
         codes += len(scope['codes'])
         content += sum(len([line for line in c.splitlines() if line]) for c in scope['codes'])
         # Multiplicity alone would accept a reordered procedure or priority

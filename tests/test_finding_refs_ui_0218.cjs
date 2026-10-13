@@ -3,7 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),asse
 const root=process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..');
 const source=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8');
 const block=source.slice(source.indexOf('function findingSequenceError('),source.indexOf('// ---- editor principal'));
-const S={uiLang:'es',data:null};const context={S,console,Number,Error,JSON,decodeURIComponent};vm.createContext(context);vm.runInContext(block,context);
+const S={uiLang:'es',data:null};const context={S,console,Number,Error,JSON,decodeURIComponent};vm.createContext(context);vm.runInContext(source.slice(0,source.indexOf('// ---- shared transport'))+block,context);
 let checks=0;
 for(const language of ['es','en']){
  S.uiLang=language;
