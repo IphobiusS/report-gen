@@ -237,7 +237,8 @@ def from_tree(tree, image_digests=None, docx_image_digests=None):
                            headings=[normal(n.text_content()) for n in root.xpath('.//*[@data-rg-authored-heading="true"]')],
                            paragraphs=units['paragraphs'], paragraphs_md=[normal(_paragraph_text(n)) for n in _dom_paragraph_nodes(root) if not has_class(n,'chart-scope') and normal(_paragraph_text(n))], codes=units['codes'], table_rows=rows, tables=tables, lists=lists, list_sequence=list_sequence,
                            list_figure_parts=list_figure_parts, list_markers=list_markers))
-    return dict(version=3, scopes=scopes, severity_label=severity_label, cover_units=_cover_units(tree),
+    from exporters.charts import contracts_from_tree
+    return dict(version=3, generated_charts=contracts_from_tree(tree), scopes=scopes, severity_label=severity_label, cover_units=_cover_units(tree),
                 pdf_regions=_pdf_regions(tree),
                 titles=[s['title'] for s in scopes if s['id']],
                 code_lines=[line for s in scopes for code in s['codes'] for line in code.splitlines() if line],
@@ -716,6 +717,8 @@ def _profiles(path, fmt, expected):
         with zipfile.ZipFile(path) as package:
             tree = parse_exported(package.read('report.md').decode())
             digests={n:sha256(package.read(n)).hexdigest() for n in package.namelist() if n!='report.md'}
+        from exporters.charts import verify_markdown_charts
+        verify_markdown_charts(tree, digests, expected.get('generated_charts', []))
         image_digest=lambda src:digests[relative_image(src).as_posix()]
         cover=html.Element('div')
         for n in tree:
@@ -1606,6 +1609,7 @@ def inspect(path, fmt, expected):
                 authored_list_items_order_checked=list_order_checked,
                 authored_list_markers_checked=list_markers_checked,
                 manual_review_required=True,
-                format_specific_omissions=(sum(len(s['paragraphs'])-len(s['paragraphs_md']) for s in expected['scopes']) if fmt=='md' else 0),
+                format_specific_omissions=0,
+                generated_chart_captions_checked=len(expected.get('generated_charts', [])) if fmt == 'md' else 0,
                 verification_scope=('text_presence_only' if fmt == 'pdf' else 'scoped_content_metadata_links_evidence'),
-                limitations=(['PDF: extracción textual; revisar espacios, indentación, asociación de bloques y presentación. / Text extraction; review literal whitespace, block association and layout.'] if fmt == 'pdf' else ['La comparación estática no certifica geometría, oclusiones, CSS condicional ni estado dinámico; requiere revisión visual. Markdown omite el gráfico y su leyenda de alcance. / Content checks do not verify visual layout. Markdown omits the chart and its scope caption.']))
+                limitations=(['PDF: extracción textual; revisar espacios, indentación, asociación de bloques y presentación. / Text extraction; review literal whitespace, block association and layout.'] if fmt == 'pdf' else ['La comparación estática no certifica geometría, oclusiones, CSS condicional ni estado dinámico; requiere revisión visual. El gráfico Markdown se comprueba como recurso generado separado de las evidencias. / Content checks do not verify visual layout. The Markdown chart is checked as a generated resource, separately from evidence.']))

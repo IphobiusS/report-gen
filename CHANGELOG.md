@@ -1,3 +1,28 @@
+# Cambios 0.34.4 (2026-10-13)
+
+- El índice DOCX utiliza entradas enlazadas y campos PAGEREF independientes,
+  calculados por el editor. LibreOffice ya muestra las cifras y las actualiza
+  al cambiar la paginación. Se retiran los campos TOC/TC redundantes; añadir,
+  renombrar o reordenar entradas requiere volver a exportar desde report-gen.
+- Los capítulos del cuerpo fluyen de forma continua en PDF y Word. Portada e
+  índice mantienen sus páginas propias, y las evidencias conservan tamaño y
+  orden. No se fuerzan páginas nuevas que dejen referencias aisladas.
+- El PDF aprovecha también la primera línea disponible para identificadores
+  ASCII extensos después de una etiqueta, conservando sus caracteres y los
+  saltos normales del texto Unicode.
+- Markdown incluye el gráfico de severidades como PNG y la leyenda de alcance.
+  El contrato comprueba imagen, conteos, texto y posición por separado de las
+  evidencias; rechaza pérdidas, sustituciones y desplazamientos.
+- Las tablas simples del HTML portátil se presentan por registros en anchos
+  reducidos, conservando estructura y encabezados. Las tablas complejas mantienen
+  desplazamiento local. Los ordinales extensos dejan espacio al texto ampliado.
+- El gráfico SVG expone sus cinco conteos como alternativa accesible. Su revisión
+  de contraste mide rellenos y fondos reales, sin usar el color CSS heredado.
+- La aceptación LibreOffice comprueba cifras del índice contra páginas de destino
+  y exige una prueba de actualización tras cambiar el contenido. CI instala
+  Tesseract para ejecutar la regresión OCR real y añade recorridos ES/EN en Safari
+  de macOS mediante SafariDriver, por separado del motor WebKit.
+
 # Cambios 0.34.3 (2026-10-12)
 
 - El resumen automático describe hallazgos y severidades registradas sin afirmar

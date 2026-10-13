@@ -49,7 +49,11 @@ def test_short_findings_share_page_with_attached_metadata_and_complete_prose(tmp
     _, pages = render(example(theme, sections), tmp_path)
     # Narrative is ordinary prose, not one indivisible layout table. Multiple
     # short findings still share a page; metadata stay with the first body line.
-    assert page_of(pages, "START1") == page_of(pages, "START2")
+    starts = [page_of(pages, f"START{i}") for i in range(1, 4)]
+    # In a continuous legacy report the first finding can use the remainder
+    # of the summary page, with the next two sharing a page. Do not force the
+    # first pair onto the same page just to retain old chapter pagination.
+    assert len(set(starts)) < len(starts)
     for i in range(1, 4):
         assert page_of(pages, f"START{i}") == page_of(pages, f"test{i}.example.test")
         assert page_of(pages, f"START{i}") <= page_of(pages, f"END{i}")

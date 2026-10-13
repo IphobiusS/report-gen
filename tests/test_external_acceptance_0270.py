@@ -223,7 +223,7 @@ $ErrorActionPreference = 'Stop'
 $tokens = $null; $parseErrors = $null
 $ast = [System.Management.Automation.Language.Parser]::ParseFile($Source, [ref]$tokens, [ref]$parseErrors)
 if ($parseErrors.Count) { throw 'PowerShell parser rejected the native verification script.' }
-$wanted = @('Test-ReportGenWordFieldInstruction', 'Assert-ReportGenWordFields', 'Assert-ReportGenWordInternalLinks')
+$wanted = @('Test-ReportGenWordFieldInstruction', 'Assert-ReportGenWordFields', 'Assert-ReportGenWordInternalLinks', 'Get-ReportGenWordContentsMetrics')
 $functions = @($ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] }, $false))
 foreach ($name in $wanted) {
     $definition = @($functions | Where-Object { $_.Name -eq $name })
@@ -268,6 +268,25 @@ $document.Hyperlinks = @([pscustomobject]@{Address=''; SubAddress='missing'})
 $rejected = $false
 try { Assert-ReportGenWordInternalLinks $document } catch { $rejected = $true }
 if (-not $rejected) { throw 'Missing local bookmark was accepted.' }
+$document = [pscustomobject]@{
+    Fields = @(
+        [pscustomobject]@{Code=[pscustomobject]@{Text=' PAGEREF rg_toc_1 \h '}},
+        [pscustomobject]@{Code=[pscustomobject]@{Text=' PAGEREF "rg_toc_2" \h '}},
+        [pscustomobject]@{Code=[pscustomobject]@{Text=' PAGE '}}
+    )
+    TablesOfContents = [pscustomobject]@{Count=0}
+}
+$metrics = Get-ReportGenWordContentsMetrics $document @('rg_toc_1', 'rg_toc_2')
+if ($metrics.native_toc_count -ne 0 -or $metrics.contents_entry_count -ne 2 -or $metrics.page_reference_field_count -ne 2 -or $metrics.contents_page_reference_count -ne 2) {
+    throw 'Native TOC objects were confused with live contents entries.'
+}
+$rejected = $false
+try { Get-ReportGenWordContentsMetrics $document @('rg_toc_1', 'rg_toc_missing') } catch { $rejected = $true }
+if (-not $rejected) { throw 'Missing native page-reference field was accepted.' }
+$document.Fields += [pscustomobject]@{Code=[pscustomobject]@{Text=' PAGEREF rg_toc_2 \h '}}
+$rejected = $false
+try { Get-ReportGenWordContentsMetrics $document @('rg_toc_1', 'rg_toc_2') } catch { $rejected = $true }
+if (-not $rejected) { throw 'Duplicate native page-reference field was accepted.' }
 @{guard_checks='passed'; native_word_tested=$false} | ConvertTo-Json -Compress
 ''', encoding='utf-8')
     result = subprocess.run([executable, '-NoProfile', '-NonInteractive', '-File', str(check),

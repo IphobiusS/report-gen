@@ -146,8 +146,8 @@ def inspect_archive(path, fmt, images, expected_placements=None):
             return {'archive_integrity': True, 'editable_document': True, 'internal_references_checked':len(anchors), 'image_placements':placements, 'images_verified':len(images)}
         if 'report.md' not in package.namelist():
             raise ValueError(backend_message('Falta el documento Markdown'))
-        # Markdown does not include cover artwork. Check every image it actually
-        # references, with the same Markdown parser as its native exporter.
+        # Verify every referenced image against the immutable capture. Generated
+        # charts have separate source-derived contracts, added by inspect_export.
         from exporters.markdown import parse_exported
         tree = parse_exported(package.read('report.md').decode('utf-8'))
         from resources import relative_image
@@ -199,7 +199,13 @@ def inspect_export(path, fmt, captured):
     # Native Word embeds supported encodings; WebP has an exact PNG conversion
     # captured before export. Both archive and scoped checks verify those bytes.
     inspection_capture = dict(captured, images=captured.get('docx_images', captured['images'])) if fmt == 'docx' else captured
+    charts = (captured.get('contract') or {}).get('generated_charts', []) if fmt == 'md' else []
+    if charts:
+        inspection_capture = dict(captured, images={**captured['images'], **{c['path']: c['sha256'] for c in charts}})
     checks=get(fmt).inspect(path, inspection_capture)
+    if charts:
+        checks['images_verified'] -= len(charts)
+        checks['generated_charts_verified'] = len(charts)
     from export_contract import inspect
     checks.update(inspect(path,fmt,captured.get('contract')))
     return checks

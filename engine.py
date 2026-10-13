@@ -312,14 +312,15 @@ def render_html(env, data, engagement_dir, page_map, pagemarks, L, theme_href=No
 def _pdf_code_layout(source):
     """Apply transient PDF layout without altering authored text.
 
-    Keep code lines together, let literal URIs fill the available width, and
+    Keep code lines together, let URIs and long identifiers fill the width, and
     reserve room for long list counters. Other exports and source markup
     retain their original representation.
     """
     from lxml import html
-    uri = re.compile(r'\b(?:https?|ftps?)://[^\s<>"\'`]+', re.IGNORECASE)
+    from pdf_pagination import PDF_IDENTIFIER_PATTERN, PDF_URI_PATTERN
+    uri = PDF_URI_PATTERN
 
-    def url_breaks(element, text):
+    def literal_breaks(element, text):
         # WeasyPrint still prefers a slash/hyphen before an overlong URI
         # segment even with word-break:break-all. Optional HTML break points
         # fill the available line without adding source text or hard breaks.
@@ -378,7 +379,7 @@ def _pdf_code_layout(source):
                 'class': 'rg-pdf-code-line',
                 'style': 'display:inline-block;width:100%;vertical-align:top;'
                          'break-inside:avoid;page-break-inside:avoid'})
-            url_breaks(span, line)
+            literal_breaks(span, line)
             span.tail = '\n' if index < len(parts) - 1 else ''
             content.append(span)
         pre.set('style', pre.get('style', '') +
@@ -391,18 +392,20 @@ def _pdf_code_layout(source):
         if len(element):
             continue  # Nested inline code is handled separately; retain markup.
         text = element.text or ''
-        if not uri.search(text):
+        has_uri = uri.search(text)
+        if not has_uri and not (element.tag == 'code' and PDF_IDENTIFIER_PATTERN.search(text)):
             continue
         if element.tag not in {'code', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'} and not uri.fullmatch(text.strip()):
-            continue  # A human-readable label is prose, not a literal URI.
+            continue  # A human-readable label keeps ordinary word boundaries.
         if element.tag == 'code':
             # WeasyPrint does not reserve inline decoration when splitting
             # these fragments: the border can overflow and push a preceding
             # label onto its own line. Preserve the mono face/background, but
-            # omit the decorative inset only for PDF code containing a URI.
+            # omit the inset only for PDF code containing a breakable literal.
             element.set('style', element.get('style', '') + ';padding:0;border:0')
-        element.text = None
-        url_breaks(element, text)
+        if has_uri:
+            element.text = None
+            literal_breaks(element, text)
         changed = True
 
     # Plain Markdown URLs are text, not necessarily anchors or inline code.
@@ -416,7 +419,41 @@ def _pdf_code_layout(source):
             continue
         parent = slot.getparent()
         wrapper = html.Element('span', {'data-rg-pdf-plain-uri': 'true'})
-        url_breaks(wrapper, text)
+        literal_breaks(wrapper, text)
+        if slot.is_text:
+            parent.text = None
+            parent.insert(0, wrapper)
+        elif slot.is_tail:
+            parent.tail = None
+            parent.addnext(wrapper)
+        else:
+            continue
+        changed = True
+
+    # For bounded ASCII identifier runs, WeasyPrint's break-all fills the
+    # label line without inserting characters or per-glyph break elements.
+    # Keep the setting local to each identifier, including code-line spans.
+    for slot in tree.xpath('//body//text()[not(ancestor::script) and not(ancestor::style)]'):
+        text = str(slot)
+        matches = list(PDF_IDENTIFIER_PATTERN.finditer(text))
+        if not matches:
+            continue
+        wrapper = html.Element('span', {'data-rg-pdf-identifiers': 'true'})
+        previous = None
+        cursor = 0
+        for match in matches:
+            prefix = text[cursor:match.start()]
+            if previous is None:
+                wrapper.text = prefix
+            else:
+                previous.tail = prefix
+            run = html.Element('span', {'data-rg-pdf-identifier': 'true', 'style': 'word-break:break-all'})
+            run.text = match.group()
+            wrapper.append(run)
+            previous = run
+            cursor = match.end()
+        previous.tail = text[cursor:]
+        parent = slot.getparent()
         if slot.is_text:
             parent.text = None
             parent.insert(0, wrapper)

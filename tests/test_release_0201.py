@@ -102,21 +102,20 @@ def test_summary_zero_and_machine_counts(findings, total, machines):
 
 
 @pytest.mark.parametrize('section_based', [False, True])
-def test_word_has_native_toc_and_resolved_bookmarks(tmp_path, section_based):
+def test_word_has_live_page_references_and_resolved_bookmarks(tmp_path, section_based):
     data = pending_report(section_based=section_based)
     out = tmp_path / 'navigation.docx'
     export.to_docx(data, data['meta'], engine.load_lang('es'), tmp_path, out)
     doc = Document(out)
     assert any(p.text == 'Tabla de contenidos' for p in doc.paragraphs)
-    toc = doc.element.xpath('//w:sdt[w:sdtPr/w:docPartObj/w:docPartGallery[@w:val="Table of Contents"]]')
+    toc = doc.element.xpath('//w:sdt[w:sdtPr/w:tag[@w:val="report-gen-contents"]]')
     assert len(toc) == 1
     anchors = [a.get(qn('w:anchor')) for a in toc[0].iter(qn('w:hyperlink'))]
     names = {a.get(qn('w:name')) for a in doc.element.xpath('//w:bookmarkStart')}
     assert anchors and len(anchors) == len(set(anchors)) and set(anchors) <= names
     instructions = [n.text or '' for n in doc.element.xpath('//w:instrText')]
-    assert sum(i.strip().startswith('TC ') for i in instructions) == len(anchors)
     assert sum(i.strip().startswith('PAGEREF ') for i in instructions) == len(anchors)
-    assert any(i.strip().startswith('TOC ') for i in instructions)
+    assert not any(i.strip().startswith(('TOC ', 'TC ')) for i in instructions)
     assert doc.settings.element.find(qn('w:updateFields')).get(qn('w:val')) == 'true'
     # A field cache must not pretend the PDF page map is Word pagination.
     for instruction in toc[0].iter(qn('w:instrText')):
@@ -128,7 +127,7 @@ def test_word_has_native_toc_and_resolved_bookmarks(tmp_path, section_based):
                 break
 
 
-def test_word_toc_escapes_titles_in_field_instructions(tmp_path):
+def test_word_contents_titles_cannot_inject_field_instructions(tmp_path):
     data = pending_report()
     data['report']['sections'][0]['title'] = 'Title "quoted" \\f Z'
     out = tmp_path / 'quoted.docx'

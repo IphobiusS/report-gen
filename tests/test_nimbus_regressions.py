@@ -41,7 +41,8 @@ def test_markdown_preserves_cover_and_special_evidence_labels(tmp_path, sections
         tree = html.fragment_fromstring(str(md(z.read('report.md').decode())), create_parent='div')
     for text in ('Rol específico', 'OS-123', 'autor@example.test'):
         assert text in tree.text_content()
-    assert len(tree.xpath('.//img')) == 4
+    assert len(tree.xpath('.//img[not(contains(@src,"report-gen-assets/severity-"))]')) == 4
+    assert len(tree.xpath('.//img[contains(@src,"report-gen-assets/severity-")]')) == (0 if sections else 1)
     assert tree.xpath('.//img')[-1].get('alt') == caption
     assert 'Figura 1.' in tree.text_content()
     assert not tree.xpath('.//script')

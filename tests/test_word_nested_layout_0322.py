@@ -27,8 +27,10 @@ def test_section_boundary_does_not_need_a_separate_break_paragraph(tmp_path, exp
     document = Document(output)
     headings = [p for p in document.paragraphs if p.style.name == 'Heading 1']
     assert len(headings) >= 2
-    for paragraph in headings:
-        assert paragraph.paragraph_format.page_break_before is True
+    for index, paragraph in enumerate(headings):
+        assert paragraph.paragraph_format.page_break_before is (index == 0)
+        if index:
+            assert paragraph.paragraph_format.space_before == Pt(14)
         previous = paragraph._p.getprevious()
         assert not any(node.get(qn('w:type')) == 'page'
                        for node in previous.iter(qn('w:br')))

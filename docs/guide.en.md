@@ -1,4 +1,4 @@
-# report-gen 0.34.3 user guide
+# report-gen 0.34.4 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Changelog](../CHANGELOG.md)
 
@@ -114,7 +114,7 @@ Annexes are excluded until individually reviewed and selected. Only the combined
 
 The annex scanner searches the first MiB of UTF-8 text or counts image metadata. That annex scan does not perform OCR or inspect PDF contents. The Publication inspector offers a separate optional local OCR action for published images. Results include scope and limitations, never matched secret values.
 
-Structured export checks compare paragraphs, literal code, metadata, native tables, links and evidence placement within their finding. Only code line endings are normalized. Missing internal destinations block publication. Static HTML visibility checks do not certify geometry, occlusion, conditional CSS or dynamic states. PDF checks text presence, including table cells and list items, image counts and index destinations. Text presence is global and does not prove the location or association of a cell or item. Wrapped parts of a logical code line stay on one page; a line taller than the printable page is rejected while preserving the previous output. In PDF, literal whitespace, block association and layout require manual review. Markdown intentionally omits the severity chart and its scope caption; that difference is recorded.
+Structured export checks compare paragraphs, literal code, metadata, native tables, links and evidence placement within their finding. Only code line endings are normalized. Missing internal destinations block publication. Static HTML visibility checks do not certify geometry, occlusion, conditional CSS or dynamic states. PDF checks text presence, including table cells and list items, image counts and index destinations. Text presence is global and does not prove the location or association of a cell or item. Wrapped parts of a logical code line stay on one page; a line taller than the printable page is rejected while preserving the previous output. In PDF, literal whitespace, block association and layout require manual review. Markdown includes the severity chart as a PNG, alternative text with its counts and its scope caption. Checks compare the generated image bytes, text and position relative to the summary, separately from evidence images.
 
 Tables inside a finding, including its detailed procedure, must fit on one page with their heading. Otherwise split or shorten the table, or place the extensive register in a narrative section or report appendix, where it can continue across pages. PDF export allows 300 seconds by default. Set `REPORT_GEN_PDF_TIMEOUT` before starting report-gen to an integer between 30 and 600 seconds; an invalid value is rejected before the renderer starts. Reaching the deadline preserves the previous output and removes intermediate files. The queue retains cancellation and its outer 1,800-second deadline. The budget is not automatically increased after a failure: split the content, explicitly adjust the configuration, or retry with less load.
 
@@ -136,6 +136,12 @@ This does not verify visual order or the association of individual images;
 noncanonical documents retain the global scope.
 
 PDF and portable HTML wrap literal URLs to the available width without changing their text. LibreOffice may wrap some DOCX URLs early; no artificial characters or line breaks are inserted to conceal that limitation. Native Microsoft Word validation requires a licensed Windows desktop installation. The opt-in workflow is implemented; local OOXML and LibreOffice checks do not substitute for that native validation.
+
+In PDF, ASCII identifiers of at least 32 characters, or at least 24 containing digits, underscore, slash or colon, can continue from the remaining line space. This applies to those strings and URLs; it preserves their characters and normal Unicode prose rules. It does not promise identical wrapping for arbitrary words or widths.
+
+PDF and Word body chapters continue without forcing a fresh page for every chapter. The cover and contents stay separate. A figure that cannot fit intact moves to the next page with its size and order preserved; evidence is not cropped to remove that space.
+
+In portable HTML, tables with one header row and uniform cells become records at narrow widths, with each header beside its value. Tables with merged cells or complex headers keep local horizontal scrolling to preserve their relationships. Long ordinals move above their text when width is limited.
 
 **URL compatibility in Word**, under review, identifies locations containing visible URLs of 96 or more characters in the outgoing content. This signals that the DOCX needs inspection; it does not measure line breaks, fail preparation or change the readiness score. Markdown fields offer **Link** for entering a descriptive name and an HTTP/HTTPS URL whose destination remains literal. This is an optional writing alternative: preserve literal URLs that are evidence or commands. The notice does not modify the report automatically or display the detected value.
 
@@ -221,7 +227,7 @@ Replace `/path/to/data` with the selected workspace; legacy installations use `w
 
 The automatic summary describes recorded findings and severity ratings without claiming that all are confirmed. Machine entries are records, and **Asset inventory** does not establish that assessment was performed. Consult **Coverage and limitations** and each finding's verification state. If no approach has been authored, default text stays within documented information and does not claim manual reproduction. Explicitly authored text is preserved and must be reviewed before delivery.
 
-The included `examples/pending-severity/engagement.yaml` fixture contains two fictional findings with confirmed technical verification and no assigned severity. Its report text is in Spanish. In Word, table-of-contents titles are available immediately; page numbers are calculated when fields are updated in the editor. If they are missing or the content changes, use **Ctrl+A**, then **F9**. Word pagination is not copied from the PDF. Microsoft Word and LibreOffice may distribute content differently; desktop Microsoft Word remains a separate validation target.
+The included `examples/pending-severity/engagement.yaml` fixture contains two fictional findings with confirmed technical verification and no assigned severity. Its report text is in Spanish. In Word, contents entries are available immediately, with internal links and independent native `PAGEREF` fields. LibreOffice calculates their page numbers during layout; after editing content, use **Ctrl+A**, then **F9**. Numbers follow the editor’s actual pagination, not the PDF. To add, remove, rename or reorder contents entries, edit the report in report-gen and export again: the entry list is not a TOC field that Word automatically rebuilds. Microsoft Word and LibreOffice may paginate differently; native Microsoft Word remains a separate validation target.
 
 The editor runs in one process on `127.0.0.1`; it is not a multiuser service. Certification profiles are starting points; check current provider requirements before an exam submission. Logos remain their owners' property and imply no affiliation.
 

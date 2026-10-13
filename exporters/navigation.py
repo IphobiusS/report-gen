@@ -1,7 +1,7 @@
-"""Native Word TOC with readable cached links and real page-reference fields.
+"""Editable contents with internal links and native, live page references.
 
-The cache contains titles, never guessed PDF page numbers. Word/LibreOffice
-can update the native fields using their own pagination.
+The entry list is generated from the current report sections. PAGEREF fields
+use the reader's own layout; no PDF page map or guessed cache is embedded.
 """
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
@@ -33,9 +33,8 @@ def add_reference(paragraph, fragment):
     paragraph._p.append(end)
 
 
-def _field_part(paragraph, kind, instruction=None, hidden=False):
+def _field_part(paragraph, kind, instruction=None):
     run = paragraph.add_run()
-    run.font.hidden = hidden
     node = OxmlElement('w:instrText' if instruction is not None else 'w:fldChar')
     if instruction is not None:
         node.set(qn('xml:space'), 'preserve')
@@ -50,9 +49,12 @@ def _field_part(paragraph, kind, instruction=None, hidden=False):
 def add_toc(document, entries, title, color):
     """Insert a visible index before the first recorded body heading.
 
-    Entries are (heading paragraph, displayed title, nesting level). TC fields
-    enumerate exactly these entries, so Markdown body headings cannot silently
-    change the index when a reader refreshes it.
+    Entries are (heading paragraph, displayed title, nesting level). Each page
+    number is a native PAGEREF, outside an enclosing TOC field: LibreOffice
+    treats an enclosing TOC result as a cached index and does not recalculate
+    its nested PAGEREFs on open. Standalone references recalculate on layout
+    and remain editable fields in Word. Re-export to rebuild the entry list
+    after adding, removing, renaming or reordering report sections.
     """
     if not entries:
         return
@@ -68,10 +70,6 @@ def add_toc(document, entries, title, color):
         end = OxmlElement('w:bookmarkEnd'); end.set(qn('w:id'), str(index))
         paragraph._p.insert(1 if paragraph._p.pPr is not None else 0, start)
         paragraph._p.append(end)
-        escaped = ' '.join(text.split()).replace('\\', '\\\\').replace('"', '\\"')
-        _field_part(paragraph, 'begin', hidden=True)
-        _field_part(paragraph, '', f' TC "{escaped}" \\f R \\l {level} ', hidden=True)
-        _field_part(paragraph, 'end', hidden=True)
         links.append((name, text, level))
 
     before = entries[0][0]._p
@@ -84,12 +82,13 @@ def add_toc(document, entries, title, color):
     before.addprevious(heading._p)
 
     sdt = OxmlElement('w:sdt')
-    props = OxmlElement('w:sdtPr'); obj = OxmlElement('w:docPartObj')
-    gallery = OxmlElement('w:docPartGallery'); gallery.set(qn('w:val'), 'Table of Contents')
-    obj.append(gallery); props.append(obj); sdt.append(props)
+    props = OxmlElement('w:sdtPr')
+    tag = OxmlElement('w:tag'); tag.set(qn('w:val'), 'report-gen-contents')
+    alias = OxmlElement('w:alias'); alias.set(qn('w:val'), title)
+    props.append(tag); props.append(alias); sdt.append(props)
     content = OxmlElement('w:sdtContent'); sdt.append(content)
     available = document.sections[-1].page_width - document.sections[-1].left_margin - document.sections[-1].right_margin
-    for i, (name, text, level) in enumerate(links):
+    for name, text, level in links:
         style_name = f'TOC {level}'
         if style_name not in document.styles:
             style = document.styles.add_style(style_name, WD_STYLE_TYPE.PARAGRAPH)
@@ -101,10 +100,6 @@ def add_toc(document, entries, title, color):
         p.paragraph_format.left_indent = Cm(.6 * (level - 1))
         # No dangling dotted line when the viewer has not calculated PAGEREF.
         p.paragraph_format.tab_stops.add_tab_stop(available, WD_TAB_ALIGNMENT.RIGHT, WD_TAB_LEADER.SPACES)
-        if i == 0:
-            _field_part(p, 'begin')
-            _field_part(p, '', ' TOC \\f R \\h \\z ')
-            _field_part(p, 'separate')
         link = OxmlElement('w:hyperlink'); link.set(qn('w:anchor'), name)
         link.set(qn('w:history'), 'true')
         run = p.add_run(text); run.font.color.rgb = color
@@ -116,8 +111,6 @@ def add_toc(document, entries, title, color):
         # Empty until a layout engine knows the actual Word page. No fake 1s.
         p.add_run('')
         _field_part(p, 'end')
-        if i == len(links) - 1:
-            _field_part(p, 'end')
     before.addprevious(sdt)
     # Anchor the break to the first body heading. A separate break paragraph
     # can overflow a completely full TOC page and leave a blank page behind.

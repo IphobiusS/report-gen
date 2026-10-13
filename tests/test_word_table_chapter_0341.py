@@ -25,7 +25,8 @@ def test_table_to_chapter_has_no_standalone_empty_spacer(tmp_path, ident, tail):
     document = Document(output)
     heading = next(p for p in document.paragraphs
                    if p.style.name == 'Heading 1' and 'Following chapter' in p.text)
-    assert heading.paragraph_format.page_break_before is True
+    assert heading.paragraph_format.page_break_before is False
+    assert heading.paragraph_format.space_before == Pt(14)
     previous = heading._p.getprevious()
     if not tail:
         assert previous.tag == qn('w:tbl')

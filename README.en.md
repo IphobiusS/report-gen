@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.34.3
+# report-gen 0.34.4
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -51,15 +51,17 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
-## New in 0.34.3
+## New in 0.34.4
 
-Automatic text describes recorded information without attributing checks that have not been documented. The summary presents findings and recorded severity ratings; machine entries are counted as records. **Asset inventory** identifies included targets, while **Coverage and limitations** retains which tests are pending or performed.
+Word contents use native page references that LibreOffice calculates during layout. Chapter links remain available and page numbers update when content moves. The title list is rebuilt when exporting from report-gen; page numbers are never guessed from the PDF.
 
-The default approach text no longer claims that all findings were reproduced manually. Review each record's verification state, evidence and limitations; the summary does not replace them. Explicitly authored content is preserved.
+Body chapters continue in the available space in PDF and Word, with the cover and contents kept separate. Markdown includes the severity chart and its caption. In portable HTML, simple tables switch to a record view when width is limited, and long ordinals leave room for enlarged text.
+
+Automatic text still describes recorded information without claiming undocumented checks. Review each finding's verification state, evidence and coverage before delivery.
 
 ## Export and visual tutorial
 
-Left, center and right alignment in Markdown tables is preserved on export. PDF verification checks each finding's content within its region, so a copy in the contents or summary cannot conceal missing text. Long URLs in ordinary text no longer overflow the PDF; verification avoids unnecessary ambiguous searches. On Linux and macOS, a supervisor keeps the job's process group reserved until cleanup, even if the worker exits early. Publication also requires macOS, stable LibreOffice and WebKit checks. Engine checks do not substitute for native Microsoft Word or Safari review.
+Left, center and right alignment in Markdown tables is preserved on export. PDF verification checks each finding's content within its region, so a copy in the contents or summary cannot conceal missing text. Long URLs in ordinary text no longer overflow the PDF; verification avoids unnecessary ambiguous searches. On Linux and macOS, a supervisor keeps the job's process group reserved until cleanup, even if the worker exits early. Publication also requires macOS, stable LibreOffice and WebKit checks, plus a project and bilingual tutorial journey in native desktop Safari. This automated journey has a defined scope; it does not substitute for native Microsoft Word or human screen-reader review.
 
 **Visual tutorial** offers an optional invitation on first entry and remains available in the menu. Its six steps include real Spanish and English screenshots: template, report details, findings, evidence, review, and delivery with a backup. Enlarge screenshots, resume your place or restart without changing your projects. It works locally, including when the browser cannot save progress.
 
@@ -89,7 +91,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.34.3 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.34.4 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

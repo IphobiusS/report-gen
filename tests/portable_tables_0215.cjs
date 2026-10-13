@@ -154,11 +154,13 @@ async function streamingContract() {
     const bounds=await region.evaluate(el=>({width:el.clientWidth,content:el.scrollWidth,overflow:getComputedStyle(el).overflowX}));
     assert.equal(bounds.overflow,'auto','table can scroll locally');
     if(width===320) {
-      assert.ok(await region.evaluate(el=>getComputedStyle(el,'::before').content.includes(el.dataset.scrollHint)),
-        'mobile scrolling instruction is visibly rendered without adding report prose');
-      assert.ok(bounds.content>bounds.width,'mobile comparison has genuinely scrollable columns');
+      assert.ok(await region.evaluate(el=>getComputedStyle(el,'::before').content.includes(el.dataset.recordHint)),
+        'mobile record instruction is rendered without changing report prose');
+      assert.ok(bounds.content<=bounds.width+1,'mobile records need no horizontal reading per row');
+      assert.equal(await table.evaluate(el=>getComputedStyle(el).display),'block','mobile comparison uses the native record view');
+      assert.equal(await expression.getAttribute('data-column-label'),'Inherente');
       await region.focus();await p.keyboard.press('ArrowRight');await p.waitForTimeout(200);
-      assert.ok(await region.evaluate(el=>el.scrollLeft)>0,'arrow key moves the focused scroll region');
+      assert.equal(await region.evaluate(el=>el.scrollLeft),0,'all record values fit without horizontal panning');
       assert.equal(await region.evaluate(el=>getComputedStyle(el).outlineStyle),'solid','keyboard focus is visible');
     }
     const twoColumns=p.locator('xpath=//table[thead/tr/th[normalize-space(.)="Dimensión"]]');
@@ -172,9 +174,9 @@ async function streamingContract() {
     assert.equal(await twoRegion.getAttribute('tabindex'),'0','two-column data scrolls by keyboard');
     assert.ok((await twoRegion.getAttribute('aria-label'))?.trim(),'two-column region has a readable name');
     if(width===320) {
-      assert.ok(await twoRegion.evaluate(el=>el.scrollWidth>el.clientWidth),'two-column data can scroll locally');
+      assert.ok(await twoRegion.evaluate(el=>el.scrollWidth<=el.clientWidth+1),'two-column data stacks into complete records');
       await twoRegion.focus();await p.keyboard.press('ArrowRight');await p.waitForTimeout(200);
-      assert.ok(await twoRegion.evaluate(el=>el.scrollLeft)>0,'arrow key moves the two-column region');
+      assert.equal(await twoRegion.evaluate(el=>el.scrollLeft),0,'two-column records do not require panning');
     }
     assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'scrolling table does not overflow the page');
    }

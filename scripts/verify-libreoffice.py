@@ -17,6 +17,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import unicodedata
 from tempfile import TemporaryDirectory
 import zipfile
 
@@ -186,6 +187,94 @@ def inspect_native_content(source, pdf, captured):
             'scope': 'DOCX scoped content plus native PDF global text, metadata and image presence.'}
 
 
+def inspect_contents(source, pdf):
+    """Check live Word page references against the actual native PDF layout.
+
+    Read the entry list from the DOCX, never infer it from the renderer's
+    output. The title link and the numeric PAGEREF link must resolve to the
+    same location, whose heading must match the source entry.
+    """
+    with zipfile.ZipFile(source) as archive:
+        tree = etree.fromstring(archive.read('word/document.xml'),
+                                etree.XMLParser(resolve_entities=False, no_network=True))
+    ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+    entries = []
+    for paragraph in tree.xpath('//w:sdt[w:sdtPr/w:tag[@w:val="report-gen-contents"]]/w:sdtContent/w:p',
+                                namespaces=ns):
+        links = paragraph.xpath('./w:hyperlink', namespaces=ns)
+        if len(links) != 1:
+            raise ValueError('Contents entry must have one title hyperlink')
+        title = ''.join(links[0].xpath('.//w:t/text()', namespaces=ns))
+        anchor = links[0].get('{'+ns['w']+'}anchor')
+        codes = paragraph.xpath('.//w:instrText/text()', namespaces=ns)
+        if len(codes) != 1 or codes[0].strip() != f'PAGEREF {anchor} \\h':
+            raise ValueError('Contents entry must retain its native page-reference field')
+        entries.append({'title': title, 'anchor': anchor})
+    if not entries:
+        raise ValueError('DOCX has no report-gen contents entries')
+
+    def normal(text):
+        return ' '.join(unicodedata.normalize('NFKC', text).split())
+
+    rows = []
+    with fitz.open(pdf) as document:
+        groups = {}
+        for page_number, page in enumerate(document):
+            for link in page.get_links():
+                if link['kind'] != fitz.LINK_GOTO or 'to' not in link:
+                    continue
+                text = normal(page.get_textbox(link['from']))
+                if not text:
+                    continue
+                key = (page_number, link['page'], round(link['to'].x, 1), round(link['to'].y, 1))
+                groups.setdefault(key, []).append((link['from'], text))
+        used = set()
+        for entry in entries:
+            candidates = []
+            for key, parts in groups.items():
+                titles = [(rect, text) for rect, text in parts
+                          if not (text.isascii() and text.isdigit())]
+                # Rectangles are ordered by reading position, not annotation
+                # order; LibreOffice may write those in reverse order.
+                titles.sort(key=lambda item: (round(item[0].y0, 1), item[0].x0))
+                if normal(' '.join(text for _, text in titles)) == normal(entry['title']):
+                    candidates.append((key, parts))
+            if len(candidates) != 1:
+                raise ValueError(f'Contents title is absent or ambiguous in native PDF: {entry["title"]}')
+            key, parts = candidates[0]
+            if key in used:
+                raise ValueError('Two contents entries resolved to one rendered row')
+            used.add(key)
+            source_page, target_page, target_x, target_y = key
+            numbers = [(rect, text) for rect, text in parts if text.isascii() and text.isdigit()]
+            if len(numbers) != 1:
+                raise ValueError(f'Contents page number is missing or ambiguous: {entry["title"]}')
+            rect, shown = numbers[0]
+            title_rects = [box for box, text in parts if not (text.isascii() and text.isdigit())]
+            last_title_line = max(title_rects, key=lambda box: (box.y0, box.x0))
+            title_middle = (last_title_line.y0 + last_title_line.y1) / 2
+            number_middle = (rect.y0 + rect.y1) / 2
+            tolerance = max(2, min(rect.height, last_title_line.height) / 4)
+            if abs(title_middle - number_middle) > tolerance:
+                raise ValueError(f'Contents page number is not on its title row: {entry["title"]}')
+            if rect.x0 < document[source_page].rect.width / 2 or int(shown) != target_page + 1:
+                raise ValueError(f'Incorrect contents page number: {entry["title"]}: {shown} != {target_page + 1}')
+            if not 0 <= target_page < len(document):
+                raise ValueError('Contents destination falls outside native PDF')
+            # Inspect the text immediately following the destination, not a
+            # duplicate title elsewhere (such as in the index itself).
+            target = document[target_page]
+            lines = [line for block in target.get_text('dict')['blocks'] if block['type'] == 0
+                     for line in block['lines'] if line['bbox'][3] >= target_y - 2]
+            lines.sort(key=lambda line: (round(line['bbox'][1], 1), line['bbox'][0]))
+            destination_text = normal(' '.join(span['text'] for line in lines[:8] for span in line['spans']))
+            if normal(entry['title']) not in destination_text:
+                raise ValueError(f'Contents destination does not point to its heading: {entry["title"]}')
+            rows.append(dict(entry, contents_page=source_page + 1, shown=int(shown), actual=target_page + 1))
+    return {'entries_checked': len(entries), 'page_numbers_match_native_layout': True,
+            'title_and_number_destinations_match': True, 'rows': rows}
+
+
 def run(destination, executable, require_stable=False):
     destination = destination.resolve()
     if destination.exists() and any(destination.iterdir()):
@@ -226,11 +315,13 @@ def run(destination, executable, require_stable=False):
                 content = inspect_native_content(source, pdf, captured)
             geometry = inspect_geometry(pdf, pdf.parent / 'pages')
             links = inspect_links(source, pdf, geometry)
+            contents = inspect_contents(source, pdf)
             if sha256(source) != before:
                 raise ValueError(f'LibreOffice changed the original DOCX: {case}')
             result['documents'].append({'case': case, 'docx_sha256': before,
                                         'pdf': str(pdf.relative_to(destination)), 'pdf_sha256': sha256(pdf),
-                                        'content_checks': content, 'links': links, 'geometry': geometry})
+                                        'content_checks': content, 'links': links, 'contents': contents,
+                                        'geometry': geometry})
             save()
         result['status'] = 'passed'
         return result

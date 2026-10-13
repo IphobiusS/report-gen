@@ -4,7 +4,7 @@
   {% if sev_counts.values()|sum %}
   {% if unclassified_count %}<p class="chart-scope">{{ L.summary.chart_scope }}</p>{% endif %}
   <div class="chart-wrap">
-  <svg class="sevchart" viewBox="0 0 370 155" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ L.labels.summary }}">
+  <svg class="sevchart" viewBox="0 0 370 155" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ L.summary.chart_scope }}: {% for s in sev_order %}{{ L.severity[s] }}: {{ sev_counts[s] }}{% if not loop.last %}; {% endif %}{% endfor %}.">
     <line class="axis" stroke="#d6dbe2" stroke-width="1" x1="14" y1="120" x2="354" y2="120"/>
     {% for s in sev_order %}
       {% set x = 20 + loop.index0 * 68 %}

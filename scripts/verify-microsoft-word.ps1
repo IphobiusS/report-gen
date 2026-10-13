@@ -52,6 +52,33 @@ function Assert-ReportGenWordFields {
     }
 }
 
+function Get-ReportGenWordContentsMetrics {
+    param($Document, [string[]]$ExpectedAnchors)
+    $references = @{}
+    $referenceCount = 0
+    foreach ($field in $Document.Fields) {
+        if ($field.Code.Text -match '^\s*PAGEREF\s+"?([A-Za-z_][A-Za-z0-9_]*)"?(?=\s|$)') {
+            $anchor = $Matches[1]
+            $referenceCount++
+            if (-not $references.ContainsKey($anchor)) { $references[$anchor] = 0 }
+            $references[$anchor]++
+        }
+    }
+    foreach ($anchor in $ExpectedAnchors) {
+        if (-not $references.ContainsKey($anchor) -or $references[$anchor] -ne 1) {
+            throw "Contents entry does not retain one native PAGEREF: $anchor"
+        }
+    }
+    # An index of standalone PAGEREFs is not a Word TablesOfContents object.
+    # Keep that real object count, separately from entries and live fields.
+    return @{
+        native_toc_count = $Document.TablesOfContents.Count
+        contents_entry_count = $ExpectedAnchors.Count
+        page_reference_field_count = $referenceCount
+        contents_page_reference_count = $ExpectedAnchors.Count
+    }
+}
+
 # Run on an interactive Windows machine with a licensed desktop Word installation.
 # Work on separate copies; update native page/index fields, save and render.
 # Never enable macros or linked resources. Original files remain unchanged.
@@ -80,6 +107,7 @@ try {
     $word.Options.UpdateLinksAtOpen = $false
     foreach ($file in $files) {
         $document = $null
+        $expectedContentsAnchors = @()
         $beforeHash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
         try {
             # Refuse active packages and field instructions outside our exporter's vocabulary.
@@ -99,6 +127,9 @@ try {
                         $ns = New-Object System.Xml.XmlNamespaceManager($xml.NameTable)
                         $ns.AddNamespace('w','http://schemas.openxmlformats.org/wordprocessingml/2006/main')
                         Assert-ReportGenWordFields $xml $ns
+                        if ($entry.FullName -eq 'word/document.xml') {
+                            $expectedContentsAnchors = @($xml.SelectNodes('//w:sdt[w:sdtPr/w:tag[@w:val="report-gen-contents"]]/w:sdtContent/w:p/w:hyperlink/@w:anchor', $ns) | ForEach-Object { $_.Value })
+                        }
                         foreach ($relationship in $xml.SelectNodes('//*[local-name()="Relationship"][@TargetMode="External"]')) {
                             if ($relationship.Type -notmatch '/hyperlink$') { throw "External document resource is not allowed." }
                         }
@@ -118,11 +149,13 @@ try {
             foreach ($toc in $document.TablesOfContents) { $toc.UpdatePageNumbers() }
             $document.Save()
             $document.Repaginate()
+            Assert-ReportGenWordInternalLinks $document
+            $contents = Get-ReportGenWordContentsMetrics $document $expectedContentsAnchors
             $pages = $document.ComputeStatistics(2) # wdStatisticPages
             $pdf = Join-Path $target ($file.BaseName + '-word.pdf')
             $document.ExportAsFixedFormat($pdf, 17) # wdExportFormatPDF
             if ($pages -lt 1 -or -not (Test-Path -LiteralPath $pdf)) { throw "Empty Word rendering." }
-            $results += @{file=$file.Name;word_version=$word.Version;pages=$pages;pdf=[System.IO.Path]::GetFileName($pdf);pdf_sha256=(Get-FileHash -LiteralPath $pdf -Algorithm SHA256).Hash;status="fields_updated_and_rendered";updated_docx=[System.IO.Path]::GetFileName($copy);index_count=$document.TablesOfContents.Count;source_sha256=$beforeHash;updated_sha256=(Get-FileHash -LiteralPath $copy -Algorithm SHA256).Hash}
+            $results += @{file=$file.Name;word_version=$word.Version;pages=$pages;pdf=[System.IO.Path]::GetFileName($pdf);pdf_sha256=(Get-FileHash -LiteralPath $pdf -Algorithm SHA256).Hash;status="fields_updated_and_rendered";updated_docx=[System.IO.Path]::GetFileName($copy);index_count=$contents.native_toc_count;contents_entry_count=$contents.contents_entry_count;page_reference_field_count=$contents.page_reference_field_count;contents_page_reference_count=$contents.contents_page_reference_count;source_sha256=$beforeHash;updated_sha256=(Get-FileHash -LiteralPath $copy -Algorithm SHA256).Hash}
         } finally {
             if ($null -ne $document) {
                 $document.Close(0)

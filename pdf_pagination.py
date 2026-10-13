@@ -1,5 +1,16 @@
 """Preserve protected tables and paginate genuinely oversized narrative rows."""
 from error_messages import message as backend_message
+import re
+
+
+PDF_URI_PATTERN = re.compile(r"\b(?:https?|ftps?)://[^\s<>\"'`]+", re.IGNORECASE)
+# A bounded classifier, not language detection: long ASCII runs (32+) or
+# technical runs (24+) containing a digit, underscore, slash or colon. Do not
+# split non-ASCII shaping clusters or add break hints to ordinary short words.
+PDF_IDENTIFIER_PATTERN = re.compile(
+    r'(?<!\S)(?:[\x21-\x7e]{32,}|'
+    r'(?=[\x21-\x7e]{24,}(?!\S))(?=[\x21-\x7e]*[0-9_/:])[\x21-\x7e]+)(?!\S)'
+)
 
 
 def compact_pdf_uri_breaks(source):
@@ -12,10 +23,8 @@ def compact_pdf_uri_breaks(source):
     Authored markup, non-ASCII clusters and link destinations stay untouched.
     This representation must never be saved as the portable HTML export.
     """
-    import re
     from bisect import bisect_left, bisect_right
     from lxml import html
-    uri = re.compile(r"\b(?:https?|ftps?)://[^\s<>\"'`]+", re.IGNORECASE)
     tree = html.document_fromstring(source)
     changed = False
     parents = {boundary.getparent() for boundary in
@@ -38,7 +47,7 @@ def compact_pdf_uri_breaks(source):
         ordered_offsets = sorted(offsets)
         matches = [(match, ordered_offsets[bisect_right(ordered_offsets, match.start()):
                                           bisect_left(ordered_offsets, match.end())])
-                   for match in uri.finditer(original)]
+                   for match in PDF_URI_PATTERN.finditer(original)]
         if {offset for _, positions in matches for offset in positions} != offsets:
             continue
         for boundary in list(parent):
@@ -66,7 +75,7 @@ def compact_pdf_uri_breaks(source):
             # Common/contextual ligatures can cross an empty break glyph and
             # acquire an invalid ToUnicode map in WeasyPrint/Pango. The old
             # independent wbr boxes prevented these ligatures already. Limit
-            # the setting to this URI; prose and required script shaping keep
+            # the setting to this literal; prose and required script shaping keep
             # their normal typography.
             run = html.Element('span', {
                 'data-rg-pdf-uri-run': 'true',

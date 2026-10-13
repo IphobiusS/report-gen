@@ -63,6 +63,14 @@ def _image(caption, source):
     return f"![{md_text(caption)}]({target})"
 
 
+def _summary_chart(W, data, L):
+    from .charts import summary_asset
+    chart = summary_asset(data, L)
+    if chart:
+        W(_image(chart["alt"], chart["path"]) + "\n")
+        W(md_text(chart["caption"]) + "\n")
+
+
 def _cover_details(W, meta, L):
     lab = L['labels']
     assessor = str(meta.get('assessor') or '')
@@ -152,6 +160,7 @@ def _md_sections(data, meta, L):
         elif sp == "summary":
             sumf = engine.summary_findings(data["findings"])
             W(engine.summary_text(data["findings"], L) + "\n")
+            _summary_chart(W, data, L)
             if sumf:
                 W(f"| {lab['col_num']} | {lab['col_sev']} | {lab['col_finding']} |")
                 W("|---|---|---|")
@@ -245,6 +254,7 @@ def to_markdown(data, meta, L, engagement_dir):
     sumf = engine.summary_findings(data["findings"])
     W(anchor("sec-summary") + f"## {lab['summary']}\n")
     W(engine.summary_text(data["findings"], L) + "\n")
+    _summary_chart(W, data, L)
     if sumf:
         W(f"| {lab['col_num']} | {lab['col_sev']} | {lab['col_finding']} |")
         W("|---|---|---|")

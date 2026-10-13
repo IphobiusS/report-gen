@@ -28,6 +28,8 @@ args = parser.parse_args()
 sys.path[:0] = [str(args.tool.resolve()), str(args.tool.resolve() / 'webapp')]
 import app as webapp  # noqa: E402
 import project_history  # noqa: E402
+import delivery  # noqa: E402
+import export as report_export  # noqa: E402
 from safe_markup import md  # noqa: E402
 from lxml import html  # noqa: E402
 from lxml import etree  # noqa: E402
@@ -162,6 +164,8 @@ with tempfile.TemporaryDirectory(prefix='nimbus-browser-') as temp:
                     check(f'Keyboard focus visible {theme} {width}', focus['width'] == '3px' and focus['style'] == 'solid', focus)
                     page.screenshot(path=str(output / f'nimbus-editor-{theme}-{width}.png'), full_page=True)
             page.set_viewport_size({'width': 1366, 'height': 1000})
+            snapshot = Path(temp) / 'export-capture'
+            captured = delivery.capture(project, snapshot)
             for fmt in ['md', 'docx', 'pdf']:
                 page.locator('#exportFormat').select_option(fmt)
                 with page.expect_download(timeout=150000) as promise:
@@ -171,16 +175,28 @@ with tempfile.TemporaryDirectory(prefix='nimbus-browser-') as temp:
                 target = output / ('nimbus-ui.' + ('zip' if fmt == 'md' else fmt))
                 download.save_as(target)
                 if fmt == 'pdf':
-                    with fitz.open(target) as doc:
+                    # Bind the expected pagination to this source and engine,
+                    # rather than the page count of a historical Nimbus build.
+                    reference_pdf = output / 'nimbus-cli-reference.pdf'
+                    report_export.export(snapshot / 'engagement.yaml', 'pdf', reference_pdf)
+                    check('Equivalent CLI PDF exists', reference_pdf.is_file())
+                    reference_checks = delivery.inspect_export(reference_pdf, 'pdf', captured)
+                    with fitz.open(target) as doc, fitz.open(reference_pdf) as reference:
                         text = ''.join(p.get_text() for p in doc)
-                        check('Editor PDF has 42 pages and every finding', len(doc) == 42 and all(f['title'] in ' '.join(text.split()) for f in expected['findings']))
+                        check('Editor PDF matches the verified CLI page count and retains every finding',
+                              len(reference) > 0 and len(doc) == len(reference)
+                              and all(f['title'] in ' '.join(text.split()) for f in expected['findings']),
+                              {'editor_pages': len(doc), 'cli_pages': len(reference), 'cli_checks': reference_checks})
                 else:
                     with zipfile.ZipFile(target) as z:
                         check('Editor archive integrity ' + fmt, z.testzip() is None)
                         if fmt == 'md':
                             rendered = html.fragment_fromstring(str(md(z.read('report.md').decode())), create_parent='div')
                             check('Editor Markdown includes assessor role', expected['meta']['assessor_title'] in rendered.text_content())
-                            check('Editor Markdown includes all 19 images', len([n for n in z.namelist() if n != 'report.md']) == 19)
+                            inspection = delivery.inspect_export(target, 'md', captured)
+                            check('Editor Markdown preserves all 19 authored images and its source-bound summary chart',
+                                  inspection['images_verified'] == 19 and inspection.get('generated_charts_verified') == 1,
+                                  inspection)
                             with zipfile.ZipFile(args.reference_outputs / 'nimbus-markdown.zip') as reference:
                                 check('Editor and CLI Markdown contain identical files',
                                       {n: z.read(n) for n in z.namelist()} == {n: reference.read(n) for n in reference.namelist()})

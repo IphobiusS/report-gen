@@ -14,6 +14,10 @@ import workflows as wf
 import project_history as hist
 import finding_library as lib
 import validate
+import publication
+from exporters.charts import contracts_from_tree, verify_markdown_charts
+from exporters.markdown import parse_exported
+from hashlib import sha256
 from _support import auth_client
 
 
@@ -185,7 +189,12 @@ def test_redaction_changes_pixels_removes_metadata_and_preserves_original(projec
     md = c.post('/api/projects/workflow/export/md')
     assert md.status_code == 200, md.get_json()
     with zipfile.ZipFile(BytesIO(md.data)) as z:
-        assert set(z.namelist()) == {'report.md', processed}
+        charts = contracts_from_tree(publication.render(changed, d))
+        assert len(charts) == 1
+        assert set(z.namelist()) == {'report.md', processed, charts[0]['path']}
+        verify_markdown_charts(parse_exported(z.read('report.md').decode()),
+                               {n: sha256(z.read(n)).hexdigest() for n in z.namelist()}, charts)
+        assert z.read(processed) == (d / processed).read_bytes()
         assert b'SENSITIVE ORIGINAL' not in z.read(processed)
 
 

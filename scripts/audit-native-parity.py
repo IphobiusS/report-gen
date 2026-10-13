@@ -7,6 +7,7 @@ p=argparse.ArgumentParser();p.add_argument("--tool",type=Path,required=True);p.a
 sys.path.insert(0,str(args.tool.resolve()))
 import project_history as history
 import engine
+import delivery
 from safe_markup import md
 from resources import relative_image
 import tempfile
@@ -26,7 +27,12 @@ def word_parts(path):
 result['docx_parts_identical_except_temporary_chart_name']=word_parts(old/'nimbus.docx')==word_parts(new/'nimbus.docx')
 with zipfile.ZipFile(new/'nimbus-markdown.zip') as z:
  source=z.read('report.md').decode();tree=html.fragment_fromstring(str(md(source,img_base='')),create_parent='div')
- result['markdown_image_count']=len([n for n in z.namelist() if n!='report.md'])
+ with tempfile.TemporaryDirectory() as capture_temp:
+  captured=delivery.capture(args.project,Path(capture_temp)/'snapshot')
+  inspection=delivery.inspect_export(new/'nimbus-markdown.zip','md',captured)
+ result['markdown_image_count']=inspection['images_verified']
+ result['markdown_generated_chart_count']=inspection.get('generated_charts_verified',0)
+ result['markdown_contract_checks']=inspection
  result['markdown_references_resolve']=all(relative_image(src).as_posix() in z.namelist() for src in tree.xpath('.//img/@src'))
 with tempfile.TemporaryDirectory() as temp:
  dest=Path(temp)/'restored';history.import_bundle((new/'nimbus-completo-proyecto.zip').read_bytes(),dest)

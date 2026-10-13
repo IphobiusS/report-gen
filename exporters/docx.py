@@ -1,77 +1,11 @@
 """Editable DOCX using native Word styles and the report theme's palette."""
-import re
 from pathlib import Path
 
 import engine
 
 from .common import sev_label, cvss_label, summary_sev
 from .images import word_image, fit_width, figure_space, align_inline_picture
-
-
-def _palette(meta, for_word=False):
-    theme = meta.get("theme", "serio")
-    css = (engine.THEMES / f"{theme}.css").read_text(encoding="utf-8")
-    common = (engine.THEMES / "_common.css").read_text(encoding="utf-8")
-    css = css.replace('@import "_common.css";', common)
-    varmap = {}
-    for block in re.findall(r":root\s*{([^}]*)}", css):
-        for m in re.finditer(r"--([\w-]+)\s*:\s*([^;]+);", block):
-            varmap["--" + m.group(1)] = m.group(2).strip()
-    # Word page backgrounds are viewer/print dependent. Keep the dark cover,
-    # but use an explicit readable paper palette for its editable body.
-    if for_word and theme == "htb":
-        varmap.update({"--ink": "#172333", "--ink-soft": "#334155", "--muted": "#536273",
-                       "--panel": "#eef3f0", "--rule": "#cdd7d2", "--accent-ink": "#276515",
-                       "--code-inline-bg": "#eef3f0", "--code-inline-fg": "#276515"})
-    accent = (meta.get("branding") or {}).get("accent")
-    if accent:
-        varmap["--accent"] = accent
-
-    if meta.get("design"):
-        from design_render import palette
-        varmap.update(palette(meta["design"]))
-
-    def resolve(val, seen=()):
-        def repl(m):
-            n = m.group(1)
-            if n in varmap and n not in seen:
-                return resolve(varmap[n], seen + (n,))
-            return (m.group(2).strip() if m.group(2) else "")
-        return re.sub(r"var\((--[\w-]+)(?:,([^)]*))?\)", repl, val)
-
-    res = {k: resolve(v).strip() for k, v in varmap.items()}
-
-    def hx(name, default):
-        v = res.get("--" + name, default).strip().lstrip("#")
-        return v if len(v) == 6 and all(c in "0123456789abcdefABCDEF" for c in v) else default.lstrip("#")
-    return hx
-
-
-def _sev_chart_png(counts, hx, out, L):
-    from PIL import Image, ImageDraw, ImageFont
-    order = engine.SEVERITY_ORDER
-    colmap = {s: hx("sev-" + s, "888888") for s in order}
-    W, H = 900, 300
-    im = Image.new("RGB", (W, H), "white")
-    d = ImageDraw.Draw(im)
-    # The Pillow default face lacks some Spanish glyphs. Bundle the chart font
-    # so both the language and its accents are reproducible without OS fonts.
-    font = ImageFont.truetype(str(Path(__file__).parent / 'fonts' / 'DejaVuSans.ttf'), size=24)
-    maxc = max([counts[s] for s in order] + [1])
-    bw, gap, x0, base, top = 90, 80, 60, 250, 40
-    for i, s in enumerate(order):
-        x = x0 + i * (bw + gap)
-        h = int((base - top) * counts[s] / maxc)
-        y = base - h
-        rgb = tuple(int(colmap[s][j:j+2], 16) for j in (0, 2, 4))
-        if counts[s] > 0:
-            d.rectangle([x, y, x + bw, base], fill=rgb)
-            d.text((x + bw/2, y - 8), str(counts[s]), font=font, anchor='mb', fill=(20, 20, 30))
-        else:
-            d.line([x, base, x + bw, base], fill=(200, 200, 210), width=3)
-        d.text((x + bw/2, base + 8), sev_label(L, s), font=font, anchor='mt', fill=(90, 90, 110))
-    d.line([40, base, W - 20, base], fill=(210, 210, 220), width=2)
-    im.save(out)
+from .charts import palette as _palette, severity_chart_png as _sev_chart_png
 
 
 def to_docx(data, meta, L, engagement_dir, out_path):
@@ -216,22 +150,24 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     sec_no = [0]
     navigation = []
 
-    def heading(text, level=1, sev=None, toc=False, anchor=None, new_page=False):
+    def heading(text, level=1, sev=None, toc=False, anchor=None, chapter_start=False):
         p = doc.add_heading("", level=level)
-        if new_page:
+        if chapter_start:
             # Markdown tables get a bare spacer paragraph. At a chapter
             # boundary the new heading supplies the separation; keeping the
-            # spacer can overflow a full table page into a blank page of its
-            # own before pageBreakBefore advances again. Never remove a
-            # paragraph with content, properties, bookmarks, or fields.
+            # spacer wastes a line and can push the heading off a full page.
+            # Never remove a paragraph with content, properties, bookmarks,
+            # or fields.
             previous = p._p.getprevious()
             if (previous is not None and previous.tag == qn("w:p")
                     and len(previous) == 0 and previous.getprevious() is not None
                     and previous.getprevious().tag == qn("w:tbl")):
                 previous.getparent().remove(previous)
-            # A standalone break paragraph can overflow a full page before
-            # breaking again, creating an entirely empty body page.
-            p.paragraph_format.page_break_before = True
+            # Chapters flow together: forcing a page boundary after a final
+            # reference can strand that reference on an almost empty page.
+            # Cover and contents pagination is handled separately by add_toc.
+            p.paragraph_format.page_break_before = False
+            p.paragraph_format.space_before = Pt(14)
         for r in list(p.runs):
             r.text = ""
         if level == 1:
@@ -480,7 +416,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
                         doc.add_paragraph(para.replace("{client}", client).replace("{assessor}", meta.get("assessor") or ""))
 
         for i, s in enumerate(rsecs, 1):
-            heading(s["title"], 1, anchor=s['key'], new_page=i > 1)
+            heading(s["title"], 1, anchor=s['key'], chapter_start=i > 1)
             sp = s.get("special")
             if sp == "contacts":
                 c = meta.get("contacts") or {}
@@ -526,7 +462,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     # Contactos
     contacts = meta.get("contacts") or {}
     if contacts.get("client") or contacts.get("assessor"):
-        heading(lab["contacts"], 1, anchor='sec-contacts', new_page=True)
+        heading(lab["contacts"], 1, anchor='sec-contacts', chapter_start=True)
         for grp, gt in [("client", lab["client"]), ("assessor", lab["team"])]:
             ppl = contacts.get(grp) or []
             if ppl:
@@ -534,7 +470,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
                 data_table([lab["name"], lab["title"], lab["email"]], [[p.get("name", ""), p.get("title", ""), p.get("email", "")] for p in ppl])
 
     # Overview
-    heading(lab["overview"], 1, anchor='sec-overview', new_page=True); heading(lab["approach"], 2)
+    heading(lab["overview"], 1, anchor='sec-overview', chapter_start=True); heading(lab["approach"], 2)
     if meta.get("overview", {}).get("approach_md"):
         add_markdown(meta["overview"]["approach_md"])
     else:
@@ -546,21 +482,21 @@ def to_docx(data, meta, L, engagement_dir, out_path):
         data_table([lab["target"], lab["description"]], [[s.get("target", ""), s.get("description", "")] for s in meta["scope"]])
 
     # The legacy model uses the same summary and finding renderers.
-    heading(lab["summary"], 1, anchor='sec-summary', new_page=True)
+    heading(lab["summary"], 1, anchor='sec-summary', chapter_start=True)
     render_summary_body()
-    heading(lab["findings"], 1, new_page=True)
+    heading(lab["findings"], 1, chapter_start=True)
     for finding in data["findings"]:
         render_one_finding(finding)
 
     # Appendix
     appx = engine.appendix_rows(data["findings"])
     if appx:
-        heading(lab["appendix"], 1, anchor='sec-appendix', new_page=True)
+        heading(lab["appendix"], 1, anchor='sec-appendix', chapter_start=True)
         doc.add_paragraph(L.get("appendix_intro", ""))
         data_table([lab["host"], lab["item"], lab["value"], lab["notes"]], [[r["host"], r["item"], r["value"], r["notes"]] for r in appx])
 
     for extra in report_sections(data):
-        heading(extra["title"], 1, anchor=extra['key'], new_page=True)
+        heading(extra["title"], 1, anchor=extra['key'], chapter_start=True)
         add_markdown(extra["body"], keep_tables=False, retest=extra["key"] == "rg_retest", workflow_key=extra['key'])
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     from .navigation import add_toc

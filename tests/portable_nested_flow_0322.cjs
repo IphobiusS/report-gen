@@ -68,7 +68,8 @@ let browser,states=0;
      values:[...ordered.children].map(e=>e.textContent),label:region.getAttribute('aria-label'),tab:region.tabIndex,
      // Native outside markers are not DOM range boxes; their measured text
      // must fit the reserved leading space of the scrolling content.
-     markerLeft:first.getBoundingClientRect().left-ctx.measureText(ordered.start+'. ').width*scale,
+     markerLeft:first.getBoundingClientRect().left-(css.listStylePosition==='inside'?0:ctx.measureText(ordered.start+'. ').width*scale),
+     position:css.listStylePosition,
      regionLeft:region.getBoundingClientRect().left,scroll:region.scrollWidth,client:region.clientWidth};
    });
    assert.equal(numbers.start,1234567890);assert.equal(numbers.count,2);assert.equal(numbers.style,'decimal');
@@ -76,11 +77,12 @@ let browser,states=0;
    assert.ok(numbers.markerLeft>=numbers.regionLeft-1,`large native marker escapes its scrollable content: ${JSON.stringify(numbers)}`);
    assert.ok(numbers.label);assert.equal(numbers.tab,0);
    assert.equal(await page.getByRole('list').filter({has:page.getByText('LARGE-COUNTER-ONE retains its complete native number.',{exact:true})}).count(),1,'native list semantics remain available');
-   if(width===320&&(zoom===2||text200)){await counter.focus();await page.keyboard.press('ArrowRight');await page.waitForTimeout(150);assert.ok(await counter.evaluate(e=>e.scrollLeft)>0,'oversized native counters remain reachable by keyboard');}
+   if(width===320&&(zoom===2||text200)){assert.equal(numbers.position,'inside');assert.ok(numbers.scroll<=numbers.client+1,'extreme native ordinals and narrative fit without horizontal panning');}
    const region=page.locator('#F01 .report-table-region');
-   assert.ok(await region.evaluate(e=>e.scrollWidth>e.clientWidth),'wide table uses a local scrolling region');
+   const records=await region.locator('table').evaluate(e=>getComputedStyle(e).display==='block');
+   assert.ok(await region.evaluate((e,stacked)=>stacked?e.scrollWidth<=e.clientWidth+1:e.scrollWidth>e.clientWidth,records),'records fit; desktop comparison retains its native scrolling fallback');
    assert.equal(await region.getAttribute('tabindex'),'0');assert.ok(await region.getAttribute('aria-label'));
-   if(width===320&&zoom===1){await region.focus();await page.keyboard.press('ArrowRight');await page.waitForTimeout(150);assert.ok(await region.evaluate(e=>e.scrollLeft)>0,'keyboard can reach overflowing columns');}
+   if(width===320&&zoom===1){assert.ok(records,'mobile uses the same cells as vertically readable records');assert.equal(await region.evaluate(e=>e.scrollLeft),0);}
    states++;
   }
   assert.deepEqual(errors,[]);await context.close();

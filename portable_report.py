@@ -129,6 +129,40 @@ REFLOW_STYLE = '''
 '''
 
 
+# A record view uses the same native cells, with visual copies of their column
+# labels. No source text or cell order is duplicated in the DOM. Explicit roles
+# retain table semantics when display changes, including without JavaScript.
+_RECORD_RULES = """
+ .report-table-region:has(>.report-records)::before{content:attr(data-record-hint);display:block;padding:6px 0;color:#43576b;font-size:.85em;line-height:1.5}
+ .report-records,.report-records>tbody,.report-records>tfoot,.report-records>tbody>tr,.report-records>tfoot>tr{display:block;width:100%;min-width:0!important}
+ .report-records>thead{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%)}
+ .report-records>tbody>tr,.report-records>tfoot>tr{border:1px solid #bbc8d4;border-radius:4px;margin-block:0 16px;padding:8px}
+ .report-records>tbody>tr>td,.report-records>tbody>tr>th,.report-records>tfoot>tr>td,.report-records>tfoot>tr>th{display:block;width:100%;min-width:0;padding:8px 0;overflow-wrap:anywhere;white-space:normal}
+ .report-records>tbody>tr>:last-child,.report-records>tfoot>tr>:last-child{border-bottom:0}
+ .report-records .c-pg{display:none!important}
+ .report-records [data-column-label]::before{content:attr(data-column-label) / "";display:block;font:inherit;font-weight:700;text-align:left;margin-bottom:.2em;color:#43576b;overflow-wrap:anywhere}
+"""
+RECORD_STYLE = ("""
+@media screen{
+ .report-table-region{container:report-table / inline-size}
+ .report-list-region{container:report-list / inline-size}
+ @container report-table (max-width:38em){
+""" + _RECORD_RULES + """
+ }
+ @container report-list (max-width:38em){
+  .report-content .report-counter-list{padding-inline-start:0;min-width:0;list-style-position:inside}
+  .report-counter-list>li::marker{content:counter(list-item) ".\\a";white-space:pre}
+ }
+}
+@media screen and (max-width:600px){
+""" + _RECORD_RULES + """
+ .report-list-region::before{content:none}
+ .report-content .report-counter-list{padding-inline-start:0;min-width:0;list-style-position:inside}
+ .report-counter-list>li::marker{content:counter(list-item) ".\\a";white-space:pre}
+}
+""")
+
+
 def prepare_text_flow(tree, en=False):
     """Wrap literal runs while preserving authored text and ordinary prose."""
     for node in tree.xpath('//a[@href]|//code[not(ancestor::pre)]|//ul[contains(concat(" ",normalize-space(@class)," ")," refs ")]/li'):
@@ -180,8 +214,7 @@ def prepare_text_flow(tree, en=False):
             continue
         ordered.set('class', ' '.join([*(ordered.get('class') or '').split(), 'report-counter-list']))
         region = html.Element('div', {'class': 'report-list-region', 'role': 'region', 'tabindex': '0',
-                              'aria-label': ('Numbered list; horizontal scrolling' if en else
-                                             'Lista numerada; desplazamiento horizontal'),
+                              'aria-label': ('Numbered list' if en else 'Lista numerada'),
                               'data-scroll-hint': ('Scroll horizontally to read the complete numbered list.' if en else
                                                    'Desplázate horizontalmente para leer toda la lista numerada.')})
         region.tail, ordered.tail = ordered.tail, None
@@ -218,6 +251,30 @@ def prepare_tables(tree, en=False):
                 row[1].set('role', 'cell')
         elif columns >= 3 or (columns == 2 and table.xpath("./thead/tr/th")):
             table.set('class', ' '.join([*classes, 'report-data']))
+            headers = table.xpath('./thead/tr')
+            # Markdown and generated report tables have a simple column header.
+            # Complex authored spans retain the native two-dimensional fallback.
+            if (len(headers) == 1 and len(headers[0]) == columns
+                    and all(cell.tag == 'th' for cell in headers[0])
+                    and all(len(row) == columns and all(span(cell) == 1 and cell.get('rowspan', '1') == '1'
+                                                       for cell in row) for row in rows)):
+                table.set('class', table.get('class') + ' report-records')
+                table.set('role', 'table')
+                # All native cells remain present; let the accessibility tree
+                # infer totals, excluding the screen-hidden PDF page column.
+                for group in table.xpath('./thead|./tbody|./tfoot'):
+                    group.set('role', 'rowgroup')
+                labels = [' '.join(cell.text_content().split()) or
+                          (('Column ' if en else 'Columna ') + str(index + 1))
+                          for index, cell in enumerate(headers[0])]
+                for row in rows:
+                    row.set('role', 'row')
+                    for index, cell in enumerate(row):
+                        cell.set('role', 'columnheader' if row is headers[0] else
+                                 'rowheader' if cell.tag == 'th' else 'cell')
+                        cell.set('aria-colindex', str(index + 1))
+                        if row is not headers[0]:
+                            cell.set('data-column-label', labels[index])
             table.set('style', (table.get('style', '').rstrip(';') + ';'
                                if table.get('style') else '') + f'min-width:{columns * 9}rem')
             for header in table.xpath('./thead/tr/th'):
@@ -229,9 +286,12 @@ def prepare_tables(tree, en=False):
             label = ('Data table ' if en else 'Tabla de datos ') + str(number)
             if heading:
                 label += ': ' + ' '.join(heading.split())[:160]
-            label += '; horizontal scrolling' if en else '; desplazamiento horizontal'
+            if 'report-records' not in table.get('class', '').split():
+                label += '; horizontal scrolling' if en else '; desplazamiento horizontal'
             region = html.Element('div', {'class': 'report-table-region',
                                   'role': 'region', 'tabindex': '0', 'aria-label': label,
+                                  'data-record-hint': ('Table shown by record; each value follows its column heading.' if en else
+                                                       'Tabla por registros: cada valor aparece bajo su columna.'),
                                   'data-scroll-hint': ('Scroll horizontally to see every column.' if en
                                       else 'Desplázate horizontalmente para ver todas las columnas.')})
             region.tail, table.tail = table.tail, None
@@ -284,7 +344,7 @@ def build(directory):
     if not finding_count:
         toolbar=''
     if data['meta'].get('report_density')=='compact':style+='\n.finding,.frontsec{padding:18px;margin:16px 0}td,th{padding:7px}p{margin-top:6px;margin-bottom:8px}'
-    style += REFLOW_STYLE
+    style += REFLOW_STYLE + RECORD_STYLE
     note=w('Documento de solo lectura. Las vistas y los filtros cambian la presentación; el archivo contiene el informe completo. Sin JavaScript, se muestra todo.','Read-only document. Views and filters change presentation; the file contains the full report. Without JavaScript, everything remains visible.')
     if not finding_count:
         note=w('Documento de solo lectura. Se conserva el contenido de las secciones incluidas.','Read-only document. The included sections retain their content.')

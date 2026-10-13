@@ -40,11 +40,17 @@ def _write_markdown(yaml_path, out):
     from exporters.markdown import parse_exported
     tree = parse_exported(source)
     images = {node.get("src") for node in tree.xpath(".//img[@src]")}
+    from exporters.charts import summary_asset
+    chart = summary_asset(data, L)
     with atomic_output(out) as temporary:
         with zipfile.ZipFile(temporary, "w", zipfile.ZIP_DEFLATED) as package:
             package.writestr("report.md", source)
             written = set()
             for src in sorted(images):
+                if chart and src == chart["path"]:
+                    # A generated resource never reads or overwrites project files.
+                    package.writestr(chart["path"], chart["blob"])
+                    continue
                 path = local_image(src, yaml_path.parent)
                 member = relative_image(src).as_posix()
                 if member not in written:

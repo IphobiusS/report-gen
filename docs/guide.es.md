@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.34.3
+# Guía de uso de report-gen 0.34.4
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 
@@ -104,7 +104,7 @@ La comprobación DOCX genera y vuelve a leer un documento: no acredita la pagina
 
 ## Qué comprueba cada entrega
 
-**Ver comprobaciones** muestra revisión, SHA-256, tamaño y controles de cada descarga. HTML, Markdown y Word comparan párrafos, código literal, metadatos, destinos de enlaces y colocaciones de evidencia dentro de su hallazgo, además de tablas y listas. La imagen se compara por su huella pública, pie y contexto precedente. Para código solo se normalizan los finales de línea CRLF/CR a LF; se conservan espacios, tabulaciones, comillas y líneas vacías. Markdown omite el gráfico de severidad y su leyenda de alcance; se registra esa diferencia.
+**Ver comprobaciones** muestra revisión, SHA-256, tamaño y controles de cada descarga. HTML, Markdown y Word comparan párrafos, código literal, metadatos, destinos de enlaces y colocaciones de evidencia dentro de su hallazgo, además de tablas y listas. La imagen se compara por su huella pública, pie y contexto precedente. Para código solo se normalizan los finales de línea CRLF/CR a LF; se conservan espacios, tabulaciones, comillas y líneas vacías. Markdown incluye el gráfico de severidad como PNG, su texto alternativo con los conteos y su leyenda de alcance. Se comprueban los bytes de esa imagen generada, el texto y su posición respecto del resumen, por separado de las evidencias.
 
 Los manifiestos y registros de comprobación descargables conservan categorías y cantidad de avisos, pero no sus mensajes privados, rutas ni valores de origen. El detalle completo permanece en el editor para revisión. Esta separación no censura los campos que decidas incluir en el informe o en un anexo.
 
@@ -128,6 +128,12 @@ texto ausente allí. Este control no verifica el orden visual ni la asociación
 de cada imagen; los documentos no canónicos conservan el alcance global.
 
 En **Informe → Espaciado del informe** puedes elegir cómoda o compacta. Es independiente de la densidad visual del editor. El HTML portátil permite filtrar por tipo, severidad pendiente y texto, y restablecer los filtros. PDF y HTML ajustan las URL literales al ancho disponible sin modificar su texto. LibreOffice puede adelantar algunos saltos de URL en DOCX; no se insertan saltos ni caracteres artificiales en el documento para ocultar esa limitación.
+
+En PDF, los identificadores ASCII de 32 o más caracteres, o de 24 o más con dígitos, guion bajo, barra o dos puntos, pueden continuar desde el espacio que queda en la línea. El ajuste se limita a esas cadenas y las URLs; conserva sus caracteres y las reglas normales de la prosa Unicode. No garantiza el mismo salto para cualquier palabra o ancho arbitrario.
+
+El cuerpo de PDF y Word continúa entre capítulos sin imponer una página nueva a cada uno. La portada y el índice permanecen separados. Una figura que no cabe completa pasa a la página siguiente, conservando tamaño y orden; ese espacio no se elimina recortando la evidencia.
+
+En HTML portátil, las tablas con una fila de encabezados y celdas uniformes se muestran por registros cuando el ancho es reducido, con el encabezado junto a cada valor. Las tablas con celdas combinadas o encabezados complejos conservan desplazamiento horizontal local para mantener sus relaciones. Los ordinales extensos quedan sobre el texto cuando falta ancho.
 
 **Compatibilidad de URLs en Word**, dentro de la revisión, identifica ubicaciones con URLs visibles de 96 o más caracteres en el contenido que se publicará. Es una señal para inspeccionar el DOCX, no una medición del salto ni un fallo de preparación; no cambia la puntuación. Los campos Markdown ofrecen **Enlace** para introducir un nombre descriptivo y una URL HTTP/HTTPS cuyo destino se conserva literalmente. Es una alternativa voluntaria de redacción: si la URL literal forma parte de una evidencia o un comando, consérvala. El aviso no modifica automáticamente el informe ni muestra el valor detectado.
 
@@ -201,7 +207,7 @@ Sustituye `/ruta/datos` por el espacio de trabajo elegido; en una instalación h
 
 El resumen automático describe los hallazgos y las severidades registradas, sin afirmar que todos estén confirmados. Las entradas de máquinas son registros; **Inventario de activos** tampoco acredita una evaluación realizada. Consulta **Cobertura y limitaciones** y el estado de verificación de cada ficha. Si no has escrito un enfoque propio, el texto predeterminado se limita a la información documentada y no afirma una reproducción manual. Un texto escrito expresamente por el autor se conserva y debe revisarse antes de entregar.
 
-El ejemplo `examples/pending-severity/engagement.yaml` permite comprobar el resumen con dos hallazgos ficticios confirmados y sin severidad. En Word, las entradas del índice están disponibles desde la exportación; sus números de página se calculan al actualizar los campos en el editor. Si no aparecen o cambias el contenido, selecciona todo con **Ctrl+A** y actualiza con **F9**. El exportador no inventa números a partir de la paginación PDF. LibreOffice y Microsoft Word pueden distribuir el contenido de forma distinta.
+El ejemplo `examples/pending-severity/engagement.yaml` permite comprobar el resumen con dos hallazgos ficticios confirmados y sin severidad. En Word, las entradas del índice están disponibles desde la exportación, con enlaces internos y campos nativos `PAGEREF` independientes. LibreOffice calcula sus números al componer el documento; si cambias el contenido, selecciona todo con **Ctrl+A** y actualiza con **F9**. Las cifras siguen la paginación real del editor, no la del PDF. Para añadir, quitar, renombrar o reordenar capítulos del índice, modifica el informe en report-gen y vuelve a exportar: la lista de entradas no es un campo TOC que se reconstruya automáticamente en Word. LibreOffice y Microsoft Word pueden distribuir el contenido de forma distinta.
 
 Las listas numeradas de los informes admiten ordinales de 0 a 2.147.483.647, compatibles con el navegador y Word. Si una lista supera ese límite, la exportación se detiene y conserva cualquier archivo anterior. Renumera la lista o presenta esos identificadores como texto; no se reduce ni reemplaza su valor en silencio.
 

@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.34.3
+# report-gen 0.34.4
 
 <a id="qué-es"></a>
 
@@ -61,15 +61,17 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.34.3
+## Novedades de 0.34.4
 
-Los textos automáticos describen lo registrado sin atribuir verificaciones que no constan. El resumen presenta hallazgos y severidades registradas; las entradas de máquinas se cuentan como registros. **Inventario de activos** identifica los objetivos incluidos, mientras **Cobertura y limitaciones** conserva qué pruebas están pendientes o realizadas.
+El índice Word utiliza referencias nativas de página que LibreOffice calcula al componer el documento. Conserva los enlaces a cada capítulo y actualiza las cifras si cambia la paginación. La lista de títulos se reconstruye al exportar desde report-gen; no se inventan páginas a partir del PDF.
 
-El texto de enfoque predeterminado tampoco afirma que todos los hallazgos se hayan reproducido manualmente. Revisa el estado técnico, la evidencia y las limitaciones de cada ficha; el resumen no los sustituye. El contenido que hayas escrito expresamente se conserva.
+Los capítulos del cuerpo continúan en el espacio disponible en PDF y Word, manteniendo separadas la portada y el índice. Markdown incorpora el gráfico de severidades con su leyenda. En HTML portátil, las tablas simples pasan a una vista por registros cuando falta ancho, y los ordinales extensos dejan espacio para leer el texto ampliado.
+
+Los textos automáticos siguen describiendo lo registrado sin afirmar verificaciones que no constan. Consulta el estado técnico, la evidencia y la cobertura de cada ficha antes de entregar.
 
 ## Exportación y tutorial visual
 
-La alineación izquierda, centrada o derecha de las tablas Markdown se conserva al exportar. El verificador PDF comprueba el contenido de cada hallazgo dentro de su región, para que una copia en el índice o el resumen no oculte texto ausente. Las URLs largas escritas como texto común ya no desbordan el PDF; su verificación evita búsquedas ambiguas innecesarias. En Linux y macOS, un supervisor mantiene reservado el grupo del trabajo hasta detener sus procesos, incluso si el trabajador termina antes. La publicación exige también las comprobaciones de macOS, LibreOffice estable y WebKit. Estas comprobaciones de motor no equivalen a una revisión en Microsoft Word o Safari nativos.
+La alineación izquierda, centrada o derecha de las tablas Markdown se conserva al exportar. El verificador PDF comprueba el contenido de cada hallazgo dentro de su región, para que una copia en el índice o el resumen no oculte texto ausente. Las URLs largas escritas como texto común ya no desbordan el PDF; su verificación evita búsquedas ambiguas innecesarias. En Linux y macOS, un supervisor mantiene reservado el grupo del trabajo hasta detener sus procesos, incluso si el trabajador termina antes. La publicación exige también las comprobaciones de macOS, LibreOffice estable y WebKit, junto con un recorrido del proyecto y tutorial ES/EN en Safari nativo de escritorio. Este recorrido automatizado tiene un alcance concreto; no sustituye una revisión en Microsoft Word ni una evaluación humana con lector de pantalla.
 
 **Tutorial visual** acompaña el primer acceso con una invitación opcional y queda disponible en el menú. Sus seis pasos incluyen capturas reales en español e inglés: plantilla, datos del informe, hallazgos, evidencias, revisión y entrega con respaldo. Puedes ampliar las capturas, continuar donde quedaste o reiniciar el recorrido sin cambiar tus proyectos. Funciona localmente y también cuando el navegador no permite guardar el progreso.
 
@@ -104,7 +106,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.34.3 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.34.4 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

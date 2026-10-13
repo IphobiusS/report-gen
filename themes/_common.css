@@ -68,7 +68,11 @@ h5 { font-size: 9pt; }
 h6 { font-size: 8.5pt; }
 
 /* Secciones */
-#sec-conf, #sec-toc, #sec-summary, #sec-appendix { break-before: page; }
+/* Keep the cover and navigation separate; body chapters flow continuously.
+   A forced chapter break strands a short closing reference on its own page.
+   Titles retain their keep-with-next rule instead of consuming a new page. */
+#sec-toc { break-before: page; break-after: page; }
+.frontsec + .frontsec, .finding + .frontsec { margin-top: 8mm; }
 .sec-title { font-family: var(--font-display); font-size: 15pt; line-height: 1.2; font-weight: 700; color: var(--ink); margin: 0 0 10px; padding-bottom: 4px; border-bottom: 2px solid var(--ink); }
 .sec-num { color: var(--accent-ink); margin-right: 8px; }
 .frontsec h3 { font-family: var(--font-heading); font-size: 9.5pt; font-weight: 700; color: var(--ink-soft); margin: 14px 0 6px; page-break-after: avoid; }
@@ -182,7 +186,7 @@ figcaption b { color: var(--ink-soft); font-family: var(--font-mono); font-weigh
 .hashval { word-break: break-all; }
 .error { color: var(--sev-critical); font-family: var(--font-mono); }
 
-.brk { break-before: page; }
+.brk { break-before: auto; }
 
 /* imagenes markdown con epigrafe */
 figure.mdfig { margin: 10px 0; text-align: center; }
