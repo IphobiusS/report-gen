@@ -1,0 +1,17 @@
+{
+  "scope": "QA minimal mixed-script hyperlink native save; no invisible characters or language changes",
+  "cases": [
+    {
+      "variant": "baseline",
+      "file": "baseline.docx",
+      "sha256": "9fc8e8396150eefb31df7dcfb791f1c2265f59b6fbeac5597bbaaef467424216",
+      "expected": "fail"
+    },
+    {
+      "variant": "adjacent-script-links",
+      "file": "adjacent-script-links.docx",
+      "sha256": "92f7da1d46e5d5eab17550ee3c4f195ee5e021b38d4e4661d141195a0b42218c",
+      "expected": "pass"
+    }
+  ]
+}

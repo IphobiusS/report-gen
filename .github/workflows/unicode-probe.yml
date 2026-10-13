@@ -1,0 +1,101 @@
+name: Unicode hyperlink exact native probe
+'on':
+  push:
+    branches:
+    - audit/round15-unicode-probe
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  unicode_native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@v7.0.1
+      with:
+        path: qa-source
+        persist-credentials: false
+    - uses: actions/setup-python@v7.0.0
+      with:
+        python-version: '3.12'
+    - name: Record the immutable QA inputs
+      run: 'python - <<''PY_SOURCE''
+
+        import hashlib, json, os, pathlib
+
+        manifest = pathlib.Path(''qa-source/qa/manifest.json'')
+
+        output = pathlib.Path(''out/unicode-probe-source''); output.mkdir(parents=True)
+
+        record = {''qa_commit'': os.environ[''GITHUB_SHA''], ''manifest_sha256'': hashlib.sha256(manifest.read_bytes()).hexdigest(),
+        ''scope'': ''Synthetic Unicode hyperlink baseline and candidate, no product publication and no installed addon.''}
+
+        (output / ''source.json'').write_text(json.dumps(record, indent=2) + ''\n'')
+
+        PY_SOURCE'
+    - name: Install native dependencies and standard fonts
+      run: 'sudo apt-get update
+
+        sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-dejavu fonts-liberation fonts-crosextra-carlito
+        fonts-crosextra-caladea libpango-1.0-0 libpangocairo-1.0-0
+
+        '
+    - name: Install the pinned font metadata reader
+      run: python -m pip install fonttools==4.66.1
+    - name: Extract the accepted official LibreOffice runtime privately
+      run: "python - <<'PY'\nimport hashlib, json, os, pathlib, shutil, subprocess, tarfile\nfrom urllib.request import urlopen\n\
+        base = pathlib.Path(os.environ['RUNNER_TEMP']) / 'report-gen-libreoffice-26.2.6'\nbase.mkdir(exist_ok=False)\narchive\
+        \ = base / 'LibreOffice_26.2.6_Linux_x86-64_deb.tar.gz'\nurl = 'https://download.documentfoundation.org/libreoffice/stable/26.2.6/deb/x86_64/LibreOffice_26.2.6_Linux_x86-64_deb.tar.gz'\n\
+        expected = 'fd0e8f8f2408dd2e5b90286e60f3f97cf566ba441cd48cfc5bcc68067303e0bc'\nwith urlopen(url, timeout=90) as response,\
+        \ archive.open('wb') as target:\n    shutil.copyfileobj(response, target)\nactual = hashlib.file_digest(archive.open('rb'),\
+        \ 'sha256').hexdigest()\nif actual != expected:\n    raise RuntimeError('Official LibreOffice archive checksum mismatch')\n\
+        packages, root = base / 'packages', base / 'root'\npackages.mkdir(); root.mkdir()\ninstalled = []\nwith tarfile.open(archive,\
+        \ 'r:gz') as bundle:\n    members = [entry for entry in bundle.getmembers() if entry.isfile() and entry.name.endswith('.deb')\
+        \ and 'desktop-integration/' not in entry.name]\n    if not members or len({pathlib.PurePosixPath(entry.name).name\
+        \ for entry in members}) != len(members):\n        raise RuntimeError('Unexpected official package inventory')\n \
+        \   for entry in members:\n        target = packages / pathlib.PurePosixPath(entry.name).name\n        with bundle.extractfile(entry)\
+        \ as source, target.open('wb') as output:\n            shutil.copyfileobj(source, output)\n        subprocess.run(['dpkg-deb',\
+        \ '--extract', str(target), str(root)], check=True)\n        installed.append({'name': target.name, 'sha256': hashlib.file_digest(target.open('rb'),\
+        \ 'sha256').hexdigest()})\nprogram = root / 'opt/libreoffice26.2/program'\npaths = {'REPORT_GEN_OFFICIAL_LO': program\
+        \ / 'soffice', 'REPORT_GEN_OFFICIAL_UNOPKG': program / 'unopkg', 'REPORT_GEN_OFFICIAL_PYTHON': program / 'python'}\n\
+        if not all(path.is_file() for path in paths.values()):\n    raise RuntimeError('Official Writer, unopkg or bundled\
+        \ Python is missing')\nnative_env = dict(os.environ)\nfor key in ('LD_LIBRARY_PATH', 'PYTHONHOME', 'PYTHONPATH', 'URE_BOOTSTRAP',\
+        \ 'UNO_PATH'):\n    native_env.pop(key, None)\nnative_env['SAL_USE_VCLPLUGIN'] = 'svp'\nversion = subprocess.check_output([str(paths['REPORT_GEN_OFFICIAL_LO']),\
+        \ '--version'], text=True, env=native_env).strip()\nif not version.startswith('LibreOffice 26.2.6.3 '):\n    raise\
+        \ RuntimeError('Unexpected official LibreOffice build: ' + version)\nreceipt = {'archive_url': url, 'archive_sha256':\
+        \ actual, 'archive_bytes': archive.stat().st_size, 'version': version, 'packages': installed, 'installation': 'Private\
+        \ dpkg-deb extraction; no package scripts or global installation.', 'executables': {key: str(value) for key, value\
+        \ in paths.items()}}\noutput = pathlib.Path('out/unicode-probe-runtime'); output.mkdir(parents=True)\n(output / 'runtime.json').write_text(json.dumps(receipt,\
+        \ indent=2) + '\\n')\nwith open(os.environ['GITHUB_ENV'], 'a') as environment:\n    for key, path in paths.items():\n\
+        \        environment.write(f'{key}={path}\\n')\nPY\n"
+    - name: Install and verify the exact licensed CJK font used by the Unicode fixture
+      run: "python - <<'PY_FONT'\nimport hashlib, json, pathlib, shutil, subprocess\nfrom urllib.request import urlopen\n\
+        from fontTools.ttLib import TTFont\nroot = 'https://raw.githubusercontent.com/notofonts/noto-cjk/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/'\n\
+        font_dir = pathlib.Path.home() / '.local/share/fonts/report-gen-unicode-probe'\nfont_dir.mkdir(parents=True, exist_ok=False)\n\
+        output = pathlib.Path('out/unicode-probe-runtime')\nfiles = [\n    (root + 'OTF/Japanese/NotoSansCJKjp-Regular.otf',\
+        \ font_dir / 'NotoSansCJKjp-Regular.otf', '68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5'),\n \
+        \   (root + 'LICENSE', output / 'OFL-LICENSE.txt', '6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2')]\n\
+        records = []\nfor url, target, expected in files:\n    with urlopen(url, timeout=90) as response, target.open('wb')\
+        \ as stream:\n        shutil.copyfileobj(response, stream)\n    actual = hashlib.file_digest(target.open('rb'), 'sha256').hexdigest()\n\
+        \    if actual != expected:\n        raise RuntimeError('Pinned CJK font/license checksum mismatch: ' + target.name)\n\
+        \    records.append({'source': url, 'file': target.name, 'sha256': actual, 'bytes': target.stat().st_size})\nsubprocess.run(['fc-cache',\
+        \ '-f', str(font_dir)], check=True)\nmatch = pathlib.Path(subprocess.check_output(['fc-match', 'Noto Sans CJK JP',\
+        \ '-f', '%{file}'], text=True))\nif hashlib.file_digest(match.open('rb'), 'sha256').hexdigest() != files[0][2]:\n\
+        \    raise RuntimeError('fontconfig did not select the exact pinned CJK font')\nwith TTFont(match) as font:\n    glyphs\
+        \ = {f'U+{code:04X}': font.getBestCmap()[code] for code in (0x6771, 0x4EAC)}\n(output / 'font.json').write_text(json.dumps({'status':\
+        \ 'passed', 'files': records, 'fontconfig_selected': str(match), 'glyphs': glyphs, 'license': 'SIL Open Font License\
+        \ 1.1'}, indent=2) + '\\n')\nPY_FONT"
+    - name: Check exact Unicode hyperlink association before and after two native saves
+      run: python qa-source/qa/verify-unicode-links.py --fixtures qa-source/qa/fixtures --manifest qa-source/qa/manifest.json
+        --output out/unicode-probe --executable "$REPORT_GEN_OFFICIAL_LO"
+    - uses: actions/upload-artifact@v7.0.2
+      if: always()
+      with:
+        name: unicode-link-native-probe
+        path: 'out/unicode-probe/
+
+          out/unicode-probe-source/
+
+          out/unicode-probe-runtime/
+
+          '
