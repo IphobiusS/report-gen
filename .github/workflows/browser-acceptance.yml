@@ -50,6 +50,9 @@ jobs:
       - name: Painted native select contrast in both interface themes
         if: matrix.browser == 'chromium'
         run: node tests/test_select_contrast_0345_browser.cjs --browser chromium --output out/select-contrast-chromium
+      - name: Markdown editor preserves multiline figure captions
+        if: matrix.browser == 'chromium'
+        run: node tests/test_markdown_caption_0345_browser.cjs --output out/markdown-caption-chromium
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
@@ -63,3 +66,4 @@ jobs:
             out/jobs-lifecycle-${{ matrix.browser }}/
             out/restore-language-chromium/
             out/select-contrast-chromium/
+            out/markdown-caption-chromium/

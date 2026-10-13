@@ -30,6 +30,41 @@ WORD_ORDINALS = {
 }
 
 
+def word_text(tree):
+    """Join text runs without inventing spaces at formatting boundaries."""
+    namespace = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+    paragraphs = []
+    for paragraph in tree.iter(namespace + 'p'):
+        parts = []
+        for node in paragraph.iter():
+            if node.tag == namespace + 't':
+                parts.append(node.text or '')
+            elif node.tag == namespace + 'tab':
+                parts.append('\t')
+            elif node.tag in (namespace + 'br', namespace + 'cr'):
+                parts.append('\n')
+        paragraphs.append(''.join(parts))
+    return '\n'.join(paragraphs)
+
+
+@pytest.mark.parametrize('pieces, expected', [
+    (['Literal ', 'HTML', ' example'], 'Literal HTML example'),
+    (['Literal ', 'HT', 'ML', ' example'], 'Literal HTML example'),
+    (['Literal ', 'HX', 'ML', ' example'], 'Literal HXML example'),
+    (['Literal', 'HTML', ' example'], 'LiteralHTML example'),
+])
+def test_word_text_reader_preserves_splits_and_does_not_repair_changed_text(pieces, expected):
+    namespace = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+    tree = etree.Element('{' + namespace + '}document', nsmap={'w': namespace})
+    paragraph = etree.SubElement(tree, '{' + namespace + '}p')
+    for piece in pieces:
+        run = etree.SubElement(paragraph, '{' + namespace + '}r')
+        etree.SubElement(run, '{' + namespace + '}t').text = piece
+    assert word_text(tree) == expected
+    if expected != 'Literal HTML example':
+        assert 'Literal HTML example' not in word_text(tree)
+
+
 def source_report(directory, markdown):
     source = directory / 'engagement.yaml'
     dump_yaml({'meta': {'report_title': 'Public synthetic counter check', 'lang': 'en'},
@@ -71,7 +106,7 @@ def test_supported_counters_and_literal_identifiers_remain_intact(tmp_path, fmt,
         with zipfile.ZipFile(output) as package:
             tree = etree.fromstring(package.read('word/document.xml'))
             numbering = etree.fromstring(package.read('word/numbering.xml'))
-        content = ' '.join(tree.xpath('//*[local-name()="t"]/text()'))
+        content = word_text(tree)
         # Resolve the visible ordinal, including SEQ compatibility fields. A
         # valid native start alone cannot prove either its use or its sequence.
         observed = list(word_markers(tree, numbering).values())

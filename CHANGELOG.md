@@ -27,6 +27,8 @@
   con leyendas breves.
 - HTML, PDF y Markdown conservan los saltos de línea de las leyendas. Markdown
   también exporta figuras con leyenda vacía sin introducir asteriscos visibles.
+  El HTML portátil y la vista previa Markdown del editor conservan esas líneas
+  también con texto ampliado y en pantallas estrechas.
 - Las tablas de retest dentro de citas o listas fluyen por filas, igual que
   las tablas directas. El recuento inicial en Word permanece junto a la tabla.
   Los retests sin fecha omiten el separador vacío del encabezado.
