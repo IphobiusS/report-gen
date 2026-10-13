@@ -4,7 +4,7 @@ from pathlib import Path
 import engine
 
 from .common import sev_label, cvss_label, summary_sev
-from .images import word_image, fit_width, figure_space, align_inline_picture
+from .images import word_image, fit_width, figure_layout, align_inline_picture
 from .charts import palette as _palette, severity_chart_png as _sev_chart_png
 
 
@@ -264,12 +264,13 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             return
         img, size = word_image(fig["src"], engagement_dir)
         caption = f"{L['figure']} {fig.get('number','')}. " + (fig.get('caption') or '')
-        align_inline_picture(doc.add_picture(img, width=fit_width(doc, size, Cm(15), figure_space(doc, caption))))
+        caption_space, keep_caption = figure_layout(doc, caption)
+        align_inline_picture(doc.add_picture(img, width=fit_width(doc, size, Cm(15), caption_space)))
         doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
         doc.paragraphs[-1].paragraph_format.keep_with_next = True
         doc.inline_shapes[-1]._inline.docPr.set("descr", (fig.get("caption") or ""))
         cap = doc.add_paragraph()
-        cap.paragraph_format.keep_together = True
+        cap.paragraph_format.keep_together = keep_caption
         rc = cap.add_run(f"{L['figure']} {fig.get('number','')}. "); rc.bold = True; rc.italic = True; rc.font.size = Pt(9); rc.font.color.rgb = INK_S
         rr = cap.add_run((fig.get("caption") or "")); rr.italic = True; rr.font.size = Pt(9); rr.font.color.rgb = MUTED
 

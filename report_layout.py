@@ -100,10 +100,10 @@ def prepare_html(source):
                 section.insert(section.index(child), group)
             if group is not None:
                 group.append(child)
-        # Verification summaries follow the same h3 convention as narrative
-        # retest notes, but their tables must paginate by row. Keeping an
-        # entire summary together can abandon most of the preceding page.
+        # Both generated summaries and authored retest notes may contain
+        # tables. Markdown quotes/lists add wrappers, but their tables still
+        # need to paginate by row instead of moving the whole retest entry.
         for group in section.xpath('./div[@class="retest-entry"]'):
-            if group.xpath('./table'):
+            if group.xpath('.//table'):
                 group.set('class', 'retest-entry retest-table-group')
     return html.tostring(tree, encoding='unicode', method='html', doctype='<!DOCTYPE html>')

@@ -98,6 +98,12 @@ def add_toc(document, entries, title, color):
         p.paragraph_format.space_after = Pt(7)
         p.paragraph_format.keep_together = True
         p.paragraph_format.left_indent = Cm(.6 * (level - 1))
+        # Keep space for the live number even when the title almost fills
+        # its last line. The right tab may occupy this reserved gutter;
+        # ordinary title text wraps before it instead of stranding PAGEREF
+        # alone on the next line.
+        body_size = document.styles['Normal'].font.size or Pt(11)
+        p.paragraph_format.right_indent = int(body_size * 3)
         # No dangling dotted line when the viewer has not calculated PAGEREF.
         p.paragraph_format.tab_stops.add_tab_stop(available, WD_TAB_ALIGNMENT.RIGHT, WD_TAB_LEADER.SPACES)
         link = OxmlElement('w:hyperlink'); link.set(qn('w:anchor'), name)

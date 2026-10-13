@@ -1,3 +1,16 @@
+# Cambios 0.34.5 (2026-10-13)
+
+- El índice Word reserva espacio para sus números de página incluso cuando
+  un título llena casi toda la línea; los campos PAGEREF siguen siendo nativos.
+- Las leyendas extensas pueden continuar por páginas sin reducir sus imágenes
+  hasta volverlas invisibles. Se conserva el texto y el tamaño de las figuras
+  con leyendas breves.
+- Las tablas de retest dentro de citas o listas fluyen por filas, igual que
+  las tablas directas. El recuento inicial en Word permanece junto a la tabla.
+- La revisión detecta entidades Markdown que producirían caracteres XML no
+  válidos, indicando el campo antes de exportar. El código literal y las
+  entidades escapadas conservan sus caracteres.
+
 # Cambios 0.34.4 (2026-10-13)
 
 - El índice DOCX utiliza entradas enlazadas y campos PAGEREF independientes,

@@ -220,10 +220,28 @@ def inspect_contents(source, pdf):
     with fitz.open(pdf) as document:
         groups = {}
         for page_number, page in enumerate(document):
+            # Writer link rectangles can touch the descenders of the prior
+            # line by a fraction of a point. get_textbox then includes an
+            # unrelated character (e.g. "E\nc" for a one-letter continuation).
+            # Assign glyphs by their centres, reading each page only once.
+            lines = [line for block in page.get_text('rawdict')['blocks'] if block['type'] == 0
+                     for line in block['lines']]
+            lines.sort(key=lambda line: (round(line['bbox'][1], 1), line['bbox'][0]))
+
+            def link_text(rect):
+                # Extractors can place a zero-width ligature continuation
+                # just beyond Writer's rounded right edge (observed: 0.04pt).
+                # Allow horizontal rounding only; never borrow another row.
+                rect = fitz.Rect(rect.x0 - .25, rect.y0, rect.x1 + .25, rect.y1)
+                return '\n'.join(''.join(char['c'] for span in line['spans'] for char in span['chars']
+                                       if rect.contains(fitz.Point((char['bbox'][0] + char['bbox'][2]) / 2,
+                                                                   (char['bbox'][1] + char['bbox'][3]) / 2)))
+                                 for line in lines)
+
             for link in page.get_links():
                 if link['kind'] != fitz.LINK_GOTO or 'to' not in link:
                     continue
-                text = normal(page.get_textbox(link['from']))
+                text = normal(link_text(link['from']))
                 if not text:
                     continue
                 key = (page_number, link['page'], round(link['to'].x, 1), round(link['to'].y, 1))

@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.34.4
+# Guía de uso de report-gen 0.34.5
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Cambios](../CHANGELOG.md)
 

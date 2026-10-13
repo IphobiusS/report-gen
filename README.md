@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.34.4
+# report-gen 0.34.5
 
 <a id="qué-es"></a>
 
@@ -61,13 +61,11 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.34.4
+## Novedades de 0.34.5
 
-El índice Word utiliza referencias nativas de página que LibreOffice calcula al componer el documento. Conserva los enlaces a cada capítulo y actualiza las cifras si cambia la paginación. La lista de títulos se reconstruye al exportar desde report-gen; no se inventan páginas a partir del PDF.
+El índice Word mantiene cada número de página junto a la última línea de su título, incluso al llegar al límite del ancho. Las leyendas largas pueden continuar por páginas sin hacer desaparecer la figura. Las tablas de retest anidadas en citas o listas también aprovechan el espacio disponible.
 
-Los capítulos del cuerpo continúan en el espacio disponible en PDF y Word, manteniendo separadas la portada y el índice. Markdown incorpora el gráfico de severidades con su leyenda. En HTML portátil, las tablas simples pasan a una vista por registros cuando falta ancho, y los ordinales extensos dejan espacio para leer el texto ampliado.
-
-Los textos automáticos siguen describiendo lo registrado sin afirmar verificaciones que no constan. Consulta el estado técnico, la evidencia y la cobertura de cada ficha antes de entregar.
+La revisión señala el campo que contiene una entidad Markdown incompatible con Word antes de exportar. El código escrito literalmente se conserva. Los textos automáticos siguen describiendo lo registrado sin afirmar verificaciones que no constan.
 
 ## Exportación y tutorial visual
 
@@ -106,7 +104,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.34.4 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.34.5 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

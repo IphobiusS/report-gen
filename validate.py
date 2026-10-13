@@ -142,6 +142,24 @@ def report_anchor_issues(data, language):
 
 
 @language_argument
+def markdown_control_issues(data, lang=None):
+    """Return field-addressed errors before a renderer decodes numeric refs."""
+    from resources import markdown_fields
+    from safe_markup import validate_character_references
+    from workflows import strings
+    fields = markdown_fields()
+    issues = []
+    for path, text in strings(data):
+        key = path.rsplit('.', 1)[-1]
+        if key.endswith('_md') or key in fields:
+            try:
+                validate_character_references(text)
+            except ValueError as exc:
+                issues.append((path, str(exc)))
+    return issues
+
+
+@language_argument
 def validate(data, known_section_keys=None, lang=None):
     """Valida un dict de engagement. known_section_keys permite inyectar el
     catalogo en tests; si es None se intenta cargar el catalogo real.
@@ -150,6 +168,9 @@ def validate(data, known_section_keys=None, lang=None):
     issues = structure_issues(data, lang)
     if issues:
         return issues
+    controls = markdown_control_issues(data, lang)
+    if controls:
+        return [('error', f'{path}: {message}') for path, message in controls]
     data = data or {}
     meta = data.get("meta") or {}
 

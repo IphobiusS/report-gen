@@ -10,13 +10,14 @@ from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from safe_markup import md, ordered_list_start
 from .pagination import keep_table_together
 from .numbering import WordList
-from .images import word_image, fit_width, figure_space, paragraph_width, align_inline_picture
+from .images import word_image, fit_width, figure_layout, paragraph_width, align_inline_picture
 from report_layout import table_layout
 
 
 def write_markdown(document, text, root, code_block, keep_tables=True, retest=False, column_weights=None):
     tree = html.fragment_fromstring(str(md(text, img_base="")), create_parent="div")
     available = document.sections[-1].page_width - document.sections[-1].left_margin - document.sections[-1].right_margin
+    flowing_picture_paragraphs = set()
 
     def picture(node, paragraph=None, parent=None, caption=None, href=None):
         if not node.get("src"):
@@ -32,7 +33,9 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
             # Clamp before integer conversion: valid decimal syntax can exceed
             # floating-point range, while the page width is always finite.
             width = int(min(containing_width, value * factor))
-        width = fit_width(document, size, width, figure_space(document, caption if caption is not None else node.get('alt', ''), width=containing_width))
+        caption_space, keep_caption = figure_layout(document,
+            caption if caption is not None else node.get('alt', ''), width=containing_width)
+        width = fit_width(document, size, width, caption_space)
         run = paragraph.add_run()
         shape = align_inline_picture(run.add_picture(source, width=max(Cm(.1), width)))
         if parent is not None: parent.append(run._r)
@@ -45,8 +48,12 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
             link = OxmlElement('a:hlinkClick')
             link.set(qn('r:id'), paragraph.part.relate_to(href, RT.HYPERLINK, is_external=True))
             shape._inline.docPr.append(link)
-        paragraph.paragraph_format.keep_together = True
+        # In a table cell the image and caption share this paragraph. Let an
+        # oversized caption continue while the inline drawing remains whole.
+        paragraph.paragraph_format.keep_together = keep_caption
         paragraph.paragraph_format.keep_with_next = True
+        if not keep_caption:
+            flowing_picture_paragraphs.add(paragraph._p)
 
     def inline(node, paragraph, bold=False, italic=False, code=False, parent=None):
         def add(value):
@@ -234,6 +241,16 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
             # the remaining page space. Chaining 80+ rows with keepNext forces
             # a mostly empty preceding page before Word/Writer finally splits.
             keep_table_together(table, whole=keep_tables and len(table.rows) <= 24)
+            # The generic table policy protects row paragraphs. An evidence
+            # cell with a multipage caption is explicitly allowed to flow;
+            # otherwise that policy restores the impossible keep-lines chain.
+            for row in table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        if paragraph._p in flowing_picture_paragraphs:
+                            paragraph.paragraph_format.keep_together = False
+                            paragraph.paragraph_format.keep_with_next = False
+                            row._tr.get_or_add_trPr().find(qn('w:cantSplit')).set(qn('w:val'), '0')
             document.add_paragraph()
         elif tag == "figure":
             if retest and document.paragraphs:
@@ -256,8 +273,9 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
                         for nested in list(contents): outer.append(nested)
                         contents = html.Element('span'); contents.append(outer)
                     p = document.add_paragraph(style="Caption"); inline(contents, p)
-                    p.paragraph_format.keep_together = True
                     if depth: p.paragraph_format.left_indent = Cm(.65 * depth) + list_offset
+                    _, keep_caption = figure_layout(document, p.text, width=paragraph_width(document, p))
+                    p.paragraph_format.keep_together = keep_caption
         elif tag == "img": picture(node)
         elif tag == "blockquote":
             for child in node: block(child, depth, list_offset=list_offset)
@@ -272,6 +290,13 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
                     and node.getnext() is not None and node.getnext().tag in {'ul', 'ol'}):
                 p.paragraph_format.keep_with_next = True
             if retest and node.getprevious() is not None and node.getprevious().tag == 'h3':
+                p.paragraph_format.keep_with_next = True
+            # Generated retest starts with counts followed by its register.
+            # Keep this short boundary with the table header/first row, not
+            # the entire register or any later authored narrative paragraph.
+            if (retest and tag == 'p' and node.getparent() is tree
+                    and node.getprevious() is None and node.getnext() is not None
+                    and node.getnext().tag == 'table'):
                 p.paragraph_format.keep_with_next = True
             if (tag == 'p' and node.getnext() is not None and node.getnext().tag == 'pre'
                     and len(node.text_content()) <= 160 and node.xpath('.//strong|.//b')):

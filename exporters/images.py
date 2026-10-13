@@ -106,6 +106,20 @@ def figure_space(document, caption, font_size=10.5, width=None):
     return Cm(2) + Pt(lines * font_size * 1.3 + 12)
 
 
+def figure_layout(document, caption, font_size=10.5, width=None):
+    """Budget caption space without sacrificing a readable evidence figure.
+
+    Short captions remain attached in full. A long editable caption can span
+    pages, so reserve at most one third of the text area for its beginning;
+    never subtract the entire oversized caption from the figure's height.
+    The same decision controls the caption's keep-lines setting in callers.
+    """
+    section = document.sections[-1]
+    budget = int((section.page_height - section.top_margin - section.bottom_margin) / 3)
+    required = figure_space(document, caption, font_size, width)
+    return min(required, budget), required <= budget
+
+
 def fit_width(document, size, preferred, caption_space):
     section = document.sections[-1]
     available = section.page_width - section.left_margin - section.right_margin

@@ -14,6 +14,7 @@ from urllib.parse import quote
 
 _BASE = ContextVar('report_image_base', default='')
 WIDTH = re.compile(r'(?:\d+(?:\.\d+)?)(?:%|px|cm|mm|in|pt)')
+_NUMERIC_REFERENCE = re.compile(r'&#(?:[xX]([0-9a-fA-F]+)|([0-9]+));')
 TAGS = {'p', 'br', 'hr', 'strong', 'em', 'b', 'i', 'del', 's', 'code', 'pre', 'blockquote', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'a', 'img', 'figure', 'figcaption'}
 
 
@@ -112,7 +113,27 @@ class _NestingLimit(Treeprocessor):
 
 def _parsed(text):
     parser = markdown_parser()
-    return parser.convert(str(text or '').replace('\r\n', '\n').replace('\r', '\n'))
+    rendered = parser.convert(str(text or '').replace('\r\n', '\n').replace('\r', '\n'))
+    # Code spans/fences have already escaped their ampersands. Inspect only
+    # real character references, before HTML sanitizers can replace NUL or
+    # invalid Unicode silently and before Word attempts to build XML text.
+    from input_guard import NONPORTABLE_TEXT
+    for match in _NUMERIC_REFERENCE.finditer(rendered):
+        digits = (match[1] or match[2]).lstrip('0') or '0'
+        base = 16 if match[1] is not None else 10
+        # Avoid Python's integer-string limit for untrusted oversized entities.
+        value = int(digits, base) if len(digits) <= (6 if base == 16 else 7) else 0x110000
+        if value > 0x10FFFF or NONPORTABLE_TEXT.fullmatch(chr(value)):
+            raise ValueError(backend_message(
+                'Markdown contiene una referencia a un carácter no compatible con los informes. Escríbela como código o escapa el ampersand para mostrarla literalmente.',
+                en='Markdown contains a character reference that reports do not support. Use code formatting or escape the ampersand to display it literally.'))
+    return rendered
+
+
+def validate_character_references(text):
+    """Validate decoded Markdown controls without rejecting literal examples."""
+    if '&#' in text:
+        _parsed(text)
 
 
 def raw_image_sources(text):

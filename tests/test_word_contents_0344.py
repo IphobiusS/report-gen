@@ -131,3 +131,35 @@ def test_native_contents_with_wrapped_titles_spanning_multiple_pages(tmp_path):
     result = native.inspect_contents(source, pdf)
     assert result['entries_checked'] == 20
     assert len({row['contents_page'] for row in result['rows']}) > 1
+
+
+@pytest.mark.skipif(not os.environ.get('REPORT_GEN_TEST_SOFFICE'),
+                    reason='Set REPORT_GEN_TEST_SOFFICE for native LibreOffice field acceptance')
+def test_native_contents_reserves_room_for_numbers_at_title_wrap_boundaries(tmp_path):
+    # A title which just fits without its page number used to leave PAGEREF
+    # alone below it. Sweep neighbouring lengths and both exported levels;
+    # the native guard checks the final title line and number, not our styles.
+    from docx.shared import Cm, Pt
+    document = Document()
+    section = document.sections[0]
+    section.page_width = Cm(21)
+    section.left_margin = section.right_margin = Cm(1.8)
+    document.styles['Normal'].font.name = 'Calibri'
+    document.styles['Normal'].font.size = Pt(10.5)
+    document.add_paragraph('Native contents width regression')
+    document.add_page_break()
+    entries = []
+    for index in range(80):
+        level = 1 + index // 40
+        title = (f'Entry{index:03} ' +
+                 ('continuous text fitting within the contents width ' * 5)[:70 + index % 40])
+        heading = document.add_heading(title, level)
+        heading.paragraph_format.keep_with_next = False
+        document.add_paragraph('Body below the distinct heading.')
+        entries.append((heading, title, level))
+    add_toc(document, entries, 'Contents', RGBColor(0, 0, 0))
+    source = tmp_path / 'width-index.docx'
+    document.save(source)
+    native = acceptance()
+    rendered = native.convert(os.environ['REPORT_GEN_TEST_SOFFICE'], source, tmp_path / 'render')
+    assert native.inspect_contents(source, rendered)['entries_checked'] == 80

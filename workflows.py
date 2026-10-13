@@ -333,8 +333,16 @@ def preflight(data, directory, lang="es"):
     import validate
     lang = lang if isinstance(lang, str) and lang in validate.LANGS else "es"
     structure = validate.structure_issues(data, lang)
-    issues = [] if structure else review(data, directory, lang)
-    validation = structure or validate.validate(data, lang=lang)
+    controls = [] if structure else validate.markdown_control_issues(data, lang)
+    issues = [] if structure or controls else review(data, directory, lang)
+    for path, message in controls:
+        finding = re.match(r'^findings\[(\d+)\]', path)
+        uid = data['findings'][int(finding[1])].get('uid') if finding else None
+        issues.append(dict(level='error', message=f'{path}: {message}', path=path, finding_uid=uid,
+                           help=('Use code formatting or escape the ampersand to display the character reference literally.'
+                                 if lang == 'en' else
+                                 'Usa formato de código o escapa el ampersand para mostrar la referencia como texto literal.')))
+    validation = structure or ([] if controls else validate.validate(data, lang=lang))
     seen = {(issue['level'], issue['message']) for issue in issues}
     for level, message in validation:
         if (level, message) in seen:
