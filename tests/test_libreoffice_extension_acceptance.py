@@ -2,6 +2,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import shutil
 import zipfile
 
 import fitz
@@ -184,3 +185,42 @@ def test_root_is_blocked_before_unopkg_and_produces_failure_receipt(tmp_path, mo
     assert result['status'] == 'failed'
     assert 'non-root' in result['error']
     assert not result['checks']
+
+
+def test_failed_fallback_oracle_still_collects_enabled_profile_but_fails_gate(tmp_path, monkeypatch):
+    monkeypatch.setattr(VERIFY.os, 'geteuid', lambda: 1000, raising=False)
+    stages_seen = []
+    def command(command, output, **kwargs):
+        if command[-1] == '--version':
+            return {'stdout': 'LibreOffice 24.2.7.2'}
+        if '--worker' in command:
+            config = json.loads(Path(command[-1]).read_text())
+            stages_seen.append(config['enabled'])
+            stages = ['original', 'reopened', 'reflow', 'reopened-reflow'] if config['enabled'] else ['fallback']
+            for stage in stages:
+                shutil.copyfile(config['source'], Path(config['output']) / (stage + '.docx'))
+        return {'stdout': ''}
+    def inspect(path, rows, **kwargs):
+        if Path(path).stem == 'fallback':
+            raise ValueError('Synthetic negative fallback oracle')
+        return {'literal_checks': []}
+    monkeypatch.setattr(VERIFY, 'run', command)
+    monkeypatch.setattr(VERIFY, 'inspect_pdf', inspect)
+    output = tmp_path / 'phases'
+    assert VERIFY.main(['--output', str(output)]) == 1
+    result = json.loads((output / 'validation.json').read_text())
+    assert stages_seen == [False, True]
+    assert result['status'] == 'failed'
+    assert 'fallback' in result['phase_errors']
+    assert set(result['checks']['enabled']) == {'original', 'reopened', 'reflow', 'reopened-reflow'}
+
+
+def test_native_environment_does_not_inject_foreign_python_or_mutate_parent(monkeypatch):
+    for name in VERIFY.NATIVE_ENV_UNSET:
+        monkeypatch.setenv(name, '/foreign-python/' + name)
+    monkeypatch.setenv('PATH', '/usr/bin:/custom/bin')
+    environment = VERIFY.native_environment()
+    assert not set(VERIFY.NATIVE_ENV_UNSET).intersection(environment)
+    assert environment['PATH'] == '/usr/bin:/custom/bin'
+    for name in VERIFY.NATIVE_ENV_UNSET:
+        assert VERIFY.os.environ[name] == '/foreign-python/' + name

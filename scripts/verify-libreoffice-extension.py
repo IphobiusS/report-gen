@@ -26,6 +26,7 @@ TAG = 'zxx-ZZ-x-rgwrap'
 SERVICE = 'com.sun.star.i18n.BreakIterator_qlt_ZZ_zxx-ZZ-x-rgwrap'
 IMPLEMENTATION = 'org.reportgen.TechnicalLiteralBreakIterator'
 NS = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
+NATIVE_ENV_UNSET = ('LD_LIBRARY_PATH', 'PYTHONHOME', 'PYTHONPATH', 'URE_BOOTSTRAP', 'UNO_PATH')
 
 
 def digest(path):
@@ -41,11 +42,23 @@ def stable_version(value):
         r'(?i)(?:dev|alpha|beta|rc\d)', value)
 
 
-def run(command, output, *, timeout=180):
+def native_environment():
+    """Use distribution libraries for distribution Python/Writer/unopkg.
+
+    In particular setup-python's libpython must not be injected into Writer's
+    embedded distribution Python loader. The report-gen Python stays untouched.
+    """
+    environment = dict(os.environ)
+    for name in NATIVE_ENV_UNSET:
+        environment.pop(name, None)
+    return environment
+
+
+def run(command, output, *, timeout=180, env=None):
     """Bound the whole private process group, retaining failure diagnostics."""
     started = time.monotonic()
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                               start_new_session=os.name == 'posix')
+                               start_new_session=os.name == 'posix', env=env)
     expired = False
     try:
         stdout, stderr = process.communicate(timeout=timeout)
@@ -246,9 +259,7 @@ def uno_worker(config_path):
     config = json.loads(Path(config_path).read_text())
     output = Path(config['output'])
     connection = 'pipe,name=report-gen-oxt-' + uuid.uuid4().hex
-    environment = dict(os.environ)
-    for key in ('URE_BOOTSTRAP', 'UNO_PATH', 'PYTHONHOME', 'PYTHONPATH'):
-        environment.pop(key, None)
+    environment = native_environment()
     environment['SAL_USE_VCLPLUGIN'] = 'svp'
     def prop(name, value):
         result = uno.createUnoStruct('com.sun.star.beans.PropertyValue')
@@ -366,7 +377,11 @@ def main(argv=None):
     try:
         if hasattr(os, 'geteuid') and os.geteuid() == 0:
             raise ValueError('User OXT acceptance requires an ordinary non-root account; no shared installation fallback.')
-        version = run([args.executable, '--version'], output / 'version.json', timeout=20)['stdout'].strip()
+        native_env = native_environment()
+        write_json(output / 'native-environment.json', {
+            'unset_for_distribution_commands': {name: os.environ[name] for name in NATIVE_ENV_UNSET if name in os.environ},
+            'scope': 'Only explicit distribution executables and their children; report-gen Python environment unchanged.'})
+        version = run([args.executable, '--version'], output / 'version.json', timeout=20, env=native_env)['stdout'].strip()
         if not stable_version(version):
             raise ValueError('Acceptance requires a stable LibreOffice build: ' + version)
         receipt['libreoffice_version'] = version
@@ -380,24 +395,34 @@ def main(argv=None):
         source = output / 'fixture.docx'; rows = fixture(source)
         write_json(output / 'expected.json', rows)
         receipt['checks']['source'] = inspect_docx(source, rows)
+        phase_errors = {}
         for enabled in (False, True):
             name = 'enabled' if enabled else 'fallback'
             folder = output / name; folder.mkdir()
-            with tempfile.TemporaryDirectory(prefix='report-gen-oxt-' + name + '-') as profile:
-                if enabled:
-                    run([args.unopkg, '-env:UserInstallation=' + Path(profile).as_uri(), 'add', '--suppress-license', str(oxt)], folder / 'installation.json', timeout=60)
-                    run([args.unopkg, '-env:UserInstallation=' + Path(profile).as_uri(), 'list'], folder / 'installed-list.json', timeout=30)
-                config = {'enabled': enabled, 'output': str(folder), 'profile': profile, 'source': str(source),
-                          'rows': rows, 'executable': args.executable}
-                write_json(folder / 'config.json', config)
-                run([args.uno_python, str(Path(__file__).resolve()), '--worker', str(folder / 'config.json')], folder / 'worker.json')
-            stages = ['original', 'reopened', 'reflow', 'reopened-reflow'] if enabled else ['fallback']
-            results = {}
-            for stage in stages:
-                results[stage] = {'docx': inspect_docx(folder / (stage + '.docx'), rows),
-                                  'pdf': inspect_pdf(folder / (stage + '.pdf'), rows,
-                                                     require_fill=enabled, reflow='reflow' in stage)}
-            receipt['checks'][name] = results
+            try:
+                with tempfile.TemporaryDirectory(prefix='report-gen-oxt-' + name + '-') as profile:
+                    if enabled:
+                        run([args.unopkg, '-env:UserInstallation=' + Path(profile).as_uri(), 'add', '--verbose', '--log-file', str(folder / 'unopkg.log'), '--suppress-license', str(oxt)], folder / 'installation.json', timeout=60, env=native_env)
+                        run([args.unopkg, '-env:UserInstallation=' + Path(profile).as_uri(), 'list'], folder / 'installed-list.json', timeout=30, env=native_env)
+                    config = {'enabled': enabled, 'output': str(folder), 'profile': profile, 'source': str(source),
+                              'rows': rows, 'executable': args.executable}
+                    write_json(folder / 'config.json', config)
+                    run([args.uno_python, str(Path(__file__).resolve()), '--worker', str(folder / 'config.json')], folder / 'worker.json', env=native_env)
+                stages = ['original', 'reopened', 'reflow', 'reopened-reflow'] if enabled else ['fallback']
+                results = {}
+                for stage in stages:
+                    results[stage] = {'docx': inspect_docx(folder / (stage + '.docx'), rows),
+                                      'pdf': inspect_pdf(folder / (stage + '.pdf'), rows,
+                                                         require_fill=enabled, reflow='reflow' in stage)}
+                receipt['checks'][name] = results
+            except Exception as error:
+                # Continue to the independent profile to collect its evidence.
+                # Any phase failure still fails the complete acceptance gate.
+                phase_errors[name] = str(error)
+                write_json(folder / 'phase-error.json', {'status': 'failed', 'error': str(error)})
+        if phase_errors:
+            receipt['phase_errors'] = phase_errors
+            raise ValueError('Native acceptance phase failed: ' + json.dumps(phase_errors, ensure_ascii=False))
         fallback_checks = receipt['checks']['fallback']['fallback']['pdf']['literal_checks']
         if not any(sample['gap_pt'] > sample['next_character_pt'] + 24 for check in fallback_checks
                    if check['name'] != 'rgControl' for sample in check['nonfinal_line_fill']):
