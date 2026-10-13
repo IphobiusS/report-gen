@@ -2,11 +2,24 @@
 
 - El sondeo de exportaciones se suspende al salir de la página y se reanuda
   al restaurarla, evitando peticiones tardías en WebKit sin cancelar las tareas.
-- Se prepara un complemento opcional de LibreOffice para el salto de literales
-  técnicos ASCII marcados, sin insertar caracteres ni modificar enlaces.
-  Su aceptación instalado en LibreOffice estable está pendiente y el marcado
-  DOCX sigue desactivado. Requiere Python UNO; no acredita Word nativo ni
-  LibreOffice para Windows o macOS. Las guías ES/EN explican instalación y alcance.
+- Las etiquetas del inspector de publicación y la vista previa, y el nombre
+  accesible de validar, se actualizan al cambiar o restaurar el idioma ES/EN.
+  La preferencia de interfaz no modifica el contenido ni la revisión del informe.
+- Los selectores nativos adoptan el esquema oscuro o claro del editor. Se corrige
+  el contraste del texto sobre el fondo del control cerrado en WebKit para Linux,
+  conservando su apariencia y navegación nativas.
+- El recorrido de Safari nativo amplía la cobertura a importar una copia de Nimbus
+  mediante la API del navegador, editar y autoguardar, recargar y exportar HTML.
+  Comprueba revisión, bytes y contenido; no cubre el selector de archivos del
+  sistema, Safari móvil ni la recuperación de borradores sin guardar.
+- El exportador DOCX marca por defecto los literales técnicos ASCII elegibles
+  con el idioma privado `zxx-ZZ-x-rgwrap`, conservando texto, estilos y enlaces.
+  El complemento opcional aprovecha esa marca para ajustar las líneas en
+  LibreOffice oficial 26.2.6.3 para Linux x86-64, con instalación y reapertura
+  comprobadas. Se construye desde las fuentes y requiere instalación expresa;
+  el DOCX sigue siendo editable sin él. No es una reparación portable a cualquier
+  editor: la instalación falló en LibreOffice 24.2.7.2 de Ubuntu y no se acredita
+  Microsoft Word ni LibreOffice para Windows o macOS. Las guías detallan el alcance.
 - El índice Word reserva espacio para sus números de página incluso cuando
   un título llena casi toda la línea; los campos PAGEREF siguen siendo nativos.
 - Las leyendas extensas pueden continuar por páginas sin reducir sus imágenes

@@ -1,6 +1,9 @@
 /* Report typography belongs to the exporters; these tokens only style the editor. */
 :root { --bg:#0e141b; --panel:#131c25; --panel2:#1b2833; --canvas:#0a1016; --line:#344554; --fg:#e9eff3; --muted:#a8b7c4; --accent:#b7ec83; --accent2:#b7ec83; --blue:#b7ec83; --radius:6px; }
 :root[data-theme="light"] { --bg:#f4f6f8; --panel:#ffffff; --panel2:#e9eff3; --canvas:#e3e9ee; --line:#a5b3bf; --fg:#182c3b; --muted:#4c6171; --accent:#365d1c; --accent2:#365d1c; --blue:#365d1c; }
+/* Native select paint can replace the CSS background, notably in WebKit. */
+select { color-scheme:dark; }
+:root[data-theme="light"] select { color-scheme:light; }
 body { font-size:15px; height:100dvh; }
 [hidden] { display:none!important; }
 .btn { transition:none; min-height:40px; }

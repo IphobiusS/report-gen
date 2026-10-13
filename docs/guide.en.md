@@ -21,6 +21,10 @@ Workspace selection is `--workspace`, then `REPORT_GEN_WORKSPACE`, then `$XDG_DA
 
 `--lang en` sets the launcher messages and initial interface language to English. An existing browser language preference takes precedence; change it in the editor when needed. Report language remains independent.
 
+After reload, the Publication inspector, Show/Hide preview labels and the accessible name of Validate report use the selected language. Changing it neither translates authored content nor changes the project's saved revision.
+
+Project and format selectors retain native behavior and follow the editor's dark or light color scheme. This corrects light text on a light background observed in WebKit on Linux. The check covers the closed control, with and without focus; the open menu's appearance depends on the browser and operating system.
+
 The existing `python3 start.py --ready --lang en` route remains available. Without `--workspace` or the environment variable, this launch retains the traditional `webapp/` location. `--ready` allows dependency installation when the local environment is missing or incomplete, runs diagnostics and starts the editor if its requirements are available. Setup creates `.venv`, updates pip and installs dependencies constrained by `requirements-audited.txt`. Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. Use `python3 start.py --ready --port 8081 --lang en` for another local port.
 
 Diagnostics distinguish the editor from each export engine. Editing can work while an optional engine is unavailable; opening the editor does not establish that every output format is available. If preparation stops, follow the reported correction before trying again.
@@ -135,11 +139,17 @@ Copies in the contents or summary cannot replace text missing from that region.
 This does not verify visual order or the association of individual images;
 noncanonical documents retain the global scope.
 
-PDF and portable HTML wrap literal URLs to the available width without changing their text. LibreOffice may wrap some DOCX URLs early; no artificial characters or line breaks are inserted to conceal that limitation. Native Microsoft Word validation requires a licensed Windows desktop installation. The opt-in workflow is implemented; local OOXML and LibreOffice checks do not substitute for that native validation.
+PDF and portable HTML wrap literal URLs to the available width without changing their text. Without the extension described below, LibreOffice may wrap some DOCX URLs early; no artificial characters or line breaks are inserted to conceal that limitation. Native Microsoft Word validation requires a licensed Windows desktop installation. The opt-in workflow is implemented; local OOXML and LibreOffice checks do not substitute for that native validation.
 
 In PDF, ASCII identifiers of at least 32 characters, or at least 24 containing digits, underscore, slash or colon, can continue from the remaining line space. This applies to those strings and URLs; it preserves their characters and normal Unicode prose rules. It does not promise identical wrapping for arbitrary words or widths.
 
 PDF and Word body chapters continue without forcing a fresh page for every chapter. The cover and contents stay separate. A figure that cannot fit intact moves to the next page with its size and order preserved; evidence is not cropped to remove that space.
+
+Long captions can continue across pages without shrinking the image until it becomes invisible. Word preserves explicit caption line breaks; HTML, PDF and Markdown also represent them. An empty caption retains the figure label and number, without stray Markdown asterisks. Content checks do not replace visual review of the association between each image and its caption.
+
+Retest tables inside quotations or lists can flow by row, like direct tables in that section. In Word, the heading and initial count stay with the table; this rule does not chain all its rows together or change narrative notes without a table. When no date is recorded, the heading omits its empty separator without inventing a date.
+
+While the server remains open, leaving the page does not cancel an ongoing export. The browser pauses that document's status requests and resumes them when it is restored. A genuine request failure remains visible and can be retried; this behavior does not guarantee recovery of an unsaved draft.
 
 In portable HTML, tables with one header row and uniform cells become records at narrow widths, with each header beside its value. Tables with merged cells or complex headers keep local horizontal scrolling to preserve their relationships. Long ordinals move above their text when width is limited.
 
@@ -149,32 +159,32 @@ Shared delivery manifests and downloadable verification records retain warning c
 
 ## Optional LibreOffice extension
 
-**Candidate status:** acceptance with the extension installed in stable LibreOffice is pending. DOCX exporter marking remains disabled. These instructions prepare an optional trial; they do not yet replace reviewing the document's line breaks.
+**Checked environment:** the official LibreOffice 26.2.6.3 distribution for Linux x86-64, with its own Python UNO provider. Acceptance installs the OXT through the real loader in a temporary profile and checks opening, width changes, saving and reopening. It does not replace visual review of your report or promise identical wrapping in other editors.
 
-The extension acts only on long ASCII technical literals carrying the nonlinguistic `zxx-ZZ-x-rgwrap` marker: URLs of at least 32 characters and identifiers of at least 24 containing a digit, underscore, slash or colon. It does not change prose, insert invisible characters, hyphens or manual line breaks, or modify link destinations. Installing it does not change wrapping in an unmarked DOCX. The document remains editable; without the extension, LibreOffice may retain early line breaks.
+DOCX export marks eligible literals by default with the private nonlinguistic language tag `zxx-ZZ-x-rgwrap`. This changes language metadata for those fragments, not the prose language, characters, styles or link destinations. Marking can cover body text, tables, headers and footers; fields and their results remain intact. Exporting and opening the DOCX does not require installing LibreOffice or the extension.
 
-It needs LibreOffice with its Python UNO component provider. Python in report-gen's virtual environment does not substitute for that component. For LibreOffice installed from Ubuntu packages, install the dependencies with:
+Wrapping applies only to entirely ASCII HTTP/HTTPS/FTP/FTPS URLs of at least 32 characters and printable, unspaced ASCII identifiers of at least 24 containing a digit, underscore, slash or colon. It excludes words containing letters only and URLs containing non-ASCII characters. The extension uses available line space without inserting invisible characters, hyphens or manual breaks. When adding prose after a literal in Writer, retain the surrounding prose language.
 
-```bash
-sudo apt install python3-uno libreoffice-script-provider-python
-```
+The Python UNO component provider must belong to the same LibreOffice installation. The report-gen virtual environment does not replace it. The accepted test used official 26.2.6.3 packages, including `libobasis26.2-pyuno` and `libobasis26.2-python-script-provider`. Do not mix those components with Python from a different LibreOffice distribution.
 
-This command changes system packages and requires administrator permissions; it does not install the extension. For other distributions or installation formats, use the provider matching your own LibreOffice installation.
+Extension installation failed with **Ubuntu's LibreOffice 24.2.7.2 packages**, even with `python3-uno` and `libreoffice-script-provider-python` present. Those packages are not an accepted installation path for this extension. That failure is retained separately from acceptance of the official 26.2.6.3 package.
 
-To build the candidate package from the report-gen source tree:
+Build the OXT from the downloaded report-gen source without installing it:
 
 ```bash
 python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.34.5.oxt
 ```
 
-1. In LibreOffice, open **Tools → Extensions → Add**. Some versions call the menu **Extension Manager**.
+1. In the chosen LibreOffice installation, open **Tools → Extensions → Add**. Some versions call it **Extension Manager**.
 2. Select `report-gen-libreoffice-0.34.5.oxt` and install it for your user.
-3. Close every LibreOffice window, reopen it, then open a copy of the marked DOCX.
+3. Close every window of that LibreOffice installation, reopen it and open a copy of the DOCX freshly exported by report-gen.
 4. Inspect its URLs, lists and tables after opening, editing and saving it. To remove the extension, disable or remove it in the same manager and restart LibreOffice.
 
-The pending acceptance targets stable LibreOffice on Linux with the extension installed in a temporary profile. Acceptance of the extension in LibreOffice on Windows or macOS and native Microsoft Word review have not been established. The extension does not guarantee identical pagination across editors and does not affect report-gen's PDF, HTML or Markdown exports.
+Without the extension, the DOCX retains its text and remains editable, but the renderer may retain early line breaks. Installation does not mark old documents: export them again from report-gen. The improvement depends on the extension and renderer; it is not a portable fix contained solely in the DOCX. Native Microsoft Word and LibreOffice on Windows or macOS have not been accepted.
 
-Installation references: [LibreOffice Extension Manager](https://help.libreoffice.org/latest/en-US/text/shared/01/packagemanager.html) and [Ubuntu Python provider](https://packages.ubuntu.com/noble/all/libreoffice-script-provider-python).
+The extension does not affect report-gen's PDF, HTML or Markdown exports. It also does not guarantee universally literal extraction or prevent URL normalization when converting from LibreOffice to PDF; for example, the renderer may convert `%2D` to `-` in a link annotation while preserving the visible literal and DOCX target.
+
+The OXT is built separately: it is not a fourth release asset, and the updater does not install it. See the [LibreOffice Extension Manager](https://help.libreoffice.org/latest/en-US/text/shared/01/packagemanager.html).
 
 ## Recovery and privacy
 
@@ -257,6 +267,8 @@ Replace `/path/to/data` with the selected workspace; legacy installations use `w
 The automatic summary describes recorded findings and severity ratings without claiming that all are confirmed. Machine entries are records, and **Asset inventory** does not establish that assessment was performed. Consult **Coverage and limitations** and each finding's verification state. If no approach has been authored, default text stays within documented information and does not claim manual reproduction. Explicitly authored text is preserved and must be reviewed before delivery.
 
 The included `examples/pending-severity/engagement.yaml` fixture contains two fictional findings with confirmed technical verification and no assigned severity. Its report text is in Spanish. In Word, contents entries are available immediately, with internal links and independent native `PAGEREF` fields. LibreOffice calculates their page numbers during layout; after editing content, use **Ctrl+A**, then **F9**. Numbers follow the editor’s actual pagination, not the PDF. To add, remove, rename or reorder contents entries, edit the report in report-gen and export again: the entry list is not a TOC field that Word automatically rebuilds. Microsoft Word and LibreOffice may paginate differently; native Microsoft Word remains a separate validation target.
+
+Contents entries reserve width for the page number, preventing a title close to the line limit from leaving its number alone on another line. Recheck numbers, links and layout after editing content or opening the file in another editor; LibreOffice checks alone do not establish native Microsoft Word acceptance.
 
 The editor runs in one process on `127.0.0.1`; it is not a multiuser service. Certification profiles are starting points; check current provider requirements before an exam submission. Logos remain their owners' property and imply no affiliation.
 

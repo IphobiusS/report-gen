@@ -6,6 +6,7 @@ import engine
 from .common import sev_label, cvss_label, summary_sev
 from .images import word_image, fit_width, figure_layout, align_inline_picture
 from .charts import palette as _palette, severity_chart_png as _sev_chart_png
+from .technical_text import mark_technical_text
 
 
 def to_docx(data, meta, L, engagement_dir, out_path):
@@ -448,6 +449,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
         Path(out_path).parent.mkdir(parents=True, exist_ok=True)
         from .navigation import add_toc
         add_toc(doc, navigation, lab['toc'], INK)
+        mark_technical_text(doc)
         doc.save(str(out_path))
         return Path(out_path)
 
@@ -502,5 +504,6 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     from .navigation import add_toc
     add_toc(doc, navigation, lab['toc'], INK)
+    mark_technical_text(doc)
     doc.save(str(out_path))
     return Path(out_path)

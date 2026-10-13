@@ -31,28 +31,6 @@ jobs:
           path: |
             out/libreoffice/
             out/libreoffice-contents.xml
-  libreoffice_extension:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/setup-python@v7.0.0
-        with:
-          python-version: '3.12'
-      - name: Install stable Writer with its native Python extension loader
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-script-provider-python python3-uno fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea libpango-1.0-0 libpangocairo-1.0-0
-          libreoffice --version
-          /usr/bin/python3 -c 'import uno; print(uno.__file__)'
-      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
-      - name: Verify standalone OXT, untouched literals and editable native reflow
-        run: python scripts/verify-libreoffice-extension.py --output out/libreoffice-extension --executable /usr/bin/libreoffice --unopkg /usr/bin/unopkg --uno-python /usr/bin/python3
-      - uses: actions/upload-artifact@v7.0.2
-        if: always()
-        with:
-          name: libreoffice-extension-acceptance
-          path: out/libreoffice-extension/
   libreoffice_extension_official:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -140,6 +118,8 @@ jobs:
         run: node tests/test_jobs_lifecycle_0345_browser.cjs --browser webkit --output out/jobs-lifecycle-webkit
       - name: WebKit restored interface language and accessible labels
         run: node tests/test_restore_language_0345_browser.cjs --browser webkit --output out/restore-language-webkit
+      - name: WebKit painted native select contrast in both interface themes
+        run: node tests/test_select_contrast_0345_browser.cjs --browser webkit --output out/select-contrast-webkit
       - name: WebKit create, save, export and portable HTML controls
         run: node scripts/audit-browser-0210.cjs --browser webkit --output out/browser-webkit
       - name: WebKit concurrent tabs, storage faults and crash recovery
@@ -153,3 +133,4 @@ jobs:
             out/recovery-webkit/
             out/jobs-lifecycle-webkit/
             out/restore-language-webkit/
+            out/select-contrast-webkit/

@@ -34,6 +34,10 @@ El diagnóstico distingue el editor de cada motor de exportación. Puedes editar
 
 Añade `--lang en` para mensajes del lanzador y el idioma inicial de la interfaz en inglés. Si el navegador ya tiene una preferencia de idioma, se conserva; puedes cambiarla desde el editor. El idioma del informe es independiente. **Node.js no es necesario para el uso normal.**
 
+Al recargar, las etiquetas del Inspector de publicación, Mostrar/Ocultar vista previa y el nombre accesible de Validar informe se restauran en el idioma elegido. Cambiarlo no traduce el contenido escrito ni cambia la revisión guardada del proyecto.
+
+Los selectores de proyecto y formato conservan su funcionamiento nativo y siguen el esquema oscuro o claro del editor. Esto corrige el texto claro sobre fondo claro observado en WebKit para Linux. La comprobación abarca el control cerrado, con y sin foco; la apariencia del menú desplegado depende del navegador y del sistema operativo.
+
 En Debian/Kali, si faltan las bibliotecas de PDF o venv:
 
 ```bash
@@ -127,11 +131,17 @@ celdas, listas y metadatos. Las copias del índice o del resumen no sustituyen
 texto ausente allí. Este control no verifica el orden visual ni la asociación
 de cada imagen; los documentos no canónicos conservan el alcance global.
 
-En **Informe → Espaciado del informe** puedes elegir cómoda o compacta. Es independiente de la densidad visual del editor. El HTML portátil permite filtrar por tipo, severidad pendiente y texto, y restablecer los filtros. PDF y HTML ajustan las URL literales al ancho disponible sin modificar su texto. LibreOffice puede adelantar algunos saltos de URL en DOCX; no se insertan saltos ni caracteres artificiales en el documento para ocultar esa limitación.
+En **Informe → Espaciado del informe** puedes elegir cómoda o compacta. Es independiente de la densidad visual del editor. El HTML portátil permite filtrar por tipo, severidad pendiente y texto, y restablecer los filtros. PDF y HTML ajustan las URL literales al ancho disponible sin modificar su texto. Sin el complemento descrito más abajo, LibreOffice puede adelantar algunos saltos de URL en DOCX; no se insertan saltos ni caracteres artificiales en el documento para ocultar esa limitación.
 
 En PDF, los identificadores ASCII de 32 o más caracteres, o de 24 o más con dígitos, guion bajo, barra o dos puntos, pueden continuar desde el espacio que queda en la línea. El ajuste se limita a esas cadenas y las URLs; conserva sus caracteres y las reglas normales de la prosa Unicode. No garantiza el mismo salto para cualquier palabra o ancho arbitrario.
 
 El cuerpo de PDF y Word continúa entre capítulos sin imponer una página nueva a cada uno. La portada y el índice permanecen separados. Una figura que no cabe completa pasa a la página siguiente, conservando tamaño y orden; ese espacio no se elimina recortando la evidencia.
+
+Las leyendas extensas pueden continuar por páginas sin reducir la imagen hasta hacerla invisible. Word conserva sus saltos explícitos; HTML, PDF y Markdown también los representan. Una leyenda vacía mantiene el rótulo y número de figura, sin asteriscos residuales en Markdown. Los controles de contenido no sustituyen la revisión de la asociación visual entre imagen y leyenda.
+
+Las tablas de retest dentro de citas o listas pueden continuar por filas, igual que las tablas directas de esa sección. En Word, el título y el recuento inicial permanecen junto a la tabla; esta regla no encadena todas sus filas ni cambia las notas narrativas sin tabla. Si no registras fecha, el encabezado omite su separador vacío, sin inventar una fecha.
+
+Mientras el servidor siga abierto, salir de la página no cancela una exportación en curso. El navegador suspende las consultas de estado de ese documento y las reanuda cuando se restaura. Un error real al consultar sigue visible y permite reintentar; este comportamiento no garantiza recuperar un borrador que no se haya guardado.
 
 En HTML portátil, las tablas con una fila de encabezados y celdas uniformes se muestran por registros cuando el ancho es reducido, con el encabezado junto a cada valor. Las tablas con celdas combinadas o encabezados complejos conservan desplazamiento horizontal local para mantener sus relaciones. Los ordinales extensos quedan sobre el texto cuando falta ancho.
 
@@ -143,32 +153,32 @@ Los anexos van exclusivamente en el paquete ZIP bajo `anexos/`, con su hash en `
 
 ## Complemento opcional para LibreOffice
 
-**Estado candidato:** falta la aceptación del complemento instalado en LibreOffice estable. El marcado del exportador DOCX permanece desactivado. Estas instrucciones permiten preparar una prueba voluntaria; todavía no sustituyen la revisión de los saltos del documento.
+**Entorno comprobado:** distribución oficial de LibreOffice 26.2.6.3 para Linux x86-64, con su proveedor Python UNO. La aceptación instala el OXT mediante el cargador real en un perfil temporal y comprueba apertura, cambio de ancho, guardado y reapertura. No sustituye la revisión visual de tu informe ni garantiza iguales saltos en otros editores.
 
-El complemento actúa únicamente sobre literales técnicos ASCII largos que llevan la marca no lingüística `zxx-ZZ-x-rgwrap`: URL de al menos 32 caracteres e identificadores de al menos 24 que contengan un dígito, guion bajo, barra o dos puntos. No cambia la prosa, no inserta caracteres invisibles, guiones ni saltos manuales, y no modifica los destinos de los enlaces. Instalarlo sobre un DOCX sin esa marca no modifica su ajuste. El documento sigue siendo editable; sin el complemento, LibreOffice puede conservar el salto anticipado.
+El exportador DOCX marca por defecto los literales elegibles con el idioma no lingüístico privado `zxx-ZZ-x-rgwrap`. Cambia los metadatos de idioma de esos fragmentos, no el idioma de la prosa ni los caracteres, estilos o destinos de los enlaces. La marca puede aparecer en cuerpo, tablas, cabeceras y pies; los campos y sus resultados se conservan. Exportar y abrir el DOCX no requiere instalar LibreOffice ni el complemento.
 
-Necesita LibreOffice con su proveedor de componentes Python UNO. El Python del entorno virtual de report-gen no sustituye ese componente. Para una instalación de LibreOffice procedente de los paquetes de Ubuntu, las dependencias se instalan así:
+El ajuste se limita a URL HTTP/HTTPS/FTP/FTPS completamente ASCII de al menos 32 caracteres y a identificadores ASCII imprimibles sin espacios de al menos 24 que contengan un dígito, guion bajo, barra o dos puntos. No se aplica a palabras compuestas sólo por letras ni a URL con caracteres no ASCII. El complemento aprovecha el espacio disponible de la línea sin insertar caracteres invisibles, guiones ni saltos manuales. Si añades prosa después de un literal al editar en Writer, conserva el idioma de la prosa circundante.
 
-```bash
-sudo apt install python3-uno libreoffice-script-provider-python
-```
+Necesita el proveedor de componentes Python UNO de la misma instalación de LibreOffice. El entorno virtual de report-gen no lo sustituye. La prueba aceptada usó los paquetes oficiales 26.2.6.3, incluidos `libobasis26.2-pyuno` y `libobasis26.2-python-script-provider`. No mezcles esos componentes con el Python de otra distribución de LibreOffice.
 
-El comando modifica los paquetes del sistema y requiere permisos de administración; no instala el complemento. En otras distribuciones o formatos de instalación, utiliza el proveedor correspondiente a tu propia instalación de LibreOffice.
+En **LibreOffice 24.2.7.2 de los paquetes de Ubuntu**, la instalación del complemento falló, incluso con `python3-uno` y `libreoffice-script-provider-python` presentes. Esos paquetes no constituyen una ruta aceptada para este complemento. Ese fallo se conserva por separado de la aceptación del paquete oficial 26.2.6.3.
 
-Para construir el paquete candidato desde el código fuente de report-gen:
+Para construir el OXT desde el código fuente descargado de report-gen, sin instalarlo:
 
 ```bash
 python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.34.5.oxt
 ```
 
-1. En LibreOffice abre **Herramientas → Extensiones → Añadir**. Algunas versiones llaman al menú **Gestor de extensiones**.
+1. En la instalación de LibreOffice elegida abre **Herramientas → Extensiones → Añadir**. Algunas versiones llaman al menú **Gestor de extensiones**.
 2. Selecciona `report-gen-libreoffice-0.34.5.oxt` e instálalo para tu usuario.
-3. Cierra todas las ventanas de LibreOffice, vuelve a abrirlo y abre una copia del DOCX marcado.
+3. Cierra todas las ventanas de esa instalación de LibreOffice, vuelve a abrirla y abre una copia del DOCX recién exportado por report-gen.
 4. Comprueba sus URL, listas y tablas después de abrirlo, editarlo y guardarlo. Para retirarlo, desactívalo o elimínalo en el mismo gestor y reinicia LibreOffice.
 
-La aceptación pendiente se centra en LibreOffice estable para Linux con el complemento instalado en un perfil temporal. No hay aceptación acreditada del complemento en LibreOffice para Windows o macOS, ni revisión nativa de Microsoft Word. El complemento no garantiza la misma paginación entre editores y no afecta a las exportaciones PDF, HTML o Markdown de report-gen.
+Sin el complemento, el DOCX conserva su texto y sigue siendo editable, pero el motor puede mantener los saltos anticipados. Instalarlo no añade la marca a documentos antiguos: vuelve a exportarlos desde report-gen. La mejora depende del complemento y del motor, no es una reparación portable contenida únicamente en el DOCX. No hay aceptación acreditada de Microsoft Word ni de LibreOffice para Windows o macOS.
 
-Referencias de instalación: [gestor de extensiones de LibreOffice](https://help.libreoffice.org/latest/es/text/shared/01/packagemanager.html) y [proveedor Python de Ubuntu](https://packages.ubuntu.com/noble/all/libreoffice-script-provider-python).
+El complemento no afecta a las exportaciones PDF, HTML o Markdown de report-gen. Tampoco garantiza extracción literal universal ni evita la normalización de URLs al convertir desde LibreOffice a PDF; por ejemplo, el motor puede convertir `%2D` en `-` en una anotación de enlace aunque el literal visible y el destino DOCX se conserven.
+
+El OXT se construye por separado: no es un cuarto artefacto de la Release y el actualizador no lo instala. Consulta el [gestor de extensiones de LibreOffice](https://help.libreoffice.org/latest/es/text/shared/01/packagemanager.html).
 
 ## Datos y recuperación
 
@@ -237,6 +247,8 @@ Sustituye `/ruta/datos` por el espacio de trabajo elegido; en una instalación h
 El resumen automático describe los hallazgos y las severidades registradas, sin afirmar que todos estén confirmados. Las entradas de máquinas son registros; **Inventario de activos** tampoco acredita una evaluación realizada. Consulta **Cobertura y limitaciones** y el estado de verificación de cada ficha. Si no has escrito un enfoque propio, el texto predeterminado se limita a la información documentada y no afirma una reproducción manual. Un texto escrito expresamente por el autor se conserva y debe revisarse antes de entregar.
 
 El ejemplo `examples/pending-severity/engagement.yaml` permite comprobar el resumen con dos hallazgos ficticios confirmados y sin severidad. En Word, las entradas del índice están disponibles desde la exportación, con enlaces internos y campos nativos `PAGEREF` independientes. LibreOffice calcula sus números al componer el documento; si cambias el contenido, selecciona todo con **Ctrl+A** y actualiza con **F9**. Las cifras siguen la paginación real del editor, no la del PDF. Para añadir, quitar, renombrar o reordenar capítulos del índice, modifica el informe en report-gen y vuelve a exportar: la lista de entradas no es un campo TOC que se reconstruya automáticamente en Word. LibreOffice y Microsoft Word pueden distribuir el contenido de forma distinta.
+
+El índice reserva ancho para el número de página, evitando que un título cercano al límite lo deje solo en otra línea. Revisa nuevamente las cifras, enlaces y distribución después de cambiar el contenido o abrir el archivo en otro editor; las comprobaciones de LibreOffice no acreditan por sí solas Microsoft Word nativo.
 
 Las listas numeradas de los informes admiten ordinales de 0 a 2.147.483.647, compatibles con el navegador y Word. Si una lista supera ese límite, la exportación se detiene y conserva cualquier archivo anterior. Renumera la lista o presenta esos identificadores como texto; no se reduce ni reemplaza su valor en silencio.
 

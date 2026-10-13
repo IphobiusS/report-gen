@@ -63,11 +63,13 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 
 ## Novedades de 0.34.5
 
-El índice Word mantiene cada número de página junto a la última línea de su título, incluso al llegar al límite del ancho. Las leyendas largas pueden continuar por páginas sin hacer desaparecer la figura. Las tablas de retest anidadas en citas o listas también aprovechan el espacio disponible.
+El índice Word reserva espacio para el número de página cuando el título ocupa casi toda la línea. Las leyendas largas pueden continuar por páginas sin hacer desaparecer la figura; HTML, PDF y Markdown conservan sus saltos de línea. Markdown admite también leyendas vacías sin mostrar asteriscos. Las tablas de retest anidadas en citas o listas aprovechan el espacio disponible, y los retests sin fecha ya no muestran un separador vacío.
 
 La revisión señala el campo que contiene una entidad Markdown incompatible con Word antes de exportar. El código escrito literalmente se conserva. Los textos automáticos siguen describiendo lo registrado sin afirmar verificaciones que no constan.
 
-Se prepara un [complemento opcional para LibreOffice](docs/guide.es.md#complemento-opcional-para-libreoffice) que ajusta el salto de literales técnicos ASCII marcados, sin insertar caracteres ni cambiar enlaces. **Es candidato: su aceptación instalado en LibreOffice estable está pendiente y el marcado del exportador sigue desactivado.** Requiere el proveedor Python UNO de LibreOffice; no acredita compatibilidad con Microsoft Word ni con LibreOffice para Windows o macOS.
+El seguimiento de exportaciones pausa sus consultas al salir de la página y las reanuda al restaurarla, sin cancelar los trabajos del servidor. Las etiquetas del inspector, la vista previa y la validación respetan el idioma de la interfaz después de recargar; cambiar ese idioma no modifica el informe. Los selectores nativos siguen el tema oscuro o claro del editor, corrigiendo el contraste insuficiente observado en WebKit para Linux.
+
+El [complemento opcional para LibreOffice](docs/guide.es.md#complemento-opcional-para-libreoffice) ajusta el salto de literales técnicos ASCII marcados, sin insertar caracteres ni cambiar enlaces. **La instalación y el ajuste se comprobaron con la distribución oficial de LibreOffice 26.2.6.3 para Linux x86-64 y su Python UNO.** El exportador DOCX añade por defecto la marca de idioma técnico; el complemento se construye desde las fuentes y se instala expresamente. El documento sigue siendo editable sin él, aunque pueden reaparecer los saltos anticipados. No acredita Microsoft Word ni LibreOffice para Windows o macOS.
 
 ## Exportación y tutorial visual
 
@@ -79,7 +81,7 @@ La exportación PDF reduce el trabajo de composición de URLs literales extensas
 
 El kit opcional de aceptación en Microsoft Word admite los campos de numeración generados por report-gen y distingue los fragmentos de URLs externas de los marcadores del documento. Añade un caso explícito de URLs largas y numeración excepcional para la revisión nativa.
 
-**Límites:** algunas URL de Word siguen saltando antes de llenar la línea en LibreOffice; no se altera su texto para ocultarlo. La revisión en Microsoft Word nativo permanece pendiente. El verificador PDF no acredita ordinales ni maquetación; ambas requieren revisión visual. [Cambios completos](CHANGELOG.md) · [Guía de entrega](docs/guide.es.md#qué-comprueba-cada-entrega).
+**Límites:** sin el complemento, algunas URL de Word pueden saltar antes de llenar la línea en LibreOffice; no se altera su texto para ocultarlo. La integración comprobada se limita al entorno y los literales descritos en la guía. La revisión en Microsoft Word nativo permanece pendiente. El verificador PDF no acredita ordinales ni maquetación; ambas requieren revisión visual. [Cambios completos](CHANGELOG.md) · [Guía de entrega](docs/guide.es.md#qué-comprueba-cada-entrega).
 
 ## Qué comprueba cada entrega
 

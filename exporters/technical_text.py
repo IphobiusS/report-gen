@@ -1,8 +1,10 @@
-"""Opt-in locale metadata for literal technical text in editable Word files.
+"""Literal technical-language metadata for editable Word exports.
 
-This helper does not change text, link targets or layout controls. The private
-nonlinguistic locale is useful only with the optional report-gen line-break
-adapter; ordinary DOCX export must not call this helper implicitly.
+The DOCX exporter marks eligible ASCII technical literals after completing the
+body, contents and existing headers/footers. Only language metadata changes;
+text, link targets and layout controls remain intact. The optional report-gen
+line-break adapter can use this private nonlinguistic locale in LibreOffice.
+Exporting or opening the DOCX does not require that adapter.
 """
 from collections import defaultdict
 from copy import deepcopy
