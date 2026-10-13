@@ -76,14 +76,18 @@ def test_docx_oracle_rejects_changed_native_content(tmp_path, mutation):
         VERIFY.inspect_docx(source, rows)
 
 
-def pdf_fixture(path, shift=0, *, corrupt=False, duplicate=False, split_prefix=False):
+def pdf_fixture(path, shift=0, *, corrupt=False, duplicate=False, split_prefix=False, paint_order=False):
     value = 'A1' * 20
     row = {'name': 'one', 'prefix': 'URL: ', 'value': value, 'literal': 'URL: ' + value,
            'target': None, 'language': VERIFY.TAG, 'table': False}
     document = fitz.open()
     page = document.new_page(width=210 * 72 / 25.4, height=297 * 72 / 25.4)
     right = 18.5 * 72 / 2.54
-    if split_prefix:
+    if paint_order:
+        page.insert_text((right - 150, 100), 'URL', fontname='cour', fontsize=10)
+        page.insert_text((right - 120, 100), value[:20], fontname='cour', fontsize=10)
+        page.insert_text((right - 132, 100), ':', fontname='cour', fontsize=10)
+    elif split_prefix:
         page.insert_text((70.866, 88), 'URL:', fontname='cour', fontsize=10)
         page.insert_text((right - 120, 100), value[:20], fontname='cour', fontsize=10)
     else:
@@ -124,6 +128,15 @@ def test_line_fill_rejects_prefix_only_line_even_when_literal_fills(tmp_path):
     rows = pdf_fixture(source, split_prefix=True)
     with pytest.raises(ValueError, match='between prefix and literal'):
         VERIFY.inspect_pdf(source, rows, require_fill=True)
+
+
+def test_visual_reading_order_does_not_confuse_late_font_paint_with_changed_text(tmp_path):
+    source = tmp_path / 'late-font.pdf'
+    rows = pdf_fixture(source, paint_order=True)
+    with fitz.open(source) as document:
+        assert 'URL:' not in document[0].get_text()
+    result = VERIFY.inspect_pdf(source, rows, require_fill=True)
+    assert result['literal_checks'][0]['prefix_continues_on_same_line']
 
 
 @pytest.mark.parametrize('changed', [None, 'destination', 'fragment'])

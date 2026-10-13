@@ -57,6 +57,8 @@ Word contents keep each page number beside its title's final line, including tit
 
 Review identifies the field containing an incompatible Markdown character entity before Word export. Literal code remains unchanged. Automatic text continues to describe recorded information without claiming unrecorded verification.
 
+An [optional LibreOffice extension](docs/guide.en.md#optional-libreoffice-extension) is being prepared to wrap marked ASCII technical literals without inserting characters or changing links. **It is a candidate: acceptance with the extension installed in stable LibreOffice is pending, and exporter marking remains disabled.** It requires LibreOffice's Python UNO provider; it does not establish compatibility with Microsoft Word or LibreOffice on Windows or macOS.
+
 ## Export and visual tutorial
 
 Left, center and right alignment in Markdown tables is preserved on export. PDF verification checks each finding's content within its region, so a copy in the contents or summary cannot conceal missing text. Long URLs in ordinary text no longer overflow the PDF; verification avoids unnecessary ambiguous searches. On Linux and macOS, a supervisor keeps the job's process group reserved until cleanup, even if the worker exits early. Publication also requires macOS, stable LibreOffice and WebKit checks, plus a project and bilingual tutorial journey in native desktop Safari. This automated journey has a defined scope; it does not substitute for native Microsoft Word or human screen-reader review.

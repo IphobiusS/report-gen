@@ -67,6 +67,8 @@ El índice Word mantiene cada número de página junto a la última línea de su
 
 La revisión señala el campo que contiene una entidad Markdown incompatible con Word antes de exportar. El código escrito literalmente se conserva. Los textos automáticos siguen describiendo lo registrado sin afirmar verificaciones que no constan.
 
+Se prepara un [complemento opcional para LibreOffice](docs/guide.es.md#complemento-opcional-para-libreoffice) que ajusta el salto de literales técnicos ASCII marcados, sin insertar caracteres ni cambiar enlaces. **Es candidato: su aceptación instalado en LibreOffice estable está pendiente y el marcado del exportador sigue desactivado.** Requiere el proveedor Python UNO de LibreOffice; no acredita compatibilidad con Microsoft Word ni con LibreOffice para Windows o macOS.
+
 ## Exportación y tutorial visual
 
 La alineación izquierda, centrada o derecha de las tablas Markdown se conserva al exportar. El verificador PDF comprueba el contenido de cada hallazgo dentro de su región, para que una copia en el índice o el resumen no oculte texto ausente. Las URLs largas escritas como texto común ya no desbordan el PDF; su verificación evita búsquedas ambiguas innecesarias. En Linux y macOS, un supervisor mantiene reservado el grupo del trabajo hasta detener sus procesos, incluso si el trabajador termina antes. La publicación exige también las comprobaciones de macOS, LibreOffice estable y WebKit, junto con un recorrido del proyecto y tutorial ES/EN en Safari nativo de escritorio. Este recorrido automatizado tiene un alcance concreto; no sustituye una revisión en Microsoft Word ni una evaluación humana con lector de pantalla.

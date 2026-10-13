@@ -163,19 +163,35 @@ def compact(value):
     return ''.join(character for character in value if not character.isspace())
 
 
+def physical_characters(page, page_number):
+    """Order this single-column LTR fixture by baseline/x, not font paint order.
+
+    Writer can paint an emoji fallback font after the following punctuation.
+    Keep original codepoints and combining marks; never normalize source text.
+    The small baseline tolerance merges font runs, not adjacent report lines.
+    """
+    raw = [character for block in page.get_text('rawdict')['blocks']
+           for line in block.get('lines', []) for span in line['spans']
+           for character in span['chars'] if not character['c'].isspace()]
+    lines = []
+    for character in sorted(raw, key=lambda item: item['origin'][1]):
+        baseline = character['origin'][1]
+        if not lines or abs(lines[-1][0] - baseline) > .5:
+            lines.append((baseline, []))
+        lines[-1][1].append(character)
+    result = []
+    for line_number, (_, characters) in enumerate(lines):
+        for character in sorted(characters, key=lambda item: item['origin'][0]):
+            result.append({'c': character['c'], 'bbox': character['bbox'], 'line': (page_number, line_number)})
+    return result
+
+
 def inspect_pdf(path, rows, *, require_fill, reflow=False):
     import fitz
     all_chars, links, pages = [], [], []
     with fitz.open(path) as document:
         for page_number, page in enumerate(document):
-            for block_number, block in enumerate(page.get_text('rawdict')['blocks']):
-                for line_number, line in enumerate(block.get('lines', [])):
-                    for span in line['spans']:
-                        for char in span['chars']:
-                            if char['c'].isspace():
-                                continue
-                            all_chars.append({'c': char['c'], 'bbox': char['bbox'],
-                                              'line': (page_number, block_number, line_number)})
+            all_chars.extend(physical_characters(page, page_number))
             links.extend(link.get('uri') for link in page.get_links() if link.get('uri'))
             png = path.with_name(path.stem + f'-{page_number+1:02}.png')
             page.get_pixmap(dpi=110, alpha=False).save(png)

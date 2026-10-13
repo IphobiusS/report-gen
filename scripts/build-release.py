@@ -10,7 +10,6 @@ repository paths and file bytes remain identical.
 import argparse
 import ast
 import hashlib
-import importlib.util
 import json
 from pathlib import Path, PurePosixPath
 import re
@@ -78,31 +77,7 @@ def build_release(repo, ref, output):
                 "canonical_download": f"https://github.com/IphobiusS/report-gen/archive/{commit}.zip",
                 "release_download": f"https://github.com/IphobiusS/report-gen/releases/download/v{version}/{archive.name}",
                 "archive": archive.name, "sha256": digest, "files": manifest}
-    checksums = f"{digest}  {archive.name}\n"
-    if any(path.startswith('integrations/libreoffice/extension/') for path, _, _ in files):
-        # Packaging code is local and trusted; payload bytes come exclusively
-        # from the selected Git tree. Never execute a script from the ref or
-        # include an untracked/modified extension payload from the workspace.
-        builder_path = Path(__file__).resolve().parents[1] / 'integrations/libreoffice/build_oxt.py'
-        spec = importlib.util.spec_from_file_location('release_oxt_builder', builder_path)
-        builder = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(builder)
-        objects = {path: oid for path, _, oid in files}
-        missing = set(builder.PAYLOAD_PATHS.values()) - objects.keys()
-        if missing:
-            raise ValueError('Incomplete LibreOffice extension payload: ' + ', '.join(sorted(missing)))
-        payload = {name: git(repo, 'cat-file', 'blob', objects[path])
-                   for name, path in builder.PAYLOAD_PATHS.items()}
-        extension = builder.build_oxt(output / f'report-gen-libreoffice-{version}.oxt', payload)
-        extension_digest = hashlib.sha256(extension.read_bytes()).hexdigest()
-        metadata['libreoffice_extension'] = {
-            'archive': extension.name, 'sha256': extension_digest,
-            'release_download': f'https://github.com/IphobiusS/report-gen/releases/download/v{version}/{extension.name}',
-            'source_paths': builder.PAYLOAD_PATHS,
-            'installation': 'optional_explicit_libreoffice_extension',
-        }
-        checksums += f'{extension_digest}  {extension.name}\n'
-    (output / f"{stem}.sha256").write_text(checksums, encoding="utf-8")
+    (output / f"{stem}.sha256").write_text(f"{digest}  {archive.name}\n", encoding="utf-8")
     (output / f"{stem}.json").write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return metadata
 

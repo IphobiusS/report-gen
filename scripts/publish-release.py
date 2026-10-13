@@ -171,10 +171,6 @@ def release_body(repo, metadata, receipts):
     if not match:
         raise ReleaseError('The literal package version has no changelog entry')
     checks = '\n'.join(f'- [{row["workflow"]}]({row["url"]})' for row in receipts)
-    extension = ('El `.oxt` es un complemento opcional de LibreOffice para el ajuste de literales técnicos. '
-                 'Se instala por separado desde Herramientas → Extensiones → Añadir y requiere el proveedor Python de LibreOffice. '
-                 'Consulta la guía para su alcance; sin el complemento algunas URL pueden saltar antes de llenar la línea.\n\n'
-                 if metadata.get('libreoffice_extension') else '')
     return (f'<!-- report-gen-release-v1:{metadata["commit"]} -->\n'
             f'{match.group(1).strip()}\n\n'
             f'## Descarga verificada\n\nCommit: `{metadata["commit"]}`\n\n'
@@ -183,7 +179,6 @@ def release_body(repo, metadata, receipts):
             'En Linux/Kali: descomprime, entra en la carpeta y ejecuta '
             '`python3 scripts/install.py --desktop`. El instalador no ejecuta sudo ni instala paquetes del sistema. '
             'Los archivos `.sha256` y `.json` permiten comprobar el ZIP y cada archivo del árbol.\n\n'
-            f'{extension}'
             f'## Validación de este commit\n\n{checks}\n\n'
             'Las pruebas de Windows no certifican Microsoft Word de escritorio ni sustituyen sesiones humanas.\n')
 

@@ -1,5 +1,10 @@
 # Cambios 0.34.5 (2026-10-13)
 
+- Se prepara un complemento opcional de LibreOffice para el salto de literales
+  técnicos ASCII marcados, sin insertar caracteres ni modificar enlaces.
+  Su aceptación instalado en LibreOffice estable está pendiente y el marcado
+  DOCX sigue desactivado. Requiere Python UNO; no acredita Word nativo ni
+  LibreOffice para Windows o macOS. Las guías ES/EN explican instalación y alcance.
 - El índice Word reserva espacio para sus números de página incluso cuando
   un título llena casi toda la línea; los campos PAGEREF siguen siendo nativos.
 - Las leyendas extensas pueden continuar por páginas sin reducir sus imágenes

@@ -147,6 +147,35 @@ In portable HTML, tables with one header row and uniform cells become records at
 
 Shared delivery manifests and downloadable verification records retain warning categories and counts, without copying private diagnostic messages, paths or source values. The complete details remain in the editor for review. This separation does not redact fields you choose to include in a report or annex.
 
+## Optional LibreOffice extension
+
+**Candidate status:** acceptance with the extension installed in stable LibreOffice is pending. DOCX exporter marking remains disabled. These instructions prepare an optional trial; they do not yet replace reviewing the document's line breaks.
+
+The extension acts only on long ASCII technical literals carrying the nonlinguistic `zxx-ZZ-x-rgwrap` marker: URLs of at least 32 characters and identifiers of at least 24 containing a digit, underscore, slash or colon. It does not change prose, insert invisible characters, hyphens or manual line breaks, or modify link destinations. Installing it does not change wrapping in an unmarked DOCX. The document remains editable; without the extension, LibreOffice may retain early line breaks.
+
+It needs LibreOffice with its Python UNO component provider. Python in report-gen's virtual environment does not substitute for that component. For LibreOffice installed from Ubuntu packages, install the dependencies with:
+
+```bash
+sudo apt install python3-uno libreoffice-script-provider-python
+```
+
+This command changes system packages and requires administrator permissions; it does not install the extension. For other distributions or installation formats, use the provider matching your own LibreOffice installation.
+
+To build the candidate package from the report-gen source tree:
+
+```bash
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.34.5.oxt
+```
+
+1. In LibreOffice, open **Tools → Extensions → Add**. Some versions call the menu **Extension Manager**.
+2. Select `report-gen-libreoffice-0.34.5.oxt` and install it for your user.
+3. Close every LibreOffice window, reopen it, then open a copy of the marked DOCX.
+4. Inspect its URLs, lists and tables after opening, editing and saving it. To remove the extension, disable or remove it in the same manager and restart LibreOffice.
+
+The pending acceptance targets stable LibreOffice on Linux with the extension installed in a temporary profile. Acceptance of the extension in LibreOffice on Windows or macOS and native Microsoft Word review have not been established. The extension does not guarantee identical pagination across editors and does not affect report-gen's PDF, HTML or Markdown exports.
+
+Installation references: [LibreOffice Extension Manager](https://help.libreoffice.org/latest/en-US/text/shared/01/packagemanager.html) and [Ubuntu Python provider](https://packages.ubuntu.com/noble/all/libreoffice-script-provider-python).
+
 ## Recovery and privacy
 
 The export queue terminates each job's processes before cleaning up its files. Windows uses a private process job. On Linux and macOS, a supervisor retains the job's process group until cleanup without relying on `waitid`/`WNOWAIT`; it communicates the worker result separately and stops the group if the parent disappears. Cleanup covers descendants that remain in that group; it is not isolation against programs that deliberately start another session. The macOS gate runs Python 3.11 and 3.12.
@@ -175,7 +204,7 @@ Open **Update report-gen**. There are no background network checks or automatic 
 4. Save or download pending drafts in other tabs, close those tabs and stop the editor with `Ctrl+C`. Do not edit projects between the backup and update. Run the supplied lines one at a time; stop if one fails. Installing dependencies in the new directory requires Internet access.
 5. Check projects, images, history and exports before retiring the previous installation; keep the backup.
 
-Preparation verifies the tag and commit, all three release assets, the ZIP's SHA-256 and every file in its manifest. Unsupported archive paths and entry types are rejected. This checks integrity against the official HTTPS source; it is not a cryptographic signature independent of that repository. Source packages are limited to 128 MiB compressed, 256 MiB extracted and 4,000 files.
+Preparation verifies the tag and commit, the three application release assets (ZIP, JSON and SHA-256), the ZIP's SHA-256 and every file in its manifest. The optional LibreOffice extension is built separately from the downloaded source: the updater does not download or verify a standalone OXT, or install it. Unsupported archive paths and entry types are rejected. This checks integrity against the official HTTPS source; it is not a cryptographic signature independent of that repository. Source packages are limited to 128 MiB compressed, 256 MiB extracted and 4,000 files.
 
 Files are staged under `~/report-gen-updates/update-*/`: `application/`, `workspace-backup.zip` and `receipt.json`. Every preparation captures current saved data and validates a temporary restoration of the backup. An identical capture can reuse verified preparation; changed data creates another while preserving the preceding backup. These files are private, and the backup ZIP is not encrypted. Browser drafts are excluded.
 

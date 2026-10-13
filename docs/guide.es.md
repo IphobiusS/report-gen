@@ -141,6 +141,35 @@ Los anexos van exclusivamente en el paquete ZIP bajo `anexos/`, con su hash en `
 
 **Analizar posibles secretos** busca patrones en el primer MiB de textos UTF-8 y cuenta metadatos de imágenes. Ese análisis de anexos no realiza OCR ni inspecciona el contenido de PDF. El Inspector ofrece por separado OCR local opcional de las imágenes publicadas, descrito más abajo. Muestra alcance y límites, sin reproducir los valores detectados. No sustituye la revisión ni cambia los archivos.
 
+## Complemento opcional para LibreOffice
+
+**Estado candidato:** falta la aceptación del complemento instalado en LibreOffice estable. El marcado del exportador DOCX permanece desactivado. Estas instrucciones permiten preparar una prueba voluntaria; todavía no sustituyen la revisión de los saltos del documento.
+
+El complemento actúa únicamente sobre literales técnicos ASCII largos que llevan la marca no lingüística `zxx-ZZ-x-rgwrap`: URL de al menos 32 caracteres e identificadores de al menos 24 que contengan un dígito, guion bajo, barra o dos puntos. No cambia la prosa, no inserta caracteres invisibles, guiones ni saltos manuales, y no modifica los destinos de los enlaces. Instalarlo sobre un DOCX sin esa marca no modifica su ajuste. El documento sigue siendo editable; sin el complemento, LibreOffice puede conservar el salto anticipado.
+
+Necesita LibreOffice con su proveedor de componentes Python UNO. El Python del entorno virtual de report-gen no sustituye ese componente. Para una instalación de LibreOffice procedente de los paquetes de Ubuntu, las dependencias se instalan así:
+
+```bash
+sudo apt install python3-uno libreoffice-script-provider-python
+```
+
+El comando modifica los paquetes del sistema y requiere permisos de administración; no instala el complemento. En otras distribuciones o formatos de instalación, utiliza el proveedor correspondiente a tu propia instalación de LibreOffice.
+
+Para construir el paquete candidato desde el código fuente de report-gen:
+
+```bash
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.34.5.oxt
+```
+
+1. En LibreOffice abre **Herramientas → Extensiones → Añadir**. Algunas versiones llaman al menú **Gestor de extensiones**.
+2. Selecciona `report-gen-libreoffice-0.34.5.oxt` e instálalo para tu usuario.
+3. Cierra todas las ventanas de LibreOffice, vuelve a abrirlo y abre una copia del DOCX marcado.
+4. Comprueba sus URL, listas y tablas después de abrirlo, editarlo y guardarlo. Para retirarlo, desactívalo o elimínalo en el mismo gestor y reinicia LibreOffice.
+
+La aceptación pendiente se centra en LibreOffice estable para Linux con el complemento instalado en un perfil temporal. No hay aceptación acreditada del complemento en LibreOffice para Windows o macOS, ni revisión nativa de Microsoft Word. El complemento no garantiza la misma paginación entre editores y no afecta a las exportaciones PDF, HTML o Markdown de report-gen.
+
+Referencias de instalación: [gestor de extensiones de LibreOffice](https://help.libreoffice.org/latest/es/text/shared/01/packagemanager.html) y [proveedor Python de Ubuntu](https://packages.ubuntu.com/noble/all/libreoffice-script-provider-python).
+
 ## Datos y recuperación
 
 La cola de exportación termina los procesos de cada trabajo antes de limpiar sus archivos. Windows utiliza un grupo privado de procesos. En Linux y macOS, un supervisor conserva el grupo del trabajo hasta que termina la limpieza, sin depender de `waitid`/`WNOWAIT`; comunica el resultado del trabajador por separado y detiene el grupo si el proceso padre desaparece. La limpieza cubre los descendientes que permanecen en ese grupo: no es un aislamiento contra programas que deliberadamente crean otra sesión. El gate de macOS ejecuta Python 3.11 y 3.12.
@@ -169,7 +198,7 @@ Abre **Actualizar report-gen**. No hay consultas de red en segundo plano ni actu
 4. Guarda o descarga los borradores pendientes de otras pestañas, ciérralas y detén el editor con `Ctrl+C`. No cambies proyectos entre el respaldo y la actualización. Ejecuta las líneas indicadas una a una; si alguna falla, detente. Instalar las dependencias de la nueva carpeta requiere Internet.
 5. Comprueba proyectos, imágenes, historial y exportaciones antes de retirar la instalación anterior; conserva el respaldo.
 
-La preparación verifica la etiqueta y su commit, los tres archivos de la Release, el SHA-256 del ZIP y todos los archivos del manifiesto. Rechaza rutas y tipos de entrada no admitidos. Comprueba integridad desde el origen oficial por HTTPS; no es una firma criptográfica independiente del repositorio. El paquete fuente admite hasta 128 MiB comprimidos, 256 MiB extraídos y 4.000 archivos.
+La preparación verifica la etiqueta y su commit, los tres artefactos de aplicación de la Release (ZIP, JSON y SHA-256), el SHA-256 del ZIP y todos los archivos del manifiesto. El complemento opcional de LibreOffice se construye por separado desde las fuentes descargadas: el actualizador no descarga ni verifica un OXT independiente, ni lo instala. Rechaza rutas y tipos de entrada no admitidos. Comprueba integridad desde el origen oficial por HTTPS; no es una firma criptográfica independiente del repositorio. El paquete fuente admite hasta 128 MiB comprimidos, 256 MiB extraídos y 4.000 archivos.
 
 Los archivos quedan en `~/report-gen-updates/update-*/`: `application/`, `workspace-backup.zip` y `receipt.json`. Cada preparación captura los datos guardados actuales y valida una restauración temporal del respaldo. Una captura idéntica puede reutilizar la preparación verificada; si cambian los datos, se crea otra conservando el respaldo anterior. Estos archivos son privados y el ZIP de respaldo no está cifrado. Los borradores del navegador quedan fuera.
 
