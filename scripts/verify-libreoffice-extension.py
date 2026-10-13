@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TAG = 'zxx-ZZ-x-rgwrap'
 SERVICE = 'com.sun.star.i18n.BreakIterator_qlt_ZZ_zxx-ZZ-x-rgwrap'
 IMPLEMENTATION = 'org.reportgen.TechnicalLiteralBreakIterator'
+CONTROL_SERVICE = 'org.reportgen.acceptance.InstallerControl'
 NS = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
 NATIVE_ENV_UNSET = ('LD_LIBRARY_PATH', 'PYTHONHOME', 'PYTHONPATH', 'URE_BOOTSTRAP', 'UNO_PATH')
 
@@ -51,6 +52,7 @@ def native_environment():
     environment = dict(os.environ)
     for name in NATIVE_ENV_UNSET:
         environment.pop(name, None)
+    environment['SAL_USE_VCLPLUGIN'] = 'svp'
     return environment
 
 
@@ -134,6 +136,46 @@ def fixture(path):
     add(document, 'rgControl', 'CONTROL: ', 'An ordinary English sentence with accents café and naïve.', language='en-US')
     document.save(path)
     return rows
+
+
+def build_installer_control(path):
+    """A test-only Python UNO control following the official SDK registration.
+
+    https://api.libreoffice.org/examples/python/minimal-extension/main.py
+    It has no break iterator, no document edits and is never a release asset.
+    """
+    module = '''import unohelper
+from com.sun.star.task import XJobExecutor
+from com.sun.star.lang import XServiceInfo
+
+class Control(unohelper.Base, XJobExecutor, XServiceInfo):
+    def __init__(self, context):
+        self.context = context
+    def trigger(self, argument):
+        if argument != "report-gen-native-acceptance":
+            raise ValueError("Unexpected control invocation")
+    def getImplementationName(self):
+        return "org.reportgen.acceptance.InstallerControl"
+    def supportsService(self, service):
+        return service == self.getImplementationName()
+    def getSupportedServiceNames(self):
+        return (self.getImplementationName(),)
+
+g_ImplementationHelper = unohelper.ImplementationHelper()
+g_ImplementationHelper.addImplementation(Control, "org.reportgen.acceptance.InstallerControl",
+                                         ("org.reportgen.acceptance.InstallerControl",))
+'''
+    payload = {
+        'main.py': module,
+        'description.xml': '<?xml version="1.0" encoding="UTF-8"?>\n<description xmlns="http://openoffice.org/extensions/description/2006"><identifier value="org.reportgen.acceptance.installer-control"/><version value="1.0"/><display-name><name>Native installer control</name></display-name></description>',
+        'META-INF/manifest.xml': '<?xml version="1.0" encoding="UTF-8"?>\n<manifest:manifest xmlns:manifest="http://openoffice.org/2001/manifest"><manifest:file-entry manifest:media-type="application/vnd.sun.star.uno-component;type=Python" manifest:full-path="main.py"/></manifest:manifest>',
+    }
+    with zipfile.ZipFile(path, 'w', zipfile.ZIP_STORED) as archive:
+        for name, data in sorted(payload.items()):
+            entry = zipfile.ZipInfo(name, (1980, 1, 1, 0, 0, 0))
+            entry.external_attr = 0o100644 << 16
+            archive.writestr(entry, data.encode('utf-8'))
+    return path
 
 
 def inspect_docx(path, rows):
@@ -287,6 +329,12 @@ def uno_worker(config_path):
         if context is None:
             raise ValueError(f'Writer did not become ready: exit={office.poll()}, {last_error}')
         manager = context.ServiceManager
+        if config.get('control'):
+            control = manager.createInstanceWithContext(CONTROL_SERVICE, context)
+            if control is None or control.getImplementationName() != CONTROL_SERVICE:
+                raise ValueError('Independently installed Python UNO control is unavailable')
+            control.trigger('report-gen-native-acceptance')
+            receipt['installer_control'] = {'implementation': control.getImplementationName(), 'invoked': True}
         adapter = manager.createInstanceWithContext(SERVICE, context)
         if config['enabled']:
             if adapter is None or adapter.getImplementationName() != IMPLEMENTATION:
@@ -317,6 +365,8 @@ def uno_worker(config_path):
         desktop = manager.createInstanceWithContext('com.sun.star.frame.Desktop', context)
         source = Path(config['source'])
         stages = ['original', 'reopened', 'reflow', 'reopened-reflow'] if config['enabled'] else ['fallback']
+        if config.get('control'):
+            stages = []
         for stage in stages:
             document = desktop.loadComponentFromURL(source.as_uri(), '_blank', 0,
                                                      (prop('Hidden', True), prop('ReadOnly', False), prop('UpdateDocMode', 3)))
@@ -380,6 +430,7 @@ def main(argv=None):
         native_env = native_environment()
         write_json(output / 'native-environment.json', {
             'unset_for_distribution_commands': {name: os.environ[name] for name in NATIVE_ENV_UNSET if name in os.environ},
+            'set_for_distribution_commands': {'SAL_USE_VCLPLUGIN': 'svp'},
             'scope': 'Only explicit distribution executables and their children; report-gen Python environment unchanged.'})
         version = run([args.executable, '--version'], output / 'version.json', timeout=20, env=native_env)['stdout'].strip()
         if not stable_version(version):
@@ -396,6 +447,19 @@ def main(argv=None):
         write_json(output / 'expected.json', rows)
         receipt['checks']['source'] = inspect_docx(source, rows)
         phase_errors = {}
+        control_oxt = build_installer_control(output / 'installer-control.oxt')
+        control_folder = output / 'installer-control'; control_folder.mkdir()
+        try:
+            with tempfile.TemporaryDirectory(prefix='report-gen-oxt-control-') as profile:
+                run([args.unopkg, '-env:UserInstallation=' + Path(profile).as_uri(), 'add', '--verbose', '--log-file', str(control_folder / 'unopkg.log'), '--suppress-license', str(control_oxt)], control_folder / 'installation.json', timeout=60, env=native_env)
+                config = {'control': True, 'enabled': False, 'output': str(control_folder), 'profile': profile,
+                          'source': str(source), 'rows': [], 'executable': args.executable}
+                write_json(control_folder / 'config.json', config)
+                run([args.uno_python, str(Path(__file__).resolve()), '--worker', str(control_folder / 'config.json')], control_folder / 'worker.json', env=native_env)
+            receipt['checks']['installer_control'] = {'status': 'passed', 'sha256': digest(control_oxt)}
+        except Exception as error:
+            phase_errors['installer_control'] = str(error)
+            write_json(control_folder / 'phase-error.json', {'status': 'failed', 'error': str(error)})
         for enabled in (False, True):
             name = 'enabled' if enabled else 'fallback'
             folder = output / name; folder.mkdir()

@@ -6,7 +6,9 @@ workspace. Screenshots and explicit checks are evidence, not human acceptance.
 """
 import argparse
 import base64
+from copy import deepcopy
 from datetime import datetime, timezone
+import hashlib
 import json
 import platform
 from pathlib import Path
@@ -42,6 +44,41 @@ def fits_viewport(geometry):
             and geometry['scroll'] <= geometry['width'] + 1)
 
 
+def title_only_change(original, observed, title):
+    expected = deepcopy(original)
+    expected['meta']['report_title'] = title
+    return observed == expected
+
+
+def inspect_lifecycle_export(payload, verification, revision, title, findings):
+    """Bind browser bytes to the saved revision and its actual HTML contract."""
+    from lxml import html
+    if verification.get('source_revision') != revision:
+        raise ValueError('HTML verification belongs to another saved revision')
+    files = verification.get('files', {})
+    if len(files) != 1 or not next(iter(files)).endswith('.html'):
+        raise ValueError('Expected one verified HTML download')
+    filename, record = next(iter(files.items()))
+    digest = hashlib.sha256(payload).hexdigest()
+    if record.get('sha256') != digest or record.get('bytes') != len(payload):
+        raise ValueError('Downloaded HTML bytes do not match verification')
+    checks = record.get('checks', {})
+    if (checks.get('standalone') is not True or checks.get('static_visibility_checked') is not True
+            or checks.get('contract_version') != 3 or checks.get('content_units_checked', 0) < 1):
+        raise ValueError('HTML content contract is absent or incomplete')
+    tree = html.document_fromstring(payload)
+    headings = [' '.join(node.text_content().split()) for node in tree.xpath('//body//h1')]
+    if title not in headings:
+        raise ValueError('Saved title marker is absent from the HTML report heading')
+    visible = ' '.join(tree.xpath('//body//text()[not(ancestor::script or ancestor::style)]'))
+    visible = ' '.join(visible.split())
+    if not findings or any(' '.join(finding['title'].split()) not in visible for finding in findings):
+        raise ValueError('An original finding title is absent from the HTML download')
+    return {'filename': filename, 'bytes': len(payload), 'sha256': digest,
+            'source_revision': revision, 'finding_titles_checked': len(findings),
+            'checks': checks}
+
+
 def wait_for(predicate, timeout=30):
     end = time.monotonic() + timeout
     while time.monotonic() < end:
@@ -75,6 +112,14 @@ class Driver:
     def script(self, source, *args):
         return self.request('POST', '/execute/sync', {'script': source, 'args': list(args)})
 
+    def async_script(self, source, *args):
+        wrapped = ("const done=arguments[arguments.length-1];(async()=>{" + source
+                   + "})().then(value=>done({ok:true,value}),error=>done({ok:false,error:String(error)}));")
+        result = self.request('POST', '/execute/async', {'script': wrapped, 'args': list(args)})
+        if not result.get('ok'):
+            raise RuntimeError('Safari asynchronous operation: ' + result.get('error', 'unknown failure'))
+        return result.get('value')
+
     def click(self, css):
         element = self.request('POST', '/element', {'using': 'css selector', 'value': css})
         self.request('POST', f'/element/{element[ELEMENT]}/click', {})
@@ -83,6 +128,11 @@ class Driver:
         self.request('POST', '/actions', {'actions': [{'type': 'key', 'id': 'keyboard',
                      'actions': [{'type': 'keyDown', 'value': value}, {'type': 'keyUp', 'value': value}]}]})
         self.request('DELETE', '/actions')
+
+    def fill(self, css, value):
+        element = self.request('POST', '/element', {'using': 'css selector', 'value': css})
+        self.request('POST', f'/element/{element[ELEMENT]}/clear', {})
+        self.request('POST', f'/element/{element[ELEMENT]}/value', {'text': value})
 
     def screenshot(self, path):
         path.write_bytes(base64.b64decode(self.request('GET', '/screenshot'), validate=True))
@@ -98,6 +148,85 @@ def stop(process):
             process.wait(timeout=5)
 
 
+def project_lifecycle(driver, out, results, check):
+    """API-backed import in Safari, native field editing and UI-queued export.
+
+    File bytes use browser fetch; this does not assess the operating-system
+    file picker or download destination dialog. No production state is patched.
+    """
+    original = driver.script('return {slug:S.slug,data:S.data,etag:projectStore.etag};')
+    slug = 'safari-imported-nimbus'
+    title = 'SAFARI-R15 persisted synthetic report'
+    imported = driver.async_script("""
+        const response=await requireOk(await appFetch('/api/projects/'+encodeURIComponent(S.slug)+'/bundle'));
+        const blob=await response.blob();
+        const base64=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result.split(',')[1]);r.onerror=reject;r.readAsDataURL(blob);});
+        const form=new FormData();form.append('file',new File([blob],'nimbus-project.zip',{type:'application/zip'}));form.append('slug',arguments[0]);
+        const result=await requireOk(await appFetch('/api/projects/import',{method:'POST',body:form}));
+        const body=await result.json();await refreshProjects();await loadProject(body.slug);
+        return {slug:S.slug,data:S.data,etag:projectStore.etag,backup_base64:base64};
+    """, slug)
+    backup = base64.b64decode(imported.pop('backup_base64'), validate=True)
+    (out / 'nimbus-source-project.zip').write_bytes(backup)
+    check('Safari imports an exact synthetic project copy through the real multipart API',
+          imported['slug'] == slug and imported['data'] == original['data'])
+    results['lifecycle'] = {'import_method': 'Safari fetch/FormData; OS picker not assessed',
+                            'source_slug': original['slug'], 'imported_slug': slug,
+                            'backup_sha256': hashlib.sha256(backup).hexdigest(),
+                            'imported_revision': imported['etag'].strip(chr(34))}
+    driver.click('#navReport')
+    wait_for(lambda: driver.script("return !!document.querySelector('#editor [data-field=report_title]');"))
+    driver.fill('#editor [data-field=report_title]', title)
+    wait_for(lambda: driver.script("return S.data.meta.report_title===arguments[0] && !projectStore.dirty && !projectStore.lastError && projectStore.etag!==arguments[1];", title, imported['etag']))
+    saved = driver.script('return {data:S.data,etag:projectStore.etag};')
+    check('Native field editing autosaves only the intended title with a new revision',
+          title_only_change(original['data'], saved['data'], title)
+          and saved['etag'] != imported['etag'])
+    driver.screenshot(out / 'nimbus-autosaved-title.png')
+    check('No runtime errors during import and autosave', driver.script('return __nativeErrors;') == [])
+    driver.request('POST', '/refresh', {})
+    wait_for(lambda: driver.script("return !document.querySelector('#splash') && typeof S!=='undefined' && !!S.data && !projectStore.loading && !projectBusyCount;"))
+    # Startup intentionally selects the first project. Select the imported copy
+    # through the existing select/change handler before checking persisted data.
+    driver.script("const s=document.querySelector('#projectSelect');s.value=arguments[0];s.dispatchEvent(new Event('change',{bubbles:true}));", slug)
+    wait_for(lambda: driver.script('return S.slug===arguments[0] && !projectStore.loading && !projectBusyCount;', slug))
+    reloaded = driver.script('return {data:S.data,etag:projectStore.etag};')
+    check('Real reload preserves the exact saved project and revision', reloaded == saved)
+    driver.script("window.__nativeErrors=[];addEventListener('error',e=>__nativeErrors.push(String(e.message)));addEventListener('unhandledrejection',e=>__nativeErrors.push(String(e.reason)));")
+    unchanged = driver.async_script('return await api.get("/api/projects/"+encodeURIComponent(arguments[0]));', original['slug'])
+    check('Import and editing preserve the original Nimbus project', unchanged == original['data'])
+    for menu in ('studioMore', 'exportMenu'):
+        if not driver.script('return document.getElementById(arguments[0]).open;', menu):
+            driver.click('#' + menu + ' > summary')
+    previous = driver.async_script('return (await api.get("/api/jobs")).map(job=>job.id);')
+    driver.script("const s=document.querySelector('#exportFormat');s.value='html';s.dispatchEvent(new Event('change',{bubbles:true}));")
+    driver.click('#downloadBtn')
+    def completed():
+        return driver.script("return [...document.querySelectorAll('.job-card')].map(r=>({id:r.dataset.job,stage:r.dataset.stage})).find(r=>!arguments[0].includes(r.id)&&['done','error','cancelled'].includes(r.stage))||null;", previous)
+    job = wait_for(completed, timeout=90)
+    check('Native Safari UI queues and completes an HTML export', job['stage'] == 'done', job)
+    exported = driver.async_script("""
+        const job=await api.get('/api/jobs/'+arguments[0]);
+        const verification=await api.get('/api/jobs/'+arguments[0]+'/verification');
+        const response=await requireOk(await appFetch('/api/jobs/'+arguments[0]+'/download'));
+        const blob=await response.blob();
+        const base64=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result.split(',')[1]);r.onerror=reject;r.readAsDataURL(blob);});
+        return {job,verification,base64};
+    """, job['id'])
+    payload = base64.b64decode(exported.pop('base64'), validate=True)
+    (out / 'nimbus-safari-export.html').write_bytes(payload)
+    (out / 'nimbus-safari-verification.json').write_text(json.dumps(exported, indent=2) + '\n')
+    saved_revision = saved['etag'].strip(chr(34))
+    check('HTML job belongs to the exact reloaded revision', exported['job']['revision'] == saved_revision)
+    contract = inspect_lifecycle_export(payload, exported['verification'], saved_revision, title, original['data']['findings'])
+    check('Safari HTML bytes, title, findings and content contract match the saved revision', True, contract)
+    results['lifecycle'].update({'saved_revision': saved_revision, 'title_marker': title,
+                                 'download_method': 'Safari fetch of the completed UI job; OS save dialog not assessed',
+                                 'export': contract})
+    check('No runtime errors after reload during HTML export', driver.script('return __nativeErrors;') == [])
+    driver.screenshot(out / 'nimbus-html-export-ready.png')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=ROOT / 'out/native-safari')
@@ -107,8 +236,9 @@ def main():
     results = {'status': 'running', 'started_utc': datetime.now(timezone.utc).isoformat(),
                'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                'system': platform.system(), 'checks': [],
-               'scope': 'Native desktop Safari: bilingual tutorial, real project, modal keyboard and root-font enlargement',
-               'not_assessed': ['human screen-reader acceptance', 'mobile Safari', 'all export formats']}
+               'scope': 'Native desktop Safari: bilingual tutorial, modal keyboard, root-font enlargement, browser API import, native editing/autosave/reload and UI-queued verified HTML export',
+               'not_assessed': ['human screen-reader acceptance', 'mobile Safari', 'all export formats',
+                                'OS file picker and download destination dialog', 'unsaved-draft recovery after storage failure']}
     driver_process = server = driver = None
 
     def save():
@@ -209,6 +339,7 @@ def main():
         check('Tutorial navigation preserves the exact project and saved revision', driver.script(state) == original)
         check('No runtime errors during the instrumented tutorial journey', driver.script('return __nativeErrors;') == [], driver.script('return __nativeErrors;'))
         driver.screenshot(out / 'nimbus-home.png')
+        project_lifecycle(driver, out, results, check)
         results['status'] = 'passed'
     except Exception as exc:
         results['status'] = 'failed'

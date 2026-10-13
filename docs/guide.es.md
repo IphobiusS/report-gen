@@ -347,7 +347,7 @@ Se conservan hasta 20 lotes o 4 MiB en total y 16 eventos por lote; el registro 
 
 ## Publicaciones descargables
 
-La [última Release](https://github.com/IphobiusS/report-gen/releases/latest) reúne el ZIP de fuentes, su archivo SHA-256 y el manifiesto JSON. Su publicación automática exige los cuatro procesos del mismo commit: **tests**, **Browser acceptance**, **Windows compatibility** y **Reproducible source package**. El publicador reconstruye los archivos desde Git, verifica los tres adjuntos tras subirlos y solo entonces publica la Release. Que una comprobación automática pase no sustituye la revisión de documentos ni las sesiones humanas.
+La [última Release](https://github.com/IphobiusS/report-gen/releases/latest) reúne el ZIP de fuentes, su archivo SHA-256 y el manifiesto JSON. Su publicación automática exige los seis procesos del mismo commit: **tests**, **Browser acceptance**, **Windows compatibility**, **macOS compatibility**, **Additional renderer acceptance** y **Reproducible source package**. El publicador reconstruye los archivos desde Git, verifica los tres adjuntos tras subirlos y solo entonces publica la Release. Que una comprobación automática pase no sustituye la revisión de documentos ni las sesiones humanas.
 
 ## Materiales para las comprobaciones externas
 

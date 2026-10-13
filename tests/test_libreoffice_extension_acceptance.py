@@ -195,6 +195,8 @@ def test_failed_fallback_oracle_still_collects_enabled_profile_but_fails_gate(tm
             return {'stdout': 'LibreOffice 24.2.7.2'}
         if '--worker' in command:
             config = json.loads(Path(command[-1]).read_text())
+            if config.get('control'):
+                return {'stdout': ''}
             stages_seen.append(config['enabled'])
             stages = ['original', 'reopened', 'reflow', 'reopened-reflow'] if config['enabled'] else ['fallback']
             for stage in stages:
@@ -222,5 +224,20 @@ def test_native_environment_does_not_inject_foreign_python_or_mutate_parent(monk
     environment = VERIFY.native_environment()
     assert not set(VERIFY.NATIVE_ENV_UNSET).intersection(environment)
     assert environment['PATH'] == '/usr/bin:/custom/bin'
+    assert environment['SAL_USE_VCLPLUGIN'] == 'svp'
     for name in VERIFY.NATIVE_ENV_UNSET:
         assert VERIFY.os.environ[name] == '/foreign-python/' + name
+
+
+def test_installer_control_is_deterministic_and_contains_no_report_adapter(tmp_path):
+    first = VERIFY.build_installer_control(tmp_path / 'first.oxt')
+    second = VERIFY.build_installer_control(tmp_path / 'second.oxt')
+    assert first.read_bytes() == second.read_bytes()
+    with zipfile.ZipFile(first) as archive:
+        assert set(archive.namelist()) == {'main.py', 'description.xml', 'META-INF/manifest.xml'}
+        source = archive.read('main.py').decode()
+        compile(source, 'main.py', 'exec')
+        assert 'XJobExecutor' in source
+        assert 'BreakIterator' not in source
+        assert VERIFY.SERVICE not in source
+        assert VERIFY.CONTROL_SERVICE in source

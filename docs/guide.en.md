@@ -328,7 +328,7 @@ Retention is limited to 20 batches or 4 MiB overall and 16 events per batch; the
 
 ## Downloadable releases
 
-The [latest Release](https://github.com/IphobiusS/report-gen/releases/latest) provides the source ZIP, its SHA-256 file and a JSON manifest. Automatic publication requires all four workflows on the same commit: **tests**, **Browser acceptance**, **Windows compatibility** and **Reproducible source package**. The publisher rebuilds from Git, verifies all three uploaded assets and only then publishes the Release. Passing automation does not replace document review or human sessions.
+The [latest Release](https://github.com/IphobiusS/report-gen/releases/latest) provides the source ZIP, its SHA-256 file and a JSON manifest. Automatic publication requires all six workflows on the same commit: **tests**, **Browser acceptance**, **Windows compatibility**, **macOS compatibility**, **Additional renderer acceptance** and **Reproducible source package**. The publisher rebuilds from Git, verifies all three uploaded assets and only then publishes the Release. Passing automation does not replace document review or human sessions.
 
 ## External acceptance materials
 
