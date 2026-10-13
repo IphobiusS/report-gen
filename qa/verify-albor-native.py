@@ -88,6 +88,10 @@ def source_contract(path):
                 destinations.append(target)
                 links.append((start, len(parts), target))
         def visit(node, locale=language):
+            if node.tag in (W + 'pPr', W + 'rPr'):
+                # Tab-stop definitions are formatting, not authored tab
+                # characters. Only w:r/w:tab contributes text below.
+                return
             if node.tag == W + 'r':
                 charstyle = node.find('./' + W + 'rPr/' + W + 'rStyle')
                 if charstyle is not None:

@@ -1,18 +1,18 @@
 {
   "schema": 1,
-  "product_sha": "e80daec46331a6f6364c320f1fa0f3ef95b49cca",
-  "product_tree": "b1982502298d9a1e71a3d2bebcc4d0375de011d8",
+  "product_sha": "9a6443a1ed350365873f6e782a14bb451ee10816",
+  "product_tree": "f604fcfb6e0f2ab8e99dc85f5bbbaa250be089e1",
   "corpus_seal_sha256": "9f55f2f1a7dc681281161397fa2934d3a8e1890bd26a39f06fe610b4f981a31d",
   "oxt_sha256": "f023cd4f850f371aa37afd3258649951c5f84188dccdc3410228514634e8f37e",
-  "expectations_sha256": "3f641d00acc71f3c89b96a1cda60ac6480fe36ec72324d75f45668ab5c5c5dbf",
+  "expectations_sha256": "266b5f5c3752352256d10d6444af0963fd636353629f2e1cb710cf08d0df91a7",
   "expected_contents_entries": 11,
   "documents": [
     {
       "language": "es",
       "file": "albor-ronda15-es.docx",
-      "sha256": "fbebd5e98df090da9c92e84c8ada35759717ad4894b48a712d57009e91165019",
-      "bytes": 141091,
-      "capture_sha256": "e94ab10f256fa5c067ccc364518f798fb82c91eb4d893f36cfe1349168906d5a",
+      "sha256": "5d7d28fa7d331f60b7c9d45d3f778228712f38be5ab2530b992ed042ae0d809a",
+      "bytes": 141142,
+      "capture_sha256": "cba32fd467d8252a1868f0bdb4fa7201cf0cfcffa95b2ecd3bcca4e3cbb2260b",
       "capture": {
         "images": {
           "img/e01.png": "842ff67af793137e6a79a6a2e56b90edfa8e562513f98a13e58ab151dd4c07f8",
@@ -89,7 +89,8 @@
                     "docx_sha256": "842ff67af793137e6a79a6a2e56b90edfa8e562513f98a13e58ab151dd4c07f8"
                   }
                 ],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "La aprobación del lote podría no vincular la versión exacta de sus instrucciones",
               "headings": [
@@ -140,7 +141,8 @@
                 "severity": "Media",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Una previsión de liquidez podría mezclar una población reciente con un saldo antiguo",
               "headings": [
@@ -189,7 +191,8 @@
                 "severity": "Alta",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Una plantilla de beneficiario podría cambiar después de ser seleccionada",
               "headings": [
@@ -238,7 +241,8 @@
                 "severity": "Media",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "La vigencia de una cotización podría evaluarse sólo al abrir el formulario",
               "headings": [
@@ -287,7 +291,8 @@
                 "severity": "Alta",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "El rechazo de una instrucción podría ocultar un efecto contable parcial",
               "headings": [
@@ -345,7 +350,8 @@
                     "docx_sha256": "793aff247278b4d3760d2448b77c7b43723fc6a28cad56feeb8c4fcb08af0521"
                   }
                 ],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Una instrucción retrasada podría cruzar el cierre de una ventana operativa",
               "headings": [
@@ -396,7 +402,8 @@
                 "severity": "Alta",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Las consultas de conciliación podrían cruzar ámbitos autorizados",
               "headings": [
@@ -445,7 +452,8 @@
                 "severity": "Alta",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Un ajuste manual podría perder su vínculo con la obligación económica",
               "headings": [
@@ -494,7 +502,8 @@
                 "severity": "Alta",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "La revocación de permisos podría no alcanzar sesiones activas",
               "headings": [
@@ -543,7 +552,8 @@
                 "severity": "Media",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Una exportación de evidencia podría perder controles de autorización",
               "headings": [
@@ -592,7 +602,8 @@
                 "severity": "Alta",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "La restauración podría alterar la retención de eventos antifraude",
               "headings": [
@@ -650,7 +661,8 @@
                     "docx_sha256": "ece056d9a038b29c5661f4f5d9c223d81c98b9f4b3f6f1f101c18b18084eac3a"
                   }
                 ],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Una excepción podría cerrarse con evidencia documental insuficiente",
               "headings": [
@@ -773,6 +785,23 @@
                   [],
                   [],
                   []
+                ],
+                "link_raw_labels": [
+                  "La aprobación del lote podría no vincular la versión exacta de sus instrucciones",
+                  "Una plantilla de beneficiario podría cambiar después de ser seleccionada",
+                  "El rechazo de una instrucción podría ocultar un efecto contable parcial",
+                  "Una instrucción retrasada podría cruzar el cierre de una ventana operativa",
+                  "Las consultas de conciliación podrían cruzar ámbitos autorizados",
+                  "Un ajuste manual podría perder su vínculo con la obligación económica",
+                  "La revocación de permisos podría no alcanzar sesiones activas",
+                  "La restauración podría alterar la retención de eventos antifraude",
+                  "Una previsión de liquidez podría mezclar una población reciente con un saldo antiguo",
+                  "La vigencia de una cotización podría evaluarse sólo al abrir el formulario",
+                  "Una exportación de evidencia podría perder controles de autorización",
+                  "Una excepción podría cerrarse con evidencia documental insuficiente",
+                  "https://treasury.albor.example/revisions/ALB%2D015/0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ?state=pending&empty=&repeated=one&repeated=two&literal=%252F&value=A%26B#review(15)",
+                  "https://archive.albor.example/café/東京?label=Δ&revision=ALB%2D015#revisión",
+                  "https://archive.albor.example/café/source?normalization=preserve&escaped=%E2%88%92#pending"
                 ]
               },
               "title": "",
@@ -3224,9 +3253,9 @@
     {
       "language": "en",
       "file": "albor-ronda15-en.docx",
-      "sha256": "615bd97583125458dab94f7c9f978119ecbee081458368977149a332b5c2e685",
-      "bytes": 144947,
-      "capture_sha256": "bfb82fbf74ced8ec92a2aed778f9f515ec702fd048a27f402116c14aaea49e2e",
+      "sha256": "002d888f3409283ddfe5e5bdec11fe62039c576e39352078b5e39d67fedbf556",
+      "bytes": 144960,
+      "capture_sha256": "8faf76044dd4ae8da739fb91a7f51abbf3fc7e4c6b6d0c3f73c5a06b499ce7bc",
       "capture": {
         "images": {
           "img/e01.png": "8b34a018477bfbcc0b81cc23a6947480f3ca1f25658a7813a25f6ad0ed2b0f95",
@@ -3303,7 +3332,8 @@
                     "docx_sha256": "8b34a018477bfbcc0b81cc23a6947480f3ca1f25658a7813a25f6ad0ed2b0f95"
                   }
                 ],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Batch approval may not bind the exact revision of its instructions",
               "headings": [
@@ -3354,7 +3384,8 @@
                 "severity": "Medium",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "A liquidity forecast may combine a recent population with an older balance",
               "headings": [
@@ -3403,7 +3434,8 @@
                 "severity": "High",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "A beneficiary template may change after selection",
               "headings": [
@@ -3452,7 +3484,8 @@
                 "severity": "Medium",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Quote validity may be checked only when the form opens",
               "headings": [
@@ -3501,7 +3534,8 @@
                 "severity": "High",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Instruction rejection may conceal a partial accounting effect",
               "headings": [
@@ -3559,7 +3593,8 @@
                     "docx_sha256": "c9f79ca10afc43bbbdc171778a86bd5be33e0cb76cf878537bdad2eac8f4cfed"
                   }
                 ],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "A delayed instruction may cross the close of an operating window",
               "headings": [
@@ -3610,7 +3645,8 @@
                 "severity": "High",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Reconciliation queries may cross authorized scopes",
               "headings": [
@@ -3659,7 +3695,8 @@
                 "severity": "High",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "A manual adjustment may lose its link to the economic obligation",
               "headings": [
@@ -3708,7 +3745,8 @@
                 "severity": "High",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Permission revocation may not reach active sessions",
               "headings": [
@@ -3757,7 +3795,8 @@
                 "severity": "Medium",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "An evidence export may lose authorization controls",
               "headings": [
@@ -3806,7 +3845,8 @@
                 "severity": "High",
                 "links": [],
                 "images": [],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "Restoration may alter antifraud event retention",
               "headings": [
@@ -3864,7 +3904,8 @@
                     "docx_sha256": "be143d36a93432a93f9e52c49dfe5c546ad79653193e4219b4a20015e108d885"
                   }
                 ],
-                "link_parts": []
+                "link_parts": [],
+                "link_raw_labels": []
               },
               "title": "An exception may close with insufficient documentary evidence",
               "headings": [
@@ -3987,6 +4028,23 @@
                   [],
                   [],
                   []
+                ],
+                "link_raw_labels": [
+                  "Batch approval may not bind the exact revision of its instructions",
+                  "A beneficiary template may change after selection",
+                  "Instruction rejection may conceal a partial accounting effect",
+                  "A delayed instruction may cross the close of an operating window",
+                  "Reconciliation queries may cross authorized scopes",
+                  "A manual adjustment may lose its link to the economic obligation",
+                  "Permission revocation may not reach active sessions",
+                  "Restoration may alter antifraud event retention",
+                  "A liquidity forecast may combine a recent population with an older balance",
+                  "Quote validity may be checked only when the form opens",
+                  "An evidence export may lose authorization controls",
+                  "An exception may close with insufficient documentary evidence",
+                  "https://treasury.albor.example/revisions/ALB%2D015/0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ?state=pending&empty=&repeated=one&repeated=two&literal=%252F&value=A%26B#review(15)",
+                  "https://archive.albor.example/café/東京?label=Δ&revision=ALB%2D015#revisión",
+                  "https://archive.albor.example/café/source?normalization=preserve&escaped=%E2%88%92#pending"
                 ]
               },
               "title": "",
