@@ -1,5 +1,7 @@
 # Cambios 0.34.5 (2026-10-13)
 
+- El sondeo de exportaciones se suspende al salir de la página y se reanuda
+  al restaurarla, evitando peticiones tardías en WebKit sin cancelar las tareas.
 - Se prepara un complemento opcional de LibreOffice para el salto de literales
   técnicos ASCII marcados, sin insertar caracteres ni modificar enlaces.
   Su aceptación instalado en LibreOffice estable está pendiente y el marcado
@@ -10,8 +12,11 @@
 - Las leyendas extensas pueden continuar por páginas sin reducir sus imágenes
   hasta volverlas invisibles. Se conserva el texto y el tamaño de las figuras
   con leyendas breves.
+- HTML, PDF y Markdown conservan los saltos de línea de las leyendas. Markdown
+  también exporta figuras con leyenda vacía sin introducir asteriscos visibles.
 - Las tablas de retest dentro de citas o listas fluyen por filas, igual que
   las tablas directas. El recuento inicial en Word permanece junto a la tabla.
+  Los retests sin fecha omiten el separador vacío del encabezado.
 - La revisión detecta entidades Markdown que producirían caracteres XML no
   válidos, indicando el campo antes de exportar. El código literal y las
   entidades escapadas conservan sus caracteres.

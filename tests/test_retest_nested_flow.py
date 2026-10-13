@@ -16,6 +16,21 @@ from safe_markup import md
 THEMES = ('serio', 'corporativo', 'htb', 'offsec', 'ejecutivo', 'laboratorio')
 
 
+@pytest.mark.parametrize('language', ['es', 'en'])
+@pytest.mark.parametrize('tested_on', ['', '2026-10-13'])
+def test_retest_heading_omits_separator_for_absent_date(language, tested_on):
+    source = {'meta': {'lang': language}, 'findings': [{
+        'id': 'F01', 'title': 'Synthetic observation', 'retests': [{
+            'tested_on': tested_on, 'result': 'not_verified', 'notes_md': 'No execution.'}]}]}
+    before = deepcopy(source)
+    section = next(s for s in workflows.report_sections(source) if s['key'] == 'rg_retest')
+    heading = html.fragment_fromstring(md(section['body']), create_parent='div').xpath('.//h3')[-1].text_content()
+    expected = ['F01'] + ([tested_on] if tested_on else [])
+    expected.append(workflows.label(workflows.RESULTS, 'not_verified', language))
+    assert heading == ' · '.join(expected)
+    assert source == before
+
+
 def report_source(language, context):
     state = 'Pendiente' if language == 'es' else 'Pending'
     table = '\n'.join(['| Row | State |', '|---|---|'] +

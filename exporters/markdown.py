@@ -287,6 +287,22 @@ def to_markdown(data, meta, L, engagement_dir):
     return "\n".join(out).rstrip() + "\n"
 
 
+def _figure_caption(label, number, value):
+    """Keep visible caption lines without invalid whitespace-ended emphasis."""
+    text = str(value or '').replace('\r\n', '\n').replace('\r', '\n')
+    lines = [md_text(line) for line in text.split('\n')]
+    lines[0] = f"{label} {number}. " + lines[0]
+    # Blank source lines must stay inside the caption paragraph. A literal LF
+    # entity keeps the line nonempty in Markdown syntax without adding a glyph;
+    # standard hard breaks retain each authored line even without nl2br.
+    lines = [line if line.strip() else line + '&#10;' for line in lines]
+    body = '  \n'.join(lines)
+    end = len(body.rstrip())
+    # Markdown cannot close emphasis after whitespace, including an empty
+    # caption's generated separator. Preserve that whitespace outside it.
+    return '*' + body[:end] + '*' + body[end:]
+
+
 def _md_step(W, s, L):
     lead = f"**{md_text(s['lead'])}** " if s.get("lead") else ""
     if s.get("text_md"):
@@ -299,7 +315,7 @@ def _md_step(W, s, L):
         W(fence + "\n" + command + "\n" + fence + "\n")
     fig = s.get("figure")
     if fig and fig.get("src"):
-        cap = f"*{L['figure']} {fig.get('number','')}. {md_text(fig.get('caption',''))}*"
+        cap = _figure_caption(L['figure'], fig.get('number', ''), fig.get('caption', ''))
         W(_image(fig.get('caption',''), fig['src']) + f"\n\n{cap}\n")
 
 

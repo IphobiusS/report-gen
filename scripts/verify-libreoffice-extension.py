@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -138,7 +139,7 @@ def fixture(path):
     return rows
 
 
-def build_installer_control(path):
+def build_installer_control(path, compression=zipfile.ZIP_STORED):
     """A test-only Python UNO control following the official SDK registration.
 
     https://api.libreoffice.org/examples/python/minimal-extension/main.py
@@ -170,12 +171,38 @@ g_ImplementationHelper.addImplementation(Control, "org.reportgen.acceptance.Inst
         'description.xml': '<?xml version="1.0" encoding="UTF-8"?>\n<description xmlns="http://openoffice.org/extensions/description/2006"><identifier value="org.reportgen.acceptance.installer-control"/><version value="1.0"/><display-name><name>Native installer control</name></display-name></description>',
         'META-INF/manifest.xml': '<?xml version="1.0" encoding="UTF-8"?>\n<manifest:manifest xmlns:manifest="http://openoffice.org/2001/manifest"><manifest:file-entry manifest:media-type="application/vnd.sun.star.uno-component;type=Python" manifest:full-path="main.py"/></manifest:manifest>',
     }
-    with zipfile.ZipFile(path, 'w', zipfile.ZIP_STORED) as archive:
+    if compression not in (zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED):
+        raise ValueError('Unsupported installer-control compression')
+    with zipfile.ZipFile(path, 'w', compression) as archive:
         for name, data in sorted(payload.items()):
             entry = zipfile.ZipInfo(name, (1980, 1, 1, 0, 0, 0))
+            entry.compress_type = compression
             entry.external_attr = 0o100644 << 16
             archive.writestr(entry, data.encode('utf-8'))
     return path
+
+
+def preserve_profile_metadata(profile, output):
+    """Retain only this disposable test profile's bookkeeping for diagnosis."""
+    source = Path(profile)
+    entries = []
+    for path in sorted(source.rglob('*')):
+        if path.is_symlink() or not path.is_file():
+            continue
+        relative = path.relative_to(source)
+        entries.append({'path': relative.as_posix(), 'bytes': path.stat().st_size, 'sha256': digest(path)})
+        if path.suffix in ('.xml', '.xcu', '.xcs', '.ini', '.pmap', '.properties') and path.stat().st_size <= 1024 * 1024:
+            target = output / 'profile-metadata' / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(path, target)
+    write_json(output / 'profile-files.json', entries)
+
+
+def initialize_profile(args, profile, output, environment):
+    """Complete Writer's documented first initialization, then close it."""
+    run([args.executable, '-env:UserInstallation=' + Path(profile).as_uri(), '--headless',
+         '--nologo', '--nodefault', '--norestore', '--terminate_after_init'],
+        output / 'profile-initialization.json', timeout=30, env=environment)
 
 
 def inspect_docx(path, rows):
@@ -447,31 +474,41 @@ def main(argv=None):
         write_json(output / 'expected.json', rows)
         receipt['checks']['source'] = inspect_docx(source, rows)
         phase_errors = {}
-        control_oxt = build_installer_control(output / 'installer-control.oxt')
-        control_folder = output / 'installer-control'; control_folder.mkdir()
-        try:
-            with tempfile.TemporaryDirectory(prefix='report-gen-oxt-control-') as profile:
-                run([args.unopkg, '-env:UserInstallation=' + Path(profile).as_uri(), 'add', '--verbose', '--log-file', str(control_folder / 'unopkg.log'), '--suppress-license', str(control_oxt)], control_folder / 'installation.json', timeout=60, env=native_env)
-                config = {'control': True, 'enabled': False, 'output': str(control_folder), 'profile': profile,
-                          'source': str(source), 'rows': [], 'executable': args.executable}
-                write_json(control_folder / 'config.json', config)
-                run([args.uno_python, str(Path(__file__).resolve()), '--worker', str(control_folder / 'config.json')], control_folder / 'worker.json', env=native_env)
-            receipt['checks']['installer_control'] = {'status': 'passed', 'sha256': digest(control_oxt)}
-        except Exception as error:
-            phase_errors['installer_control'] = str(error)
-            write_json(control_folder / 'phase-error.json', {'status': 'failed', 'error': str(error)})
+        for mode, compression in [('stored', zipfile.ZIP_STORED), ('deflated', zipfile.ZIP_DEFLATED)]:
+            name = 'installer-control-' + mode
+            control_oxt = build_installer_control(output / (name + '.oxt'), compression)
+            control_folder = output / name; control_folder.mkdir()
+            try:
+                with tempfile.TemporaryDirectory(prefix='report-gen-oxt-control-') as profile:
+                    try:
+                        initialize_profile(args, profile, control_folder, native_env)
+                        run([args.unopkg, '-env:UserInstallation=' + Path(profile).as_uri(), 'add', '--verbose', '--log-file', str(control_folder / 'unopkg.log'), '--suppress-license', str(control_oxt)], control_folder / 'installation.json', timeout=60, env=native_env)
+                        config = {'control': True, 'enabled': False, 'output': str(control_folder), 'profile': profile,
+                                  'source': str(source), 'rows': [], 'executable': args.executable}
+                        write_json(control_folder / 'config.json', config)
+                        run([args.uno_python, str(Path(__file__).resolve()), '--worker', str(control_folder / 'config.json')], control_folder / 'worker.json', env=native_env)
+                    finally:
+                        preserve_profile_metadata(profile, control_folder)
+                receipt['checks'][name] = {'status': 'passed', 'sha256': digest(control_oxt)}
+            except Exception as error:
+                phase_errors[name] = str(error)
+                write_json(control_folder / 'phase-error.json', {'status': 'failed', 'error': str(error)})
         for enabled in (False, True):
             name = 'enabled' if enabled else 'fallback'
             folder = output / name; folder.mkdir()
             try:
                 with tempfile.TemporaryDirectory(prefix='report-gen-oxt-' + name + '-') as profile:
-                    if enabled:
-                        run([args.unopkg, '-env:UserInstallation=' + Path(profile).as_uri(), 'add', '--verbose', '--log-file', str(folder / 'unopkg.log'), '--suppress-license', str(oxt)], folder / 'installation.json', timeout=60, env=native_env)
-                        run([args.unopkg, '-env:UserInstallation=' + Path(profile).as_uri(), 'list'], folder / 'installed-list.json', timeout=30, env=native_env)
-                    config = {'enabled': enabled, 'output': str(folder), 'profile': profile, 'source': str(source),
-                              'rows': rows, 'executable': args.executable}
-                    write_json(folder / 'config.json', config)
-                    run([args.uno_python, str(Path(__file__).resolve()), '--worker', str(folder / 'config.json')], folder / 'worker.json', env=native_env)
+                    try:
+                        if enabled:
+                            initialize_profile(args, profile, folder, native_env)
+                            run([args.unopkg, '-env:UserInstallation=' + Path(profile).as_uri(), 'add', '--verbose', '--log-file', str(folder / 'unopkg.log'), '--suppress-license', str(oxt)], folder / 'installation.json', timeout=60, env=native_env)
+                            run([args.unopkg, '-env:UserInstallation=' + Path(profile).as_uri(), 'list'], folder / 'installed-list.json', timeout=30, env=native_env)
+                        config = {'enabled': enabled, 'output': str(folder), 'profile': profile, 'source': str(source),
+                                  'rows': rows, 'executable': args.executable}
+                        write_json(folder / 'config.json', config)
+                        run([args.uno_python, str(Path(__file__).resolve()), '--worker', str(folder / 'config.json')], folder / 'worker.json', env=native_env)
+                    finally:
+                        preserve_profile_metadata(profile, folder)
                 stages = ['original', 'reopened', 'reflow', 'reopened-reflow'] if enabled else ['fallback']
                 results = {}
                 for stage in stages:

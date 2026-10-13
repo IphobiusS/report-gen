@@ -241,3 +241,28 @@ def test_installer_control_is_deterministic_and_contains_no_report_adapter(tmp_p
         assert 'BreakIterator' not in source
         assert VERIFY.SERVICE not in source
         assert VERIFY.CONTROL_SERVICE in source
+
+
+def test_installer_controls_differ_only_in_compression(tmp_path):
+    stored = VERIFY.build_installer_control(tmp_path / 'stored.oxt')
+    deflated = VERIFY.build_installer_control(tmp_path / 'deflated.oxt', zipfile.ZIP_DEFLATED)
+    with zipfile.ZipFile(stored) as one, zipfile.ZipFile(deflated) as two:
+        assert one.namelist() == two.namelist()
+        for name in one.namelist():
+            assert one.read(name) == two.read(name)
+            a, b = one.getinfo(name), two.getinfo(name)
+            assert (a.date_time, a.external_attr, a.create_system) == (b.date_time, b.external_attr, b.create_system)
+            assert a.compress_type == zipfile.ZIP_STORED
+            assert b.compress_type == zipfile.ZIP_DEFLATED
+
+
+def test_only_small_profile_bookkeeping_is_copied(tmp_path):
+    profile = tmp_path / 'private-profile'; profile.mkdir()
+    (profile / 'registrymodifications.xcu').write_text('<items/>')
+    (profile / 'module.py').write_text('pass')
+    output = tmp_path / 'receipt'; output.mkdir()
+    VERIFY.preserve_profile_metadata(profile, output)
+    entries = json.loads((output / 'profile-files.json').read_text())
+    assert len(entries) == 2
+    assert (output / 'profile-metadata/registrymodifications.xcu').read_text() == '<items/>'
+    assert not (output / 'profile-metadata/module.py').exists()

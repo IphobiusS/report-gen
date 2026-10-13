@@ -74,6 +74,7 @@ const ProgressUI = (() => {
     body.append(button(w('Descargar registro JSON','Download JSON record'),()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));h('a',{href:url,download:'verificacion-'+job.id.slice(0,8)+'.json'}).click();setTimeout(()=>URL.revokeObjectURL(url),1000);}));
   }
   let jobData=[],jobTimer=null,lastJobAnnouncement='',drawerBody=null;
+  let jobSuspended=false,jobController=null,jobGeneration=0;
   function closeJobs(restore=true){if(!jobsDialog)return;const target=jobsDialog._opener;jobsDialog.remove();jobsDialog=null;drawerBody=null;paintJobs();if(restore)(target?.isConnected&&!target.disabled?target:$('#exportIndicator'))?.focus();}
   function jobSummary(){const active=jobData.filter(j=>!['done','cancelled','error'].includes(j.stage)),ready=jobData.filter(j=>j.stage==='done');return active.length?active.length+' '+w('exportando','exporting'):ready.length?ready.length+' '+(ready.length===1?w('descarga','download'):w('descargas','downloads')):w('Exportaciones','Exports');}
   function paintJobs(){
@@ -94,7 +95,31 @@ const ProgressUI = (() => {
       if(focused){const target=row.querySelector('button')||jobsDialog.querySelector('button');target?.focus();}
     }
   }
-  async function pollJobs(){clearTimeout(jobTimer);try{const {data}=await json('/api/jobs');jobData=data;paintJobs();}catch(e){const n=drawerBody?.querySelector('[data-job-notice]');if(n)n.textContent=e.message;}finally{jobTimer=setTimeout(pollJobs,jobData.some(j=>!['done','error','cancelled'].includes(j.stage))?800:4000);}}
+  async function pollJobs(){
+    clearTimeout(jobTimer);
+    if(jobSuspended)return;
+    const generation=++jobGeneration;
+    jobController?.abort();
+    const controller=new AbortController();jobController=controller;
+    try{
+      const {data}=await json('/api/jobs',{signal:controller.signal});
+      if(jobSuspended||generation!==jobGeneration)return;
+      jobData=data;paintJobs();
+    }catch(e){
+      if(controller.signal.aborted||jobSuspended||generation!==jobGeneration)return;
+      const n=drawerBody?.querySelector('[data-job-notice]');if(n)n.textContent=e.message;
+    }finally{
+      if(generation===jobGeneration){
+        jobController=null;
+        if(!jobSuspended)jobTimer=setTimeout(pollJobs,jobData.some(j=>!['done','error','cancelled'].includes(j.stage))?800:4000);
+      }
+    }
+  }
+  function suspendJobs(){
+    jobSuspended=true;++jobGeneration;clearTimeout(jobTimer);
+    jobController?.abort();jobController=null;
+  }
+  function resumeJobs(){if(jobSuspended){jobSuspended=false;pollJobs();}}
   function jobs(){
     if(jobsDialog?.isConnected){jobsDialog.querySelector('button')?.focus();return;}
     const active=document.activeElement===document.body?opener:document.activeElement;
@@ -189,7 +214,12 @@ const ProgressUI = (() => {
     const i=button(w('Importar resultados','Import results'),intake);i.id='intakeBtn';$('#projectActionsList').append(i);
     const indicator=button('',jobs);indicator.id='exportIndicator';$('.workspace-toolbar').append(indicator);document.body.append(h('span',{id:'exportAnnouncement',class:'export-announcement',role:'status','aria-live':'polite'}));
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&jobsDialog){e.preventDefault();closeJobs();}});
-    document.addEventListener('focusin',e=>{if(jobsDialog&&!jobsDialog.contains(e.target)&&e.target!==indicator)closeJobs(false);});pollJobs();update();
+    document.addEventListener('focusin',e=>{if(jobsDialog&&!jobsDialog.contains(e.target)&&e.target!==indicator)closeJobs(false);});
+    // A queued callback may arrive while WebKit unloads the document. Stop only
+    // this tab's GET polling; server export jobs continue independently.
+    window.addEventListener('pagehide',suspendJobs);
+    window.addEventListener('pageshow',resumeJobs);
+    pollJobs();update();
   }
   return {bind,update,saveState,enqueue,jobs,intake,compare,importReview,inventoryReview};
 })();

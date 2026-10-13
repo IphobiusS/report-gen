@@ -63,6 +63,16 @@ def html_rows(table):
 
 def prepare_html(source):
     tree = html.document_fromstring(source)
+    for figure in tree.xpath('//figure[figcaption]'):
+        caption = figure.find('figcaption').text_content()
+        # A conservative layout hint, not a computed height. Keep ordinary
+        # captions intact; lengthy annotations must be free to continue after
+        # their full-size image. Explicit source lines count independently.
+        lines = sum(max(1, math.ceil(len(line) / 70)) for line in caption.splitlines())
+        if lines > 12:
+            classes = (figure.get('class') or '').split()
+            if 'rg-flow-caption' not in classes:
+                figure.set('class', ' '.join([*classes, 'rg-flow-caption']))
     for table in tree.xpath('//table[not(@class)]'):
         table.set('class', 'md-table')
     for block in tree.xpath('//pre'):

@@ -174,7 +174,10 @@ figure { margin: 6px 0 10px; page-break-inside: avoid; }
 /* Let the image box follow the unchanged bitmap's aspect ratio. A fixed full
    width combined with a height cap frames empty letterbox bands as evidence. */
 figure img { display: block; width: auto; height: auto; max-width: 100%; max-height: 62mm; margin-left: auto; margin-right: auto; object-fit: contain; border: 1px solid var(--rule); }
-figcaption { font-size: 8.5pt; color: var(--muted); margin-top: 4px; }
+/* Keep ordinary captions with their image. Oversized captions may continue
+   across pages, while authored line breaks remain visible in HTML and PDF. */
+figcaption { font-size: 8.5pt; color: var(--muted); margin-top: 4px; white-space: pre-line; break-before: avoid; page-break-before: avoid; orphans: 2; widows: 2; }
+figure.rg-flow-caption { break-inside: auto; page-break-inside: auto; }
 figcaption b { color: var(--ink-soft); font-family: var(--font-mono); font-weight: 700; }
 .remsum { margin: 0; }
 .remsum dt { font-family: var(--font-heading); font-size: 8.5pt; color: var(--cyan-ink); margin-top: 6px; font-weight: 700; }

@@ -216,46 +216,109 @@ def inspect_contents(source, pdf):
     def normal(text):
         return ' '.join(unicodedata.normalize('NFKC', text).split())
 
+    def matches_wrapped(expected, fragments, *, prefix=False):
+        # A native line break can split a word/token, or replace its following
+        # space. Only these observed line boundaries are optional separators;
+        # whitespace within a rendered line still has to match the source.
+        # Track source offsets instead of removing all whitespace (which would
+        # also accept an altered title such as "AlphaBeta" for "Alpha Beta").
+        expected = normal(expected)
+        positions = {0}
+        for fragment in (normal(value) for value in fragments):
+            if not fragment:
+                continue
+            following = set()
+            for position in positions:
+                for separator in ('', ' ') if position else ('',):
+                    piece = separator + fragment
+                    if expected.startswith(piece, position):
+                        following.add(position + len(piece))
+                    elif prefix and piece.startswith(expected[position:]):
+                        suffix = piece[len(expected) - position:]
+                        if not suffix or suffix[0].isspace():
+                            return True
+            positions = following
+            if len(expected) in positions and prefix:
+                return True
+            if not positions:
+                return False
+        return len(expected) in positions
+
+    def physical_lines(page):
+        # Separate PDF text objects/annotations can share one actual line.
+        # Preserve their character adjacency rather than treating each object
+        # boundary as permission to insert or remove a source space.
+        rows = {}
+        for block in page.get_text('rawdict')['blocks']:
+            if block['type'] != 0:
+                continue
+            for line in block['lines']:
+                for span in line['spans']:
+                    span_rows = {}
+                    for char in span['chars']:
+                        span_rows.setdefault(round(char['origin'][1], 1), []).append(char)
+                    for baseline, chars in span_rows.items():
+                        rows.setdefault(baseline, []).append(chars)
+        # Keep each span's logical order: zero-width ligature continuations
+        # may sit just after the next glyph geometrically. Sorting individual
+        # characters would turn e.g. "fitting" into "fitntig".
+        return [[char for span in sorted(spans, key=lambda chars: chars[0]['bbox'][0]) for char in span]
+                for _, spans in sorted(rows.items())]
+
+    def fragments_in(rectangles, lines):
+        fragments = []
+        for chars in lines:
+            active = [rect for rect in rectangles
+                      if any(rect.y0 <= (char['bbox'][1] + char['bbox'][3]) / 2 <= rect.y1
+                             for char in chars)]
+            if not active:
+                continue
+            # Include real whitespace between adjacent link rectangles on
+            # this line, without manufacturing a separator between glyphs.
+            left, right = min(rect.x0 for rect in active), max(rect.x1 for rect in active)
+            text = ''.join(char['c'] for char in chars
+                           if left - .25 <= (char['bbox'][0] + char['bbox'][2]) / 2 <= right + .25
+                           and any(rect.y0 <= (char['bbox'][1] + char['bbox'][3]) / 2 <= rect.y1
+                                   for rect in active))
+            if normal(text):
+                fragments.append(text)
+        return fragments
+
     rows = []
     with fitz.open(pdf) as document:
         groups = {}
+        page_lines = {}
         for page_number, page in enumerate(document):
             # Writer link rectangles can touch the descenders of the prior
             # line by a fraction of a point. get_textbox then includes an
             # unrelated character (e.g. "E\nc" for a one-letter continuation).
             # Assign glyphs by their centres, reading each page only once.
-            lines = [line for block in page.get_text('rawdict')['blocks'] if block['type'] == 0
-                     for line in block['lines']]
-            lines.sort(key=lambda line: (round(line['bbox'][1], 1), line['bbox'][0]))
+            lines = page_lines[page_number] = physical_lines(page)
 
             def link_text(rect):
                 # Extractors can place a zero-width ligature continuation
                 # just beyond Writer's rounded right edge (observed: 0.04pt).
                 # Allow horizontal rounding only; never borrow another row.
-                rect = fitz.Rect(rect.x0 - .25, rect.y0, rect.x1 + .25, rect.y1)
-                return '\n'.join(''.join(char['c'] for span in line['spans'] for char in span['chars']
-                                       if rect.contains(fitz.Point((char['bbox'][0] + char['bbox'][2]) / 2,
-                                                                   (char['bbox'][1] + char['bbox'][3]) / 2)))
-                                 for line in lines)
+                return '\n'.join(fragments_in([rect], lines))
 
             for link in page.get_links():
                 if link['kind'] != fitz.LINK_GOTO or 'to' not in link:
                     continue
-                text = normal(link_text(link['from']))
+                raw_text = link_text(link['from'])
+                text = normal(raw_text)
                 if not text:
                     continue
                 key = (page_number, link['page'], round(link['to'].x, 1), round(link['to'].y, 1))
                 groups.setdefault(key, []).append((link['from'], text))
+        title_fragments = {}
+        for key, parts in groups.items():
+            rectangles = [rect for rect, text in parts if not (text.isascii() and text.isdigit())]
+            title_fragments[key] = fragments_in(rectangles, page_lines[key[0]])
         used = set()
         for entry in entries:
             candidates = []
             for key, parts in groups.items():
-                titles = [(rect, text) for rect, text in parts
-                          if not (text.isascii() and text.isdigit())]
-                # Rectangles are ordered by reading position, not annotation
-                # order; LibreOffice may write those in reverse order.
-                titles.sort(key=lambda item: (round(item[0].y0, 1), item[0].x0))
-                if normal(' '.join(text for _, text in titles)) == normal(entry['title']):
+                if matches_wrapped(entry['title'], title_fragments[key]):
                     candidates.append((key, parts))
             if len(candidates) != 1:
                 raise ValueError(f'Contents title is absent or ambiguous in native PDF: {entry["title"]}')
@@ -281,12 +344,10 @@ def inspect_contents(source, pdf):
                 raise ValueError('Contents destination falls outside native PDF')
             # Inspect the text immediately following the destination, not a
             # duplicate title elsewhere (such as in the index itself).
-            target = document[target_page]
-            lines = [line for block in target.get_text('dict')['blocks'] if block['type'] == 0
-                     for line in block['lines'] if line['bbox'][3] >= target_y - 2]
-            lines.sort(key=lambda line: (round(line['bbox'][1], 1), line['bbox'][0]))
-            destination_text = normal(' '.join(span['text'] for line in lines[:8] for span in line['spans']))
-            if normal(entry['title']) not in destination_text:
+            lines = [line for line in page_lines[target_page]
+                     if max(char['bbox'][3] for char in line) >= target_y - 2]
+            destination_lines = [''.join(char['c'] for char in line) for line in lines[:8]]
+            if not matches_wrapped(entry['title'], destination_lines, prefix=True):
                 raise ValueError(f'Contents destination does not point to its heading: {entry["title"]}')
             rows.append(dict(entry, contents_page=source_page + 1, shown=int(shown), actual=target_page + 1))
     return {'entries_checked': len(entries), 'page_numbers_match_native_layout': True,

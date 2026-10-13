@@ -163,3 +163,120 @@ def test_native_contents_reserves_room_for_numbers_at_title_wrap_boundaries(tmp_
     native = acceptance()
     rendered = native.convert(os.environ['REPORT_GEN_TEST_SOFFICE'], source, tmp_path / 'render')
     assert native.inspect_contents(source, rendered)['entries_checked'] == 80
+
+
+@pytest.mark.parametrize('title,title_lines,target_lines,valid', [
+    ('8 Editorial ALBOR15_INDEX_WWWWWWWWW', ['8 Editorial ALBOR15_INDEX_WWWW', 'WWWWW'],
+     ['8 Editorial ALBOR15_INDEX_WWW', 'WWWWWW'], True),
+    ('8 Editorial Alpha Beta', ['8 Editorial Alpha', 'Beta'], ['8 Editorial Alpha', 'Beta'], True),
+    ('8 Editorial Alpha Beta', ['8 Editorial AlphaBeta'], ['8 Editorial Alpha Beta'], False),
+    ('8 Editorial AlphaBeta', ['8 Editorial Alpha Beta'], ['8 Editorial AlphaBeta'], False),
+    ('8 Editorial AlphaBeta', ['8 Editorial Alpha', 'Beto'], ['8 Editorial AlphaBeta'], False),
+    ('8 Editorial AlphaBeta', ['8 Editorial AlphaBeta'], ['8 Editorial Alpha Beta'], False),
+    ('8 Editorial AlphaBeta', ['8 Editorial AlphaBeta'], ['8 Editorial AlphaBetaX'], False),
+    ('8 Editorial AlphaBeta', ['9 Editorial AlphaBeta'], ['8 Editorial AlphaBeta'], False),
+])
+def test_contents_guard_distinguishes_visual_line_breaks_from_changed_words(
+        tmp_path, title, title_lines, target_lines, valid):
+    # Synthetic negative-oracle fixture, not native-renderer acceptance.
+    source = tmp_path / 'source.docx'
+    document = Document()
+    heading = document.add_heading(title, 1)
+    add_toc(document, [(heading, title, 1)], 'Contents', RGBColor(0, 0, 0))
+    document.save(source)
+    rendered = tmp_path / 'guard.pdf'
+    with fitz.open() as pdf:
+        pdf.new_page(); pdf.new_page()
+        for index, text in enumerate(target_lines):
+            pdf[1].insert_text((60, 100 + index * 20), text)
+        for index, text in enumerate(title_lines):
+            y = 100 + index * 20
+            pdf[0].insert_text((60, y), text)
+            box = pdf[0].search_for(text)[0]
+            pdf[0].insert_link({'kind': fitz.LINK_GOTO, 'from': box, 'page': 1, 'to': fitz.Point(60, 85)})
+        pdf[0].insert_text((500, y), '2')
+        pdf[0].insert_link({'kind': fitz.LINK_GOTO, 'from': fitz.Rect(498, y - 12, 515, y + 3),
+                            'page': 1, 'to': fitz.Point(60, 85)})
+        pdf.save(rendered)
+    if valid:
+        assert acceptance().inspect_contents(source, rendered)['entries_checked'] == 1
+    else:
+        with pytest.raises(ValueError, match='Contents|contents'):
+            acceptance().inspect_contents(source, rendered)
+
+
+@pytest.mark.skipif(not os.environ.get('REPORT_GEN_TEST_SOFFICE'),
+                    reason='Set REPORT_GEN_TEST_SOFFICE for native LibreOffice field acceptance')
+def test_native_contents_preserves_a_token_wrapped_inside_title_and_destination(tmp_path):
+    document = Document()
+    document.add_paragraph('Native long-token contents regression')
+    document.add_page_break()
+    title = '8 Editorial appendix ALBOR15_INDEX_' + 'W' * 72
+    heading = document.add_heading(title, 1)
+    document.add_paragraph('The title and its live page reference must agree.')
+    add_toc(document, [(heading, title, 1)], 'Contents', RGBColor(0, 0, 0))
+    source = tmp_path / 'token-contents.docx'
+    document.save(source)
+    native = acceptance()
+    pdf = native.convert(os.environ['REPORT_GEN_TEST_SOFFICE'], source, tmp_path / 'render')
+    result = native.inspect_contents(source, pdf)
+    assert result['entries_checked'] == 1
+    assert result['rows'][0]['title'] == title
+    assert result['rows'][0]['shown'] == result['rows'][0]['actual']
+
+
+def test_contents_guard_rejects_ambiguous_duplicate_title_destinations(tmp_path):
+    source = tmp_path / 'source.docx'
+    document = Document()
+    title = '8 Editorial ALBOR15_INDEX_WWWWWWWWW'
+    heading = document.add_heading(title, 1)
+    add_toc(document, [(heading, title, 1)], 'Contents', RGBColor(0, 0, 0))
+    document.save(source)
+    rendered = tmp_path / 'ambiguous-guard.pdf'
+    with fitz.open() as pdf:
+        for _ in range(3):
+            pdf.new_page()
+        for target in (1, 2):
+            pdf[target].insert_text((60, 100), title)
+            y = 80 + target * 40
+            pdf[0].insert_text((60, y), title)
+            box = fitz.Rect(60, y - 12, 470, y + 3)
+            pdf[0].insert_link({'kind': fitz.LINK_GOTO, 'from': box, 'page': target, 'to': fitz.Point(60, 85)})
+            pdf[0].insert_text((500, y), str(target + 1))
+            pdf[0].insert_link({'kind': fitz.LINK_GOTO, 'from': fitz.Rect(498, y - 12, 515, y + 3),
+                                'page': target, 'to': fitz.Point(60, 85)})
+        pdf.save(rendered)
+    with pytest.raises(ValueError, match='absent or ambiguous'):
+        acceptance().inspect_contents(source, rendered)
+
+
+@pytest.mark.parametrize('split_target', [False, True])
+def test_contents_guard_never_invents_space_between_same_line_fragments(tmp_path, split_target):
+    source = tmp_path / 'source.docx'
+    document = Document()
+    title = 'Alpha Beta'
+    heading = document.add_heading(title, 1)
+    add_toc(document, [(heading, title, 1)], 'Contents', RGBColor(0, 0, 0))
+    document.save(source)
+    rendered = tmp_path / 'adjacent-fragments.pdf'
+    with fitz.open() as pdf:
+        pdf.new_page(); pdf.new_page()
+        broken_page = 1 if split_target else 0
+        pdf[1 - broken_page].insert_text((60, 100), title)
+        x = 60
+        for text in ('Alpha', 'Beta'):
+            width = fitz.get_text_length(text, fontsize=11)
+            pdf[broken_page].insert_text((x, 100), text)
+            if not split_target:
+                pdf[0].insert_link({'kind': fitz.LINK_GOTO, 'from': fitz.Rect(x, 88, x + width, 103),
+                                    'page': 1, 'to': fitz.Point(60, 85)})
+            x += width  # Adjacent glyphs, with no visible or source space.
+        if split_target:
+            pdf[0].insert_link({'kind': fitz.LINK_GOTO, 'from': pdf[0].search_for(title)[0],
+                                'page': 1, 'to': fitz.Point(60, 85)})
+        pdf[0].insert_text((500, 100), '2')
+        pdf[0].insert_link({'kind': fitz.LINK_GOTO, 'from': fitz.Rect(498, 88, 515, 103),
+                            'page': 1, 'to': fitz.Point(60, 85)})
+        pdf.save(rendered)
+    with pytest.raises(ValueError, match='Contents|contents'):
+        acceptance().inspect_contents(source, rendered)

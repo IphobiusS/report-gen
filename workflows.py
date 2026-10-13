@@ -442,7 +442,9 @@ def report_sections(data):
                           [[f.get('id', ''), label(VERIFICATIONS, f.get('verification'), lang) if f.get('verification') else ('Sin registrar' if es else 'Not recorded')] for f in fs])
         for f in fs:
             for r in f.get('retests', []):
-                body += '\n\n### ' + md_text(f.get('id', '') + ' · ' + r.get('tested_on', '') + ' · ' + label(RESULTS, r['result'], lang))
+                retest_heading = ' · '.join(value for value in (
+                    f.get('id', ''), r.get('tested_on', ''), label(RESULTS, r['result'], lang)) if value)
+                body += '\n\n### ' + md_text(retest_heading)
                 body += '\n\n' + ('Evaluador: ' if es else 'Assessor: ') + md_text(r.get('assessor', '')) + '\n\n' + r.get('notes_md', '')
                 by_uid = {e.get('uid'): e for e in data.get('evidence', [])}
                 for uid in r.get('evidence_uids', []):
