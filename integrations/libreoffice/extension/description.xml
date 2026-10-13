@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<description xmlns="http://openoffice.org/extensions/description/2006">
-  <identifier value="org.reportgen.technical-literals"/>
-  <version value="0.1.0"/>
-  <display-name>
-    <name lang="en">report-gen technical literal wrapping</name>
-    <name lang="es">Ajuste de literales técnicos de report-gen</name>
-  </display-name>
-</description>

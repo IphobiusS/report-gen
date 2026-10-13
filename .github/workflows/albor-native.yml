@@ -1,0 +1,135 @@
+name: Albor exact DOCX native acceptance
+'on':
+  push:
+    branches:
+    - audit/round15-albor-native
+  workflow_dispatch: {}
+permissions:
+  contents: read
+jobs:
+  albor_native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@v7.0.1
+      with:
+        path: qa-source
+        persist-credentials: false
+    - uses: actions/setup-python@v7.0.0
+      with:
+        python-version: '3.12'
+    - name: Read the immutable product revision from the sealed case manifest
+      id: case
+      run: |-
+        python - <<'PY_MANIFEST'
+        import hashlib, json, os, pathlib, re
+        path = pathlib.Path('qa-source/qa/manifest.json')
+        manifest = json.loads(path.read_text())
+        commit = manifest['product_sha']
+        if not isinstance(commit, str) or not re.fullmatch('[0-9a-f]{40}', commit):
+            raise RuntimeError('Case manifest must pin a complete immutable product SHA')
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+            output.write(f'product_sha={commit}\n')
+        folder = pathlib.Path('out/albor-native-source'); folder.mkdir(parents=True)
+        receipt = {'qa_commit': os.environ['GITHUB_SHA'], 'product_commit': commit, 'manifest_sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'synthetic_case_only': True}
+        (folder / 'source.json').write_text(json.dumps(receipt, indent=2) + '\n')
+        PY_MANIFEST
+    - uses: actions/checkout@v7.0.1
+      with:
+        repository: IphobiusS/report-gen
+        ref: ${{ steps.case.outputs.product_sha }}
+        path: product
+        persist-credentials: false
+    - name: Install native dependencies and standard fonts
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea libpango-1.0-0 libpangocairo-1.0-0
+    - name: Install the pinned product dependencies
+      working-directory: product
+      run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+    - name: Extract the accepted official LibreOffice runtime privately
+      run: |
+        python - <<'PY'
+        import hashlib, json, os, pathlib, shutil, subprocess, tarfile
+        from urllib.request import urlopen
+        base = pathlib.Path(os.environ['RUNNER_TEMP']) / 'report-gen-libreoffice-26.2.6'
+        base.mkdir(exist_ok=False)
+        archive = base / 'LibreOffice_26.2.6_Linux_x86-64_deb.tar.gz'
+        url = 'https://download.documentfoundation.org/libreoffice/stable/26.2.6/deb/x86_64/LibreOffice_26.2.6_Linux_x86-64_deb.tar.gz'
+        expected = 'fd0e8f8f2408dd2e5b90286e60f3f97cf566ba441cd48cfc5bcc68067303e0bc'
+        with urlopen(url, timeout=90) as response, archive.open('wb') as target:
+            shutil.copyfileobj(response, target)
+        actual = hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest()
+        if actual != expected:
+            raise RuntimeError('Official LibreOffice archive checksum mismatch')
+        packages, root = base / 'packages', base / 'root'
+        packages.mkdir(); root.mkdir()
+        installed = []
+        with tarfile.open(archive, 'r:gz') as bundle:
+            members = [entry for entry in bundle.getmembers() if entry.isfile() and entry.name.endswith('.deb') and 'desktop-integration/' not in entry.name]
+            if not members or len({pathlib.PurePosixPath(entry.name).name for entry in members}) != len(members):
+                raise RuntimeError('Unexpected official package inventory')
+            for entry in members:
+                target = packages / pathlib.PurePosixPath(entry.name).name
+                with bundle.extractfile(entry) as source, target.open('wb') as output:
+                    shutil.copyfileobj(source, output)
+                subprocess.run(['dpkg-deb', '--extract', str(target), str(root)], check=True)
+                installed.append({'name': target.name, 'sha256': hashlib.file_digest(target.open('rb'), 'sha256').hexdigest()})
+        program = root / 'opt/libreoffice26.2/program'
+        paths = {'REPORT_GEN_OFFICIAL_LO': program / 'soffice', 'REPORT_GEN_OFFICIAL_UNOPKG': program / 'unopkg', 'REPORT_GEN_OFFICIAL_PYTHON': program / 'python'}
+        if not all(path.is_file() for path in paths.values()):
+            raise RuntimeError('Official Writer, unopkg or bundled Python is missing')
+        native_env = dict(os.environ)
+        for key in ('LD_LIBRARY_PATH', 'PYTHONHOME', 'PYTHONPATH', 'URE_BOOTSTRAP', 'UNO_PATH'):
+            native_env.pop(key, None)
+        native_env['SAL_USE_VCLPLUGIN'] = 'svp'
+        version = subprocess.check_output([str(paths['REPORT_GEN_OFFICIAL_LO']), '--version'], text=True, env=native_env).strip()
+        if not version.startswith('LibreOffice 26.2.6.3 '):
+            raise RuntimeError('Unexpected official LibreOffice build: ' + version)
+        receipt = {'archive_url': url, 'archive_sha256': actual, 'archive_bytes': archive.stat().st_size, 'version': version, 'packages': installed, 'installation': 'Private dpkg-deb extraction; no package scripts or global installation.', 'executables': {key: str(value) for key, value in paths.items()}}
+        output = pathlib.Path('out/albor-native-runtime'); output.mkdir(parents=True)
+        (output / 'runtime.json').write_text(json.dumps(receipt, indent=2) + '\n')
+        with open(os.environ['GITHUB_ENV'], 'a') as environment:
+            for key, path in paths.items():
+                environment.write(f'{key}={path}\n')
+        PY
+    - name: Install and verify the exact licensed CJK font used by Albor
+      run: |-
+        python - <<'PY_FONT'
+        import hashlib, json, pathlib, shutil, subprocess
+        from urllib.request import urlopen
+        from fontTools.ttLib import TTFont
+        root = 'https://raw.githubusercontent.com/notofonts/noto-cjk/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/'
+        font_dir = pathlib.Path.home() / '.local/share/fonts/report-gen-albor'
+        font_dir.mkdir(parents=True, exist_ok=False)
+        output = pathlib.Path('out/albor-native-runtime')
+        files = [
+            (root + 'OTF/Japanese/NotoSansCJKjp-Regular.otf', font_dir / 'NotoSansCJKjp-Regular.otf', '68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5'),
+            (root + 'LICENSE', output / 'OFL-LICENSE.txt', '6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2')]
+        records = []
+        for url, target, expected in files:
+            with urlopen(url, timeout=90) as response, target.open('wb') as stream:
+                shutil.copyfileobj(response, stream)
+            actual = hashlib.file_digest(target.open('rb'), 'sha256').hexdigest()
+            if actual != expected:
+                raise RuntimeError('Pinned CJK font/license checksum mismatch: ' + target.name)
+            records.append({'source': url, 'file': target.name, 'sha256': actual, 'bytes': target.stat().st_size})
+        subprocess.run(['fc-cache', '-f', str(font_dir)], check=True)
+        match = pathlib.Path(subprocess.check_output(['fc-match', 'Noto Sans CJK JP', '-f', '%{file}'], text=True))
+        if hashlib.file_digest(match.open('rb'), 'sha256').hexdigest() != files[0][2]:
+            raise RuntimeError('fontconfig did not select the exact pinned CJK font')
+        with TTFont(match) as font:
+            glyphs = {f'U+{code:04X}': font.getBestCmap()[code] for code in (0x6771, 0x4EAC)}
+        (output / 'font.json').write_text(json.dumps({'status': 'passed', 'files': records, 'fontconfig_selected': str(match), 'glyphs': glyphs, 'license': 'SIL Open Font License 1.1'}, indent=2) + '\n')
+        PY_FONT
+    - name: Accept the original sealed DOCX files through standalone installed OXT
+      run: python qa-source/qa/verify-albor-native.py --product product --fixtures qa-source/qa/fixtures --manifest qa-source/qa/manifest.json
+        --output out/albor-native --executable "$REPORT_GEN_OFFICIAL_LO" --unopkg "$REPORT_GEN_OFFICIAL_UNOPKG" --uno-python "$REPORT_GEN_OFFICIAL_PYTHON"
+    - uses: actions/upload-artifact@v7.0.2
+      if: always()
+      with:
+        name: albor-native-acceptance
+        path: |
+          out/albor-native/
+          out/albor-native-source/
+          out/albor-native-runtime/
