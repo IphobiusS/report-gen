@@ -1,6 +1,12 @@
 """Native browser receipts must not accept a replacement engine or invalid geometry."""
 import importlib.util
 from pathlib import Path
+import os
+import queue
+import subprocess
+import sys
+import threading
+from urllib.request import urlopen
 
 import pytest
 
@@ -56,3 +62,26 @@ def test_native_script_refuses_non_mac_without_emitting_pass(monkeypatch, tmp_pa
     receipt = json.loads((tmp_path / 'results.json').read_text())
     assert receipt['status'] == 'failed'
     assert receipt['checks'][0]['passed'] is False
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='POSIX temporary-directory alias regression, as on macOS')
+def test_synthetic_server_canonicalizes_its_own_temporary_alias(tmp_path):
+    """A /var-like symlink must not make the Mac acceptance server reject itself."""
+    import json
+    real = tmp_path / 'actual-temp'
+    real.mkdir()
+    alias = tmp_path / 'temp-alias'
+    alias.symlink_to(real, target_is_directory=True)
+    process = subprocess.Popen([sys.executable, str(ROOT / 'scripts/browser-server-0212.py')],
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=ROOT,
+                               env={**os.environ, 'TMPDIR': str(alias)})
+    lines = queue.Queue()
+    threading.Thread(target=lambda: lines.put(process.stdout.readline()), daemon=True).start()
+    try:
+        base = json.loads(lines.get(timeout=30))['url']
+        with urlopen(base + '/api/projects', timeout=15) as response:
+            assert response.status == 200
+            projects = json.load(response)
+        assert projects == []
+    finally:
+        safari.stop(process)

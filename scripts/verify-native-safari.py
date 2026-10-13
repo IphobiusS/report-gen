@@ -156,7 +156,7 @@ def main():
                 raise TimeoutError('Synthetic report-gen server did not start')
             base = json.loads(server.stdout.readline())['url']
         driver.request('POST', '/url', {'url': base})
-        ready = "return !document.querySelector('#splash') && typeof GuideUI !== 'undefined' && !projectStore.loading && !projectBusyCount;"
+        ready = "return !document.querySelector('#splash') && typeof GuideUI !== 'undefined' && !projectStore.loading && !projectBusyCount && !!document.querySelector('.workspace-dashboard');"
         wait_for(lambda: driver.script(ready))
         driver.script("localStorage.clear();localStorage.setItem('rg.previewVisible','0');")
         driver.request('POST', '/refresh', {})
