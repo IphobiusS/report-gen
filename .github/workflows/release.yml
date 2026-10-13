@@ -17,7 +17,6 @@ concurrency:
 jobs:
   trusted_commit:
     if: >-
-      false &&
       github.repository == 'IphobiusS/report-gen' &&
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'main' &&

@@ -9,6 +9,7 @@ from hashlib import sha256
 from urllib.parse import unquote
 import posixpath
 import re
+import unicodedata
 
 from lxml import etree
 from export_contract import normal, has_class, W, NS, _word_text
@@ -135,7 +136,8 @@ def dom(root, image_digest, markdown=False, severity_label='Severidad'):
         if href.startswith('#'): href = unquote(href)
         images.append(dict(sha256=image_digest(node.get('src')), caption=caption(text), code_index=codes,
                            preceding_text=prefixes[node], link_target=href))
-    return dict(fields=fields, severity=severity, links=links, images=images, link_parts=link_parts)
+    return dict(fields=fields, severity=severity, links=links, images=images, link_parts=link_parts,
+                link_raw_labels=[n.text_content() for n in anchors])
 
 
 def _figure_link_parts(anchor):
@@ -170,6 +172,7 @@ def word(nodes, package):
     relationships = {n.get('Id'):n.get('Target') for n in reltree}
     fields=[]; links=[]; images=[]; severity=''; codes=0; context=[]
     link_gaps=[]; pending=[]
+    link_raw_labels=[]; link_adjacent=[]; previous_link=None
 
     def link_target(link):
         anchor = link.get(W+'anchor')
@@ -182,8 +185,16 @@ def word(nodes, package):
         return link_target(parent) if parent is not None else ''
 
     def link_flow(node):
+        nonlocal previous_link
         if node.tag == W+'hyperlink':
-            links.append([normal(_word_text(node)), link_target(node)])
+            raw = _word_text(node)
+            links.append([normal(raw), link_target(node)])
+            link_raw_labels.append(raw)
+            # Only immediate siblings share a native inline flow. Whitespace
+            # runs, tabs, breaks, images, bookmarks and paragraph boundaries
+            # cannot be silently discarded when rejoining a link label.
+            link_adjacent.append(previous_link is not None and node.getprevious() is previous_link)
+            previous_link = node
             link_gaps.append(list(pending)); pending.clear()
         elif node.tag.endswith('}inline'):
             pending.append(['image', picture_target(node)])
@@ -225,27 +236,62 @@ def word(nodes, package):
             for row in node.findall('./'+W+'tr'):
                 cells = row.findall('./'+W+'tc')
                 if len(cells)==2: fields.append([normal(_word_text(c)) for c in cells])
-    return dict(fields=fields,severity=severity,links=links,images=images,link_gaps=link_gaps)
+    return dict(fields=fields,severity=severity,links=links,images=images,link_gaps=link_gaps,
+                link_raw_labels=link_raw_labels,link_adjacent=link_adjacent)
 
 
-def _word_links_match(expected, actual, source_parts=()):
-    """Rejoin only consecutive fragments surrounding a linked block figure.
+def _word_links_match(expected, actual, source_parts=(), source_labels=()):
+    """Match authored links to native inline fragments or linked figures.
 
-    Paragraphs cannot share one native Word hyperlink. Their visible labels
-    must reconstruct each authored link exactly, with the same destination
-    throughout. Plain text or an unrelated image between fragments is a break.
+    Inline fragments require proven physical adjacency, the same exact target
+    and the complete source label. Normalize only after joining their raw text,
+    retaining authored spaces at run boundaries. Cross-paragraph reconstruction
+    still requires source evidence of a linked block figure.
     """
     links = actual['links']; gaps = actual.get('link_gaps', [])
+    raw = actual.get('link_raw_labels', [])
+    adjacent = actual.get('link_adjacent', [])
+    def edges(text):
+        return text[:len(text)-len(text.lstrip())], text[len(text.rstrip()):]
+    def consume(label, target, cursor, source_label=None):
+        if source_label is not None and normal(source_label) != label:
+            return None
+        if (cursor < len(links) and links[cursor] == [label, target]
+                and (source_label is None or cursor < len(raw) and edges(raw[cursor]) == edges(source_label))):
+            return cursor + 1
+        joined = ''
+        first = cursor
+        expected_prefix = unicodedata.normalize('NFD', label)
+        while cursor < len(links) and cursor < len(raw) and links[cursor][1] == target:
+            if cursor != first and (cursor >= len(adjacent) or not adjacent[cursor]):
+                break
+            joined += raw[cursor]
+            value = normal(joined)
+            if value == label and (source_label is None or edges(joined) == edges(source_label)):
+                return cursor + 1
+            # A later styled run can finish or canonically reorder a combining
+            # cluster. This is only an early-stop optimization; acceptance
+            # always requires the full normal(joined) == source label above.
+            prefix = unicodedata.normalize('NFD', value)
+            while prefix and unicodedata.category(prefix[-1]).startswith('M'):
+                prefix = prefix[:-1]
+            if not expected_prefix.startswith(prefix):
+                break
+            cursor += 1
+        return None
     cursor = 0
     for index, (label, target) in enumerate(expected):
-        if cursor < len(links) and links[cursor] == [label, target]:
-            cursor += 1
+        source_label = source_labels[index] if index < len(source_labels) else None
+        end = consume(label, target, cursor, source_label)
+        if end is not None:
+            cursor = end
             continue
         parts = source_parts[index] if index < len(source_parts) else []
         if not parts or not any(p['kind'] == 'figure' for p in parts): return False
         if normal(''.join(p['text'] for p in parts)) != label: return False
         for offset, part in enumerate(parts):
-            if cursor >= len(links) or links[cursor] != [normal(part['text']), target]: return False
+            end = consume(normal(part['text']), target, cursor, part['text'])
+            if end is None: return False
             gap = gaps[cursor] if cursor < len(gaps) else [['unknown', '']]
             if part['kind'] == 'figure':
                 # Before the first fragment there may be unrelated preceding
@@ -254,7 +300,7 @@ def _word_links_match(expected, actual, source_parts=()):
                 if offset and gap != [['image', target]]: return False
             elif offset and gap:
                 return False
-            cursor += 1
+            cursor = end
     return cursor == len(links)
 
 
@@ -269,7 +315,8 @@ def check(scope, actual, fmt):
     if fmt == 'docx':
         from exporters.navigation import reference_name
         links = [[label, '#'+reference_name(target[1:]) if target.startswith('#') else target] for label,target in links]
-    if not (_word_links_match(links, actual, expected.get('link_parts', ())) if fmt == 'docx' else links == actual['links']):
+    if not (_word_links_match(links, actual, expected.get('link_parts', ()), expected.get('link_raw_labels', ()))
+            if fmt == 'docx' else links == actual['links']):
         raise ValueError(backend_message('Destino u orden de enlaces alterado ({p0}) / Links changed', p0=scope['id'] or 'informe'))
     images_ok=len(expected['images'])==len(actual['images'])
     for wanted,found in zip(expected['images'],actual['images']):
