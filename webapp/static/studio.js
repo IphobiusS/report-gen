@@ -103,6 +103,7 @@ function update(){
   const names={work:['Trabajar','Work'],review:['Revisar','Review'],deliver:['Entregar','Deliver'],library:['Biblioteca','Library']};
   Object.entries(names).forEach(([key,pair])=>{const b=$('[data-studio-nav="'+key+'"]');b.textContent=w(...pair);b.setAttribute('aria-current',key===mode?'page':'false');b.disabled=!S.slug&&['review','deliver'].includes(key);});
   $('#studioMore summary').textContent=w('Más','More');$('#studioPreferences summary').textContent=w('Preferencias','Preferences');$('#draftExportBtn').textContent=w('Descargar borrador privado','Download private draft');$('#draftExportBtn').disabled=!S.slug;$('#draftImportLabel').textContent=w('Recuperar archivo de borrador','Recover draft file');
+  $('#publicationBtn').textContent=w('Inspector de publicación','Publication inspector');
   $('[data-legacy-copies]').textContent=w('Copias anteriores sin asignación','Unassigned legacy copies');
   const indicator=$('#draftStatus');if(projectStore.dirty){indicator.textContent=projectStore.recoverableRevision===projectStore.revision?w('Borrador recuperable en este navegador','Draft recoverable in this browser'):projectStore.draftError?w('Borrador solo en esta pestaña','Draft only in this tab'):w('Protegiendo borrador…','Protecting draft…');}else indicator.textContent='';
   saveHelp($('#saveError'));

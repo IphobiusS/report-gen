@@ -53,6 +53,74 @@ jobs:
         with:
           name: libreoffice-extension-acceptance
           path: out/libreoffice-extension/
+  libreoffice_extension_official:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install native runtime dependencies and fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea libpango-1.0-0 libpangocairo-1.0-0
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - name: Extract checksum-pinned official LibreOffice 26.2.6 privately
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, pathlib, shutil, subprocess, tarfile
+          from urllib.request import urlopen
+          base = pathlib.Path(os.environ['RUNNER_TEMP']) / 'report-gen-libreoffice-26.2.6'
+          base.mkdir(exist_ok=False)
+          archive = base / 'LibreOffice_26.2.6_Linux_x86-64_deb.tar.gz'
+          url = 'https://download.documentfoundation.org/libreoffice/stable/26.2.6/deb/x86_64/LibreOffice_26.2.6_Linux_x86-64_deb.tar.gz'
+          expected = 'fd0e8f8f2408dd2e5b90286e60f3f97cf566ba441cd48cfc5bcc68067303e0bc'
+          with urlopen(url, timeout=90) as response, archive.open('wb') as target:
+              shutil.copyfileobj(response, target)
+          actual = hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest()
+          if actual != expected:
+              raise RuntimeError('Official LibreOffice archive checksum mismatch')
+          packages, root = base / 'packages', base / 'root'
+          packages.mkdir(); root.mkdir()
+          installed = []
+          with tarfile.open(archive, 'r:gz') as bundle:
+              members = [entry for entry in bundle.getmembers() if entry.isfile() and entry.name.endswith('.deb') and 'desktop-integration/' not in entry.name]
+              if not members or len({pathlib.PurePosixPath(entry.name).name for entry in members}) != len(members):
+                  raise RuntimeError('Unexpected official package inventory')
+              for entry in members:
+                  target = packages / pathlib.PurePosixPath(entry.name).name
+                  with bundle.extractfile(entry) as source, target.open('wb') as output:
+                      shutil.copyfileobj(source, output)
+                  subprocess.run(['dpkg-deb', '--extract', str(target), str(root)], check=True)
+                  installed.append({'name': target.name, 'sha256': hashlib.file_digest(target.open('rb'), 'sha256').hexdigest()})
+          program = root / 'opt/libreoffice26.2/program'
+          paths = {'REPORT_GEN_OFFICIAL_LO': program / 'soffice', 'REPORT_GEN_OFFICIAL_UNOPKG': program / 'unopkg', 'REPORT_GEN_OFFICIAL_PYTHON': program / 'python'}
+          if not all(path.is_file() for path in paths.values()):
+              raise RuntimeError('Official Writer, unopkg or bundled Python is missing')
+          native_env = dict(os.environ)
+          for key in ('LD_LIBRARY_PATH', 'PYTHONHOME', 'PYTHONPATH', 'URE_BOOTSTRAP', 'UNO_PATH'):
+              native_env.pop(key, None)
+          native_env['SAL_USE_VCLPLUGIN'] = 'svp'
+          version = subprocess.check_output([str(paths['REPORT_GEN_OFFICIAL_LO']), '--version'], text=True, env=native_env).strip()
+          if not version.startswith('LibreOffice 26.2.6.3 '):
+              raise RuntimeError('Unexpected official LibreOffice build: ' + version)
+          receipt = {'archive_url': url, 'archive_sha256': actual, 'archive_bytes': archive.stat().st_size, 'version': version, 'packages': installed, 'installation': 'Private dpkg-deb extraction; no package scripts or global installation.', 'executables': {key: str(value) for key, value in paths.items()}}
+          output = pathlib.Path('out/libreoffice-extension-official-runtime'); output.mkdir(parents=True)
+          (output / 'runtime.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          with open(os.environ['GITHUB_ENV'], 'a') as environment:
+              for key, path in paths.items():
+                  environment.write(f'{key}={path}\n')
+          PY
+      - name: Verify unchanged OXT with the official runtime and its own Python UNO
+        run: python scripts/verify-libreoffice-extension.py --output out/libreoffice-extension-official --executable "$REPORT_GEN_OFFICIAL_LO" --unopkg "$REPORT_GEN_OFFICIAL_UNOPKG" --uno-python "$REPORT_GEN_OFFICIAL_PYTHON"
+      - uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: libreoffice-extension-official-acceptance
+          path: |
+            out/libreoffice-extension-official/
+            out/libreoffice-extension-official-runtime/
   webkit:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -70,6 +138,8 @@ jobs:
       - run: npx playwright install --with-deps webkit
       - name: WebKit export polling pagehide and restoration
         run: node tests/test_jobs_lifecycle_0345_browser.cjs --browser webkit --output out/jobs-lifecycle-webkit
+      - name: WebKit restored interface language and accessible labels
+        run: node tests/test_restore_language_0345_browser.cjs --browser webkit --output out/restore-language-webkit
       - name: WebKit create, save, export and portable HTML controls
         run: node scripts/audit-browser-0210.cjs --browser webkit --output out/browser-webkit
       - name: WebKit concurrent tabs, storage faults and crash recovery
@@ -82,3 +152,4 @@ jobs:
             out/browser-webkit/
             out/recovery-webkit/
             out/jobs-lifecycle-webkit/
+            out/restore-language-webkit/

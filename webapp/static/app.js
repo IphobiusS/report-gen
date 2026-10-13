@@ -149,6 +149,10 @@ function applyStaticI18n() {
   document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.getAttribute("data-i18n")); });
   document.querySelectorAll("[data-i18n-title]").forEach(el => { el.title = t(el.getAttribute("data-i18n-title")); });
   document.querySelectorAll("[data-i18n-ph]").forEach(el => { el.placeholder = t(el.getAttribute("data-i18n-ph")); });
+  const previewToggle = $("#previewToggle");
+  if (previewToggle) previewToggle.textContent = S.previewVisible ? t("hide_preview") : t("show_preview");
+  const validateButton = $("#validateBtn");
+  if (validateButton) validateButton.setAttribute("aria-label", t("validate_title"));
   document.documentElement.lang = S.uiLang || "es";
   renderProjectSelect();
   if (S.formats) {
@@ -164,7 +168,6 @@ function setUiLang(lang) {
   const b = document.getElementById("langToggle"); if (b) b.textContent = lang.toUpperCase();
   applyStaticI18n();
   if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.update();
-  const pb = document.getElementById("previewToggle"); if (pb) pb.textContent = S.previewVisible ? t("hide_preview") : t("show_preview");
   // Interface language is a preference. Report language is edited explicitly in metadata.
   renderSidebar(); renderMain();
   if (S.previewVisible && S.previewMode === "live") refreshLivePreview();
@@ -336,6 +339,8 @@ function updateLangBtn() {
 async function init() {
   const sessionInfo = await api.get("/api/session");
   S.workspace_id=transport.bindSession(sessionInfo);
+  // Restore the preference before modules create their first controls.
+  { let l = ["es","en"].includes(sessionInfo.ui_language) ? sessionInfo.ui_language : "es"; try { const stored = localStorage.getItem("rg.uiLang"); if (["es","en"].includes(stored)) l = stored; } catch (_) {} S.uiLang = l; }
   S.version=sessionInfo.version;
   $(".brand-caption").textContent="Pentest reporting / v"+S.version;
   S.formats = await api.get("/api/export-formats");
@@ -355,7 +360,6 @@ async function init() {
   if(typeof GuideUI!=="undefined")GuideUI.bind();
   if(typeof InsightsUI!=="undefined")InsightsUI.bind();
   if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.bind();
-  { let l = ["es","en"].includes(sessionInfo.ui_language) ? sessionInfo.ui_language : "es"; try { const stored = localStorage.getItem("rg.uiLang"); if (["es","en"].includes(stored)) l = stored; } catch (_) {} S.uiLang = l; }
   { let th = "dark"; try { th = localStorage.getItem("rg.uiTheme") || "dark"; } catch (_) {} applyUiTheme(th); }
   updateLangBtn(); applyStaticI18n();
   if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.update();
