@@ -22,6 +22,10 @@
   Microsoft Word ni LibreOffice para Windows o macOS. Las guías detallan el alcance.
 - El índice Word reserva espacio para sus números de página incluso cuando
   un título llena casi toda la línea; los campos PAGEREF siguen siendo nativos.
+- Se corrige la pérdida parcial del área enlazada al guardar en LibreOffice
+  un enlace DOCX externo con fragmento y cambios de escritura o formato.
+  Los tramos contiguos conservan sus caracteres, estilos y destino completo;
+  no se insertan separadores ni se modifica la URL para evitar ese fallo.
 - Las leyendas extensas pueden continuar por páginas sin reducir sus imágenes
   hasta volverlas invisibles. Se conserva el texto y el tamaño de las figuras
   con leyendas breves.

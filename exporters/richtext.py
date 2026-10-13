@@ -1,5 +1,6 @@
 """Convert the shared, sanitized Markdown tree to native Word elements."""
 import re
+import unicodedata
 from copy import deepcopy
 from lxml import html
 from docx.shared import Cm, Pt
@@ -12,6 +13,135 @@ from .pagination import keep_table_together
 from .numbering import WordList
 from .images import word_image, fit_width, figure_layout, paragraph_width, align_inline_picture
 from report_layout import table_layout
+
+
+def _link_script(character):
+    """Separate common CJK/complex font groups without relabelling text.
+
+    This local grouping covers the reproduced Western/CJK, Arabic, Indic and
+    Hangul transitions. It does not emulate every Writer/Unicode script rule.
+    """
+    value = ord(character)
+    if any(first <= value <= last for first, last in (
+        (0x1100, 0x11FF),
+        (0x2E80, 0x2FFF), (0x3000, 0x303F), (0x3040, 0x30FF),
+        (0x3100, 0x312F), (0x3130, 0x318F), (0x31A0, 0x31FF),
+        (0x3400, 0x4DBF), (0x4E00, 0x9FFF), (0xA960, 0xA97F),
+        (0xAC00, 0xD7FF), (0xF900, 0xFAFF), (0xFE30, 0xFE4F),
+        (0xFF66, 0xFFDC), (0x1B000, 0x1B2FF), (0x20000, 0x323AF),
+    )):
+        return 'asian'
+    if (unicodedata.bidirectional(character) in ('R', 'AL')
+            or any(first <= value <= last for first, last in (
+                (0x0900, 0x109F), (0x1700, 0x18AF), (0x1900, 0x1CFF),
+                (0xA800, 0xA95F), (0xA980, 0xABFF), (0x11000, 0x11FFF),
+            ))):
+        return 'complex'
+    return 'western'
+
+
+def _link_cluster_starts(text):
+    """Safe local boundaries for marks, selectors, modifiers and ZWJ chains.
+
+    This is deliberately scoped to inline link segmentation, not a general
+    Unicode grapheme implementation. The original characters are never changed.
+    """
+    for index, character in enumerate(text):
+        if index and (unicodedata.category(character).startswith('M')
+                      or character == '\u200d' or text[index - 1] == '\u200d'
+                      or 0x1F3FB <= ord(character) <= 0x1F3FF):
+            continue
+        yield index
+
+
+def _separate_hyperlink_runs(link):
+    """Keep external fragment links clickable after Writer's DOCX save.
+
+    Writer exports these links as HYPERLINK fields and may close a field at
+    the first font/script run. Adjacent native hyperlinks retain the same
+    destination and character formatting without adding text or break hints.
+    Nontext children remain whole. No new text/run boundary is introduced inside
+    a cluster; existing style-run boundaries receive their own link wrapper.
+    """
+    text_tag, properties_tag, run_tag = qn('w:t'), qn('w:rPr'), qn('w:r')
+    def text_run(child):
+        return (child.tag == run_tag
+                and all(node.tag in (text_tag, properties_tag) for node in child)
+                and any(node.tag == text_tag and node.text for node in child))
+    groups, pending = [], []
+    for child in link:
+        if text_run(child):
+            pending.append(child)
+        else:
+            if pending:
+                groups.append(pending); pending = []
+            groups.append([child])
+    if pending:
+        groups.append(pending)
+    segments = []
+    for group in groups:
+        if not all(text_run(child) for child in group):
+            segments.append(group)
+            continue
+        values = [''.join(node.text or '' for node in run if node.tag == text_tag) for run in group]
+        text = ''.join(values)
+        starts = list(_link_cluster_starts(text))
+        boundaries, offset = {0, len(text)}, 0
+        for value in values:
+            offset += len(value)
+            # A style boundary already exists here. Keeping its runs inside
+            # one hyperlink would still let Writer unlink a styled combining
+            # mark, even though the preceding base retains its destination.
+            boundaries.add(offset)
+        for first, second in zip(starts, starts[1:]):
+            if _link_script(text[first]) != _link_script(text[second]):
+                boundaries.add(second)
+        boundaries = sorted(boundaries)
+        if len(boundaries) <= 2:
+            segments.append(group)
+            continue
+        run_index, run_offset = 0, 0
+        for first, last in zip(boundaries, boundaries[1:]):
+            part = []
+            while run_index < len(group) and run_offset < last:
+                run, value = group[run_index], values[run_index]
+                end = run_offset + len(value)
+                if first < end and last > run_offset:
+                    if first <= run_offset and end <= last:
+                        part.append(run)
+                    else:
+                        clone = deepcopy(run)
+                        node_offset = run_offset
+                        for node in list(clone):
+                            if node.tag != text_tag:
+                                continue
+                            content = node.text or ''
+                            low, high = max(0, first - node_offset), min(len(content), last - node_offset)
+                            if low < high:
+                                node.text = content[low:high]
+                                if node.text[:1].isspace() or node.text[-1:].isspace():
+                                    node.set(qn('xml:space'), 'preserve')
+                            else:
+                                clone.remove(node)
+                            node_offset += len(content)
+                        part.append(clone)
+                if end <= last:
+                    run_offset = end
+                    run_index += 1
+                else:
+                    break
+            segments.append(part)
+    if len(segments) <= 1:
+        return
+    parent, position = link.getparent(), link.getparent().index(link)
+    for segment in segments:
+        clone = OxmlElement('w:hyperlink')
+        clone.attrib.update(link.attrib)
+        for child in segment:
+            clone.append(child)
+        parent.insert(position, clone)
+        position += 1
+    parent.remove(link)
 
 
 def write_markdown(document, text, root, code_block, keep_tables=True, retest=False, column_weights=None):
@@ -86,6 +216,8 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
                     link.set(qn("r:id"), paragraph.part.relate_to(href, RT.HYPERLINK, is_external=True))
                 paragraph._p.append(link)
                 inline(child, paragraph, bold, italic, code, parent=link)
+                if not href.startswith('#') and '#' in href:
+                    _separate_hyperlink_runs(link)
             elif tag == "figcaption":
                 linebreak()
                 inline(child, paragraph, bold, italic, code, parent=parent)

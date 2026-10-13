@@ -18,10 +18,10 @@ jobs:
           sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea libpango-1.0-0 libpangocairo-1.0-0
           libreoffice --version
       - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
-      - name: Recalculate native contents page references before and after reflow
+      - name: Recalculate native contents and preserve complete fragment links after saving
         env:
           REPORT_GEN_TEST_SOFFICE: /usr/bin/libreoffice
-        run: python -m pytest tests/test_word_contents_0344.py --junitxml=out/libreoffice-contents.xml
+        run: python -m pytest tests/test_word_contents_0344.py tests/test_word_fragment_links.py --junitxml=out/libreoffice-contents.xml
       - name: Export, render and inspect the synthetic Word acceptance corpus
         run: python scripts/verify-libreoffice.py --output out/libreoffice --executable /usr/bin/libreoffice --require-stable
       - uses: actions/upload-artifact@v7.0.2
@@ -90,6 +90,8 @@ jobs:
               for key, path in paths.items():
                   environment.write(f'{key}={path}\n')
           PY
+      - name: Preserve complete fragment links through two saves in official LibreOffice
+        run: REPORT_GEN_TEST_SOFFICE="$REPORT_GEN_OFFICIAL_LO" python -m pytest tests/test_word_fragment_links.py --junitxml=out/libreoffice-extension-official-runtime/fragment-links.xml
       - name: Verify unchanged OXT with the official runtime and its own Python UNO
         run: python scripts/verify-libreoffice-extension.py --output out/libreoffice-extension-official --executable "$REPORT_GEN_OFFICIAL_LO" --unopkg "$REPORT_GEN_OFFICIAL_UNOPKG" --uno-python "$REPORT_GEN_OFFICIAL_PYTHON"
       - uses: actions/upload-artifact@v7.0.2
