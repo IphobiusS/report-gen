@@ -174,8 +174,11 @@ def main():
         original = driver.script(state)
         for language in ('es', 'en'):
             driver.script('setUiLang(arguments[0]);applyUiTheme(arguments[1]);', language, 'dark' if language == 'es' else 'light')
-            if not driver.script("const n=document.querySelector('#guideBtn');return !!(n && n.getClientRects().length);"):
+            # Safari can report descendant rectangles for a closed details.
+            # Test the disclosure state, then use the actual visible control.
+            if not driver.script("return document.querySelector('#studioMore').open;"):
                 driver.click('#studioMore > summary')
+            wait_for(lambda: driver.script("return document.querySelector('#studioMore').open && !document.querySelector('#guideBtn').disabled;"))
             driver.click('#guideBtn')
             wait_for(lambda: driver.script("return !!document.querySelector('[data-guide-page]');"))
             for step in range(6):
@@ -212,6 +215,7 @@ def main():
         results['error'] = f'{type(exc).__name__}: {exc}'
         if driver and driver.session:
             try:
+                results['failure_context'] = driver.script("return {url:location.href,selection:typeof S==='undefined'?null:S.sel,menuOpen:document.querySelector('#studioMore')?.open,focused:document.activeElement?.outerHTML,dialogs:[...document.querySelectorAll('dialog[open]')].map(n=>n.className)};")
                 driver.screenshot(out / 'failure.png')
             except Exception:
                 pass
