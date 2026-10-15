@@ -30,10 +30,10 @@ async function shot(key,lang,selector){
   const png=path.join(out,key+'-'+lang+'.png');
   await locator.screenshot({path:png,animations:'disabled'});
   const webp=path.join(out,key+'-'+lang+'.webp');
-  const converted=spawnSync(python,['-c','from PIL import Image; import sys; Image.open(sys.argv[1]).save(sys.argv[2], "WEBP", quality=88, method=6)',png,webp],{encoding:'utf8'});
+  const converted=spawnSync(python,['-c','from PIL import Image; import json, sys; Image.open(sys.argv[1]).save(sys.argv[2], "WEBP", quality=88, method=6); image=Image.open(sys.argv[2]); print(json.dumps({"width":image.width,"height":image.height}))',png,webp],{encoding:'utf8'});
   if(converted.status!==0)throw Error(converted.stderr);
-  const bounds=await locator.boundingBox();
-  result.screens.push({key,lang,file:path.basename(webp),width:Math.round(bounds.width),height:Math.round(bounds.height),sha256:createHash('sha256').update(fs.readFileSync(webp)).digest('hex')});
+  const dimensions=JSON.parse(converted.stdout);
+  result.screens.push({key,lang,file:path.basename(webp),...dimensions,sha256:createHash('sha256').update(fs.readFileSync(webp)).digest('hex')});
 }
 (async()=>{try{
  const base=await new Promise((resolve,reject)=>{let text='';timer=setTimeout(()=>reject(Error('Server timeout')),30000);server.stdout.on('data',data=>{text+=data;for(const line of text.split('\n'))try{const parsed=JSON.parse(line);if(parsed.url){clearTimeout(timer);resolve(parsed.url);}}catch{}});server.on('exit',code=>reject(Error('Server exited '+code)));});
