@@ -16,7 +16,7 @@ const result={engine,source_sha256:createHash('sha256').update(code).digest('hex
 fs.mkdirSync(output,{recursive:true});
 const save=()=>fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(result,null,2));
 const check=(name,value,detail)=>{result.checks.push({name,passed:!!value,detail});save();assert.ok(value,name);};
-let browser,server,hold=false,fail=false,sequence=0;const waiting=new Set(),job={id:'fixture',label:'Server export',stage:'rendering_pdf',revision:'a'.repeat(64),verification_available:false};
+let browser,server,hold=false,heldRequestAccepted=null,fail=false,sequence=0;const waiting=new Set(),job={id:'fixture',label:'Server export',stage:'rendering_pdf',revision:'a'.repeat(64),verification_available:false};
 const fixture=`<!doctype html><html lang="en"><title>Export polling lifecycle</title><body>
 <div id="exportMenu"><div class="action-menu-body"></div></div><div id="projectActionsList"></div><div class="workspace-toolbar"></div>
 <script>
@@ -37,7 +37,7 @@ const settle=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>re
   if(req.url==='/progress.js'){res.writeHead(200,{'Content-Type':'text/javascript'});res.end(code);return;}
   if(req.url==='/api/jobs'){
    result.requests.push({sequence:++sequence,method:req.method});res.on('close',()=>waiting.delete(res));
-   if(hold){waiting.add(res);return;}
+   if(hold){waiting.add(res);heldRequestAccepted?.(sequence);heldRequestAccepted=null;return;}
    res.writeHead(fail?500:200,{'Content-Type':'application/json'});res.end(JSON.stringify(fail?{error:'Simulated polling failure'}:[job]));return;
   }
   res.writeHead(200,{'Content-Type':'text/html'});res.end(fixture);
@@ -59,11 +59,15 @@ const settle=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>re
  const restored=page.waitForResponse(r=>r.url().endsWith('/api/jobs'));
  await page.evaluate(()=>{dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}));dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true}));});await restored;await page.waitForFunction(()=>qa.timers.size===1);
  check('Repeated restoration starts exactly one polling loop',sequence===beforeHide+1&&await page.evaluate(()=>qa.timers.size===1));
- hold=true;const pending=page.waitForRequest(r=>r.url().endsWith('/api/jobs'));
- await page.evaluate(()=>progress.jobs());await pending;const beforeAbort=sequence;
- const aborted=page.waitForEvent('requestfailed',r=>r.url().endsWith('/api/jobs'));
+ hold=true;const accepted=new Promise(resolve=>heldRequestAccepted=resolve),pending=page.waitForRequest(r=>r.url().endsWith('/api/jobs'));
+ await page.evaluate(()=>progress.jobs());const pendingRequest=await pending;
+ // A browser request event precedes server receipt. Take the baseline only
+ // after this exact held GET is accepted, so its arrival is not a successor.
+ const beforeAbort=await accepted;
+ const aborted=page.waitForEvent('requestfailed',r=>r===pendingRequest);
  await page.evaluate(()=>dispatchEvent(new PageTransitionEvent('pagehide',{persisted:true})));await aborted;await settle(page);
- check('Leaving aborts the pending GET and does not schedule a successor',await page.evaluate(()=>qa.timers.size===0)&&sequence===beforeAbort);
+ const remainingTimers=await page.evaluate(()=>qa.timers.size);
+ check('Leaving aborts the pending GET and does not schedule a successor',remainingTimers===0&&sequence===beforeAbort,{remainingTimers,beforeAbort,afterAbort:sequence});
  check('Polling abort never cancels the server export',job.stage==='rendering_pdf'&&result.requests.every(r=>r.method==='GET'));
  hold=false;job.stage='done';for(const res of waiting){res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify([job]));}waiting.clear();
  await page.evaluate(()=>dispatchEvent(new PageTransitionEvent('pageshow',{persisted:true})));

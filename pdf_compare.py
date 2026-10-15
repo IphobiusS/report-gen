@@ -16,6 +16,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 
 from error_messages import message as backend_message
 from input_guard import ensure_data_tree
@@ -30,6 +31,7 @@ MAX_OUTPUT = 32 * 1024 * 1024
 MAX_MEMORY = 768 * 1024 * 1024
 TIMEOUT = 45
 CPU_SECONDS = 40
+MEMORY_POLL_SECONDS = .05
 _WORKERS = threading.BoundedSemaphore(1)
 CSP = ("default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; "
        "img-src data:; object-src 'none'; base-uri 'none'; form-action 'none'")
@@ -119,9 +121,120 @@ def available():
 def capabilities():
     return dict(available=available(), max_pdf_bytes=MAX_PDF, max_pages_per_pdf=MAX_PAGES,
                 max_total_pixels=MAX_TOTAL_PIXELS, max_output_bytes=MAX_OUTPUT,
-                timeout_seconds=TIMEOUT, memory_limit_bytes=MAX_MEMORY,
+                timeout_seconds=TIMEOUT, memory_policy=_memory_policy(),
                 alignment='page_position_top_left', rgb_tolerance=0, max_dpi=96,
                 server_retention=False, external_services=False)
+
+
+def _memory_policy():
+    if sys.platform == 'darwin':
+        return dict(kind='virtual_growth_ceiling_and_sampled_physical_memory',
+                    virtual_growth_limit_bytes=MAX_MEMORY,
+                    physical_memory_termination_threshold_bytes=MAX_MEMORY,
+                    physical_memory_measure='max(resident_size,physical_footprint)',
+                    sampling_interval_ms=round(MEMORY_POLL_SECONDS * 1000),
+                    instantaneous_physical_memory_ceiling=False)
+    return dict(kind='windows_job_process_commit' if os.name == 'nt' else 'absolute_virtual_address_space',
+                hard_limit_bytes=MAX_MEMORY)
+
+
+class _DarwinMemory:
+    """Public libproc ABI from Apple XNU proc_info.h/resource.h (96-byte structs)."""
+    def __init__(self):
+        import ctypes
+
+        class TaskInfo(ctypes.Structure):
+            _fields_ = [(name, ctypes.c_uint64) for name in (
+                'virtual_size', 'resident_size', 'total_user', 'total_system',
+                'threads_user', 'threads_system')] + [(name, ctypes.c_int32) for name in (
+                    'policy', 'faults', 'pageins', 'cow_faults', 'messages_sent', 'messages_received',
+                    'syscalls_mach', 'syscalls_unix', 'csw', 'threadnum', 'numrunning', 'priority')]
+
+        class UsageInfo(ctypes.Structure):
+            _fields_ = [('uuid', ctypes.c_uint8 * 16)] + [(name, ctypes.c_uint64) for name in (
+                'user_time', 'system_time', 'pkg_idle_wkups', 'interrupt_wkups', 'pageins',
+                'wired_size', 'resident_size', 'phys_footprint', 'proc_start_abstime', 'proc_exit_abstime')]
+
+        self.ctypes, self.task_type, self.usage_type = ctypes, TaskInfo, UsageInfo
+        self.library = ctypes.CDLL('/usr/lib/libproc.dylib', use_errno=True)
+        self.library.proc_pidinfo.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_uint64,
+                                             ctypes.c_void_p, ctypes.c_int]
+        self.library.proc_pidinfo.restype = ctypes.c_int
+        self.library.proc_pid_rusage.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_void_p]
+        self.library.proc_pid_rusage.restype = ctypes.c_int
+
+    def virtual_size(self, pid):
+        value, ctypes = self.task_type(), self.ctypes
+        length = self.library.proc_pidinfo(pid, 4, 0, ctypes.byref(value), ctypes.sizeof(value))
+        if length != ctypes.sizeof(value) or not 0 < value.virtual_size < 2**63:
+            raise OSError(ctypes.get_errno(), 'Darwin virtual memory measurement failed')
+        return value.virtual_size
+
+    def physical_size(self, pid):
+        value, ctypes = self.usage_type(), self.ctypes
+        if self.library.proc_pid_rusage(pid, 0, ctypes.byref(value)) != 0:
+            raise OSError(ctypes.get_errno(), 'Darwin physical memory measurement failed')
+        return max(value.resident_size, value.phys_footprint)
+
+
+def _darwin_virtual_limit(resource, memory):
+    # XNU refuses RLIMIT_AS below the already mapped shared cache/runtime.
+    # Limit additional virtual space, preserving any stricter inherited limit.
+    baseline = memory.virtual_size(os.getpid())
+    ceiling = baseline + MAX_MEMORY
+    inherited = resource.getrlimit(resource.RLIMIT_AS)
+    for value in inherited:
+        if value != resource.RLIM_INFINITY:
+            ceiling = min(ceiling, value)
+    if ceiling <= baseline:
+        raise _Rejected('limits')
+    resource.setrlimit(resource.RLIMIT_AS, (ceiling, ceiling))
+    if resource.getrlimit(resource.RLIMIT_AS) != (ceiling, ceiling):
+        raise _Rejected('limits')
+    return dict(baseline_virtual_bytes=baseline, hard_virtual_limit_bytes=ceiling)
+
+
+def _supervise_memory(process, timeout, read_memory, threshold=MAX_MEMORY):
+    """Sample only our unreaped child; every failure kills and reaps it.
+
+    This is a sampled termination threshold, not an instantaneous RAM ceiling.
+    Keeping the child unreaped while reading its PID prevents PID reuse.
+    """
+    deadline = time.monotonic() + timeout
+    try:
+        while process.poll() is None:
+            try:
+                measured = read_memory(process.pid)
+            except OSError:
+                if process.poll() is not None:
+                    break  # The child exited between poll and the native read.
+                raise
+            if type(measured) is not int or measured < 0 or measured > threshold:
+                raise _Rejected('limits')
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(process.args, timeout)
+            try:
+                return process.wait(timeout=min(MEMORY_POLL_SECONDS, remaining))
+            except subprocess.TimeoutExpired:
+                pass
+        return process.returncode
+    finally:
+        if process.poll() is None:
+            process.kill()
+        process.wait()
+
+
+def _execute(command, **options):
+    if sys.platform != 'darwin':
+        return subprocess.run(command, **options)
+    # Initialize the native reader before starting a child. Failure is closed.
+    memory = _DarwinMemory()
+    timeout = options.pop('timeout')
+    options.pop('check', None)
+    with subprocess.Popen(command, **options) as process:
+        code = _supervise_memory(process, timeout, memory.physical_size)
+    return subprocess.CompletedProcess(command, code)
 
 
 def compare(before, after, language='es'):
@@ -144,13 +257,13 @@ def compare(before, after, language='es'):
             (directory / 'before.pdf').write_bytes(before)
             (directory / 'after.pdf').write_bytes(after)
             try:
-                result = subprocess.run(
+                result = _execute(
                     [sys.executable, str(Path(__file__).resolve()), '--worker', folder, language],
                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                     timeout=TIMEOUT, check=False)
             except subprocess.TimeoutExpired as exc:
                 raise ValueError(error('timeout', language)) from exc
-            except OSError as exc:
+            except (OSError, _Rejected) as exc:
                 raise ValueError(error('limits', language)) from exc
             if result.returncode:
                 code = 'limits'
@@ -191,11 +304,15 @@ def _resource_limits():
         job.assign(SimpleNamespace(_handle=-1))  # GetCurrentProcess pseudo handle.
         return job  # Keep the job handle alive until the worker exits.
     import resource
-    resource.setrlimit(resource.RLIMIT_AS, (MAX_MEMORY, MAX_MEMORY))
+    if sys.platform == 'darwin':
+        memory_limit = _darwin_virtual_limit(resource, _DarwinMemory())
+    else:
+        resource.setrlimit(resource.RLIMIT_AS, (MAX_MEMORY, MAX_MEMORY))
+        memory_limit = None
     resource.setrlimit(resource.RLIMIT_CPU, (CPU_SECONDS, CPU_SECONDS))
     resource.setrlimit(resource.RLIMIT_FSIZE, (MAX_OUTPUT, MAX_OUTPUT))
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-    return None
+    return memory_limit
 
 
 def _validated_document(raw):
@@ -307,6 +424,7 @@ def _comparison(before, after, language):
                         before_pages=len(left), after_pages=len(right),
                         renderer='PDFium ' + str(pypdfium2.PDFIUM_INFO), alignment='page_position_top_left',
                         max_dpi=96, rgb_tolerance=0, semantic_equivalence_verified=False,
+                        memory_policy=_memory_policy(),
                         summary={key: 0 for key in ('unchanged', 'changed', 'added', 'removed', 'dimensions_changed')},
                         pages=rows)
         parts, output_size = [], 0

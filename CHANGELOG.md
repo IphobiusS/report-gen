@@ -11,6 +11,11 @@
 - Corregida la documentación de publicación: siete controles obligatorios
   y seis documentos ficticios en el corpus opcional de Microsoft Word.
   La aceptación de Word sigue requiriendo una ejecución real en un equipo apto.
+- Corregido el aislamiento en macOS: techo de crecimiento virtual y supervisor
+  de memoria residente/huella física con muestreo, descritos explícitamente.
+  Las pruebas nativas exigen rechazo real de reservas y terminación del proceso.
+- Las pruebas de navegador esperan recepción del servidor y cierre del diálogo;
+  su inicialización no se ejecuta en los PDF aislados mediante sandbox.
 
 # Cambios 0.35.0 (2026-10-15)
 

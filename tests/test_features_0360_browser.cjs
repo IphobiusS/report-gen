@@ -53,7 +53,7 @@ let browser,page,server,timer;
  for(const lang of ['es','en','pt']){
   const l=labels[lang],context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce',acceptDownloads:true});
   await context.route('**/*',route=>{const url=route.request().url();if(/^https?:/.test(url)&&!url.startsWith(base+'/')){results.externalRequests.push(url);return route.abort();}return route.continue();});
-  await context.addInitScript(lang=>{localStorage.setItem('rg.uiLang',lang);localStorage.setItem('rg.previewVisible','0');const create=URL.createObjectURL.bind(URL),revoke=URL.revokeObjectURL.bind(URL);window.pdfObjectURLs={created:[],revoked:[]};URL.createObjectURL=blob=>{const url=create(blob);window.pdfObjectURLs.created.push(url);return url;};URL.revokeObjectURL=url=>{window.pdfObjectURLs.revoked.push(url);return revoke(url);};},lang);
+  await context.addInitScript(lang=>{if(window!==window.top)return;localStorage.setItem('rg.uiLang',lang);localStorage.setItem('rg.previewVisible','0');const create=URL.createObjectURL.bind(URL),revoke=URL.revokeObjectURL.bind(URL);window.pdfObjectURLs={created:[],revoked:[]};URL.createObjectURL=blob=>{const url=create(blob);window.pdfObjectURLs.created.push(url);return url;};URL.revokeObjectURL=url=>{window.pdfObjectURLs.revoked.push(url);return revoke(url);};},lang);
   page=await context.newPage();page.on('pageerror',error=>results.pageErrors.push(String(error)));
   await page.goto(base);await page.locator('.workspace-dashboard').waitFor();
   await page.evaluate(async lang=>{const slug='features-'+lang;await requireOk(await api.post('/api/projects',{slug,title:'Synthetic features '+lang}));await refreshProjects();await loadProject(slug);},lang);
@@ -66,13 +66,16 @@ let browser,page,server,timer;
   await dialog.locator('.intake-rows>article').first().locator('details').first().locator('summary').first().click();
   await dialog.getByText(l.origin,{exact:true}).first().click();
   check(lang+' SARIF source level, tool, path and hash survive preview',(await dialog.innerText()).includes('warning')&&(await dialog.innerText()).includes('Synthetic scanner')&&(await dialog.innerText()).includes('https://example.test/source.js')&&(await dialog.innerText()).includes('SHA-256:'));
-  await screenshot(page,'sarif-review-'+lang);
+  await screenshot(page,'sarif-provenance-'+lang);
+  await dialog.locator('.intake-rows>article').first().locator('details').first().locator('summary').first().click();
+  await dialog.evaluate(el=>{el.scrollTop=0;});await screenshot(page,'sarif-review-'+lang);
   await page.setViewportSize({width:320,height:1000});await fit(page,dialog,lang+' SARIF review fits320px');
   await dialog.getByRole('button',{name:l.apply,exact:true}).click();await dialog.waitFor({state:'detached'});
   check(lang+' SARIF apply imports exactly two informational, unverified observations',await page.evaluate(count=>{const added=S.data.findings.slice(count);return added.length===2&&added.every(f=>f.severity==='info'&&f.verification==='unverified'&&f.import_source.format==='sarif'&&f.import_source.reviewed===false)&&added.map(f=>f.import_source.level).join(',')==='warning,note';},count));
   await page.setViewportSize({width:1440,height:1000});dialog=await intake(page,lang);
   check(lang+' SARIF reimport disables every existing or excluded candidate',await dialog.locator('[data-intake-row]:not(:disabled)').count()===0&&await dialog.getByRole('button',{name:l.apply,exact:true}).isDisabled());
-  await dialog.getByRole('button',{name:l.close,exact:true}).click();
+  await dialog.getByRole('button',{name:l.close,exact:true}).click();await dialog.waitFor({state:'detached'});
+  if(await page.locator('#studioMore').evaluate(el=>el.open))await page.locator('#studioMore > summary').click();
   await page.evaluate(()=>select('workflow','history'));
   const entry=page.getByRole('button',{name:l.compare,exact:true});await entry.waitFor();await entry.click();
   dialog=page.locator('[data-pdf-compare]');await dialog.waitFor();const beforeComparison=await snapshot(page);
@@ -80,6 +83,7 @@ let browser,page,server,timer;
   await dialog.locator('[data-pdf-after]').setInputFiles({name:'later.pdf',mimeType:'application/pdf',buffer:later});
   await dialog.locator('[data-pdf-compare-submit]').click();
   const frame=dialog.frameLocator('[data-pdf-compare-frame]');await frame.locator('#comparison-summary').waitFor({timeout:60000});
+  const comparisonURLs=[await dialog.locator('[data-pdf-compare-frame]').getAttribute('src')];
   const manifest=JSON.parse(await frame.locator('#comparison-manifest').textContent());
   check(lang+' PDF comparison identifies unchanged, changed and added pages',manifest.summary.unchanged===1&&manifest.summary.changed===1&&manifest.summary.added===1&&manifest.summary.total_pages===3,manifest.summary);
   check(lang+' PDF comparison stays sandboxed without scripts',await dialog.locator('iframe').getAttribute('sandbox')===''&&await frame.locator('script').count()===0);
@@ -91,6 +95,9 @@ let browser,page,server,timer;
   check(lang+' downloaded comparison contains the same manifest and embedded images',download.suggestedFilename()==='report-gen-pdf-comparison.html'&&downloadedHTML.includes('data:image/png;base64,')&&JSON.stringify(downloadedManifest)===JSON.stringify(manifest));
   results.comparisons.push({language:lang,path:downloaded,sha256:createHash('sha256').update(downloadedBytes).digest('hex'),summary:manifest.summary});save();
   await dialog.locator('[data-pdf-compare-download]').scrollIntoViewIfNeeded();await screenshot(page,'pdf-comparison-'+lang);
+  await frame.locator('#page-2').scrollIntoViewIfNeeded();await frame.locator('#page-2').evaluate(el=>Promise.all([...el.querySelectorAll('img')].map(img=>img.decode())));
+  await screenshot(page,'pdf-differences-'+lang);
+  await frame.locator('#comparison-summary').scrollIntoViewIfNeeded();
   await page.setViewportSize({width:320,height:1000});await fit(page,dialog,lang+' PDF comparison fits320px');await dialog.locator('[data-pdf-compare-download]').scrollIntoViewIfNeeded();await screenshot(page,'pdf-comparison-mobile-'+lang);
   const currentURL=await dialog.locator('[data-pdf-compare-frame]').getAttribute('src');
   await dialog.locator('[data-pdf-after]').setInputFiles({name:'earlier-again.pdf',mimeType:'application/pdf',buffer:earlier});
@@ -98,10 +105,15 @@ let browser,page,server,timer;
   if(lang==='es'){
    await dialog.locator('[data-pdf-before]').setInputFiles({name:'later.pdf',mimeType:'application/pdf',buffer:later});
    await dialog.locator('[data-pdf-compare-submit]').click();await frame.locator('#comparison-summary').waitFor({timeout:60000});
+   comparisonURLs.push(await dialog.locator('[data-pdf-compare-frame]').getAttribute('src'));
    const reversed=JSON.parse(await frame.locator('#comparison-manifest').textContent());check('Reversed PDF comparison identifies the removed page',reversed.summary.removed===1&&reversed.summary.added===0,reversed.summary);
   }
   await dialog.getByRole('button',{name:l.close,exact:true}).click();
-  check(lang+' closing comparison restores entry focus and revokes all comparison URLs',await entry.evaluate(el=>document.activeElement===el)&&await page.evaluate(()=>window.pdfObjectURLs.created.every(url=>window.pdfObjectURLs.revoked.includes(url))));
+  // Native dialog.close queues its close event; cleanup and focus restoration
+  // finish when the production listener removes the dialog.
+  await dialog.waitFor({state:'detached'});
+  const cleanup=await entry.evaluate((el,urls)=>({focusRestored:document.activeElement===el,activeElement:{tag:document.activeElement?.tagName,id:document.activeElement?.id,text:document.activeElement?.textContent?.slice(0,100)},comparisonURLs:urls,created:window.pdfObjectURLs.created,revoked:window.pdfObjectURLs.revoked,allCreated:urls.every(url=>window.pdfObjectURLs.created.includes(url)),allRevoked:urls.every(url=>window.pdfObjectURLs.revoked.includes(url))}),comparisonURLs);
+  check(lang+' closing comparison restores entry focus and revokes all comparison URLs',cleanup.focusRestored&&cleanup.allCreated&&cleanup.allRevoked,cleanup);
   await page.setViewportSize({width:1440,height:1000});
   // Delay only this request; cancellation must not leave a preview or download.
   let release,started;const held=new Promise(resolve=>release=resolve),requestStarted=new Promise(resolve=>started=resolve);
@@ -111,7 +123,7 @@ let browser,page,server,timer;
   await dialog.locator('[data-pdf-compare-submit]').click();await requestStarted;
   await dialog.locator('[data-pdf-compare-cancel]').click();
   check(lang+' cancelling restores usable controls without a result',(await dialog.locator('[data-pdf-compare-status]').innerText()).startsWith(l.cancelled)&&!await dialog.locator('[data-pdf-compare-submit]').isDisabled()&&await dialog.locator('iframe').count()===0);
-  release();await context.unroute(base+'/api/pdf-compare',hold);await dialog.getByRole('button',{name:l.close,exact:true}).click();
+  release();await context.unroute(base+'/api/pdf-compare',hold);await dialog.getByRole('button',{name:l.close,exact:true}).click();await dialog.waitFor({state:'detached'});
   check(lang+' cancelled comparison keeps exact project content',await snapshot(page)===beforeComparison);
   await context.close();
  }

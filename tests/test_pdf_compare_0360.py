@@ -5,6 +5,7 @@ from html import unescape
 from html.parser import HTMLParser
 from io import BytesIO
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -165,7 +166,7 @@ def test_full_document_pixel_budget_checked_before_rendering():
 def test_byte_and_language_limits_before_spawn(monkeypatch):
     def forbidden(*args, **kwargs):
         pytest.fail('must not start an invalid worker')
-    monkeypatch.setattr(pdf_compare.subprocess, 'run', forbidden)
+    monkeypatch.setattr(pdf_compare, '_execute', forbidden)
     with pytest.raises(ValueError, match='16 MiB'):
         pdf_compare.compare(b'%PDF-' + b'x' * pdf_compare.MAX_PDF, blank(), 'en')
     with pytest.raises(ValueError, match='Idiomas admitidos'):
@@ -184,11 +185,97 @@ def test_busy_worker_rejects_second_comparison():
 def test_native_worker_can_establish_os_limits_before_parsing():
     # This trusted test-only child exposes an OS setup exception in native CI.
     # The production child continues to return generic, private diagnostics.
-    probe = subprocess.run([sys.executable, '-c',
-        'import pdf_compare; keeper = pdf_compare._resource_limits(); print("limits-ready")'],
+    probe = subprocess.run([sys.executable, '-c', '''
+import mmap
+import sys
+import pdf_compare
+keeper = pdf_compare._resource_limits()
+print("limits-ready", flush=True)
+if sys.platform != 'win32':
+    # Reserve address space without touching pages or allocating physical GB.
+    try:
+        region = mmap.mmap(-1, 2 * pdf_compare.MAX_MEMORY)
+    except (OSError, ValueError, MemoryError):
+        print("reservation-blocked", flush=True)
+    else:
+        region.close()
+        raise AssertionError("Virtual reservation exceeded the enforced budget")
+'''],
         cwd=Path(pdf_compare.__file__).parent, capture_output=True, timeout=15, check=False)
     assert probe.returncode == 0, probe.stderr.decode('utf-8', errors='replace')
-    assert probe.stdout.strip() == b'limits-ready'
+    assert b'limits-ready' in probe.stdout
+    if sys.platform != 'win32':
+        assert b'reservation-blocked' in probe.stdout
+
+
+def test_darwin_virtual_budget_keeps_baseline_and_inherited_stricter_limits():
+    class Limits:
+        RLIMIT_AS, RLIM_INFINITY = 5, -1
+        value = (-1, -1)
+        def getrlimit(self, kind):
+            assert kind == self.RLIMIT_AS
+            return self.value
+        def setrlimit(self, kind, value):
+            assert kind == self.RLIMIT_AS
+            self.value = value
+    resource = Limits()
+    baseline = 400 * 1024**3  # macOS shared mappings can be very large.
+    memory = SimpleNamespace(virtual_size=lambda pid: baseline)
+    result = pdf_compare._darwin_virtual_limit(resource, memory)
+    assert result['baseline_virtual_bytes'] == baseline
+    assert resource.value == (baseline + pdf_compare.MAX_MEMORY,) * 2
+    resource.value = (baseline + 1024, baseline + 2048)
+    pdf_compare._darwin_virtual_limit(resource, memory)
+    assert resource.value == (baseline + 1024,) * 2
+    resource.value = (baseline, baseline)
+    with pytest.raises(pdf_compare._Rejected, match='limits'):
+        pdf_compare._darwin_virtual_limit(resource, memory)
+
+
+@pytest.mark.parametrize('mode', ['over_budget', 'measurement_error', 'deadline'])
+def test_memory_supervisor_kills_and_reaps_actual_child_on_every_failure(mode):
+    def read(pid):
+        assert pid == process.pid
+        if mode == 'measurement_error':
+            raise OSError('synthetic native measurement failure')
+        return pdf_compare.MAX_MEMORY + 1 if mode == 'over_budget' else 1
+    with subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'],
+                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL) as process:
+        expected = {'over_budget': pdf_compare._Rejected, 'measurement_error': OSError,
+                    'deadline': subprocess.TimeoutExpired}[mode]
+        with pytest.raises(expected):
+            pdf_compare._supervise_memory(process, .1 if mode == 'deadline' else 2, read)
+        assert process.returncode is not None and process.poll() is not None
+        if os.name != 'nt':
+            with pytest.raises(ChildProcessError):
+                os.waitpid(process.pid, os.WNOHANG)  # Already reaped, not a zombie.
+
+
+def test_memory_supervisor_reaps_normal_exit_without_a_false_limit_failure():
+    with subprocess.Popen([sys.executable, '-c', 'pass'], stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL) as process:
+        assert pdf_compare._supervise_memory(process, 5, lambda pid: 1) == 0
+        assert process.returncode == 0
+
+
+def test_native_darwin_physical_sampler_and_honest_capabilities():
+    policy = pdf_compare.capabilities()['memory_policy']
+    if sys.platform == 'darwin':
+        memory = pdf_compare._DarwinMemory()
+        assert memory.virtual_size(os.getpid()) > 0
+        assert memory.physical_size(os.getpid()) > 0
+        assert policy['instantaneous_physical_memory_ceiling'] is False
+        assert policy['sampling_interval_ms'] == 50
+        # A one-byte threshold proves native measurement and kill/reap without
+        # stressing the host: an ordinary Python process already exceeds it.
+        with subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'],
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) as process:
+            with pytest.raises(pdf_compare._Rejected, match='limits'):
+                pdf_compare._supervise_memory(process, 5, memory.physical_size, threshold=1)
+            assert process.returncode is not None
+    else:
+        assert policy['hard_limit_bytes'] == pdf_compare.MAX_MEMORY
 
 
 def test_timeout_deletes_inputs_releases_capacity_and_uses_no_pipes(monkeypatch):
@@ -199,7 +286,7 @@ def test_timeout_deletes_inputs_releases_capacity_and_uses_no_pipes(monkeypatch)
         assert kwargs['timeout'] == pdf_compare.TIMEOUT
         assert kwargs['stdout'] == kwargs['stderr'] == subprocess.DEVNULL
         raise subprocess.TimeoutExpired(command, kwargs['timeout'])
-    monkeypatch.setattr(pdf_compare.subprocess, 'run', timeout)
+    monkeypatch.setattr(pdf_compare, '_execute', timeout)
     with pytest.raises(ValueError, match='exceeded 45 seconds'):
         pdf_compare.compare(blank(), blank(), 'en')
     assert directories and all(not directory.exists() for directory in directories)
@@ -214,7 +301,7 @@ def test_parent_bounds_output_and_cleans_up(monkeypatch):
         path = Path(command[-2]); directories.append(path)
         (path / 'comparison.html').write_bytes(b'<!doctype html>' + b'x' * 101)
         return SimpleNamespace(returncode=0)
-    monkeypatch.setattr(pdf_compare.subprocess, 'run', output)
+    monkeypatch.setattr(pdf_compare, '_execute', output)
     with pytest.raises(ValueError, match='32 MiB'):
         pdf_compare.compare(blank(), blank(), 'en')
     assert all(not path.exists() for path in directories)
@@ -232,7 +319,7 @@ def test_unknown_worker_failure_is_generic_and_cleanup_complete(monkeypatch):
         path = Path(command[-2]); directories.append(path)
         (path / 'status').write_text('secret-third-party-error', encoding='ascii')
         return SimpleNamespace(returncode=3)
-    monkeypatch.setattr(pdf_compare.subprocess, 'run', failure)
+    monkeypatch.setattr(pdf_compare, '_execute', failure)
     with pytest.raises(ValueError, match='memory and process limits') as error:
         pdf_compare.compare(blank(), blank(), 'en')
     assert 'secret' not in str(error.value) and all(not path.exists() for path in directories)
