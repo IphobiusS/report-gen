@@ -68,6 +68,7 @@ def create(data, directory, body):
 
 
 def link(data, directory, uid, finding_uid):
+    from engine import report_language
     out = deepcopy(data)
     item = next((x for x in out.get('capture_inbox', []) if x['uid'] == uid), None)
     finding = next((x for x in out.get('findings', []) if x['uid'] == finding_uid), None)
@@ -96,7 +97,7 @@ def link(data, directory, uid, finding_uid):
             step.update(command=item['raw_text'], text_md='\n\n'.join(workflows.md_text(line) for line in item['note'].splitlines()))
         if finding.get('mode') == 'machine':
             phases = finding.setdefault('phases', [])
-            if not phases: phases.append(dict(name=('Capturas', 'Captures', 'Capturas')[language_index(out.get('meta', {}).get('lang'))], steps=[]))
+            if not phases: phases.append(dict(name=('Capturas', 'Captures', 'Capturas')[language_index(report_language(out))], steps=[]))
             phases[-1].setdefault('steps', []).append(step)
         else: finding.setdefault('walkthrough', []).append(step)
     if item.get('finding_uid'): item['previous_finding_uid'] = item['finding_uid']

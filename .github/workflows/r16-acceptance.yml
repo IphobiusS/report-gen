@@ -1,0 +1,56 @@
+name: R16 trilingual acceptance
+
+on:
+  push:
+    branches: [main, feature/portuguese-r16]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  estuario:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      REPORT_GEN_REQUIRE_MULTISCRIPT_FONTS: '1'
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-audited.txt
+      - name: Install native renderer and multiscript fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto-core fonts-noto-cjk libpango-1.0-0 libpangocairo-1.0-0
+          fc-cache -f
+          libreoffice --version
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - name: Record exact renderer and font versions
+        run: |
+          mkdir -p out/r16-runtime
+          libreoffice --version > out/r16-runtime/libreoffice-version.txt
+          fc-list : family file | sort > out/r16-runtime/fonts.txt
+          python -m pip freeze > out/r16-runtime/python-packages.txt
+          dpkg-query -W 'libreoffice*' 'fonts-noto*' > out/r16-runtime/system-packages.txt
+      - name: Verify shaping, literal URLs, regional content and repeated cells
+        run: python -m pytest tests/test_pdf_shaping_0350.py tests/test_pdf_hyphens_0315.py tests/test_pdf_finding_regions_0342.py tests/test_pdf_repeated_cells_0350.py tests/test_portuguese_exports_0350.py --junitxml=out/r16-runtime/regressions.xml
+      - name: Export and inspect the complete fictional case in ES, EN and PT
+        run: python scripts/audit-estuario-r16.py --output out/estuario-r16
+      - name: Render every DOCX with stable LibreOffice and preserve review pages
+        run: python scripts/audit-estuario-native-r16.py --input out/estuario-r16 --output out/estuario-r16-native --executable /usr/bin/libreoffice
+      - name: Preserve reports, original exports and rendered pages
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: estuario-r16-${{ github.sha }}
+          path: |
+            out/r16-runtime/
+            out/estuario-r16/
+            out/estuario-r16-native/
+          if-no-files-found: error
+          retention-days: 14

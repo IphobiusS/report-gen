@@ -75,7 +75,7 @@ summary:
   chart_scope: "Distribuição dos achados com severidade atribuída"
   and_machines_one: "e 1 registro de máquina"
   and_machines_many: "e {n} registros de máquinas"
-appendix_intro: "Os artefatos a seguir foram coletados como evidência de acesso durante a avaliação."
+appendix_intro: "Este apêndice reúne as referências a artefatos documentadas no relatório. A inclusão não comprova acesso, coleta nem validação; cada referência deve ser lida junto às evidências, ao estado de verificação e às limitações de seu registro."
 prose:
   confidentiality:
     - "Este documento contém informações proprietárias e confidenciais sobre os sistemas, as aplicações e a postura de segurança de {client}. Destina-se exclusivamente ao pessoal autorizado a recebê-lo. Os achados, as técnicas e as evidências descritos podem ser utilizados para comprometer o ambiente avaliado e devem ser tratados de acordo com essa sensibilidade."

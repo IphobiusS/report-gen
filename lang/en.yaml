@@ -75,7 +75,7 @@ summary:
   chart_scope: "Distribution of findings with an assigned severity"
   and_machines_one: "and 1 machine record"
   and_machines_many: "and {n} machine records"
-appendix_intro: "The following artifacts were collected as evidence of access during the engagement."
+appendix_intro: "This appendix gathers the artifact references documented in the report. Inclusion does not establish access, collection or validation; read each reference alongside the evidence, verification status and limitations of its record."
 prose:
   confidentiality:
     - "This document contains proprietary and confidential information regarding the systems, applications, and security posture of {client}. It is intended solely for the personnel authorized to receive it. The findings, techniques, and evidence described here could be used to compromise the assessed environment and must be handled accordingly."

@@ -6,14 +6,14 @@ La biblioteca reúne 30 perfiles especializados (26 de certificación o práctic
 
 Abre **Biblioteca de informes** desde el panel izquierdo, la pantalla inicial o **Nuevo proyecto**. Para empezar, **Serio** es la recomendación general y mantiene la apariencia del preset Base. La biblioteca abre el diseño de tu proyecto cuando ya hay uno seleccionado; no lo sustituye por la recomendación.
 
-Elige portada, resumen o página técnica para comparar la misma clase de página entre diseños, en español o inglés. Las muestras se exportan realmente por la herramienta con datos ficticios. Filtra por propósito (general, empresarial, Red Team, Blue Team o certificación), proveedor o plantillas personales, y busca por nombre. Las referencias históricas permanecen disponibles como contexto.
+Elige portada, resumen o página técnica para comparar la misma clase de página entre diseños, en español, inglés o portugués de Brasil. Las muestras se exportan realmente por la herramienta con datos ficticios. Filtra por propósito (general, empresarial, Red Team, Blue Team o certificación), proveedor o plantillas personales, y busca por nombre. Las referencias históricas permanecen disponibles como contexto.
 
 **Nuevo proyecto** abre primero la galería. Selecciona una apariencia y pulsa **Continuar con esta plantilla** para completar título, cliente, carpeta e idioma. Puedes volver a la galería o cerrar y reabrir el formulario sin perder esos datos durante la sesión. La estructura inicial es independiente de la apariencia elegida; los presets siguen disponibles en opciones adicionales. Explorar muestras no crea un proyecto ni modifica el abierto.
 
-- **Crear proyecto** inicia un documento ES o EN con instrucciones `TODO`, sin hallazgos ni resultados inventados.
+- **Crear proyecto** inicia un documento ES, EN o PT con instrucciones `TODO`, sin hallazgos ni resultados inventados.
 - **Aplicar apariencia** cambia exclusivamente `meta.theme` y `meta.design`. Conserva título, cliente, secciones, hallazgos, imágenes, evidencias y el resto de los datos. Antes de aplicar, se guarda el trabajo y se comprueba la revisión del proyecto.
 - **Marca** utiliza el acento del perfil. **Sobria** utiliza una paleta gris azulada y reduce las superficies oscuras. El cuerpo de los perfiles nuevos permanece sobre blanco.
-- **Duplicar y personalizar** permite cambiar nombre, colores, composición y títulos de las secciones. También puedes tomar los títulos del proyecto abierto, sin copiar sus datos privados ni su contenido. Si una sección personal tiene una sola traducción, ese texto se conserva al crear un proyecto en el otro idioma. Los apartados generales se convierten en secciones propias para evitar que reaparezca texto predeterminado.
+- **Duplicar y personalizar** permite cambiar nombre, colores, composición y títulos de las secciones. También puedes tomar los títulos del proyecto abierto, sin copiar sus datos privados ni su contenido. Si una sección personal tiene una sola traducción, ese texto se conserva al crear un proyecto en otro idioma. Los apartados generales se convierten en secciones propias para evitar que reaparezca texto predeterminado.
 - **Mis plantillas** permite editar o eliminar esas variantes. Los proyectos guardan una copia de la apariencia; editar o borrar una plantilla no modifica los informes existentes.
 
 Las plantillas personales se guardan en `webapp/library/designs.json`. Se comprueba la revisión de la biblioteca para evitar que una pestaña sobrescriba lo guardado en otra. El límite es de 200 plantillas y 40 secciones por plantilla, sujeto al límite general de lectura de archivos. Si una escritura excede ese límite, se rechaza antes de sustituir el archivo.
@@ -115,6 +115,6 @@ python scripts/audit-design-library-0150.py --output comprobacion-biblioteca
 pytest -q
 ```
 
-El constructor genera 66 PDF, 66 Word y las 198 vistas WebP de la galería por idioma desde datos ficticios mediante la interfaz normal de exportación. Para limitar la generación, añade `--only offsec-oscp htb-cpts`. Esa opción también limita el registro de generación a la selección ejecutada. Repite el comando con `--lang en` para las muestras inglesas. Las hojas de contacto incluyen todas las familias presentes en el catálogo.
+El constructor genera 66 PDF, 66 Word y las 198 vistas WebP de la galería por idioma desde datos ficticios mediante la interfaz normal de exportación. Para limitar la generación, añade `--only offsec-oscp htb-cpts`. Esa opción también limita el registro de generación a la selección ejecutada. Repite el comando con `--lang en` o `--lang pt` para las muestras inglesas o portuguesas. Los destinos internos del PDF determinan la página real de cada miniatura; resumen y contenido técnico pueden compartir página cuando ambos caben. Las hojas de contacto incluyen todas las familias presentes en el catálogo.
 
 Los estilos nativos de Word conservan el contenido y la jerarquía, aunque su paginación y algunos detalles de líneas pueden diferir del PDF. Revisa el resultado en el editor o visor que utilizará el destinatario.

@@ -1,0 +1,1351 @@
+schema_version: 2
+finding_sequence: 16
+meta:
+  lang: es
+  theme: corporativo
+  report_density: compact
+  report_title: 'Banco Estuário: autorización, continuidad y custodia documental'
+  report_subtitle: Caso complejo sintético / ronda 16 / 16 hipótesis y 2 máquinas
+  client: Banco Estuário [FICTICIO / NO VERIFICADO]
+  assessor: Equipo de validación documental
+  assessor_title: Control de calidad de report-gen
+  date: '2026-10-13'
+  version: R16.1
+  branding:
+    wordmark: ESTUÁRIO / R16
+    byline: FICTICIO / NO VERIFICADO
+    confidential_text: FICTICIO / NO VERIFICADO
+    accent: '#137C74'
+  contacts:
+    client:
+    - name: Responsable ficticio de pagos
+      title: Rol de ejemplo, no persona real
+      email: payments-owner@estuario.example
+    assessor:
+    - name: Revisor documental sintético
+      title: FICTICIO / NO VERIFICADO
+      email: reviewer@estuario.example
+  scope:
+  - target: portal.estuario.example
+    description: Portal empresarial / FICTICIO / NO VERIFICADO
+  - target: payments.estuario.example
+    description: API de pagos / FICTICIO / NO VERIFICADO
+  - target: identity.estuario.example
+    description: Proveedor de identidad / FICTICIO / NO VERIFICADO
+  - target: settlement-worker.estuario.example
+    description: Trabajador de liquidación / FICTICIO / NO VERIFICADO
+  - target: archive.estuario.example
+    description: Archivo documental / FICTICIO / NO VERIFICADO
+  - target: events.estuario.example
+    description: Recolector de eventos / FICTICIO / NO VERIFICADO
+  - target: recovery-controller.estuario.example
+    description: Orquestador de recuperación / FICTICIO / NO VERIFICADO
+  - target: jump.estuario.example
+    description: Estación administrativa / FICTICIO / NO VERIFICADO
+report:
+  sections:
+  - key: confidentiality
+    body: Material sintético preparado para comprobar un generador de informes. No contiene información de clientes,
+      hallazgos reales, credenciales operativas ni autorización para realizar pruebas. Se permite revisar y reutilizar
+      el caso manteniendo su carácter ficticio.
+  - key: document_control
+    version_history:
+    - version: R16.1
+      date: '2026-10-13'
+      author: report-gen QA
+      notes: FICTICIO / NO VERIFICADO
+    distribution: Revisión del generador; no distribución bancaria.
+  - key: contacts
+  - key: executive_summary
+    summary: 'Banco Estuário es una entidad ficticia creada exclusivamente para comprobar report-gen. Este documento
+      no acredita un pentest, una certificación bancaria, una aceptación de riesgo ni el funcionamiento de controles
+      en una organización real. Todos los activos pertenecen a rangos de documentación o al dominio reservado example.
+      Las imágenes representan modelos dibujados, no capturas de un sistema examinado. Los estados de seguimiento
+      describen un guion de trabajo simulado; las dieciséis observaciones conservan verificación técnica pendiente.
+
+
+      El escenario reúne banca empresarial, una pasarela de pagos, un servicio de custodia documental y una plataforma
+      de recuperación. La premisa de trabajo es una separación imperfecta entre identidad, autorización y ejecución
+      asíncrona. Un permiso válido al solicitar una operación puede dejar de serlo antes de que el trabajador la
+      procese. Del mismo modo, una confirmación de recepción no equivale a liquidación, ni una copia almacenada
+      demuestra que el banco pueda restaurar su servicio.
+
+
+      La dirección debería concentrarse primero en decisiones irreversibles: quién puede ordenar una transferencia,
+      qué autoridad conserva una operación en espera y cómo se detiene una ejecución anómala sin duplicarla. La
+      segunda prioridad es conservar trazabilidad útil para investigar, con datos suficientes para unir autorización,
+      mensaje, asiento y documento. La tercera es demostrar recuperación con dependencias y personas concretas.
+      Las prioridades propuestas pertenecen al escenario; no proceden de mediciones sobre producción.
+
+
+      Se registran dieciséis hipótesis de debilidad y dos fichas de máquinas. Las severidades son supuestos de planificación,
+      no puntuaciones observadas; la ausencia de CVSS es deliberada porque no se han medido todos sus factores.
+      El documento distingue la promesa de corregir, la prueba ejecutada y la evidencia que permitiría concluir.
+      Ninguna fila se cierra por cambiar su estado en el editor. Las fechas programadas no constituyen resultados
+      ni compromisos de una entidad real.
+
+
+      La recomendación ejecutiva es aprobar una secuencia de validación con responsables diferentes para implementación
+      y revisión. Antes de aceptar una corrección se debe demostrar el comportamiento permitido, el rechazo esperado
+      y la ausencia de efectos secundarios sobre conciliación y soporte. Un ensayo que solo comprueba una respuesta
+      HTTP deja sin resolver los mensajes ya encolados, los reintentos y las tareas administrativas. El alcance
+      debe seguir la operación hasta su resultado de negocio.
+
+
+      Este informe también ejerce presión sobre el generador: contiene títulos largos, tablas con párrafos, citas
+      y listas anidadas, direcciones extensas, caracteres portugueses y etiquetas multilingües. Su calidad documental
+      se evalúa independientemente de la ficción de seguridad. Una exportación visualmente correcta no prueba que
+      las hipótesis sean ciertas; una alerta de preparación intencional no demuestra que el exportador tenga un
+      defecto. La auditoría adjunta registra ambas categorías por separado.'
+  - key: scope
+    objectives: 'El perímetro documental incluye ocho activos sintéticos: portal empresarial, API de pagos, proveedor
+      de identidad, trabajador de liquidación, archivo documental, recolector de eventos, orquestador de copias
+      y estación de salto. La red 192.0.2.0/24 y los nombres estuario.example son exclusivamente identificadores
+      del ejemplo. No se contactaron esos destinos ni se ejecutaron comandos de reconocimiento. La ficha de cada
+      máquina es un cuaderno de validación preparado para un futuro laboratorio aislado.
+
+
+      Quedan fuera de alcance redes de tarjetas, sistemas de terceros, clientes reales, pruebas de disponibilidad,
+      ingeniería social y cualquier transferencia de fondos. Tampoco se atribuye cumplimiento normativo: citar una
+      familia de controles no sustituye un examen de requisitos, jurisdicción y evidencia. La correspondencia con
+      CWE orienta la revisión técnica y no convierte una hipótesis en vulnerabilidad confirmada.
+
+
+      El guion considera tres identidades ficticias: solicitante, aprobador y operador de recuperación. Cada una
+      debe disponer de una cuenta permitida y otra deliberadamente no autorizada. Los datos se generan desde cero
+      y se destruyen al terminar el ensayo. El registro conserva identificadores de correlación, nunca contraseñas,
+      llaves privadas, sesiones reutilizables ni información de clientes. Una ejecución futura deberá tener autorización
+      escrita y una ventana acordada; este paquete no autoriza pruebas sobre ningún sistema.
+
+
+      Se suspendería un ensayo si aparecen datos ajenos, degradación inesperada, accesos fuera de la matriz acordada
+      o discrepancias contables no controladas. El analista documentaría el momento, el identificador de operación
+      y la decisión de pausa sin ampliar el acceso. La reanudación dependería del responsable del laboratorio. Estas
+      condiciones son parte del diseño del caso, no la descripción de un incidente ocurrido.'
+    assumptions: Sin acceso a producción; sin tráfico a los destinos; sin validación técnica de vulnerabilidades.
+  - key: methodology
+    approach: 'La evaluación propuesta comienza con contratos observables. Para cada operación se anota quién solicita,
+      quién aprueba, qué recurso se modifica y en qué momento se decide la autorización. Después se describen resultados
+      permitidos y rechazados. El conjunto mínimo incluye casos positivos, negativos, reintentos y vencimientos;
+      un único rechazo no basta para concluir que el diseño es seguro. La evidencia debe relacionarse con una revisión
+      concreta de código y configuración.
+
+
+      Las hipótesis se contrastarían primero con modelos locales, después con servicios sintéticos y finalmente
+      con un entorno autorizado que reproduzca las dependencias relevantes. El orden reduce incertidumbre sin confundir
+      una simulación con producción. Si una dependencia no puede representarse, la limitación permanece visible
+      en la ficha y el resultado queda pendiente. No se sustituye la comprobación por una captura de una pantalla
+      que simplemente muestra la configuración deseada.
+
+
+      Cada observación contiene una condición previa, una consecuencia limitada y criterios de cierre medibles.
+      La repetición utiliza dos revisores cuando la decisión modifica permisos o asientos. Uno prepara el estado
+      inicial y el otro verifica tanto el resultado como la reversión. Los identificadores permanecen estables entre
+      idiomas para comparar exportaciones; la traducción cambia la redacción, nunca los activos, las relaciones
+      ni la interpretación del resultado.
+
+
+      Para la calidad del documento se compara la secuencia de secciones, el texto de los enlaces y sus destinos,
+      las tablas y las leyendas. Un salto de página razonable no es un error; sí lo son texto recortado, números
+      de índice aislados, filas omitidas o destinos alterados. La comparación incluye una URL con fragmento Unicode
+      y otras con guiones codificados. El documento no inserta caracteres invisibles para forzar el ajuste de línea.
+
+
+      Los registros de retest adjuntos describen sesiones de planificación, no pruebas sobre infraestructura bancaria.
+      El resultado registrado es no verificable mientras no exista ejecución autorizada. Las tablas anidadas tienen
+      una finalidad doble: especifican controles de aceptación y ejercitan la paginación del generador. Se debe
+      poder leer cada fila sin confundir la etiqueta del control con su resultado, incluso cuando la tabla atraviesa
+      una página.'
+  - key: findings_summary
+  - key: findings
+  - key: remediation_plan
+    overview: 'La primera etapa convierte las hipótesis de autorización, idempotencia y recuperación en contratos
+      revisables. El responsable de pagos define qué decisiones son irrevocables y el responsable de identidad identifica
+      los eventos que invalidan un mandato. El equipo de plataforma prepara simuladores con reloj controlado y datos
+      inventados. La salida de esta etapa es una matriz de comportamiento esperado, no una lista de tickets cerrados.
+
+
+      En la segunda etapa se implementan cambios pequeños y verificables. Cada cambio declara sus dependencias,
+      los mensajes ya existentes que podrían verse afectados y la forma de revertirlo. Una modificación que altera
+      la semántica de una cola requiere un plan para convivir con versiones anteriores. La revisión debe preguntar
+      qué ocurre durante el despliegue, no únicamente cómo se comporta el estado final deseado.
+
+
+      La tercera etapa comprueba de manera independiente las correcciones comunicadas. El revisor recibe datos sintéticos,
+      versión de la aplicación y configuración, contrato de aceptación y límites conocidos. Registra resultados
+      negativos y positivos con la misma precisión. Si no puede reproducir una condición, indica qué falta y por
+      qué; no sustituye la ausencia de una prueba por un resultado satisfactorio.
+
+
+      La última etapa trata mantenimiento y recuperación. Los controles aceptados pasan a una batería de regresión
+      con responsables y umbrales definidos. Se ensaya la restauración sin conectar destinos reales, se revisa la
+      conservación de restricciones y se comprueba que el procedimiento puede ser ejecutado por una persona que
+      no lo redactó. Las excepciones tienen fecha de revisión y una decisión empresarial separada.
+
+
+      Las métricas propuestas son tiempo hasta una decisión explicable, porcentaje de operaciones con correlación
+      completa, duplicados detectados antes del asiento y controles de recuperación demostrados. No se propone usar
+      líneas de código, volumen de eventos o número de vulnerabilidades como sustitutos de calidad. El informe de
+      seguimiento debe exponer denominadores y exclusiones para que una mejora aparente no oculte una reducción
+      del alcance.
+
+
+      La entrega documental prevista para el 13 de noviembre no equivale al cierre de las remediaciones. Los plazos
+      posteriores corresponden al seguimiento del escenario y no a compromisos de una institución real.'
+  - key: contratos-de-exportacion
+    title: Apéndice técnico de direcciones extensas, etiquetas multilingües y preservación de referencias entre
+      formatos de informe
+    body: 'Las siguientes direcciones son referencias documentales reservadas. Su texto y destino deben mantenerse
+      exactos; no se consultan ni acreditan fuentes externas. Los identificadores largos prueban el ajuste de línea,
+      sin añadir espacios ni caracteres invisibles al contenido.
+
+
+      | Referencia | Finalidad | Dirección literal |
+
+      | --- | --- | --- |
+
+      | R01 | Vincular la decisión a la versión del mandato. | <https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance>
+      |
+
+      | R02 | Relacionar recuperación y restricciones conservadas. | <https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí>
+      |
+
+
+      [Contrato de autorización y liquidación](https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance)
+
+
+      <https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance>
+
+
+      [Restauración, revisión y açaí](https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí)
+
+
+      <https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí>
+
+
+      [Registro multilingüe: acción, ação, العربية, हिन्दी, 한국어, 日本語](https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語)
+
+
+      <https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語>
+
+
+      ```text
+
+      ESTUARIO_R16_TECHNICAL_IDENTIFIER_0123456789ABCDEF_0123456789ABCDEF_0123456789ABCDEF
+
+      Literal: & <sample> &#x00; [brackets] `backticks`
+
+      Português: ação, revisão, proteção, João, São Luís, açaí.
+
+      ```
+
+      '
+  - key: appendix
+    tools_used: Se utiliza report-gen para generar los cuatro formatos y código local para dibujar diagramas sintéticos.
+      No se ejecutaron herramientas de pentest. Los valores de prueba de las máquinas son marcadores ficticios,
+      no flags obtenidas.
+  workflow:
+    include_assets: true
+    include_coverage: true
+    include_retest: true
+    include_root_causes: true
+findings:
+- id: F01
+  uid: 4f75a819-3617-5eb9-be63-0ce5e99496bd
+  mode: vuln
+  title: Autorización de pagos separada de la decisión de ejecución
+  severity: high
+  cwe: CWE-862
+  verification: unverified
+  status: open
+  description_md: La API del modelo guarda una autorización al aceptar la solicitud y el trabajador la utiliza después.
+    La hipótesis plantea que un cambio de titularidad, límite o mandato podría no consultarse de nuevo. Debe comprobarse
+    qué hechos quedan fijados y cuáles deben seguir siendo válidos al ejecutar.
+  impact_md: Una decisión obsoleta podría permitir un movimiento que el aprobador ya no tiene facultad de ordenar.
+    El alcance supuesto se limita a la operación en espera; no se deduce acceso a otras cuentas. La conciliación
+    podría detectar la diferencia después, cuando revertirla requiera una gestión separada.
+  remediation_md: Definir una política explícita de vigencia y vincular la autorización a cuenta, importe, beneficiario
+    y versión del mandato. El consumidor debe comprobar esa política antes de crear el asiento. Si falta información,
+    debe dejar una decisión rastreable y pendiente, sin convertir un fallo de consulta en permiso.
+  closure_criteria_md: La revisión deberá mostrar una operación válida, otra con mandato revocado y otra con límites
+    modificados. Ninguna de las dos últimas puede producir un asiento. El registro debe explicar el rechazo y conservar
+    el identificador original. Un reintento posterior tampoco debe reutilizar silenciosamente la autoridad anterior.
+  affected: payments.estuario.example
+  owner: API de pagos / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-01'
+  asset_uids:
+  - 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  evidence_uids:
+  - 60e41910-a92f-5442-b9fa-093209a5fd5d
+  root_cause_uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Preparar tres mensajes locales idénticos salvo la versión del mandato. Pausar el consumidor ficticio,
+      cambiar la política y registrar la decisión esperada antes de reanudar. Comparar solicitud, autorización y
+      asiento simulado con un segundo revisor. Este procedimiento está propuesto; no se ejecutó contra un servicio
+      bancario.
+    figure:
+      src: img/model-1.png
+      caption: 'Diagrama sintético; no corresponde a una captura de un banco.
+
+        La API del modelo guarda una autorización al aceptar la solicitud y el trabajador la utiliza después. La
+        hipótesis plantea que un cambio de titularidad, límite o mandato podría no consultarse de nuevo. Debe comprobarse
+        qué hechos quedan fijados y cuáles deben seguir siendo válidos al ejecutar.'
+  references:
+  - https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance
+  retests:
+  - uid: c7fc08aa-0259-56a6-9263-25ed7e118430
+    tested_on: '2026-10-13'
+    assessor: FICTICIO / NO VERIFICADO
+    result: not_verified
+    notes_md: 'Sesión de planificación; ninguna ejecución técnica realizada.
+
+
+      > Matriz propuesta, no resultados observados.
+
+      >
+
+      > | Control | Estado esperado | Evidencia pendiente |
+
+      > | --- | --- | --- |
+
+      > | Condición previa | Datos sintéticos y autorización del laboratorio | No realizada |
+
+      > | Caso permitido | Resultado conforme al contrato escrito | No realizada |
+
+      > | Caso rechazado | Sin efecto de negocio no autorizado | No realizada |
+
+      > | Repetición | Misma decisión y trazabilidad conservada | No realizada |
+
+      > | Restauración | Restricciones vigentes después de recuperar | No realizada |
+
+      > | Revisión independiente | Segundo revisor reproduce la conclusión | No realizada |'
+    evidence_uids: []
+- id: F02
+  uid: 88fb730a-f259-5f51-9f83-46a99ac09d7e
+  mode: vuln
+  title: Reintento de liquidación sin identidad de negocio estable
+  severity: high
+  cwe: CWE-837
+  verification: unverified
+  status: in_progress
+  description_md: El escenario permite que una solicitud reciba un identificador nuevo después de perderse su confirmación.
+    Se debe investigar si la deduplicación utiliza ese identificador de transporte o una clave ligada a la intención
+    del cliente. Dos mensajes distintos podrían representar exactamente la misma orden y no dos pagos legítimos.
+  impact_md: 'La consecuencia hipotética es una duplicidad de asiento o una conciliación manual costosa. No se presupone
+    pérdida económica automática: el resultado depende de controles posteriores. La indisponibilidad parcial aumenta
+    la incertidumbre porque un cliente puede repetir una operación cuya respuesta no recibió aunque el servidor
+    sí la procesara.'
+  remediation_md: Mantener una clave de idempotencia de negocio con alcance, caducidad y comparación de contenido
+    definidos. Registrar de forma atómica la aceptación y el resultado recuperable. Una misma clave con contenido
+    diferente debe producir conflicto explícito. La retención debe cubrir la ventana máxima documentada de reintentos
+    y recuperaciones.
+  closure_criteria_md: La matriz debe incluir repetición inmediata, repetición tras reinicio, llegada fuera de orden
+    y misma clave con otro importe. Cada intención permitida produce un único asiento. El caso conflictivo no modifica
+    el asiento original. La respuesta de consulta permite al cliente distinguir pendiente, completado y rechazado
+    sin adivinar.
+  affected: settlement-worker.estuario.example
+  owner: Trabajador de liquidación / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-02'
+  asset_uids:
+  - 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  evidence_uids: []
+  root_cause_uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Usar un libro mayor en memoria y un transporte simulado capaz de perder confirmaciones. Enumerar las
+      secuencias antes del ensayo, sin generar tráfico real. Comparar número de intenciones con número de asientos
+      y conservar los identificadores. Una prueba solo de respuesta duplicada no demuestra atomicidad del registro.
+  references:
+  - https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí
+  retests:
+  - uid: 7095bac8-a2e7-5baa-8f7d-85816f9f397b
+    tested_on: '2026-10-13'
+    assessor: FICTICIO / NO VERIFICADO
+    result: not_verified
+    notes_md: 'Sesión de planificación; ninguna ejecución técnica realizada.
+
+
+      > Matriz propuesta, no resultados observados.
+
+      >
+
+      > | Control | Estado esperado | Evidencia pendiente |
+
+      > | --- | --- | --- |
+
+      > | Condición previa | Datos sintéticos y autorización del laboratorio | No realizada |
+
+      > | Caso permitido | Resultado conforme al contrato escrito | No realizada |
+
+      > | Caso rechazado | Sin efecto de negocio no autorizado | No realizada |
+
+      > | Repetición | Misma decisión y trazabilidad conservada | No realizada |
+
+      > | Restauración | Restricciones vigentes después de recuperar | No realizada |
+
+      > | Revisión independiente | Segundo revisor reproduce la conclusión | No realizada |'
+    evidence_uids: []
+- id: F03
+  uid: 5378b788-8eb3-58d3-854b-d4622c909210
+  mode: vuln
+  title: Revocación incompleta entre sesiones interactivas y tareas diferidas
+  severity: high
+  cwe: CWE-613
+  verification: unverified
+  status: reported_fixed
+  description_md: La baja de un usuario cierra su sesión visible, pero el modelo contempla credenciales derivadas
+    para informes y pagos diferidos. Es necesario determinar cómo se propaga la revocación a cada consumidor y qué
+    periodo de tolerancia está aprobado. Una pantalla de sesión cerrada no describe el estado de los trabajos existentes.
+  impact_md: 'Un trabajo podría seguir leyendo documentos o preparando operaciones tras la retirada del permiso.
+    La extensión dependería de la vida de la credencial y del alcance concedido. No se afirma que una revocación
+    deba cancelar toda tarea: la política debe distinguir obligaciones ya comprometidas de nuevas decisiones que
+    requieren autoridad vigente.'
+  remediation_md: Inventariar credenciales y consumidores; definir un tiempo máximo verificable de propagación.
+    Vincular tareas a una identidad y política revisable, con una ruta segura de cancelación o transferencia autorizada.
+    Reducir el alcance de las credenciales derivadas y evitar que una sesión de interfaz sea la única señal de revocación.
+  closure_criteria_md: Registrar una matriz de consumidores con instante de revocación, instante de rechazo y excepción
+    autorizada si existe. Las nuevas decisiones quedan bloqueadas dentro del plazo acordado. Las obligaciones que
+    continúan explican su fundamento y responsable. Ningún consumidor puede quedar fuera por no tener una interfaz
+    de usuario propia.
+  affected: identity.estuario.example
+  owner: Proveedor de identidad / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-03'
+  asset_uids:
+  - 8f013aa3-64cb-551b-be10-a5a17291d40f
+  evidence_uids: []
+  root_cause_uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Preparar una cronología ficticia con reloj controlado, credenciales no funcionales y tres consumidores
+      locales. Cambiar el permiso entre aceptación y ejecución. Registrar el resultado esperado para cada tipo de
+      trabajo, incluidos los que deben continuar. No reutilizar tokens reales para probar el comportamiento de la
+      maqueta.
+  references:
+  - https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語
+  reported_remediation: 'Estado simulado: el guion incluye una comunicación de cambio, pero no existe una corrección
+    real ni un retest técnico.'
+- id: F04
+  uid: 6465ff0e-165c-56b5-a8dd-c4daad3e6de6
+  mode: vuln
+  title: Consulta de documentos con pertenencia empresarial ambigua
+  severity: medium
+  cwe: CWE-639
+  verification: unverified
+  status: not_verified
+  description_md: El portal permite consultar documentos asociados a una empresa y a un contrato. El modelo separa
+    ambos identificadores y la hipótesis examina si se valida su relación antes de entregar el archivo. Una búsqueda
+    que solo comprueba que el usuario pertenece a alguna empresa no resuelve la pertenencia del documento solicitado.
+  impact_md: La consecuencia potencial es lectura cruzada de un documento del ejemplo, sin inferir escritura ni
+    acceso general al archivo. Un enlace de descarga temporal podría prolongar el acceso aunque la consulta inicial
+    se cierre. El análisis debe abarcar tanto la autorización de búsqueda como la del mecanismo de entrega.
+  remediation_md: Consultar el recurso dentro del conjunto de empresas autorizado para la identidad, sin confiar
+    en identificadores presentados por el cliente. Vincular los enlaces temporales a propósito y expiración adecuados.
+    Mantener un comportamiento de error uniforme que no revele existencia de documentos pertenecientes a otras organizaciones.
+  closure_criteria_md: La prueba debe cruzar dos empresas, dos contratos y dos roles, conservando un caso permitido.
+    Las combinaciones ajenas no entregan contenido ni enlaces funcionales. La caducidad se comprueba también tras
+    copiar la dirección a una sesión nueva. El registro conserva la causa del rechazo sin almacenar el documento
+    completo.
+  affected: portal.estuario.example
+  owner: Portal empresarial / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-04'
+  asset_uids:
+  - 8d0c12ea-495a-5550-86d0-678f6d75f957
+  evidence_uids: []
+  root_cause_uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Crear documentos de texto que contengan únicamente sus etiquetas sintéticas. Elaborar una tabla de
+      pertenencia antes de consultar el simulador. Revisar cuerpo, cabeceras y enlace devuelto como tres resultados
+      separados. Una respuesta vacía no se considera segura si todavía contiene una dirección que entrega el archivo.
+  references:
+  - https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance
+- id: F05
+  uid: b1ea8af5-a4cf-5cbf-b005-1da7661f1bcc
+  mode: vuln
+  title: Conservación documental sin separación entre retención y acceso
+  severity: medium
+  cwe: CWE-922
+  verification: unverified
+  status: open
+  description_md: Una regla del escenario conserva documentos durante un periodo largo, mientras una marca de baja
+    oculta su entrada en el portal. Se debe investigar si esa baja cambia la autorización del objeto o únicamente
+    su visibilidad. Retener un archivo por obligación documental no implica permitir que cualquier enlace antiguo
+    continúe funcionando.
+  impact_md: 'El riesgo supuesto es acceso persistente a material que ya no debe estar disponible para un rol operativo.
+    La eliminación precipitada tampoco sería una solución: podría romper obligaciones de custodia del escenario.
+    La decisión correcta requiere separar conservación, bloqueo de uso ordinario y acceso excepcional sujeto a revisión.'
+  remediation_md: Representar estados de conservación y acceso por separado. Invalidar enlaces emitidos cuando cambie
+    el estado que los autorizaba, manteniendo los bytes bajo controles de custodia. La recuperación excepcional
+    exige finalidad, responsable, registro y plazo. Evitar que el sistema de almacenamiento decida esas condiciones
+    solo a partir de una ruta.
+  closure_criteria_md: Demostrar que el documento retenido permanece íntegro, que el rol anterior ya no lo obtiene
+    y que un acceso excepcional autorizado deja evidencia distinta. La restauración desde copia debe conservar la
+    restricción. Un archivo que reaparece públicamente después de restaurar no cumple el criterio aunque la copia
+    esté íntegra.
+  affected: archive.estuario.example
+  owner: Archivo documental / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-05'
+  asset_uids:
+  - bc85275e-a94f-5a00-a178-a5f054fb3487
+  evidence_uids: []
+  root_cause_uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Usar tres objetos inventados con fechas diferentes y una política de conservación escrita para el ejercicio.
+      Cambiar solo el estado de acceso, comprobar las rutas de lectura y repetir tras una restauración local. Comparar
+      permisos y contenido de forma independiente para evitar que una coincidencia de hash oculte una regresión
+      de autorización.
+  references:
+  - https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí
+- id: F06
+  uid: e5013c62-b016-53ff-8e50-03ec9c468095
+  mode: vuln
+  title: Trazabilidad fragmentada entre autorización, cola y asiento
+  severity: medium
+  cwe: CWE-778
+  verification: unverified
+  status: in_progress
+  description_md: Los eventos sintéticos utilizan identificadores diferentes en la API, el trabajador y el libro
+    mayor. La hipótesis plantea que la unión depende de hora e importe, valores que pueden repetirse. Una colección
+    abundante de registros no garantiza poder reconstruir una decisión concreta ni diferenciar una repetición legítima
+    de una duplicidad.
+  impact_md: Una investigación podría atribuir un asiento a la autorización equivocada o concluir erróneamente que
+    falta una operación. El impacto propuesto es pérdida de confianza en la reconstrucción, no una intrusión demostrada.
+    La incorporación indiscriminada de datos personales para compensarlo crearía una exposición adicional sin resolver
+    necesariamente la relación causal.
+  remediation_md: Propagar un identificador estable de intención y otro de intento, con vínculos explícitos entre
+    eventos. Definir campos mínimos, relojes, procedencia e integridad. Registrar cambios de decisión y límites
+    de confianza; no incluir secretos. Un evento descartado debe generar una señal controlada para que la ausencia
+    no parezca un resultado exitoso.
+  closure_criteria_md: Un revisor que no preparó el caso reconstruye tres operaciones simultáneas del mismo importe,
+    incluida una cancelación. Debe identificar intento, decisión y asiento sin adivinar por proximidad temporal.
+    Las pruebas incluyen pérdida de un evento y desfase de reloj, que deben aparecer como incertidumbre explícita
+    y no como una cadena completa.
+  affected: events.estuario.example
+  owner: Recolector de eventos / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-06'
+  asset_uids:
+  - 33161c9a-4057-54ec-965d-8be01bf01816
+  evidence_uids: []
+  root_cause_uid: c2681607-36f3-5452-b928-7d569a323b7e
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Generar un conjunto pequeño de eventos JSON ficticios y barajar su orden. Entregar solo los registros
+      al segundo revisor y comparar su reconstrucción con el guion reservado. Medir relaciones resueltas, ambiguas
+      y ausentes por separado. No utilizar una cantidad elevada de líneas como indicador de calidad de auditoría.
+  references:
+  - https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語
+- id: F07
+  uid: 93956a2c-ef57-5402-9632-76a6d709f5b3
+  mode: vuln
+  title: Recuperación que restaura datos sin restablecer las restricciones
+  severity: high
+  verification: unverified
+  status: reported_fixed
+  description_md: La plataforma ficticia verifica que una copia contiene archivos legibles, pero la planificación
+    no incorpora permisos, claves, colas y bloqueos documentales. La hipótesis cuestiona la equivalencia entre recuperar
+    bytes y recuperar un servicio seguro. Una restauración parcial puede conservar los datos mientras altera silenciosamente
+    quién puede utilizarlos.
+  impact_md: El servicio recuperado podría conceder acceso excesivo, perder prohibiciones vigentes o ejecutar tareas
+    ya completadas. La continuidad aparente escondería diferencias de autorización y contabilidad. No se afirma
+    que la copia sea corrupta; el problema supuesto está en el contrato de recuperación y en lo que la prueba considera
+    suficiente.
+  remediation_md: Definir una unidad de recuperación que incluya datos, configuración, identidades, referencias
+    a claves y posición de procesamiento. Mantener dependencias y orden de arranque explícitos. Antes de abrir el
+    servicio, ejecutar controles de acceso y conciliación. La documentación debe indicar qué no puede recuperarse
+    automáticamente y quién decide el tratamiento.
+  closure_criteria_md: La aceptación requiere lectura autorizada, rechazo de una identidad revocada, conservación
+    de un bloqueo y ausencia de duplicados tras reanudar la cola. Comparar el estado lógico antes y después, no
+    solo hashes. Registrar el tiempo medido y el punto recuperado sin sustituirlos por los objetivos comerciales
+    deseados.
+  affected: recovery-controller.estuario.example
+  owner: Orquestador de recuperación / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-07'
+  asset_uids:
+  - c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  evidence_uids:
+  - b7cfd3a6-7023-5136-9ebd-8ad8a554ad78
+  root_cause_uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Montar un entorno local desechable desde un manifiesto sintético. Introducir una restricción y una
+      tarea completada antes de la copia. Restaurar bajo otro identificador de entorno, aplicar los controles de
+      aceptación y destruir la maqueta. El ensayo no debe conectarse a destinos de pago ni reutilizar secretos de
+      producción.
+    figure:
+      src: img/model-2.png
+      caption: 'Diagrama sintético; no corresponde a una captura de un banco.
+
+        La plataforma ficticia verifica que una copia contiene archivos legibles, pero la planificación no incorpora
+        permisos, claves, colas y bloqueos documentales. La hipótesis cuestiona la equivalencia entre recuperar
+        bytes y recuperar un servicio seguro. Una restauración parcial puede conservar los datos mientras altera
+        silenciosamente quién puede utilizarlos.
+
+
+        La aceptación requiere lectura autorizada, rechazo de una identidad revocada, conservación de un bloqueo
+        y ausencia de duplicados tras reanudar la cola. Comparar el estado lógico antes y después, no solo hashes.
+        Registrar el tiempo medido y el punto recuperado sin sustituirlos por los objetivos comerciales deseados.
+        Montar un entorno local desechable desde un manifiesto sintético. Introducir una restricción y una tarea
+        completada antes de la copia. Restaurar bajo otro identificador de entorno, aplicar los controles de aceptación
+        y destruir la maqueta. El ensayo no debe conectarse a destinos de pago ni reutilizar secretos de producción.'
+  references:
+  - https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance
+  retests:
+  - uid: 8f7907ca-5eec-51e5-9407-a162ff1d5817
+    tested_on: '2026-10-13'
+    assessor: FICTICIO / NO VERIFICADO
+    result: not_verified
+    notes_md: 'Sesión de planificación; ninguna ejecución técnica realizada.
+
+
+      > Matriz propuesta, no resultados observados.
+
+      >
+
+      > | Control | Estado esperado | Evidencia pendiente |
+
+      > | --- | --- | --- |
+
+      > | Condición previa | Datos sintéticos y autorización del laboratorio | No realizada |
+
+      > | Caso permitido | Resultado conforme al contrato escrito | No realizada |
+
+      > | Caso rechazado | Sin efecto de negocio no autorizado | No realizada |
+
+      > | Repetición | Misma decisión y trazabilidad conservada | No realizada |
+
+      > | Restauración | Restricciones vigentes después de recuperar | No realizada |
+
+      > | Revisión independiente | Segundo revisor reproduce la conclusión | No realizada |'
+    evidence_uids: []
+  reported_remediation: 'Estado simulado: el guion incluye una comunicación de cambio, pero no existe una corrección
+    real ni un retest técnico.'
+- id: F08
+  uid: c3687dff-9d2b-594f-80eb-da3b467dbc52
+  mode: vuln
+  title: Acceso administrativo de emergencia sin caducidad verificable
+  severity: high
+  cwe: CWE-269
+  verification: unverified
+  status: not_verified
+  description_md: El procedimiento de emergencia del ejemplo permite elevar temporalmente permisos de recuperación.
+    Se necesita comprobar si la finalización depende de una persona que recuerde retirar el acceso. La autorización
+    inicial y su retirada son decisiones distintas; un ticket cerrado no demuestra que todas las sesiones y credenciales
+    derivadas hayan expirado.
+  impact_md: Un permiso de emergencia persistente ampliaría la superficie administrativa fuera de la ventana aprobada.
+    El riesgo supuesto combina alcance excesivo y atribución débil, no una toma de control demostrada. Si se impide
+    toda emergencia sin alternativa, el banco ficticio podría perder capacidad de recuperación; debe existir un
+    procedimiento limitado y ensayado.
+  remediation_md: Conceder capacidades temporales ligadas a identidad individual, motivo y duración máxima. Separar
+    solicitud, aprobación y revisión posterior. La caducidad debe ser técnica y abarcar sesiones derivadas, con
+    una ruta de extensión explícita. El registro de comandos requiere filtros de secretos y acceso restringido,
+    no publicación indiscriminada.
+  closure_criteria_md: El caso positivo permite la acción autorizada durante la ventana. Después del vencimiento
+    fallan tanto una sesión nueva como otra ya abierta, según la política definida. Una extensión conserva motivo
+    y nuevo aprobador. La revisión posterior puede atribuir las acciones a una persona sin depender de una cuenta
+    compartida.
+  affected: jump.estuario.example
+  owner: Estación administrativa / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-08'
+  asset_uids:
+  - 84782644-56c0-5f7b-bd71-fa8f0bb3ea4f
+  evidence_uids: []
+  root_cause_uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Usar un reloj acelerado en una maqueta de permisos, sin acceso privilegiado al anfitrión. Registrar
+      concesión, uso, extensión denegada y expiración. El segundo revisor intenta únicamente la acción de lectura
+      ficticia prevista. El resultado de la maqueta no certifica la configuración de un proveedor de identidad real.
+  references:
+  - https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí
+- id: F09
+  uid: 29f8df26-d3aa-5d96-941f-9a4c07cc517c
+  mode: vuln
+  title: Importes y monedas normalizados de manera distinta entre componentes
+  severity: medium
+  cwe: CWE-20
+  verification: unverified
+  status: open
+  description_md: El portal muestra importes con formato local, pero la cola utiliza una representación decimal
+    de intercambio. La hipótesis revisa conversiones ambiguas, precisión y relación entre moneda e importe. Un valor
+    aparentemente correcto en pantalla puede representar una cantidad distinta si otro componente aplica reglas
+    de separadores o redondeo diferentes.
+  impact_md: 'Podrían surgir rechazos inconsistentes o diferencias entre aprobación y asiento. No se presupone manipulación
+    deliberada: también una configuración regional legítima puede activar el defecto supuesto. La presentación en
+    español, inglés o portugués debe conservar el mismo valor lógico, aunque cambien separadores y posición del
+    símbolo monetario.'
+  remediation_md: Definir una representación canónica de intercambio con moneda obligatoria y precisión permitida.
+    Separar formato de pantalla y valor de negocio; rechazar ambigüedades antes de autorizar. El redondeo debe ser
+    explícito y aplicarse una sola vez en la etapa acordada, con reglas verificables para ajustes y devoluciones.
+  closure_criteria_md: La tabla de aceptación incluye cero, fracción mínima, máximo permitido y valores con exceso
+    de precisión. Cada idioma produce el mismo dato canónico y el mismo rechazo cuando corresponde. Ninguna cadena
+    vacía se convierte en cero. Una moneda ausente debe impedir la decisión, no heredar un valor global silencioso.
+  affected: payments.estuario.example
+  owner: API de pagos / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-09'
+  asset_uids:
+  - 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  evidence_uids: []
+  root_cause_uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Preparar un archivo de casos con 1.234,56; 1,234.56; 1234.56 y espacios de agrupación. Clasificar por
+      contrato cada entrada como permitida o rechazada antes de ejecutarla en un conversor local. Comparar estructuras
+      numéricas, no capturas de texto, y conservar la precisión del resultado.
+  references:
+  - https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語
+- id: F10
+  uid: 85bcdc50-d927-55a9-b1a7-69521009bde6
+  mode: vuln
+  title: Mensaje no interpretable tratado como operación completada
+  severity: medium
+  cwe: CWE-754
+  verification: unverified
+  status: in_progress
+  description_md: El consumidor ficticio distingue errores de negocio y errores de lectura, pero ambos pueden terminar
+    con una confirmación de recepción. Debe establecerse si el mensaje no interpretable conserva un estado visible
+    y recuperable. El transporte puede funcionar correctamente aunque la operación desaparezca del seguimiento de
+    negocio.
+  impact_md: Una orden podría quedar sin resultado y sin alerta accionable. Reprocesar indiscriminadamente la cola
+    tampoco sería seguro por el riesgo de duplicar operaciones válidas. La consecuencia hipotética es incertidumbre
+    de estado y trabajo de conciliación, no prueba de pérdida de fondos ni de corrupción completa del servicio.
+  remediation_md: Separar recepción, interpretación, decisión y resultado final. Los mensajes ilegibles deben conservar
+    un identificador, una causa limitada y una ruta de revisión controlada. Evitar bucles de reintento ilimitados.
+    La reintroducción exige validar la versión del esquema y mantener la identidad de negocio para aplicar la protección
+    contra duplicados.
+  closure_criteria_md: Una versión desconocida, un campo obligatorio ausente y un dato inválido quedan pendientes
+    con causa diferenciada. El caso válido continúa procesándose. Tras corregir el mensaje, solo un revisor autorizado
+    puede reintroducirlo y el historial conecta ambos intentos. Ningún resultado de transporte se presenta como
+    liquidación confirmada.
+  affected: settlement-worker.estuario.example
+  owner: Trabajador de liquidación / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-10'
+  asset_uids:
+  - 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  evidence_uids: []
+  root_cause_uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Preparar cuatro mensajes JSON de texto sin destinos operativos. Entregar cada uno al analizador local
+      y comparar el estado de seguimiento con el contrato escrito. Confirmar también que el error no vuelca el mensaje
+      completo a un registro público. Mantener el contenido sintético identificable como tal.
+  references:
+  - https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance
+- id: F11
+  uid: ce3a86bb-d418-585c-a09e-4e09bfcc2ed0
+  mode: vuln
+  title: Registros de soporte con datos de sesión fuera de su finalidad
+  severity: low
+  cwe: CWE-532
+  verification: unverified
+  status: reported_fixed
+  description_md: El formulario de soporte del escenario permite adjuntar respuestas de diagnóstico. La hipótesis
+    examina si esas respuestas incluyen identificadores reutilizables o campos personales innecesarios. El acceso
+    restringido al ticket reduce exposición, pero no convierte cualquier dato capturado en necesario ni justifica
+    conservarlo durante toda la vida del expediente.
+  impact_md: La acumulación de diagnósticos podría ampliar el número de personas y sistemas que acceden a información
+    sensible. El caso no contiene secretos reales y no demuestra robo de sesión. La prioridad baja presupone que
+    los identificadores ficticios carecen de capacidad de autenticación; esa premisa deberá revisarse con evidencia
+    antes de puntuar.
+  remediation_md: Definir una lista de campos permitidos para diagnóstico y excluir por defecto los demás. Aplicar
+    censura antes de crear el archivo, no solo al mostrarlo. Documentar retención, destinatarios y eliminación.
+    El sistema debe ofrecer un resumen útil del fallo sin exigir que el usuario entregue una sesión completa.
+  closure_criteria_md: El archivo final debe omitir los marcadores de secreto introducidos exclusivamente para la
+    prueba, incluidos metadatos y anexos derivados. El mensaje de error sigue siendo comprensible. La revisión de
+    permisos confirma que el personal sin función de soporte no recibe el archivo y que la eliminación aplica a
+    las copias previstas.
+  affected: events.estuario.example
+  owner: Recolector de eventos / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-11'
+  asset_uids:
+  - 33161c9a-4057-54ec-965d-8be01bf01816
+  evidence_uids: []
+  root_cause_uid: c2681607-36f3-5452-b928-7d569a323b7e
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Usar marcadores inequívocos como ESTUARIO_FAKE_SESSION_DO_NOT_USE, sin formato de credencial válida.
+      Buscar esos marcadores en el archivo, su vista previa y sus metadatos después del saneamiento. Registrar por
+      separado omisiones intencionales y pérdida accidental del contexto que soporte necesita para entender el error.
+  references:
+  - https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí
+  reported_remediation: 'Estado simulado: el guion incluye una comunicación de cambio, pero no existe una corrección
+    real ni un retest técnico.'
+- id: F12
+  uid: 750a92a3-a372-52da-978a-2fbc5033140d
+  mode: vuln
+  title: Integridad del expediente basada únicamente en el nombre del archivo
+  severity: medium
+  cwe: CWE-345
+  verification: unverified
+  status: not_verified
+  description_md: El catálogo ficticio presenta nombre, fecha y tamaño de cada evidencia, pero no describe una vinculación
+    a contenido inmutable. La hipótesis considera que sustituir un archivo bajo el mismo nombre podría dejar el
+    expediente aparentemente intacto. La procedencia y la integridad son propiedades diferentes de la legibilidad
+    del documento.
+  impact_md: Un revisor podría evaluar bytes diferentes de los aprobados o perder la relación entre una observación
+    y su prueba. Esto afectaría reproducibilidad y confianza documental, sin demostrar falsificación efectiva. Un
+    hash por sí solo tampoco acredita quién obtuvo el material ni si el procedimiento de adquisición fue correcto.
+  remediation_md: Vincular cada revisión a un resumen criptográfico, tamaño y origen registrado, conservando versiones
+    anteriores cuando cambie el contenido. La sustitución debe ser una acción explícita con motivo. Distinguir evidencia
+    original, copia saneada y figura de presentación, con relaciones verificables y sin prometer autenticidad que
+    el proceso no garantiza.
+  closure_criteria_md: La prueba reemplaza una imagen sintética por otra de igual dimensión y nombre. El expediente
+    debe detectar una revisión distinta y preservar la anterior según la política. Exportar y volver a importar
+    conserva las relaciones. La comparación de contenido no depende de la fecha de modificación del sistema de archivos.
+  affected: archive.estuario.example
+  owner: Archivo documental / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-12'
+  asset_uids:
+  - bc85275e-a94f-5a00-a178-a5f054fb3487
+  evidence_uids: []
+  root_cause_uid: c2681607-36f3-5452-b928-7d569a323b7e
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Dibujar dos imágenes locales con un único número diferente, calcular sus resúmenes y registrar la sustitución
+      en una maqueta. Comprobar que la vista previa y el archivo descargado corresponden a la misma revisión. Ninguna
+      imagen representa una captura bancaria real ni una evidencia de explotación.
+  references:
+  - https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語
+- id: F13
+  uid: 6ada26b7-f4e4-5ef3-8635-db2363afffef
+  mode: vuln
+  title: Separación de funciones que no contempla delegaciones encadenadas
+  severity: medium
+  verification: unverified
+  status: open
+  description_md: La matriz ficticia prohíbe que una misma cuenta solicite y apruebe un pago. Sin embargo, las delegaciones
+    temporales se registran como roles independientes. La hipótesis pregunta si una persona puede reunir ambas capacidades
+    mediante distintas cuentas o cadenas de delegación, aunque cada comprobación aislada parezca correcta.
+  impact_md: 'El control de doble revisión podría convertirse en una formalidad sin independencia efectiva. La consecuencia
+    depende de la política de identidades y de los controles de importe. No se atribuye fraude a ninguna persona:
+    se examina una propiedad del modelo de autorización y la evidencia necesaria para demostrar separación real.'
+  remediation_md: Resolver las capacidades efectivas por persona y contexto, incluyendo delegaciones y excepciones.
+    Validar incompatibilidades al conceder permisos y al aprobar la operación. Las excepciones necesitan vigencia
+    y revisión independiente. Mantener una representación consultable para que el responsable comprenda por qué
+    una combinación está permitida o rechazada.
+  closure_criteria_md: Las pruebas incluyen dos personas distintas, dos cuentas de la misma persona y una delegación
+    de segundo nivel. Solo el primer caso cumple la independencia normal. Una excepción documentada no desaparece
+    del registro al vencer. La retirada de una delegación actualiza la decisión efectiva sin requerir recrear todas
+    las cuentas.
+  affected: identity.estuario.example
+  owner: Proveedor de identidad / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-13'
+  asset_uids:
+  - 8f013aa3-64cb-551b-be10-a5a17291d40f
+  evidence_uids:
+  - 6c90f9f5-ec90-5ae3-a536-3640aae6cf71
+  root_cause_uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Construir un grafo local de identidades con nombres inventados y capacidades no operativas. Revisar
+      manualmente las combinaciones antes de consultar el evaluador. Comparar la explicación de la decisión, no
+      solo el booleano final. El grafo es un modelo de política y no un inventario de personal de un banco.
+    figure:
+      src: img/model-3.png
+      caption: 'Diagrama sintético; no corresponde a una captura de un banco.
+
+        La matriz ficticia prohíbe que una misma cuenta solicite y apruebe un pago. Sin embargo, las delegaciones
+        temporales se registran como roles independientes. La hipótesis pregunta si una persona puede reunir ambas
+        capacidades mediante distintas cuentas o cadenas de delegación, aunque cada comprobación aislada parezca
+        correcta.'
+  references:
+  - https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance
+  retests:
+  - uid: dc1864fe-12b5-5069-8e25-bd559e9b7098
+    tested_on: '2026-10-13'
+    assessor: FICTICIO / NO VERIFICADO
+    result: not_verified
+    notes_md: 'Sesión de planificación; ninguna ejecución técnica realizada.
+
+
+      > Matriz propuesta, no resultados observados.
+
+      >
+
+      > | Control | Estado esperado | Evidencia pendiente |
+
+      > | --- | --- | --- |
+
+      > | Condición previa | Datos sintéticos y autorización del laboratorio | No realizada |
+
+      > | Caso permitido | Resultado conforme al contrato escrito | No realizada |
+
+      > | Caso rechazado | Sin efecto de negocio no autorizado | No realizada |
+
+      > | Repetición | Misma decisión y trazabilidad conservada | No realizada |
+
+      > | Restauración | Restricciones vigentes después de recuperar | No realizada |
+
+      > | Revisión independiente | Segundo revisor reproduce la conclusión | No realizada |'
+    evidence_uids: []
+- id: F14
+  uid: af709c14-9362-55a6-80d9-29f02afd8054
+  mode: vuln
+  title: Mensajes de error que revelan estados internos de documentos ajenos
+  severity: low
+  cwe: CWE-200
+  verification: unverified
+  status: in_progress
+  description_md: El portal del escenario devuelve mensajes diferentes para un documento inexistente, retenido o
+    asociado a otra empresa. La hipótesis se limita a información de existencia y estado, sin suponer acceso al
+    contenido. Las diferencias pueden aparecer en texto, código, tamaño o tiempo, por lo que revisar solo la traducción
+    visible sería insuficiente.
+  impact_md: 'Un usuario podría deducir que existe una relación contractual o un expediente, aunque no pueda descargarlo.
+    La sensibilidad depende del contexto del identificador y de su predictibilidad. No se justifica ocultar al operador
+    autorizado la causa real: se necesitan respuestas externas prudentes y diagnósticos internos con acceso controlado.'
+  remediation_md: Definir un contrato de error uniforme para usuarios sin autorización sobre el objeto. Separar
+    código de diagnóstico interno y mensaje externo, con identificador de correlación. Las traducciones deben conservar
+    el mismo significado y no incluir nombres o rutas interpolados que reintroduzcan la información que se pretendía
+    ocultar.
+  closure_criteria_md: En español, inglés y portugués, los tres casos no autorizados deben presentar resultados
+    equivalentes según el contrato. El soporte autorizado puede recuperar la causa mediante correlación. La prueba
+    no exige tiempos idénticos de forma irreal; exige que cualquier diferencia relevante se mida y se evalúe en
+    el contexto acordado.
+  affected: portal.estuario.example
+  owner: Portal empresarial / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-14'
+  asset_uids:
+  - 8d0c12ea-495a-5550-86d0-678f6d75f957
+  evidence_uids: []
+  root_cause_uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Comparar respuestas preparadas en archivos locales, sin enumerar objetos remotos. Revisar texto, campos
+      y metadatos con una tabla de resultados esperados. Una frase amigable no basta si el cuerpo JSON conserva
+      un estado interno diferente. Registrar por separado mensajes destinados al usuario y diagnósticos destinados
+      al soporte.
+  references:
+  - https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí
+- id: F15
+  uid: 0b0cd3b0-96ec-5bba-8ede-d1ac5480f39a
+  mode: vuln
+  title: Dependencia de recuperación sin versión ni procedencia verificables
+  severity: medium
+  verification: unverified
+  status: reported_fixed
+  description_md: El manifiesto ficticio identifica la aplicación principal, pero deja herramientas auxiliares como
+    una descarga denominada latest. La hipótesis cuestiona si el mismo plan produce el mismo entorno meses después.
+    Una copia de datos íntegra puede ser inútil si la herramienta necesaria para interpretarla cambia o deja de
+    estar disponible.
+  impact_md: 'La recuperación podría depender de decisiones improvisadas durante una interrupción. El impacto supuesto
+    es incertidumbre operativa y posible incompatibilidad, no evidencia de un paquete malicioso. Fijar una versión
+    sin vigilar su mantenimiento tampoco resuelve el problema: reproducibilidad y actualización segura deben gestionarse
+    como necesidades complementarias.'
+  remediation_md: Registrar versión, origen, resumen criptográfico, licencia y función de cada dependencia necesaria.
+    Conservar un mecanismo autorizado de obtención y una prueba de compatibilidad con las copias. Las actualizaciones
+    requieren evaluación y renovación del manifiesto; no deben aplicarse por sorpresa durante una restauración urgente.
+  closure_criteria_md: Dos reconstrucciones aisladas deben identificar exactamente las mismas dependencias aprobadas.
+    Una alteración de bytes se detecta antes de ejecutar la herramienta. La prueba también demuestra cómo se rechaza
+    una versión incompatible y cómo se renueva el conjunto aprobado. No se exige conservar versiones vulnerables
+    para mantener una coincidencia histórica.
+  affected: recovery-controller.estuario.example
+  owner: Orquestador de recuperación / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-15'
+  asset_uids:
+  - c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  evidence_uids: []
+  root_cause_uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: Crear tres paquetes locales de texto con versiones inventadas y resúmenes conocidos. Modificar uno
+      sin cambiar su nombre y comparar el resultado de verificación. La prueba no descarga ni ejecuta software desconocido.
+      El objetivo es validar la decisión de aceptación del manifiesto, no simular una intrusión en la cadena de
+      suministro.
+  references:
+  - https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語
+  reported_remediation: 'Estado simulado: el guion incluye una comunicación de cambio, pero no existe una corrección
+    real ni un retest técnico.'
+- id: F16
+  uid: a1836300-1e7e-574d-a137-84d27e3d60ec
+  mode: vuln
+  title: Criterios de cierre que confunden cambio comunicado con verificación
+  severity: info
+  verification: unverified
+  status: not_verified
+  description_md: 'El flujo administrativo del ejemplo permite registrar que un equipo ha implantado una corrección.
+    La hipótesis documental consiste en presentar esa comunicación como una verificación independiente. Son hechos
+    distintos: una implementación puede existir y aun así fallar el caso original, un caso equivalente o una dependencia
+    que quedó fuera de la modificación.'
+  impact_md: 'La dirección podría interpretar una reducción de hallazgos abiertos como reducción demostrada de riesgo.
+    No hay impacto técnico asignado ni puntuación CVSS: se trata de calidad del proceso y del informe. El objetivo
+    no es impedir avances parciales, sino mostrar con precisión qué se comunicó, qué se probó y qué sigue pendiente.'
+  remediation_md: Mantener campos separados para seguimiento, verificación técnica y resultado del retest. Exigir
+    fecha, alcance y evidencia antes de comunicar cierre verificado. Las excepciones o imposibilidades de prueba
+    deben permanecer visibles y no convertirse automáticamente en aceptación de riesgo. El responsable del negocio
+    decide la aceptación mediante un proceso aparte.
+  closure_criteria_md: Una corrección comunicada sin retest aparece como pendiente de verificación en la vista y
+    en la exportación. Un retest inconcluso no cierra el hallazgo. Un registro sin fecha permanece visible sin convertirse
+    en el último resultado fechado. El informe debe explicar la diferencia y conservar el historial original.
+  affected: events.estuario.example
+  owner: Recolector de eventos / FICTICIO / NO VERIFICADO
+  due_date: '2026-11-16'
+  asset_uids:
+  - 33161c9a-4057-54ec-965d-8be01bf01816
+  evidence_uids: []
+  root_cause_uid: c2681607-36f3-5452-b928-7d569a323b7e
+  walkthrough:
+  - lead: Procedimiento propuesto, no ejecutado
+    text_md: 'Preparar tres registros ficticios: cambio comunicado, observación no verificable y nota sin fecha.
+      Comparar la matriz ejecutiva con las fichas detalladas y los cuatro formatos de salida. Ningún gráfico debe
+      convertir ausencia de evidencia en éxito. Este mismo caso conserva intencionalmente sus dieciséis hipótesis
+      sin verificar.'
+  references:
+  - https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance
+  retests:
+  - uid: a075d05e-1ffc-56b2-9f4a-681767597fb4
+    tested_on: '2026-10-13'
+    assessor: FICTICIO / NO VERIFICADO
+    result: not_verified
+    notes_md: 'Sesión de planificación; ninguna ejecución técnica realizada.
+
+
+      > Matriz propuesta, no resultados observados.
+
+      >
+
+      > | Control | Estado esperado | Evidencia pendiente |
+
+      > | --- | --- | --- |
+
+      > | Condición previa | Datos sintéticos y autorización del laboratorio | No realizada |
+
+      > | Caso permitido | Resultado conforme al contrato escrito | No realizada |
+
+      > | Caso rechazado | Sin efecto de negocio no autorizado | No realizada |
+
+      > | Repetición | Misma decisión y trazabilidad conservada | No realizada |
+
+      > | Restauración | Restricciones vigentes después de recuperar | No realizada |
+
+      > | Revisión independiente | Segundo revisor reproduce la conclusión | No realizada |'
+    evidence_uids: []
+  - uid: d6838dd8-5d70-51f9-848b-540b0cd8fc63
+    tested_on: ''
+    assessor: FICTICIO / NO VERIFICADO
+    result: not_verified
+    notes_md: 'Nota heredada sin fecha: pendiente de planificar, no reemplaza el registro fechado.'
+    evidence_uids: []
+- id: M1
+  uid: 42526c27-a68b-51cf-b526-71bcb93ecff8
+  mode: machine
+  title: Cuaderno de validación del trabajador de liquidación
+  host:
+    name: settlement-worker.estuario.example
+    ip: 192.0.2.44
+    os: Sistema Linux ficticio
+  open_ports: 443/tcp, 8443/tcp / FICTICIO / NO VERIFICADO
+  summary_md: Esta ficha describe un servidor ficticio de procesamiento asíncrono. No documenta acceso inicial,
+    escalada ni control de un sistema real. Su objetivo es relacionar las decisiones de autorización con la recepción
+    de mensajes y el resultado contable. Los puertos son datos del guion, no resultados de un escáner. Las fases
+    se ordenan por dependencias de validación, y su presencia en el gráfico no indica que hayan sido ejecutadas.
+  status: not_verified
+  verification: unverified
+  asset_uids:
+  - 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  evidence_uids: []
+  phases:
+  - name: Contrato de entrada
+    steps:
+    - text_md: Enumerar versiones de esquema, campos obligatorios y significado de cada identificador. El contrato
+        debe diferenciar intención, intento y resultado. Revisar cómo se documentan mensajes incompletos sin publicarlos
+        ni perder la relación con su operación. El estado esperado se escribe antes de iniciar cualquier ensayo
+        local.
+  - name: Decisión y concurrencia
+    steps:
+    - text_md: Relacionar F01, F02 y F10 con secuencias de recepción, revocación y reintento. Dos mensajes simultáneos
+        no deben evaluarse como pruebas independientes si modifican el mismo estado. La revisión prepara un orden
+        conocido de eventos y exige una explicación para cada decisión, incluyendo la que queda pendiente.
+  - name: Conciliación y observabilidad
+    steps:
+    - text_md: Comparar el número de intenciones, asientos y respuestas recuperables. Una diferencia debe ser explicable
+        por un estado documentado y nunca por un registro desaparecido. El operador necesita distinguir retraso
+        de fallo sin acceder a secretos. Se conserva una tabla de correlación sintética para la revisión cruzada.
+  - name: Reversión y cierre del laboratorio
+    steps:
+    - text_md: Destruir mensajes y cuentas de la maqueta, conservar únicamente el manifiesto de resultados y verificar
+        que no quedaron tareas automáticas. La limpieza es un paso previsto, no una afirmación de que hubo acceso.
+        Cualquier ensayo posterior comienza con un estado nuevo para evitar atribuir resultados anteriores a la
+        revisión actual.
+  proof:
+  - name: synthetic-proof.txt
+    value: ESTUARIO_R16_NOT_A_CAPTURED_FLAG_1
+    notes: FICTICIO / NO VERIFICADO
+- id: M2
+  uid: 0f56c782-8315-539d-bbf2-566190f88e6a
+  mode: machine
+  title: Cuaderno de restauración y conservación de restricciones
+  host:
+    name: recovery-controller.estuario.example
+    ip: 192.0.2.47
+    os: Sistema Linux ficticio
+  open_ports: 443/tcp, 8443/tcp / FICTICIO / NO VERIFICADO
+  summary_md: La segunda máquina representa un coordinador de recuperación aislado. El objetivo es comprobar que
+    la restauración conserva tanto contenido como decisiones de acceso. No se asignan objetivos de tiempo como si
+    hubieran sido medidos. La ficha distingue los componentes necesarios, los responsables de aceptar su estado
+    y los criterios que impiden reabrir el servicio.
+  status: not_verified
+  verification: unverified
+  asset_uids:
+  - c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  evidence_uids: []
+  phases:
+  - name: Manifiesto de dependencias
+    steps:
+    - text_md: Registrar datos, configuración, versiones y referencias de claves sin copiar secretos. Confirmar
+        que el manifiesto permite reconstruir la misma combinación aprobada. Un nombre de producto sin versión no
+        sirve como evidencia de compatibilidad. La revisión documenta también qué dependencia requiere intervención
+        humana y cómo se valida su origen.
+  - name: Restauración aislada
+    steps:
+    - text_md: Restaurar bajo identificadores diferentes de los del entorno original y mantener deshabilitados los
+        destinos externos. Comprobar integridad de archivos y consistencia lógica como controles separados. La disponibilidad
+        de una página de inicio no demuestra que la cola, las restricciones documentales ni la conciliación hayan
+        recuperado su estado.
+  - name: Puerta de reapertura
+    steps:
+    - text_md: Exigir lectura autorizada, rechazo de identidad revocada, conservación de bloqueo y ausencia de asientos
+        duplicados. Si falta una comprobación, el responsable registra la limitación y mantiene el servicio fuera
+        de la ruta operativa. La decisión de negocio se documenta aparte del resultado técnico y no se atribuye
+        al generador.
+  proof:
+  - name: synthetic-proof.txt
+    value: ESTUARIO_R16_NOT_A_CAPTURED_FLAG_2
+    notes: FICTICIO / NO VERIFICADO
+assets:
+- uid: 8d0c12ea-495a-5550-86d0-678f6d75f957
+  name: Portal empresarial
+  target: portal.estuario.example / 192.0.2.41
+  kind: synthetic
+  notes: FICTICIO / NO VERIFICADO
+- uid: 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  name: API de pagos
+  target: payments.estuario.example / 192.0.2.42
+  kind: synthetic
+  notes: FICTICIO / NO VERIFICADO
+- uid: 8f013aa3-64cb-551b-be10-a5a17291d40f
+  name: Proveedor de identidad
+  target: identity.estuario.example / 192.0.2.43
+  kind: synthetic
+  notes: FICTICIO / NO VERIFICADO
+- uid: 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  name: Trabajador de liquidación
+  target: settlement-worker.estuario.example / 192.0.2.44
+  kind: synthetic
+  notes: FICTICIO / NO VERIFICADO
+- uid: bc85275e-a94f-5a00-a178-a5f054fb3487
+  name: Archivo documental
+  target: archive.estuario.example / 192.0.2.45
+  kind: synthetic
+  notes: FICTICIO / NO VERIFICADO
+- uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  name: Recolector de eventos
+  target: events.estuario.example / 192.0.2.46
+  kind: synthetic
+  notes: FICTICIO / NO VERIFICADO
+- uid: c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  name: Orquestador de recuperación
+  target: recovery-controller.estuario.example / 192.0.2.47
+  kind: synthetic
+  notes: FICTICIO / NO VERIFICADO
+- uid: 84782644-56c0-5f7b-bd71-fa8f0bb3ea4f
+  name: Estación administrativa
+  target: jump.estuario.example / 192.0.2.48
+  kind: synthetic
+  notes: FICTICIO / NO VERIFICADO
+evidence:
+- uid: 60e41910-a92f-5442-b9fa-093209a5fd5d
+  title: Modelo documental 1
+  src: img/model-1.png
+  caption: Diagrama sintético; no corresponde a una captura de un banco.
+- uid: b7cfd3a6-7023-5136-9ebd-8ad8a554ad78
+  title: Modelo documental 2
+  src: img/model-2.png
+  caption: Diagrama sintético; no corresponde a una captura de un banco.
+- uid: 6c90f9f5-ec90-5ae3-a536-3640aae6cf71
+  title: Modelo documental 3
+  src: img/model-3.png
+  caption: Diagrama sintético; no corresponde a una captura de un banco.
+coverage:
+- uid: 7a807690-15d5-5fae-92cc-d272e09bb35b
+  asset_uid: 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  test: F01 / Caso permitido
+  status: blocked
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: cb6414cf-67e8-5a7d-8e49-f1376a101521
+  asset_uid: 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  test: F01 / Caso rechazado
+  status: blocked
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 2b508470-00b5-5952-9adb-bd470fb9d30a
+  asset_uid: 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  test: F02 / Caso permitido
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 4d9b2d12-5236-5fc1-955d-0f12ea4b7aea
+  asset_uid: 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  test: F02 / Caso rechazado
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 25a868a2-f290-53cd-bc6b-a898181165e3
+  asset_uid: 8f013aa3-64cb-551b-be10-a5a17291d40f
+  test: F03 / Caso permitido
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 37e73a0d-eb25-5e4b-b9dc-f0afb6f90d64
+  asset_uid: 8f013aa3-64cb-551b-be10-a5a17291d40f
+  test: F03 / Caso rechazado
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 07ec0dc7-2572-55a7-a99c-80f2f1c70d2a
+  asset_uid: 8d0c12ea-495a-5550-86d0-678f6d75f957
+  test: F04 / Caso permitido
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 4e2eca68-f362-5724-9cd4-2b5c8854d351
+  asset_uid: 8d0c12ea-495a-5550-86d0-678f6d75f957
+  test: F04 / Caso rechazado
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 4907d2a9-9d16-5b27-94b8-bbe0679ffedc
+  asset_uid: bc85275e-a94f-5a00-a178-a5f054fb3487
+  test: F05 / Caso permitido
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 353d25bc-a27e-5569-9a7a-48ae740888a1
+  asset_uid: bc85275e-a94f-5a00-a178-a5f054fb3487
+  test: F05 / Caso rechazado
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: c32f2b7b-40ec-5a37-80c1-2f7d6d901cc6
+  asset_uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  test: F06 / Caso permitido
+  status: blocked
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: d7276c8e-571d-59b3-beda-09d095a148ce
+  asset_uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  test: F06 / Caso rechazado
+  status: blocked
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 03ae2cc2-5d66-5fa5-93bd-4f8e4f1da4e5
+  asset_uid: c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  test: F07 / Caso permitido
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 12647545-2148-57a3-b2bf-9a18b909f3bf
+  asset_uid: c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  test: F07 / Caso rechazado
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 3759658b-f2ea-5554-8891-8732c9379247
+  asset_uid: 84782644-56c0-5f7b-bd71-fa8f0bb3ea4f
+  test: F08 / Caso permitido
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 754c1daf-6b10-5a9d-80e8-8e6e009c85f2
+  asset_uid: 84782644-56c0-5f7b-bd71-fa8f0bb3ea4f
+  test: F08 / Caso rechazado
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 03d98cad-fc86-5e6f-ac25-489e948b4e38
+  asset_uid: 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  test: F09 / Caso permitido
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: ea166801-b765-5e1f-975f-7d3cb99e849f
+  asset_uid: 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  test: F09 / Caso rechazado
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 96806f30-abf9-5316-9505-09f81965334f
+  asset_uid: 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  test: F10 / Caso permitido
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: c1190c02-f10f-50c5-9a6b-7b486eb83fac
+  asset_uid: 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  test: F10 / Caso rechazado
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: fdef2502-2a76-57d9-996e-6f31a9f54bad
+  asset_uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  test: F11 / Caso permitido
+  status: blocked
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 66699bb7-9625-5e1d-b853-5bd0088133fd
+  asset_uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  test: F11 / Caso rechazado
+  status: blocked
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 84527abb-79dd-5acd-9034-f22515ca7c23
+  asset_uid: bc85275e-a94f-5a00-a178-a5f054fb3487
+  test: F12 / Caso permitido
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 92de4491-d4b6-5b24-8951-5b48cb067f56
+  asset_uid: bc85275e-a94f-5a00-a178-a5f054fb3487
+  test: F12 / Caso rechazado
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 39bce51a-7b9b-5ca5-8d3d-4e03f1c7651b
+  asset_uid: 8f013aa3-64cb-551b-be10-a5a17291d40f
+  test: F13 / Caso permitido
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: e658e86a-6ae9-58b4-88f6-6e7fd571d0aa
+  asset_uid: 8f013aa3-64cb-551b-be10-a5a17291d40f
+  test: F13 / Caso rechazado
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: e3046c2d-38a4-594f-82fc-261bde4f4473
+  asset_uid: 8d0c12ea-495a-5550-86d0-678f6d75f957
+  test: F14 / Caso permitido
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: f0ae8151-a1bb-556f-9b04-ea9d388c426e
+  asset_uid: 8d0c12ea-495a-5550-86d0-678f6d75f957
+  test: F14 / Caso rechazado
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: d8d0d92a-b532-57c7-889c-b19918439ba2
+  asset_uid: c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  test: F15 / Caso permitido
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 34f868aa-e091-5a43-bc7a-5a55e71068c6
+  asset_uid: c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  test: F15 / Caso rechazado
+  status: pending
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 084f4e1f-b4cc-5c3a-87d7-dd5347b13886
+  asset_uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  test: F16 / Caso permitido
+  status: blocked
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+- uid: 64283d79-42c8-5ef0-8713-88dff2a3ef9d
+  asset_uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  test: F16 / Caso rechazado
+  status: blocked
+  notes: Pendiente de laboratorio autorizado; no ejecutado.
+root_cause_groups:
+- uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  name: Decisión de autorización y límites de confianza
+  cause_md: 'Hipótesis de planificación: Decisión de autorización y límites de confianza.'
+  remediation_md: Cada ficha conserva su acción específica y sus criterios de cierre; la agrupación no demuestra
+    una causa raíz confirmada.
+- uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  name: Recuperación y consistencia de estado
+  cause_md: 'Hipótesis de planificación: Recuperación y consistencia de estado.'
+  remediation_md: Cada ficha conserva su acción específica y sus criterios de cierre; la agrupación no demuestra
+    una causa raíz confirmada.
+- uid: c2681607-36f3-5452-b928-7d569a323b7e
+  name: Trazabilidad y calidad documental
+  cause_md: 'Hipótesis de planificación: Trazabilidad y calidad documental.'
+  remediation_md: Cada ficha conserva su acción específica y sus criterios de cierre; la agrupación no demuestra
+    una causa raíz confirmada.
+limitations_md: Todas las observaciones son hipótesis sintéticas. No hay evidencia de ejecución técnica ni aceptación
+  empresarial. Los modelos gráficos explican el caso y no sustituyen una prueba. Las fechas de planificación y los
+  estados de seguimiento no acreditan resultados.
+project_management:
+  archived: false
+  delivery_date: '2026-11-13'

@@ -2,7 +2,7 @@ name: Publish verified release
 
 on:
   workflow_run:
-    workflows: [tests, Browser acceptance, Windows compatibility, macOS compatibility, Additional renderer acceptance, Reproducible source package]
+    workflows: [tests, Browser acceptance, Windows compatibility, macOS compatibility, Additional renderer acceptance, Reproducible source package, R16 trilingual acceptance]
     types: [completed]
     branches: [main]
 

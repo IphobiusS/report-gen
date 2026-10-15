@@ -8,6 +8,9 @@ const {createHash}=require('node:crypto');
 const root=path.resolve(__dirname,'..'),args=process.argv.slice(2),opt=(n,d)=>args.includes(n)?args[args.indexOf(n)+1]:d;
 const engine=opt('--browser','webkit'),output=path.resolve(opt('--output','out/jobs-lifecycle-0345'));
 const source=path.resolve(opt('--source',path.join(root,'webapp/static/progress.js'))),code=fs.readFileSync(source,'utf8');
+const appSource=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8');
+const languageHelpers=appSource.slice(appSource.indexOf('// Language selection'),appSource.indexOf('// ---- shared transport'));
+assert.ok(languageHelpers.includes('function uiText('),'Production language helpers are available');
 const playwright=require(require.resolve('playwright',{paths:[root]}));
 const result={engine,source_sha256:createHash('sha256').update(code).digest('hex'),checks:[],errors:[],failedRequests:[],requests:[],limitations:['Restoration uses deterministic persisted PageTransitionEvent events; actual BFCache admission is not asserted.']};
 fs.mkdirSync(output,{recursive:true});
@@ -18,6 +21,7 @@ const fixture=`<!doctype html><html lang="en"><title>Export polling lifecycle</t
 <div id="exportMenu"><div class="action-menu-body"></div></div><div id="projectActionsList"></div><div class="workspace-toolbar"></div>
 <script>
 const S={uiLang:'en',slug:null},projectStore={},projectBusyCount=0;
+${languageHelpers}
 const $=s=>document.querySelector(s);function h(tag,attrs,...kids){const el=document.createElement(tag);for(const[k,v]of Object.entries(attrs||{}))el.setAttribute(k,v);for(const c of kids.flat())if(c!=null)el.append(c.nodeType?c:String(c));return el;}
 const appFetch=(...args)=>fetch(...args),requireOk=async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r;};
 window.qa={timers:new Set(),lastPoll:null,unhandled:[],persisted:[]};

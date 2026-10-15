@@ -61,8 +61,8 @@ labels:
   assessor_logo: "Logo del evaluador"
   client_logo: "Logo del cliente"
   cover_image: "Imagen de portada"
-  default_confidential: "CONFIDENTIAL"
-  proof_note: "Proof file on target"
+  default_confidential: "CONFIDENCIAL"
+  proof_note: "Archivo de evidencia en el objetivo"
 summary:
   identified: "El informe contiene"
   finding: "hallazgo"
@@ -75,7 +75,7 @@ summary:
   chart_scope: "Distribución de los hallazgos con severidad asignada"
   and_machines_one: "y 1 registro de máquina"
   and_machines_many: "y {n} registros de máquinas"
-appendix_intro: "Los siguientes artefactos se recolectaron como evidencia de acceso durante el engagement."
+appendix_intro: "Este apéndice reúne las referencias a artefactos documentadas en el informe. Su inclusión no acredita acceso, recolección ni validación; deben leerse junto a las evidencias, los estados de verificación y las limitaciones de cada registro."
 prose:
   confidentiality:
     - "Este documento contiene información propietaria y confidencial sobre los sistemas, aplicaciones y postura de seguridad de {client}. Está dirigido únicamente al personal autorizado a recibirlo. Los hallazgos, técnicas y evidencias que se describen podrían utilizarse para comprometer el entorno evaluado y deben manejarse en consecuencia."

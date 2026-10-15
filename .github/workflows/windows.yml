@@ -37,7 +37,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Native export lifecycle and regression checks
         run: |
-          python -m pytest tests/test_export_job_lifecycle_0341.py tests/test_pdf_render_budget_0341.py tests/test_pdf_page_map_reuse_0341.py tests/test_word_header_spacing_0341.py tests/test_word_table_chapter_0341.py --junitxml=windows-lifecycle-results.xml
+          python -m pytest tests/test_export_job_lifecycle_0341.py tests/test_pdf_render_budget_0341.py tests/test_pdf_page_map_reuse_0341.py tests/test_word_header_spacing_0341.py tests/test_word_table_chapter_0341.py tests/test_portuguese_exports_0350.py tests/test_language_0350_launchers.py --junitxml=windows-lifecycle-results.xml
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Guardado, importación, entrega, historial y cancelación
         run: |
@@ -52,6 +52,8 @@ jobs:
           node scripts/audit-browser-0210.cjs --output windows-evidence/base
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node scripts/audit-browser-0211.cjs --output windows-evidence/recovery
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node tests/test_language_0350_browser.cjs --browser chromium --output windows-evidence/language-0350
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Scheduled backup controls on Windows
         run: |

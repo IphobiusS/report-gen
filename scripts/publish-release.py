@@ -26,6 +26,7 @@ WORKFLOWS = {
     'macos.yml': 'macOS compatibility',
     'renderers.yml': 'Additional renderer acceptance',
     'source-package.yml': 'Reproducible source package',
+    'r16-acceptance.yml': 'R16 trilingual acceptance',
 }
 SHA = re.compile(r'[0-9a-f]{40}')
 VERSION = re.compile(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)')

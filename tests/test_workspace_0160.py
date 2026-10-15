@@ -154,16 +154,17 @@ def test_api_restore_and_csrf(source,tmp_path,monkeypatch):
 
 
 @pytest.mark.parametrize('profile',designs.catalog()['profiles'],ids=lambda p:p['id'])
-def test_every_enabled_profile_has_complete_english(profile):
+@pytest.mark.parametrize('language', ['es', 'en', 'pt'])
+def test_every_enabled_profile_has_complete_localizations(profile, language):
     # Check source translations instead of accepting localized()'s Spanish fallback.
     for section in profile['sections']:
         for field in ('title','body'):
             if field in section:
-                assert isinstance(section[field],dict) and set(section[field])=={'es','en'}
+                assert isinstance(section[field],dict) and set(section[field])=={'es','en','pt'}
                 assert all(isinstance(v,str) and v.strip() for v in section[field].values())
-    assert profile['guidance']['note']['en']
-    english=designs.new_report(profile,'English assessment','en')
-    assert english['meta']['branding']['confidential_text']=='CONFIDENTIAL'
-    assert english['report']['sections']==designs.starter_sections(profile,'en')
-    snapshot=deepcopy(english)
-    assert designs.apply(english,profile,'quiet')['report']==snapshot['report']
+    assert profile['guidance']['note'][language]
+    report=designs.new_report(profile,'Localized assessment',language)
+    assert report['meta']['branding']['confidential_text']=={'es':'CONFIDENCIAL','en':'CONFIDENTIAL','pt':'CONFIDENCIAL'}[language]
+    assert report['report']['sections']==designs.starter_sections(profile,language)
+    snapshot=deepcopy(report)
+    assert designs.apply(report,profile,'quiet')['report']==snapshot['report']

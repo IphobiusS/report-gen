@@ -138,9 +138,10 @@ def test_completion_action_is_required():
         release.event_commit(payload, environment())
 
 
-def test_six_exact_receipts_are_required():
+def test_seven_exact_receipts_are_required():
     receipts = release.gate_receipts(API(), COMMIT)
-    assert len(receipts) == 6 and {row['workflow'] for row in receipts} == set(release.WORKFLOWS.values())
+    assert len(receipts) == 7 and {row['workflow'] for row in receipts} == set(release.WORKFLOWS.values())
+    assert 'R16 trilingual acceptance' in {row['workflow'] for row in receipts}
 
 
 def test_old_success_does_not_mask_in_progress_or_failed_rerun(publication):
@@ -151,7 +152,7 @@ def test_old_success_does_not_mask_in_progress_or_failed_rerun(publication):
     assert not api.mutations
 
 
-@pytest.mark.parametrize('filename', ['windows.yml', 'macos.yml', 'renderers.yml'])
+@pytest.mark.parametrize('filename', ['windows.yml', 'macos.yml', 'renderers.yml', 'r16-acceptance.yml'])
 @pytest.mark.parametrize('change', ['missing', 'foreign', 'other-sha', 'failed', 'wrong-path'])
 def test_each_gate_identity_and_result_is_checked(change, filename):
     api = API()

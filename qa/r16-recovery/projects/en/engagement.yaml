@@ -1,0 +1,1340 @@
+schema_version: 2
+finding_sequence: 16
+meta:
+  lang: en
+  theme: corporativo
+  report_density: compact
+  report_title: 'Banco Estuário: authorization, continuity, and document custody'
+  report_subtitle: Complex synthetic case / round 16 / 16 hypotheses and 2 machines
+  client: Banco Estuário [FICTIONAL / UNVERIFIED]
+  assessor: Document validation team
+  assessor_title: report-gen quality assurance
+  date: '2026-10-13'
+  version: R16.1
+  branding:
+    wordmark: ESTUÁRIO / R16
+    byline: FICTIONAL / UNVERIFIED
+    confidential_text: FICTIONAL / UNVERIFIED
+    accent: '#137C74'
+  contacts:
+    client:
+    - name: Fictional payment owner
+      title: Example role, not a real person
+      email: payments-owner@estuario.example
+    assessor:
+    - name: Synthetic document reviewer
+      title: FICTIONAL / UNVERIFIED
+      email: reviewer@estuario.example
+  scope:
+  - target: portal.estuario.example
+    description: Corporate portal / FICTIONAL / UNVERIFIED
+  - target: payments.estuario.example
+    description: Payment API / FICTIONAL / UNVERIFIED
+  - target: identity.estuario.example
+    description: Identity provider / FICTIONAL / UNVERIFIED
+  - target: settlement-worker.estuario.example
+    description: Settlement worker / FICTIONAL / UNVERIFIED
+  - target: archive.estuario.example
+    description: Document archive / FICTIONAL / UNVERIFIED
+  - target: events.estuario.example
+    description: Event collector / FICTIONAL / UNVERIFIED
+  - target: recovery-controller.estuario.example
+    description: Recovery orchestrator / FICTIONAL / UNVERIFIED
+  - target: jump.estuario.example
+    description: Administrative workstation / FICTIONAL / UNVERIFIED
+report:
+  sections:
+  - key: confidentiality
+    body: Synthetic material prepared to exercise a report generator. It contains no customer information, actual
+      findings, operational credentials, or authorization to perform testing. The case may be reviewed and reused
+      while retaining its fictional character.
+  - key: document_control
+    version_history:
+    - version: R16.1
+      date: '2026-10-13'
+      author: report-gen QA
+      notes: FICTIONAL / UNVERIFIED
+    distribution: Generator review; not banking distribution.
+  - key: contacts
+  - key: executive_summary
+    summary: 'Banco Estuário is a fictional institution created solely to exercise report-gen. This document does
+      not establish that a penetration test, banking certification, risk acceptance, or control assessment took
+      place at a real organization. Every asset uses a documentation address range or the reserved example domain.
+      Images depict drawn models rather than screenshots of examined systems. Tracking states belong to a simulated
+      workflow script; technical verification remains pending for all sixteen observations.
+
+
+      The scenario combines corporate banking, a payment gateway, a document custody service, and a recovery platform.
+      Its working premise is an imperfect separation between identity, authorization, and asynchronous execution.
+      A permission that is valid when an operation is requested may cease to be valid before a worker processes
+      it. Likewise, acknowledging receipt does not establish settlement, and storing a backup does not establish
+      that the bank can restore its service.
+
+
+      Management should focus first on irreversible decisions: who can request a transfer, what authority a queued
+      operation retains, and how anomalous execution can be stopped without duplication. The second priority is
+      investigative traceability, retaining enough information to connect authorization, message, ledger entry,
+      and document. The third is demonstrating recovery with specific dependencies and personnel. These priorities
+      belong to the scenario and do not derive from measurements of production systems.
+
+
+      Sixteen weakness hypotheses and two machine records are included. Severity labels are planning assumptions
+      rather than observed ratings; CVSS scores are deliberately absent because the required factors have not been
+      measured. The document distinguishes a promise to remediate from an executed test and from evidence sufficient
+      to reach a conclusion. No item is closed merely by changing its editor status. Scheduled dates are neither
+      results nor commitments from a real institution.
+
+
+      The executive recommendation is to approve a validation sequence with different owners for implementation
+      and review. Before accepting a correction, demonstrate permitted behavior, the expected rejection, and the
+      absence of adverse effects on reconciliation and support. A test limited to an HTTP response leaves queued
+      messages, retries, and administrative tasks unresolved. Scope must follow the operation through to its business
+      outcome, including delayed and repeated processing.
+
+
+      This report also exercises the generator through long headings, tables containing prose, quotations and nested
+      lists, extended addresses, Portuguese characters, and multilingual labels. Documentary quality is assessed
+      separately from the security fiction. A visually sound export does not prove that any hypothesis is true;
+      an intentional readiness warning does not prove an exporter defect. The accompanying audit records those two
+      categories separately, with observable evidence and explicit limits.'
+  - key: scope
+    objectives: 'The documentary boundary contains eight synthetic assets: a corporate portal, payment API, identity
+      provider, settlement worker, document archive, event collector, backup orchestrator, and jump workstation.
+      The 192.0.2.0/24 network and estuario.example names identify the example only. No destination was contacted
+      and no discovery command was executed. Each machine record is a validation notebook prepared for a future
+      isolated laboratory.
+
+
+      Card networks, third-party systems, real customers, availability testing, social engineering, and all transfers
+      of money are outside scope. Regulatory compliance is not asserted either: naming a control family does not
+      replace examination of requirements, jurisdiction, and evidence. CWE mappings guide technical review and do
+      not convert a hypothesis into a confirmed vulnerability. No risk acceptance from an actual bank is implied
+      by a workflow state.
+
+
+      The script uses three fictional identities: requester, approver, and recovery operator. Each requires one
+      permitted account and one deliberately unauthorized account. Data is created from scratch and removed when
+      the exercise ends. Records retain correlation identifiers, never passwords, private keys, reusable sessions,
+      or customer information. Any future execution requires written authorization and an agreed window; this package
+      does not authorize testing against any system.
+
+
+      An exercise would stop if unrelated data, unexpected degradation, access outside the agreed matrix, or uncontrolled
+      accounting differences appeared. The analyst would record the time, operation identifier, and pause decision
+      without expanding access. The laboratory owner would decide whether work could resume. These conditions belong
+      to the case design; they are not an account of an incident that occurred, and no operational evidence should
+      be inferred from them.'
+    assumptions: No production access; no traffic to the targets; no technical vulnerability validation.
+  - key: methodology
+    approach: 'The proposed assessment starts with observable contracts. Each operation records who requests it,
+      who approves it, which resource changes, and when authorization is decided. Permitted and rejected outcomes
+      are then defined. The minimum set includes positive cases, negative cases, retries, and expiry; a single rejection
+      cannot establish a secure design. Evidence must identify a specific code and configuration revision rather
+      than an unspecified current environment.
+
+
+      Hypotheses would first be compared with local models, then synthetic services, and finally an authorized environment
+      representing relevant dependencies. This sequence reduces uncertainty without treating a simulation as production.
+      If a dependency cannot be represented, the limitation remains visible and the result stays pending. A screenshot
+      displaying the intended configuration cannot substitute for checking effective behavior and the outcome of
+      the complete operation.
+
+
+      Each observation states a prerequisite, a bounded consequence, and measurable closure criteria. Two reviewers
+      participate when a decision changes permissions or ledger entries. One prepares the initial state; the other
+      verifies both the outcome and its reversal. Identifiers remain stable across languages so exports can be compared.
+      Translation changes wording, never the assets, relationships, or interpretation of a result, and the generator
+      does not translate authored project content.
+
+
+      Document quality checks compare section order, link labels and destinations, tables, and captions. A sensible
+      page break is not a defect; clipped text, isolated contents-page numbers, omitted rows, and altered destinations
+      are defects. The comparison includes a URL with a Unicode fragment and others with percent-encoded hyphens.
+      The document does not insert invisible characters to force line wrapping or alter a copied technical identifier.
+
+
+      Attached retest records describe planning sessions rather than tests of banking infrastructure. Their recorded
+      outcome remains not verifiable until an authorized execution exists. Nested tables serve two purposes: defining
+      acceptance controls and exercising the generator''s pagination. Every row must remain understandable without
+      confusing a control label with its outcome, including when the table continues on another page or follows
+      a long narrative block.'
+  - key: findings_summary
+  - key: findings
+  - key: remediation_plan
+    overview: 'The first stage converts authorization, idempotency, and recovery hypotheses into reviewable contracts.
+      The payment owner defines which decisions are irrevocable, and the identity owner identifies events that invalidate
+      a mandate. The platform team prepares simulators with a controlled clock and invented data. The output is
+      an expected-behavior matrix, not a list of closed tickets or a claim of reduced production risk.
+
+
+      The second stage implements small, testable changes. Each change declares dependencies, existing messages
+      that could be affected, and a rollback method. A change to queue semantics requires a plan for coexistence
+      with earlier versions. Review must ask what happens during rollout, not merely how the desired final state
+      behaves after all components have been replaced successfully.
+
+
+      The third stage independently checks reported corrections. The reviewer receives synthetic data, application
+      and configuration versions, acceptance contracts, and known limits. Negative and positive outcomes are recorded
+      with equal precision. If a condition cannot be reproduced, the reviewer states what is missing and why, without
+      replacing the absence of a test with a satisfactory outcome or an administrative status change.
+
+
+      The final stage addresses maintenance and recovery. Accepted controls become regression checks with owners
+      and defined thresholds. Restoration is rehearsed without connecting real destinations, preservation of restrictions
+      is reviewed, and the procedure is executed by someone who did not write it. Exceptions have a review date
+      and a separate business decision instead of disappearing into a general statement of acceptance.
+
+
+      Proposed metrics include time to an explainable decision, the proportion of operations with complete correlation,
+      duplicates detected before posting, and recovery controls actually demonstrated. Code volume, event volume,
+      and finding counts are not substitutes for quality. Follow-up reporting must disclose denominators and exclusions
+      so an apparent improvement cannot conceal a reduction in scope or a change in the definition of success.
+
+
+      The planned document delivery on November 13 does not mean remediation is complete. Later deadlines belong
+      to scenario follow-up, not commitments from a real institution.'
+  - key: contratos-de-exportacion
+    title: Technical appendix for extended addresses, multilingual labels, and reference preservation across report
+      formats
+    body: 'The following addresses are reserved documentary references. Their text and destinations must remain
+      exact; they are not fetched and do not establish external sourcing. Long identifiers exercise line wrapping
+      without adding spaces or invisible characters to the underlying content.
+
+
+      | Reference | Purpose | Literal address |
+
+      | --- | --- | --- |
+
+      | R01 | Bind the decision to the mandate version. | <https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance>
+      |
+
+      | R02 | Connect recovery with preserved restrictions. | <https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí>
+      |
+
+
+      [Authorization and settlement contract](https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance)
+
+
+      <https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance>
+
+
+      [Restoration, review, and açaí](https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí)
+
+
+      <https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí>
+
+
+      [Multilingual record: action, ação, العربية, हिन्दी, 한국어, 日本語](https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語)
+
+
+      <https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語>
+
+
+      ```text
+
+      ESTUARIO_R16_TECHNICAL_IDENTIFIER_0123456789ABCDEF_0123456789ABCDEF_0123456789ABCDEF
+
+      Literal: & <sample> &#x00; [brackets] `backticks`
+
+      Português: ação, revisão, proteção, João, São Luís, açaí.
+
+      ```
+
+      '
+  - key: appendix
+    tools_used: report-gen generates the four formats and local code draws synthetic diagrams. No penetration testing
+      tools were executed. Machine proof values are fictional markers, not captured flags.
+  workflow:
+    include_assets: true
+    include_coverage: true
+    include_retest: true
+    include_root_causes: true
+findings:
+- id: F01
+  uid: 4f75a819-3617-5eb9-be63-0ce5e99496bd
+  mode: vuln
+  title: Payment authorization separated from the execution decision
+  severity: high
+  cwe: CWE-862
+  verification: unverified
+  status: open
+  description_md: The model API stores an authorization when accepting a request and the worker consumes it later.
+    The hypothesis asks whether a change in ownership, limit, or mandate would be checked again. Review must distinguish
+    facts fixed at approval from conditions that must remain valid at execution.
+  impact_md: A stale decision could permit a movement that its approver no longer has authority to request. The
+    assumed scope is limited to the queued operation; access to other accounts is not inferred. Reconciliation might
+    detect the difference only after reversal has become a separate business process.
+  remediation_md: Define an explicit validity policy and bind authorization to account, amount, beneficiary, and
+    mandate version. The consumer must enforce that policy before creating a ledger entry. Missing information should
+    produce a traceable pending decision rather than treating a failed lookup as permission to continue.
+  closure_criteria_md: Review must show one valid operation, one with a revoked mandate, and one with changed limits.
+    Neither of the latter two may create a ledger entry. Records must explain rejection while retaining the original
+    identifier. A later retry must not silently reuse the previous authority.
+  affected: payments.estuario.example
+  owner: Payment API / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-01'
+  asset_uids:
+  - 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  evidence_uids:
+  - 60e41910-a92f-5442-b9fa-093209a5fd5d
+  root_cause_uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Prepare three local messages differing only in mandate version. Pause the fictional consumer, change
+      the policy, and record the expected decision before resuming. A second reviewer compares the request, authorization,
+      and simulated ledger entry. This is a proposed procedure, not an execution against a banking service.
+    figure:
+      src: img/model-1.png
+      caption: 'Synthetic diagram; not a screenshot from a bank.
+
+        The model API stores an authorization when accepting a request and the worker consumes it later. The hypothesis
+        asks whether a change in ownership, limit, or mandate would be checked again. Review must distinguish facts
+        fixed at approval from conditions that must remain valid at execution.'
+  references:
+  - https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance
+  retests:
+  - uid: c7fc08aa-0259-56a6-9263-25ed7e118430
+    tested_on: '2026-10-13'
+    assessor: FICTIONAL / UNVERIFIED
+    result: not_verified
+    notes_md: 'Planning session; no technical execution performed.
+
+
+      > Proposed matrix, not observed results.
+
+      >
+
+      > | Control | Expected state | Pending evidence |
+
+      > | --- | --- | --- |
+
+      > | Prerequisite | Synthetic data and laboratory authorization | Not performed |
+
+      > | Permitted case | Outcome matches the written contract | Not performed |
+
+      > | Rejected case | No unauthorized business effect | Not performed |
+
+      > | Repetition | Same decision with traceability retained | Not performed |
+
+      > | Restoration | Restrictions remain effective after recovery | Not performed |
+
+      > | Independent review | Second reviewer reproduces the conclusion | Not performed |'
+    evidence_uids: []
+- id: F02
+  uid: 88fb730a-f259-5f51-9f83-46a99ac09d7e
+  mode: vuln
+  title: Settlement retry without a stable business identity
+  severity: high
+  cwe: CWE-837
+  verification: unverified
+  status: in_progress
+  description_md: The scenario allows a request to receive a new identifier after its acknowledgement is lost. Review
+    must determine whether deduplication uses that transport identifier or a key bound to customer intent. Two different
+    messages could represent exactly the same instruction rather than two legitimate payments.
+  impact_md: 'The hypothetical consequence is a duplicate ledger entry or costly manual reconciliation. Financial
+    loss is not assumed automatically because downstream controls matter. Partial unavailability increases ambiguity:
+    a customer may repeat an operation whose response was lost even though the server completed the original processing.'
+  remediation_md: Maintain a business idempotency key with defined scope, expiry, and payload comparison. Record
+    acceptance and a recoverable result atomically. Reusing a key with different content must produce an explicit
+    conflict. Retention must cover the documented maximum retry and recovery window rather than an arbitrary short
+    cache lifetime.
+  closure_criteria_md: The matrix must cover an immediate retry, retry after restart, out-of-order arrival, and
+    the same key with another amount. Each permitted intent produces exactly one entry. A conflicting request leaves
+    the original entry unchanged. Result lookup lets the customer distinguish pending, completed, and rejected without
+    guessing.
+  affected: settlement-worker.estuario.example
+  owner: Settlement worker / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-02'
+  asset_uids:
+  - 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  evidence_uids: []
+  root_cause_uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Use an in-memory ledger and a simulated transport able to drop acknowledgements. Enumerate event sequences
+      before the exercise without generating real traffic. Compare the number of intents with the number of entries
+      and preserve identifiers. A test that only returns a duplicate response does not establish atomic recording.
+  references:
+  - https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí
+  retests:
+  - uid: 7095bac8-a2e7-5baa-8f7d-85816f9f397b
+    tested_on: '2026-10-13'
+    assessor: FICTIONAL / UNVERIFIED
+    result: not_verified
+    notes_md: 'Planning session; no technical execution performed.
+
+
+      > Proposed matrix, not observed results.
+
+      >
+
+      > | Control | Expected state | Pending evidence |
+
+      > | --- | --- | --- |
+
+      > | Prerequisite | Synthetic data and laboratory authorization | Not performed |
+
+      > | Permitted case | Outcome matches the written contract | Not performed |
+
+      > | Rejected case | No unauthorized business effect | Not performed |
+
+      > | Repetition | Same decision with traceability retained | Not performed |
+
+      > | Restoration | Restrictions remain effective after recovery | Not performed |
+
+      > | Independent review | Second reviewer reproduces the conclusion | Not performed |'
+    evidence_uids: []
+- id: F03
+  uid: 5378b788-8eb3-58d3-854b-d4622c909210
+  mode: vuln
+  title: Incomplete revocation across interactive sessions and deferred tasks
+  severity: high
+  cwe: CWE-613
+  verification: unverified
+  status: reported_fixed
+  description_md: Removing a user closes the visible session, but the model also includes derived credentials for
+    reports and deferred payments. Review must establish how revocation reaches each consumer and which tolerance
+    period is approved. A signed-out screen does not describe the authority retained by existing background jobs.
+  impact_md: 'A job might continue reading documents or preparing operations after permission is removed. Exposure
+    depends on credential lifetime and granted scope. This does not assert that revocation must cancel every task:
+    policy must distinguish previously committed obligations from new decisions that require current authority and
+    an active mandate.'
+  remediation_md: Inventory credentials and consumers, then define a measurable maximum propagation time. Bind tasks
+    to an identity and reviewable policy with a safe route to cancellation or authorized transfer. Restrict derived
+    credential scope and avoid treating the interface session as the only source of revocation information.
+  closure_criteria_md: Record a consumer matrix with revocation time, rejection time, and any authorized exception.
+    New decisions must be blocked within the agreed period. Continuing obligations identify their basis and owner.
+    No consumer may be excluded merely because it lacks its own user interface or uses a background service identity.
+  affected: identity.estuario.example
+  owner: Identity provider / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-03'
+  asset_uids:
+  - 8f013aa3-64cb-551b-be10-a5a17291d40f
+  evidence_uids: []
+  root_cause_uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Prepare a fictional timeline using a controlled clock, nonfunctional credentials, and three local consumers.
+      Change permission between acceptance and execution. Record the expected outcome for each job type, including
+      obligations that should continue. Do not reuse real tokens to test behavior in the mock environment.
+  references:
+  - https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語
+  reported_remediation: 'Simulated status: the script includes a reported change, but no actual correction or technical
+    retest exists.'
+- id: F04
+  uid: 6465ff0e-165c-56b5-a8dd-c4daad3e6de6
+  mode: vuln
+  title: Document lookup with ambiguous business ownership
+  severity: medium
+  cwe: CWE-639
+  verification: unverified
+  status: not_verified
+  description_md: The portal retrieves documents associated with both a company and a contract. The model stores
+    these identifiers separately, so the hypothesis examines whether their relationship is checked before release.
+    Verifying that a user belongs to some company does not establish ownership of the particular document requested.
+  impact_md: The potential consequence is cross-company reading of one example document, without inferring modification
+    or general archive access. A temporary download link might extend access after the lookup ends. Review must
+    therefore cover both search authorization and the delivery mechanism, including its audience and lifetime.
+  remediation_md: Resolve the resource within the set of companies authorized for the identity instead of trusting
+    client-supplied identifiers. Bind temporary links to an appropriate purpose and expiry. Keep error behavior
+    consistent so unauthorized callers cannot distinguish documents belonging to other organizations through existence
+    information.
+  closure_criteria_md: The test must cross two companies, two contracts, and two roles while retaining a permitted
+    case. Unauthorized combinations release neither content nor usable links. Expiry is checked after copying the
+    address into a new session. Audit records retain the rejection reason without storing the entire document.
+  affected: portal.estuario.example
+  owner: Corporate portal / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-04'
+  asset_uids:
+  - 8d0c12ea-495a-5550-86d0-678f6d75f957
+  evidence_uids: []
+  root_cause_uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Create text documents containing only their synthetic labels. Prepare an ownership table before querying
+      the simulator. Inspect the body, headers, and returned link as three separate outcomes. An empty response
+      is not considered safe if it still contains an address that can deliver the file.
+  references:
+  - https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance
+- id: F05
+  uid: b1ea8af5-a4cf-5cbf-b005-1da7661f1bcc
+  mode: vuln
+  title: Document retention without separation from access control
+  severity: medium
+  cwe: CWE-922
+  verification: unverified
+  status: open
+  description_md: A scenario rule retains documents for an extended period while a removal flag hides their portal
+    entry. Review must establish whether that flag changes object authorization or only visibility. Retaining a
+    file for documentary purposes does not imply that every old access link should remain usable throughout retention.
+  impact_md: The assumed risk is persistent access to material no longer available to an operational role. Premature
+    deletion is not an appropriate solution either because it could violate the scenario custody requirements. The
+    correct decision separates retention, restriction of ordinary use, and exceptional access subject to independent
+    review.
+  remediation_md: Represent retention state separately from access state. Invalidate issued links when their authorizing
+    condition changes while keeping the bytes under custody controls. Exceptional retrieval requires purpose, owner,
+    recording, and a deadline. The storage system must not infer these conditions solely from an object path.
+  closure_criteria_md: Demonstrate that the retained document remains intact, the previous role can no longer retrieve
+    it, and authorized exceptional access leaves a distinct record. Restoring from backup must preserve restrictions.
+    A file that becomes broadly accessible after restoration fails the criterion even when the backup bytes are
+    intact.
+  affected: archive.estuario.example
+  owner: Document archive / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-05'
+  asset_uids:
+  - bc85275e-a94f-5a00-a178-a5f054fb3487
+  evidence_uids: []
+  root_cause_uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Use three invented objects with different dates and a retention policy written for the exercise. Change
+      access state only, check read paths, and repeat after a local restoration. Compare permissions and content
+      independently so a matching content hash cannot conceal an authorization regression.
+  references:
+  - https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí
+- id: F06
+  uid: e5013c62-b016-53ff-8e50-03ec9c468095
+  mode: vuln
+  title: Fragmented traceability between authorization, queue, and ledger
+  severity: medium
+  cwe: CWE-778
+  verification: unverified
+  status: in_progress
+  description_md: Synthetic events use different identifiers in the API, worker, and ledger. The hypothesis asks
+    whether correlation depends on time and amount, values that can repeat. A large volume of logs does not guarantee
+    reconstruction of a particular decision or distinguish a legitimate repeated instruction from a duplicate execution.
+  impact_md: An investigation could attribute an entry to the wrong authorization or incorrectly conclude that an
+    operation is missing. The proposed impact is reduced confidence in reconstruction rather than a demonstrated
+    intrusion. Adding unrestricted personal data as compensation would create another exposure without necessarily
+    establishing the causal relationship.
+  remediation_md: Propagate one stable intent identifier and a separate attempt identifier with explicit event relationships.
+    Define minimum fields, clocks, provenance, and integrity requirements. Record decision changes and trust boundaries
+    without including secrets. Dropped events need a controlled signal so their absence cannot be mistaken for successful
+    completion.
+  closure_criteria_md: A reviewer who did not prepare the case reconstructs three concurrent operations of the same
+    amount, including one cancellation. The reviewer must identify attempt, decision, and entry without guessing
+    from time proximity. Missing events and clock skew must appear as explicit uncertainty rather than a complete-looking
+    chain.
+  affected: events.estuario.example
+  owner: Event collector / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-06'
+  asset_uids:
+  - 33161c9a-4057-54ec-965d-8be01bf01816
+  evidence_uids: []
+  root_cause_uid: c2681607-36f3-5452-b928-7d569a323b7e
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Generate a small set of fictional JSON events and shuffle their order. Give only the records to the
+      second reviewer, then compare the reconstruction with the withheld script. Count resolved, ambiguous, and
+      absent relationships separately. Do not use a large line count as a measure of audit quality.
+  references:
+  - https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語
+- id: F07
+  uid: 93956a2c-ef57-5402-9632-76a6d709f5b3
+  mode: vuln
+  title: Recovery that restores data without restoring restrictions
+  severity: high
+  verification: unverified
+  status: reported_fixed
+  description_md: The fictional platform checks that a backup contains readable files, but its plan omits permissions,
+    keys, queues, and documentary holds. The hypothesis challenges the equivalence between recovering bytes and
+    recovering a secure service. A partial restoration can retain data while silently changing who is allowed to
+    use it.
+  impact_md: The restored service might grant excessive access, lose current restrictions, or execute tasks already
+    completed. Apparent continuity would conceal authorization and accounting differences. This does not assert
+    that the backup is corrupt; the assumed weakness lies in the recovery contract and what its acceptance test
+    considers sufficient.
+  remediation_md: Define a recovery unit covering data, configuration, identities, key references, and processing
+    position. Make dependencies and startup order explicit. Run access and reconciliation checks before reopening
+    the service. Documentation must identify what cannot be restored automatically and who decides how those gaps
+    are handled.
+  closure_criteria_md: Acceptance requires an authorized read, rejection of a revoked identity, preservation of
+    a hold, and no duplicates after queue processing resumes. Compare logical state before and after, not hashes
+    alone. Record measured duration and recovered position rather than substituting the desired business recovery
+    objectives.
+  affected: recovery-controller.estuario.example
+  owner: Recovery orchestrator / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-07'
+  asset_uids:
+  - c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  evidence_uids:
+  - b7cfd3a6-7023-5136-9ebd-8ad8a554ad78
+  root_cause_uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Build a disposable local environment from a synthetic manifest. Introduce one restriction and one completed
+      task before backup. Restore under another environment identifier, apply acceptance controls, and destroy the
+      mock environment. The exercise must not contact payment destinations or reuse production secrets.
+    figure:
+      src: img/model-2.png
+      caption: 'Synthetic diagram; not a screenshot from a bank.
+
+        The fictional platform checks that a backup contains readable files, but its plan omits permissions, keys,
+        queues, and documentary holds. The hypothesis challenges the equivalence between recovering bytes and recovering
+        a secure service. A partial restoration can retain data while silently changing who is allowed to use it.
+
+
+        Acceptance requires an authorized read, rejection of a revoked identity, preservation of a hold, and no
+        duplicates after queue processing resumes. Compare logical state before and after, not hashes alone. Record
+        measured duration and recovered position rather than substituting the desired business recovery objectives.
+        Build a disposable local environment from a synthetic manifest. Introduce one restriction and one completed
+        task before backup. Restore under another environment identifier, apply acceptance controls, and destroy
+        the mock environment. The exercise must not contact payment destinations or reuse production secrets.'
+  references:
+  - https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance
+  retests:
+  - uid: 8f7907ca-5eec-51e5-9407-a162ff1d5817
+    tested_on: '2026-10-13'
+    assessor: FICTIONAL / UNVERIFIED
+    result: not_verified
+    notes_md: 'Planning session; no technical execution performed.
+
+
+      > Proposed matrix, not observed results.
+
+      >
+
+      > | Control | Expected state | Pending evidence |
+
+      > | --- | --- | --- |
+
+      > | Prerequisite | Synthetic data and laboratory authorization | Not performed |
+
+      > | Permitted case | Outcome matches the written contract | Not performed |
+
+      > | Rejected case | No unauthorized business effect | Not performed |
+
+      > | Repetition | Same decision with traceability retained | Not performed |
+
+      > | Restoration | Restrictions remain effective after recovery | Not performed |
+
+      > | Independent review | Second reviewer reproduces the conclusion | Not performed |'
+    evidence_uids: []
+  reported_remediation: 'Simulated status: the script includes a reported change, but no actual correction or technical
+    retest exists.'
+- id: F08
+  uid: c3687dff-9d2b-594f-80eb-da3b467dbc52
+  mode: vuln
+  title: Emergency administrative access without verifiable expiry
+  severity: high
+  cwe: CWE-269
+  verification: unverified
+  status: not_verified
+  description_md: The example emergency procedure temporarily raises recovery permissions. Review must establish
+    whether termination depends on someone remembering to remove access. Initial authorization and later withdrawal
+    are separate decisions; closing a ticket does not establish that every session and derived credential has expired
+    or lost its elevated scope.
+  impact_md: Persistent emergency permission would expand the administrative surface beyond its approved window.
+    The assumed risk combines excessive scope and weak attribution, not a demonstrated compromise. Prohibiting all
+    emergency access without an alternative could remove recovery capability, so the fictional bank needs a constrained,
+    rehearsed procedure.
+  remediation_md: Grant temporary capabilities bound to an individual identity, reason, and maximum duration. Separate
+    request, approval, and subsequent review. Enforce expiry technically across derived sessions, with an explicit
+    extension process. Command recording requires secret filtering and restricted access rather than unrestricted
+    publication of sensitive administrative activity.
+  closure_criteria_md: The positive case permits the approved action during the window. After expiry, both a new
+    session and an existing session fail according to the defined policy. An extension retains its reason and new
+    approver. Subsequent review attributes actions to an individual without relying on a shared account.
+  affected: jump.estuario.example
+  owner: Administrative workstation / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-08'
+  asset_uids:
+  - 84782644-56c0-5f7b-bd71-fa8f0bb3ea4f
+  evidence_uids: []
+  root_cause_uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Use an accelerated clock in a permission mock without privileged access to its host. Record grant,
+      use, rejected extension, and expiry. The second reviewer attempts only the planned fictional read action.
+      A successful mock result does not certify the configuration of a real identity provider or administrative
+      platform.
+  references:
+  - https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí
+- id: F09
+  uid: 29f8df26-d3aa-5d96-941f-9a4c07cc517c
+  mode: vuln
+  title: Amounts and currencies normalized differently across components
+  severity: medium
+  cwe: CWE-20
+  verification: unverified
+  status: open
+  description_md: The portal displays locally formatted amounts while the queue uses a decimal interchange representation.
+    The hypothesis reviews ambiguous conversion, precision, and the relationship between currency and amount. A
+    value that looks correct on screen may represent a different quantity when another component applies different
+    separator or rounding rules.
+  impact_md: 'Inconsistent rejections or differences between approval and ledger entry could result. Deliberate
+    manipulation is not assumed: a legitimate locale setting could also trigger the hypothesized defect. Spanish,
+    English, and Portuguese presentation must preserve the same logical value even when separators and currency
+    symbol placement differ.'
+  remediation_md: Define a canonical interchange representation with mandatory currency and permitted precision.
+    Separate display formatting from the business value and reject ambiguity before authorization. Rounding must
+    be explicit and occur once at the agreed stage, with testable rules for adjustments and refunds rather than
+    incidental component behavior.
+  closure_criteria_md: Acceptance covers zero, the smallest fraction, the allowed maximum, and excessive precision.
+    Each language produces the same canonical value and the same rejection where appropriate. An empty string never
+    becomes zero. Missing currency must prevent a decision rather than silently inheriting a global default.
+  affected: payments.estuario.example
+  owner: Payment API / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-09'
+  asset_uids:
+  - 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  evidence_uids: []
+  root_cause_uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Prepare cases containing 1.234,56; 1,234.56; 1234.56; and grouping spaces. Classify each input as allowed
+      or rejected according to the contract before passing it to a local converter. Compare numeric structures rather
+      than screenshots of text, preserving the precision of the resulting value.
+  references:
+  - https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語
+- id: F10
+  uid: 85bcdc50-d927-55a9-b1a7-69521009bde6
+  mode: vuln
+  title: Uninterpretable message treated as a completed operation
+  severity: medium
+  cwe: CWE-754
+  verification: unverified
+  status: in_progress
+  description_md: The fictional consumer distinguishes business errors from parsing errors, but both may end with
+    an acknowledgement. Review must establish whether an uninterpretable message retains a visible, recoverable
+    state. Transport can behave correctly while the business operation disappears from tracking and receives no
+    meaningful final decision.
+  impact_md: An instruction could be left without an outcome or actionable alert. Reprocessing the entire queue
+    indiscriminately would also be unsafe because valid operations could be duplicated. The hypothetical consequence
+    is state uncertainty and reconciliation work, not proof of financial loss or corruption of the entire service.
+  remediation_md: Separate receipt, interpretation, decision, and final outcome. Unreadable messages must retain
+    an identifier, a bounded reason, and a controlled review path. Avoid unlimited retry loops. Reintroduction requires
+    schema-version validation and preservation of the business identity so duplicate protection continues to apply
+    across the correction.
+  closure_criteria_md: An unknown version, missing required field, and invalid value remain pending with distinct
+    reasons. Valid messages continue processing. After correction, only an authorized reviewer may reintroduce a
+    message and history connects both attempts. No transport outcome is presented as confirmed settlement in the
+    business view.
+  affected: settlement-worker.estuario.example
+  owner: Settlement worker / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-10'
+  asset_uids:
+  - 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  evidence_uids: []
+  root_cause_uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Prepare four textual JSON messages without operational destinations. Submit each to a local parser
+      and compare tracking state with the written contract. Also check that an error does not dump the full message
+      into a public log. Keep synthetic content clearly identified so it cannot be mistaken for customer evidence.
+  references:
+  - https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance
+- id: F11
+  uid: ce3a86bb-d418-585c-a09e-4e09bfcc2ed0
+  mode: vuln
+  title: Support records containing session data beyond their purpose
+  severity: low
+  cwe: CWE-532
+  verification: unverified
+  status: reported_fixed
+  description_md: The scenario support form accepts diagnostic responses as attachments. The hypothesis examines
+    whether they contain reusable identifiers or unnecessary personal fields. Restricting ticket access reduces
+    exposure, but does not make every captured field necessary or justify retaining it for the full lifetime of
+    the support record.
+  impact_md: Accumulated diagnostics could increase the number of people and systems exposed to sensitive information.
+    This case contains no real secrets and does not demonstrate session theft. The low planning severity assumes
+    fictional identifiers cannot authenticate; that assumption requires evidence before a real rating can be assigned.
+  remediation_md: Define an allowlist of diagnostic fields and exclude others by default. Redact before creating
+    the file rather than only at display time. Document retention, recipients, and deletion. The system should provide
+    a useful failure summary without requiring the user to disclose a complete session or raw request history.
+  closure_criteria_md: The final file must omit secret markers introduced solely for testing, including metadata
+    and derived attachments. The error remains understandable. Permission review confirms that personnel without
+    a support role cannot retrieve the file and that deletion covers the copies identified in the retention design.
+  affected: events.estuario.example
+  owner: Event collector / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-11'
+  asset_uids:
+  - 33161c9a-4057-54ec-965d-8be01bf01816
+  evidence_uids: []
+  root_cause_uid: c2681607-36f3-5452-b928-7d569a323b7e
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Use unmistakable markers such as ESTUARIO_FAKE_SESSION_DO_NOT_USE without a valid credential format.
+      Search the file, preview, and metadata for these markers after sanitization. Record intentional omissions
+      separately from accidental loss of the context support personnel need to understand the failure.
+  references:
+  - https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí
+  reported_remediation: 'Simulated status: the script includes a reported change, but no actual correction or technical
+    retest exists.'
+- id: F12
+  uid: 750a92a3-a372-52da-978a-2fbc5033140d
+  mode: vuln
+  title: Case-file integrity based only on the filename
+  severity: medium
+  cwe: CWE-345
+  verification: unverified
+  status: not_verified
+  description_md: The fictional catalog displays evidence name, date, and size but does not describe binding to
+    immutable content. The hypothesis considers whether replacing a file under the same name could leave the case
+    apparently unchanged. Provenance and integrity are distinct from a document merely remaining readable and visually
+    plausible.
+  impact_md: A reviewer could assess different bytes from those approved or lose the relationship between an observation
+    and its evidence. This affects reproducibility and documentary confidence without demonstrating actual forgery.
+    A hash alone does not establish who acquired the material or whether the acquisition procedure was appropriate.
+  remediation_md: Bind each revision to a cryptographic digest, size, and recorded source while preserving previous
+    versions when content changes. Replacement must be explicit and justified. Distinguish original evidence, sanitized
+    copy, and presentation figure through verifiable relationships without promising authenticity beyond what the
+    acquisition process can establish.
+  closure_criteria_md: The test replaces a synthetic image with another of identical dimensions and filename. The
+    case must detect a different revision and preserve its predecessor according to policy. Export and reimport
+    retain the relationships. Content comparison must not depend on filesystem modification timestamps or visual
+    similarity.
+  affected: archive.estuario.example
+  owner: Document archive / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-12'
+  asset_uids:
+  - bc85275e-a94f-5a00-a178-a5f054fb3487
+  evidence_uids: []
+  root_cause_uid: c2681607-36f3-5452-b928-7d569a323b7e
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Draw two local images differing by one number, calculate their digests, and record replacement in a
+      mock case. Verify that the preview and downloaded file correspond to the same revision. Neither image represents
+      a real banking screenshot or evidence of exploitation; both remain clearly labeled as synthetic material.
+  references:
+  - https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語
+- id: F13
+  uid: 6ada26b7-f4e4-5ef3-8635-db2363afffef
+  mode: vuln
+  title: Segregation of duties that omits chained delegations
+  severity: medium
+  verification: unverified
+  status: open
+  description_md: The fictional matrix prohibits one account from requesting and approving a payment. Temporary
+    delegations are nevertheless stored as independent roles. The hypothesis asks whether one person can accumulate
+    both capabilities through different accounts or delegation chains even though each isolated check appears to
+    satisfy the rule.
+  impact_md: 'The dual-review control could become a formality without effective independence. Consequences depend
+    on identity policy and amount controls. No fraud is attributed to any person: the concern is a property of the
+    authorization model and the evidence required to demonstrate actual separation rather than two different account
+    names.'
+  remediation_md: Resolve effective capabilities by person and context, including delegations and exceptions. Validate
+    conflicts when granting access and when approving an operation. Exceptions require expiry and independent review.
+    Keep a queryable representation so the owner can explain why a capability combination is permitted or rejected.
+  closure_criteria_md: Tests include two distinct people, two accounts belonging to one person, and a second-level
+    delegation. Only the first satisfies ordinary independence. A documented exception remains in history after
+    expiry. Removing a delegation updates the effective decision without requiring every account to be recreated
+    or manually relabeled.
+  affected: identity.estuario.example
+  owner: Identity provider / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-13'
+  asset_uids:
+  - 8f013aa3-64cb-551b-be10-a5a17291d40f
+  evidence_uids:
+  - 6c90f9f5-ec90-5ae3-a536-3640aae6cf71
+  root_cause_uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Construct a local identity graph with invented names and nonoperational capabilities. Review combinations
+      manually before querying the evaluator. Compare the decision explanation rather than only its final boolean
+      value. The graph is a policy model, not a personnel inventory or evidence of actual employee misconduct.
+    figure:
+      src: img/model-3.png
+      caption: 'Synthetic diagram; not a screenshot from a bank.
+
+        The fictional matrix prohibits one account from requesting and approving a payment. Temporary delegations
+        are nevertheless stored as independent roles. The hypothesis asks whether one person can accumulate both
+        capabilities through different accounts or delegation chains even though each isolated check appears to
+        satisfy the rule.'
+  references:
+  - https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance
+  retests:
+  - uid: dc1864fe-12b5-5069-8e25-bd559e9b7098
+    tested_on: '2026-10-13'
+    assessor: FICTIONAL / UNVERIFIED
+    result: not_verified
+    notes_md: 'Planning session; no technical execution performed.
+
+
+      > Proposed matrix, not observed results.
+
+      >
+
+      > | Control | Expected state | Pending evidence |
+
+      > | --- | --- | --- |
+
+      > | Prerequisite | Synthetic data and laboratory authorization | Not performed |
+
+      > | Permitted case | Outcome matches the written contract | Not performed |
+
+      > | Rejected case | No unauthorized business effect | Not performed |
+
+      > | Repetition | Same decision with traceability retained | Not performed |
+
+      > | Restoration | Restrictions remain effective after recovery | Not performed |
+
+      > | Independent review | Second reviewer reproduces the conclusion | Not performed |'
+    evidence_uids: []
+- id: F14
+  uid: af709c14-9362-55a6-80d9-29f02afd8054
+  mode: vuln
+  title: Error messages revealing internal states of unrelated documents
+  severity: low
+  cwe: CWE-200
+  verification: unverified
+  status: in_progress
+  description_md: The scenario portal returns different messages for a missing document, a retained document, and
+    one belonging to another company. The hypothesis is limited to existence and state information, not content
+    access. Differences may occur in text, status, size, or timing, so checking visible translation alone is insufficient.
+  impact_md: A user might infer that a contractual relationship or case exists without being able to download it.
+    Sensitivity depends on identifier context and predictability. Authorized operators still need the actual reason;
+    the design requires cautious external responses and access-controlled internal diagnostics rather than removing
+    all useful error detail.
+  remediation_md: Define a uniform error contract for callers without authorization over the object. Separate internal
+    diagnostic codes from external messages using a correlation identifier. Translations must preserve meaning without
+    interpolated names or paths that reintroduce the information the response was intended to withhold from unauthorized
+    callers.
+  closure_criteria_md: In Spanish, English, and Portuguese, all three unauthorized cases must present equivalent
+    outcomes under the contract. Authorized support can recover the cause through correlation. The test does not
+    demand unrealistically identical timing; it requires relevant differences to be measured and assessed within
+    the agreed context and threat model.
+  affected: portal.estuario.example
+  owner: Corporate portal / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-14'
+  asset_uids:
+  - 8d0c12ea-495a-5550-86d0-678f6d75f957
+  evidence_uids: []
+  root_cause_uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Compare prepared responses in local files without enumerating remote objects. Review text, fields,
+      and metadata against expected outcomes. Friendly wording is insufficient if the JSON body retains a distinct
+      internal state. Record user-facing messages separately from diagnostics intended for support and administrative
+      review.
+  references:
+  - https://docs.estuario.example/recovery/manifest?revision=sha256%3A0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef&component=identity%2Dpolicy#revisão-açaí
+- id: F15
+  uid: 0b0cd3b0-96ec-5bba-8ede-d1ac5480f39a
+  mode: vuln
+  title: Recovery dependency without verifiable version or provenance
+  severity: medium
+  verification: unverified
+  status: reported_fixed
+  description_md: The fictional manifest identifies the main application but references auxiliary tools through
+    a download named latest. The hypothesis asks whether the same plan recreates the same environment months later.
+    An intact data backup may be unusable if a required interpretation tool changes or is no longer available.
+  impact_md: Recovery could depend on improvised decisions during an outage. The assumed impact is operational uncertainty
+    and possible incompatibility, not evidence of a malicious package. Pinning a version without monitoring its
+    maintenance is insufficient; reproducibility and safe updating must be treated as complementary requirements
+    rather than alternatives.
+  remediation_md: Record version, origin, cryptographic digest, license, and purpose for every required dependency.
+    Retain an authorized acquisition route and a compatibility test against backups. Updates require assessment
+    and a renewed manifest; they must not arrive unexpectedly during an urgent restoration when review and rollback
+    options are constrained.
+  closure_criteria_md: Two isolated reconstructions must identify exactly the same approved dependencies. Changed
+    bytes are detected before execution. The test also demonstrates rejection of an incompatible version and renewal
+    of the approved set. Historical reproducibility must not require continued operational use of known vulnerable
+    versions without an explicit controlled purpose.
+  affected: recovery-controller.estuario.example
+  owner: Recovery orchestrator / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-15'
+  asset_uids:
+  - c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  evidence_uids: []
+  root_cause_uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: Create three local text packages with invented versions and known digests. Modify one without changing
+      its name and compare verification results. The test does not download or execute unknown software. Its purpose
+      is to validate manifest acceptance decisions rather than simulate an intrusion into a supply chain.
+  references:
+  - https://docs.estuario.example/evidence/registro#ação-ñ-über-العربية-हिन्दी-한국어-日本語
+  reported_remediation: 'Simulated status: the script includes a reported change, but no actual correction or technical
+    retest exists.'
+- id: F16
+  uid: a1836300-1e7e-574d-a137-84d27e3d60ec
+  mode: vuln
+  title: Closure criteria that confuse reported change with verification
+  severity: info
+  verification: unverified
+  status: not_verified
+  description_md: 'The example administrative workflow records that a team has implemented a correction. The documentary
+    hypothesis is that this communication might be presented as independent verification. These are different facts:
+    an implementation may exist while still failing the original case, an equivalent case, or a dependency outside
+    the change.'
+  impact_md: Management might interpret fewer open findings as a demonstrated reduction in risk. No technical impact
+    or CVSS score is assigned because this is a process and reporting quality issue. The objective is not to prevent
+    partial progress but to show precisely what was reported, what was tested, and what remains pending.
+  remediation_md: Keep tracking status, technical verification, and retest outcome in separate fields. Require date,
+    scope, and evidence before communicating verified closure. Exceptions and inability to test remain visible and
+    must not automatically become risk acceptance. The business owner makes acceptance decisions through a separate,
+    explicit process.
+  closure_criteria_md: A reported correction without a retest appears as pending verification in both the view and
+    export. An inconclusive retest does not close the finding. An undated record remains visible without becoming
+    the latest dated outcome. The report must explain these distinctions while retaining the original history and
+    author statements.
+  affected: events.estuario.example
+  owner: Event collector / FICTIONAL / UNVERIFIED
+  due_date: '2026-11-16'
+  asset_uids:
+  - 33161c9a-4057-54ec-965d-8be01bf01816
+  evidence_uids: []
+  root_cause_uid: c2681607-36f3-5452-b928-7d569a323b7e
+  walkthrough:
+  - lead: Proposed procedure, not executed
+    text_md: 'Prepare three fictional records: a reported change, a not-verifiable observation, and an undated note.
+      Compare the executive matrix with detailed records and all four output formats. No chart may convert missing
+      evidence into success. This case deliberately retains all sixteen hypotheses as technically unverified.'
+  references:
+  - https://docs.estuario.example/validation/payment-authorisation-and-settlement-consistency/2026-10-13/tenant-0123456789abcdef0123456789abcdef?case=ESTUARIO-R16&locale=pt-BR&control=mandate%2Drevocation#acceptance
+  retests:
+  - uid: a075d05e-1ffc-56b2-9f4a-681767597fb4
+    tested_on: '2026-10-13'
+    assessor: FICTIONAL / UNVERIFIED
+    result: not_verified
+    notes_md: 'Planning session; no technical execution performed.
+
+
+      > Proposed matrix, not observed results.
+
+      >
+
+      > | Control | Expected state | Pending evidence |
+
+      > | --- | --- | --- |
+
+      > | Prerequisite | Synthetic data and laboratory authorization | Not performed |
+
+      > | Permitted case | Outcome matches the written contract | Not performed |
+
+      > | Rejected case | No unauthorized business effect | Not performed |
+
+      > | Repetition | Same decision with traceability retained | Not performed |
+
+      > | Restoration | Restrictions remain effective after recovery | Not performed |
+
+      > | Independent review | Second reviewer reproduces the conclusion | Not performed |'
+    evidence_uids: []
+  - uid: d6838dd8-5d70-51f9-848b-540b0cd8fc63
+    tested_on: ''
+    assessor: FICTIONAL / UNVERIFIED
+    result: not_verified
+    notes_md: 'Undated legacy note: awaiting planning; does not replace the dated record.'
+    evidence_uids: []
+- id: M1
+  uid: 42526c27-a68b-51cf-b526-71bcb93ecff8
+  mode: machine
+  title: Settlement worker validation notebook
+  host:
+    name: settlement-worker.estuario.example
+    ip: 192.0.2.44
+    os: Fictional Linux system
+  open_ports: 443/tcp, 8443/tcp / FICTIONAL / UNVERIFIED
+  summary_md: This record describes a fictional asynchronous processing server. It does not document initial access,
+    escalation, or control of a real system. Its purpose is to connect authorization decisions with message receipt
+    and accounting outcomes. Ports are script data rather than scanner results. Phases follow validation dependencies,
+    and their appearance in the graph does not mean they were executed.
+  status: not_verified
+  verification: unverified
+  asset_uids:
+  - 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  evidence_uids: []
+  phases:
+  - name: Input contract
+    steps:
+    - text_md: Enumerate schema versions, required fields, and the meaning of each identifier. The contract must
+        distinguish intent, attempt, and outcome. Review how incomplete messages are documented without publishing
+        them or losing their operation relationship. Write the expected state before starting any local exercise.
+  - name: Decision and concurrency
+    steps:
+    - text_md: Connect F01, F02, and F10 to receipt, revocation, and retry sequences. Two simultaneous messages
+        cannot be treated as independent tests when they modify the same state. Review prepares a known event order
+        and requires an explanation for each decision, including a decision left pending.
+  - name: Reconciliation and observability
+    steps:
+    - text_md: Compare the numbers of intents, entries, and retrievable responses. Any difference must be explained
+        by a documented state rather than a missing record. The operator must distinguish delay from failure without
+        accessing secrets. A synthetic correlation table is retained for independent cross-review and reconciliation.
+  - name: Rollback and laboratory closure
+    steps:
+    - text_md: Remove mock messages and accounts, retain only the result manifest, and verify that no automatic
+        tasks remain. Cleanup is a planned step, not a claim that access occurred. Every later exercise starts from
+        a new state so earlier results cannot be attributed to the current revision.
+  proof:
+  - name: synthetic-proof.txt
+    value: ESTUARIO_R16_NOT_A_CAPTURED_FLAG_1
+    notes: FICTIONAL / UNVERIFIED
+- id: M2
+  uid: 0f56c782-8315-539d-bbf2-566190f88e6a
+  mode: machine
+  title: Restoration and restriction preservation notebook
+  host:
+    name: recovery-controller.estuario.example
+    ip: 192.0.2.47
+    os: Fictional Linux system
+  open_ports: 443/tcp, 8443/tcp / FICTIONAL / UNVERIFIED
+  summary_md: The second machine represents an isolated recovery coordinator. Its purpose is to check that restoration
+    preserves both content and access decisions. Recovery-time objectives are not presented as measured results.
+    The record distinguishes required components, owners who accept their state, and criteria that prevent the service
+    from being reopened prematurely.
+  status: not_verified
+  verification: unverified
+  asset_uids:
+  - c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  evidence_uids: []
+  phases:
+  - name: Dependency manifest
+    steps:
+    - text_md: Record data, configuration, versions, and key references without copying secrets. Confirm that the
+        manifest can reconstruct the same approved combination. A product name without a version is not compatibility
+        evidence. Review also documents dependencies requiring human intervention and the method used to validate
+        their origin.
+  - name: Isolated restoration
+    steps:
+    - text_md: Restore under identifiers different from the original environment and keep external destinations
+        disabled. Check file integrity and logical consistency separately. A working landing page does not establish
+        that queues, documentary restrictions, or reconciliation have recovered their state, nor that the correct
+        identity policy is active.
+  - name: Reopening gate
+    steps:
+    - text_md: Require authorized reading, rejection of a revoked identity, preservation of a hold, and absence
+        of duplicate entries. If a check is missing, the owner records the limitation and keeps the service outside
+        the operational path. The business decision is documented separately from the technical outcome and is not
+        attributed to the generator.
+  proof:
+  - name: synthetic-proof.txt
+    value: ESTUARIO_R16_NOT_A_CAPTURED_FLAG_2
+    notes: FICTIONAL / UNVERIFIED
+assets:
+- uid: 8d0c12ea-495a-5550-86d0-678f6d75f957
+  name: Corporate portal
+  target: portal.estuario.example / 192.0.2.41
+  kind: synthetic
+  notes: FICTIONAL / UNVERIFIED
+- uid: 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  name: Payment API
+  target: payments.estuario.example / 192.0.2.42
+  kind: synthetic
+  notes: FICTIONAL / UNVERIFIED
+- uid: 8f013aa3-64cb-551b-be10-a5a17291d40f
+  name: Identity provider
+  target: identity.estuario.example / 192.0.2.43
+  kind: synthetic
+  notes: FICTIONAL / UNVERIFIED
+- uid: 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  name: Settlement worker
+  target: settlement-worker.estuario.example / 192.0.2.44
+  kind: synthetic
+  notes: FICTIONAL / UNVERIFIED
+- uid: bc85275e-a94f-5a00-a178-a5f054fb3487
+  name: Document archive
+  target: archive.estuario.example / 192.0.2.45
+  kind: synthetic
+  notes: FICTIONAL / UNVERIFIED
+- uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  name: Event collector
+  target: events.estuario.example / 192.0.2.46
+  kind: synthetic
+  notes: FICTIONAL / UNVERIFIED
+- uid: c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  name: Recovery orchestrator
+  target: recovery-controller.estuario.example / 192.0.2.47
+  kind: synthetic
+  notes: FICTIONAL / UNVERIFIED
+- uid: 84782644-56c0-5f7b-bd71-fa8f0bb3ea4f
+  name: Administrative workstation
+  target: jump.estuario.example / 192.0.2.48
+  kind: synthetic
+  notes: FICTIONAL / UNVERIFIED
+evidence:
+- uid: 60e41910-a92f-5442-b9fa-093209a5fd5d
+  title: Documentary model 1
+  src: img/model-1.png
+  caption: Synthetic diagram; not a screenshot from a bank.
+- uid: b7cfd3a6-7023-5136-9ebd-8ad8a554ad78
+  title: Documentary model 2
+  src: img/model-2.png
+  caption: Synthetic diagram; not a screenshot from a bank.
+- uid: 6c90f9f5-ec90-5ae3-a536-3640aae6cf71
+  title: Documentary model 3
+  src: img/model-3.png
+  caption: Synthetic diagram; not a screenshot from a bank.
+coverage:
+- uid: 7a807690-15d5-5fae-92cc-d272e09bb35b
+  asset_uid: 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  test: F01 / Permitted case
+  status: blocked
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: cb6414cf-67e8-5a7d-8e49-f1376a101521
+  asset_uid: 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  test: F01 / Rejected case
+  status: blocked
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 2b508470-00b5-5952-9adb-bd470fb9d30a
+  asset_uid: 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  test: F02 / Permitted case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 4d9b2d12-5236-5fc1-955d-0f12ea4b7aea
+  asset_uid: 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  test: F02 / Rejected case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 25a868a2-f290-53cd-bc6b-a898181165e3
+  asset_uid: 8f013aa3-64cb-551b-be10-a5a17291d40f
+  test: F03 / Permitted case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 37e73a0d-eb25-5e4b-b9dc-f0afb6f90d64
+  asset_uid: 8f013aa3-64cb-551b-be10-a5a17291d40f
+  test: F03 / Rejected case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 07ec0dc7-2572-55a7-a99c-80f2f1c70d2a
+  asset_uid: 8d0c12ea-495a-5550-86d0-678f6d75f957
+  test: F04 / Permitted case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 4e2eca68-f362-5724-9cd4-2b5c8854d351
+  asset_uid: 8d0c12ea-495a-5550-86d0-678f6d75f957
+  test: F04 / Rejected case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 4907d2a9-9d16-5b27-94b8-bbe0679ffedc
+  asset_uid: bc85275e-a94f-5a00-a178-a5f054fb3487
+  test: F05 / Permitted case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 353d25bc-a27e-5569-9a7a-48ae740888a1
+  asset_uid: bc85275e-a94f-5a00-a178-a5f054fb3487
+  test: F05 / Rejected case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: c32f2b7b-40ec-5a37-80c1-2f7d6d901cc6
+  asset_uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  test: F06 / Permitted case
+  status: blocked
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: d7276c8e-571d-59b3-beda-09d095a148ce
+  asset_uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  test: F06 / Rejected case
+  status: blocked
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 03ae2cc2-5d66-5fa5-93bd-4f8e4f1da4e5
+  asset_uid: c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  test: F07 / Permitted case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 12647545-2148-57a3-b2bf-9a18b909f3bf
+  asset_uid: c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  test: F07 / Rejected case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 3759658b-f2ea-5554-8891-8732c9379247
+  asset_uid: 84782644-56c0-5f7b-bd71-fa8f0bb3ea4f
+  test: F08 / Permitted case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 754c1daf-6b10-5a9d-80e8-8e6e009c85f2
+  asset_uid: 84782644-56c0-5f7b-bd71-fa8f0bb3ea4f
+  test: F08 / Rejected case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 03d98cad-fc86-5e6f-ac25-489e948b4e38
+  asset_uid: 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  test: F09 / Permitted case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: ea166801-b765-5e1f-975f-7d3cb99e849f
+  asset_uid: 317c3055-1144-5cb5-b89f-13dd0b79bfc7
+  test: F09 / Rejected case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 96806f30-abf9-5316-9505-09f81965334f
+  asset_uid: 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  test: F10 / Permitted case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: c1190c02-f10f-50c5-9a6b-7b486eb83fac
+  asset_uid: 4089b161-ae91-5de3-8ea9-e9b214709b6f
+  test: F10 / Rejected case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: fdef2502-2a76-57d9-996e-6f31a9f54bad
+  asset_uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  test: F11 / Permitted case
+  status: blocked
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 66699bb7-9625-5e1d-b853-5bd0088133fd
+  asset_uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  test: F11 / Rejected case
+  status: blocked
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 84527abb-79dd-5acd-9034-f22515ca7c23
+  asset_uid: bc85275e-a94f-5a00-a178-a5f054fb3487
+  test: F12 / Permitted case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 92de4491-d4b6-5b24-8951-5b48cb067f56
+  asset_uid: bc85275e-a94f-5a00-a178-a5f054fb3487
+  test: F12 / Rejected case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 39bce51a-7b9b-5ca5-8d3d-4e03f1c7651b
+  asset_uid: 8f013aa3-64cb-551b-be10-a5a17291d40f
+  test: F13 / Permitted case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: e658e86a-6ae9-58b4-88f6-6e7fd571d0aa
+  asset_uid: 8f013aa3-64cb-551b-be10-a5a17291d40f
+  test: F13 / Rejected case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: e3046c2d-38a4-594f-82fc-261bde4f4473
+  asset_uid: 8d0c12ea-495a-5550-86d0-678f6d75f957
+  test: F14 / Permitted case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: f0ae8151-a1bb-556f-9b04-ea9d388c426e
+  asset_uid: 8d0c12ea-495a-5550-86d0-678f6d75f957
+  test: F14 / Rejected case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: d8d0d92a-b532-57c7-889c-b19918439ba2
+  asset_uid: c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  test: F15 / Permitted case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 34f868aa-e091-5a43-bc7a-5a55e71068c6
+  asset_uid: c19b7e5e-7cc8-5d43-b0ea-e967d4e657cd
+  test: F15 / Rejected case
+  status: pending
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 084f4e1f-b4cc-5c3a-87d7-dd5347b13886
+  asset_uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  test: F16 / Permitted case
+  status: blocked
+  notes: Awaiting an authorized laboratory; not executed.
+- uid: 64283d79-42c8-5ef0-8713-88dff2a3ef9d
+  asset_uid: 33161c9a-4057-54ec-965d-8be01bf01816
+  test: F16 / Rejected case
+  status: blocked
+  notes: Awaiting an authorized laboratory; not executed.
+root_cause_groups:
+- uid: e7ed1ba1-326f-560b-86cc-62748520f673
+  name: Authorization decision and trust boundaries
+  cause_md: 'Planning hypothesis: Authorization decision and trust boundaries.'
+  remediation_md: Each record retains its specific action and closure criteria; grouping does not establish a confirmed
+    root cause.
+- uid: 294c8d3b-269e-5b8a-8681-b0bcefcd2901
+  name: Recovery and state consistency
+  cause_md: 'Planning hypothesis: Recovery and state consistency.'
+  remediation_md: Each record retains its specific action and closure criteria; grouping does not establish a confirmed
+    root cause.
+- uid: c2681607-36f3-5452-b928-7d569a323b7e
+  name: Traceability and documentary quality
+  cause_md: 'Planning hypothesis: Traceability and documentary quality.'
+  remediation_md: Each record retains its specific action and closure criteria; grouping does not establish a confirmed
+    root cause.
+limitations_md: All observations are synthetic hypotheses. There is no evidence of technical execution or business
+  acceptance. Drawn models explain the case and do not substitute for testing. Planning dates and tracking states
+  do not establish results.
+project_management:
+  archived: false
+  delivery_date: '2026-11-13'

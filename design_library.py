@@ -96,7 +96,9 @@ def guidance(data):
     d=(data.get('meta') or {}).get('design')
     if not d: return None
     d=validate_design(d); p=profile(d['guidance_id']); g=deepcopy(p['guidance'])
-    g['note']=localized(g['note'],data['meta'].get('lang','es')); g['name']=profile_name(p,data['meta'].get('lang','es'))
+    from engine import report_language
+    language = report_language(data)
+    g['note']=localized(g['note'],language); g['name']=profile_name(p,language)
     return g
 
 

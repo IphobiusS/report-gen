@@ -449,7 +449,11 @@ def _pdf_hyphen_donor(page, reader):
                                              en='Range mappings are not corroborated'))
         mapping = {}
         for count, block in re.findall(rb'\b(\d+)\s+beginbfchar\s*(.*?)\s*endbfchar\b', data, re.S):
-            pair_pattern = rb'<([\da-fA-F]{4})>\s*<([\da-fA-F]+)>'
+            # Shaping can map a continuation glyph to an empty string while
+            # the cluster's leading glyph supplies the complete Unicode text.
+            # The source code still needs an explicit entry; absence is not
+            # equivalent to this explicitly empty mapping.
+            pair_pattern = rb'<([\da-fA-F]{4})>\s*<([\da-fA-F]*)>'
             pairs = re.findall(pair_pattern, block)
             if re.sub(pair_pattern, b'', block).strip() or int(count) != len(pairs):
                 raise ValueError(backend_message('Asignación Unicode mal formada',
@@ -507,11 +511,95 @@ def _pdf_hyphen_donor(page, reader):
             font[NameObject('/Encoding')] = encoding
 
 
+def _pdf_shaping_text(page, reader, textpage, primary):
+    """Resolve explicit empty shaping glyphs using two native PDF readers.
+
+    PDFium can expose the CID of an explicitly empty ToUnicode entry as a
+    spurious character. Accept only Identity-H/Identity fonts, the exact empty
+    source mapping, and an independently positioned empty glyph. Other map
+    errors remain failures. Expected report text is never an input.
+    """
+    import ctypes
+    import pdfplumber
+    import pypdfium2.raw as raw
+    native = [raw.FPDFText_GetUnicode(textpage, i) for i in range(textpage.count_chars())]
+    if (''.join(chr(c) for c in native if not chr(c).isspace())
+            != ''.join(c for c in primary if not c.isspace())):
+        raise ValueError('Native PDF shaping sequence differs')
+    empty = {}
+    for ref in page['/Resources']['/Font'].values():
+        font = ref.get_object()
+        if (font.get('/Encoding') == '/Identity-H'
+                and font['/DescendantFonts'][0].get_object().get('/CIDToGIDMap') == '/Identity'):
+            cmap = font['/ToUnicode']
+            data = re.sub(rb'%[^\r\n]*', b'', cmap.get_data())
+            if ('/UseCMap' in cmap or re.search(rb'\busecmap\b|beginbfrange', data)):
+                continue
+            codespaces = re.findall(rb'\b(\d+)\s+begincodespacerange\s*(.*?)\s*endcodespacerange', data, re.S)
+            if (len(codespaces) != 1 or codespaces[0][0] != b'1'
+                    or not re.fullmatch(rb'\s*<0000>\s*<ffff>\s*', codespaces[0][1], re.I)):
+                continue
+            mapping = {}
+            for count, block in re.findall(rb'\b(\d+)\s+beginbfchar\s*(.*?)\s*endbfchar', data, re.S):
+                pattern = rb'<([\da-fA-F]{4})>\s*<([\da-fA-F]*)>'
+                pairs = re.findall(pattern, block)
+                if len(pairs) != int(count) or re.sub(pattern, b'', block).strip():
+                    raise ValueError('Malformed PDF shaping map')
+                for code, value in pairs:
+                    code = int(code, 16)
+                    if code in mapping:
+                        raise ValueError('Duplicate PDF shaping map')
+                    mapping[code] = bytes.fromhex(value.decode()).decode('utf-16-be', errors='strict')
+            empty[str(font['/BaseFont']).lstrip('/')] = {code for code, text in mapping.items() if text == ''}
+    position = reader.stream.tell()
+    try:
+        with pdfplumber.open(reader.stream) as document:
+            glyphs = document.pages[reader.get_page_number(page)].chars
+    finally:
+        reader.stream.seek(position)
+    result = []
+    for index, code in enumerate(native):
+        char = chr(code)
+        error = raw.FPDFText_HasUnicodeMapError(textpage, index)
+        if char != '\x02' and error == 0:
+            result.append(char)
+            continue
+        obj = raw.FPDFText_GetTextObject(textpage, index)
+        if not obj:
+            raise ValueError('PDF shaping glyph has no text object')
+        font = raw.FPDFTextObj_GetFont(obj)
+        size = raw.FPDFFont_GetBaseFontName(font, None, 0)
+        name = ctypes.create_string_buffer(size)
+        raw.FPDFFont_GetBaseFontName(font, name, size)
+        fontname = name.value.decode('utf-8', errors='strict')
+        left, bottom, right, top = textpage.get_charbox(index)
+        if error == 1 and code in empty.get(fontname, set()):
+            matches = [g for g in glyphs if g['fontname'] == fontname and g['text'] == ''
+                       and abs(g['x0'] - left) < .25
+                       and g['y0'] - g['size'] <= (top + bottom) / 2 <= g['y1'] + g['size']]
+            if len(matches) != 1:
+                raise ValueError('Empty PDF shaping glyph lacks independent position proof')
+            continue
+        if char != '\x02' or error != 0 or raw.FPDFText_IsHyphen(textpage, index) != 1:
+            raise ValueError('Unproved PDF Unicode mapping error')
+        matches = [g for g in glyphs if g['fontname'] == fontname
+                   and g['x0'] - .25 <= (left + right) / 2 <= g['x1'] + .25
+                   and g['y0'] - .25 <= (top + bottom) / 2 <= g['y1'] + .25]
+        if len(matches) != 1 or matches[0]['text'] != '-':
+            raise ValueError('PDF hyphen lacks independent glyph proof')
+        result.append('-')
+    return unicodedata.normalize('NFC', ''.join(result))
+
+
 def _pdf_proved_hyphens(page, reader, textpage, primary):
     """Recover only a real ASCII hyphen corroborated by independent PDF text."""
     import pypdfium2.raw as raw
     chars = [raw.FPDFText_GetUnicode(textpage, i) for i in range(textpage.count_chars())]
-    if ''.join(map(chr, chars)) != primary or '\ufffe' in primary:
+    if any(raw.FPDFText_HasUnicodeMapError(textpage, i) == 1 for i in range(len(chars))):
+        return _pdf_shaping_text(page, reader, textpage, primary)
+    native = ''.join(map(chr, chars))
+    if (''.join(char for char in native if not char.isspace())
+            != ''.join(char for char in primary if not char.isspace()) or '\ufffe' in primary):
         raise ValueError(backend_message('La secuencia nativa de caracteres difiere',
                                          en='Native character sequence differs'))
     for index, char in enumerate(chars):
@@ -520,7 +608,10 @@ def _pdf_proved_hyphens(page, reader, textpage, primary):
             raise ValueError(backend_message('El marcador no tiene corroboración nativa de guion',
                                              en='Marker lacks native hyphen proof'))
     donor = [char for char in _pdf_hyphen_donor(page, reader) if not char.isspace()]
-    primary = unicodedata.normalize('NFC', primary)
+    # Bounded extraction can omit native generated separators between table
+    # cells. Retain the native separators only after exact nonspace agreement;
+    # no expected content participates in this reconciliation.
+    primary = unicodedata.normalize('NFC', native)
     actual = [char for char in primary if not char.isspace()]
     if len(actual) != len(donor) or any(a != b and not (a == '\x02' and b == '-') for a, b in zip(actual, donor)):
         raise ValueError(backend_message('El texto PDF independiente difiere',
@@ -586,11 +677,17 @@ def pdf_text_pages(source, *, geometry_pages=()):
                         # UCS-2 range extraction), custom font CMaps and logical
                         # RTL order. Read only the file, never expected content.
                         text = textpage.get_text_bounded(errors='strict')
-                        if '\x02' in text or '\ufffe' in text:
+                        import pypdfium2.raw as raw
+                        mapping_error = any(raw.FPDFText_HasUnicodeMapError(textpage, i) == 1
+                                            for i in range(textpage.count_chars()))
+                        if '\x02' in text or '\ufffe' in text or mapping_error:
                             try:
                                 text = _pdf_proved_hyphens(reader.pages[index], reader, textpage, text)
                             except (ValueError, TypeError, AttributeError, KeyError, IndexError):
-                                pass  # Keep the marker and fail safely below.
+                                # A map error without a hyphen must also fail.
+                                if mapping_error:
+                                    raise ValueError(backend_message('Extracción de región PDF ambigua',
+                                                                     en='Ambiguous PDF region extraction')) from None
                     finally:
                         textpage.close()
                 finally:
@@ -605,6 +702,36 @@ def pdf_text_pages(source, *, geometry_pages=()):
                            'The previous output is preserved.', page=index + 1))
                 raw_pages[index] = text
     return [unicodedata.normalize('NFC', text).replace('\u00ad', '') for text in raw_pages]
+
+
+def _pdf_native_region_text(page, reader, textpage, bounded, top, bottom):
+    """Keep only independently bounded glyphs and their native separators."""
+    import pypdfium2.raw as raw
+    chars = [chr(raw.FPDFText_GetUnicode(textpage, i)) for i in range(textpage.count_chars())]
+    full = textpage.get_text_bounded(errors='strict')
+    if ''.join(c for c in chars if not c.isspace()) != ''.join(c for c in full if not c.isspace()):
+        raise ValueError('Native PDF region sequence differs')
+    map_errors = {i for i in range(len(chars)) if raw.FPDFText_HasUnicodeMapError(textpage, i) == 1}
+    corrected = list(chars)
+    if '\x02' in full or '\ufffe' in full or map_errors:
+        proved = _pdf_proved_hyphens(page, reader, textpage, full)
+        corrected = ['' if i in map_errors else '-' if char == '\x02' else char
+                     for i, char in enumerate(chars)]
+        if unicodedata.normalize('NFC', ''.join(corrected)) != proved:
+            raise ValueError('Native PDF region corrections differ')
+    selected = []
+    for index, char in enumerate(chars):
+        if not char.isspace():
+            _, low, _, high = textpage.get_charbox(index)
+            if bottom <= (low + high) / 2 <= top:
+                selected.append(index)
+    if ''.join(chars[i] for i in selected) != ''.join(c for c in bounded if not c.isspace()):
+        raise ValueError('Native PDF region bounds differ')
+    if not selected:
+        return ''
+    kept = set(selected)
+    return ''.join(corrected[i] for i in range(selected[0], selected[-1] + 1)
+                   if i in kept or chars[i].isspace())
 
 
 def _pdf_region_profiles(path, regions):
@@ -656,7 +783,6 @@ def _pdf_region_profiles(path, regions):
         previous = ordered_end
         ranges.append((region['id'], start, end))
     result = {}
-    proved_pages = set()
     with _PDFIUM_LOCK, pypdfium2.PdfDocument(path) as document:
         for key, start, end in ranges:
             raw_pages = []
@@ -671,17 +797,16 @@ def _pdf_region_profiles(path, regions):
                             top=start[1] if number == start[0] else page.get_height(),
                             bottom=end[1] if number == end[0] else 0,
                             errors='strict')
-                        if '\x02' in text or '\ufffe' in text:
-                            # Corroborate every marker on the full native page
-                            # before accepting the same markers in its region.
-                            if number not in proved_pages:
-                                full = textpage.get_text_bounded(errors='strict')
-                                _pdf_proved_hyphens(reader.pages[number], reader, textpage, full)
-                                proved_pages.add(number)
-                            if '\ufffe' in text:
-                                raise ValueError(backend_message('Extracción de región PDF ambigua',
-                                                                 en='Ambiguous PDF region extraction'))
-                            text = text.replace('\x02', '-')
+                        try:
+                            text = _pdf_native_region_text(
+                                reader.pages[number], reader, textpage, text,
+                                start[1] if number == start[0] else page.get_height(),
+                                end[1] if number == end[0] else 0)
+                        except (ValueError, TypeError, AttributeError, KeyError, IndexError) as exc:
+                            raise ValueError(backend_message(
+                                'Extracción de región PDF ambigua: {key}',
+                                en='Ambiguous PDF region extraction: {key}',
+                                pt='Extração de região do PDF ambígua: {key}', key=key)) from exc
                     finally:
                         textpage.close()
                 finally:
@@ -1174,6 +1299,36 @@ def _pdf_disjoint_text_ranges(needs, options):
             if all(not overlaps(candidate, prior) for prior in chosen):
                 chosen.append(candidate)
         return len(chosen)
+
+    def contiguous_witness():
+        # Repeated table values often contain each other. Choosing a complete
+        # non-overlapping allocation up front avoids one search state per cell.
+        # A failed greedy choice proves nothing: the exact search below retains
+        # every alternative. Only an actual disjoint witness can return True.
+        if not all(len(candidate) == 1 for ranges in options for candidate in ranges):
+            return False
+        budget(sum(map(len, options)), states=1)
+        taken = []
+        starts = []
+        for kind in sorted(range(len(needs)), key=lambda i: len(options[i]) - needs[i]):
+            remaining = needs[kind]
+            for (start, end), in sorted(options[kind], key=lambda candidate: (candidate[0][1], candidate[0][0])):
+                budget(1)
+                index = bisect_left(starts, start)
+                if ((index and taken[index - 1][1] > start)
+                        or (index < len(taken) and taken[index][0] < end)):
+                    continue
+                taken.insert(index, (start, end))
+                starts.insert(index, start)
+                remaining -= 1
+                if not remaining:
+                    break
+            if remaining:
+                return False
+        return True
+
+    if contiguous_witness():
+        return True
 
     def reduce_state(needs, options):
         while needs:

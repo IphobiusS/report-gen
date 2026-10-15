@@ -1,5 +1,17 @@
 # Cambios 0.35.0 (2026-10-13)
 
+- Recuperados los tres casos Estuario originales y su auditoría reproducible
+  de doce exportaciones. La publicación exige además la aceptación trilingüe
+  y la revisión automática con LibreOffice estable del mismo commit.
+- El verificador PDF distingue los glifos vacíos de composición Unicode,
+  corrobora guiones con lectores independientes y conserva los separadores
+  de las celdas. Las tablas con valores repetidos admiten una asignación
+  completa sin agotar la búsqueda; se sigue rechazando texto perdido.
+- El apéndice describe referencias documentadas sin atribuir acceso ni
+  recolección comprobada. Corregidas las etiquetas españolas de evidencia
+  y confidencialidad; las notas redactadas por el autor se conservan.
+- Recuperadas las imágenes portuguesas del tutorial y las miniaturas de
+  páginas reales de las plantillas. Las pruebas de perfiles exigen ES/EN/PT.
 - Portugués de Brasil en la interfaz, los mensajes del servidor, el tutorial,
   los catálogos de plantillas y las exportaciones PDF, DOCX, Markdown y HTML.
   La clave interna es `pt`; se admite el alias `pt-BR` en las entradas de idioma.

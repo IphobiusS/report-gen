@@ -1,5 +1,5 @@
 """Client deliveries built from one private, immutable source snapshot."""
-from languages import normalize_language, language_index
+from languages import language_index
 from error_messages import message as backend_message
 from error_messages import current_language
 from copy import deepcopy
@@ -52,8 +52,7 @@ def public_warnings(issues, language='es'):
 def capture(directory, target):
     """Caller holds the project lock; copy only resources of the enabled report."""
     data = deepcopy(engine.load_engagement(directory / 'engagement.yaml'))
-    meta = data.get('meta')
-    lang = meta.get('lang', 'es') if isinstance(meta, dict) else 'es'
+    lang = engine.report_language(data)
     issues = workflows.preflight(data, directory, lang)
     if any(i['level'] == 'error' for i in issues):
         # Verification warnings retain the document language; an API failure is
@@ -221,7 +220,7 @@ def build(snapshot, formats, identity, label, captured, output_dir, progress=lam
                 'source_revision': identity, 'files': {}}
     from design_library import guidance
     document=engine.load_engagement(snapshot / 'engagement.yaml')
-    lang=normalize_language(document['meta'].get('lang'))
+    lang=engine.report_language(document)
     manifest['warnings'] = public_warnings(captured['issues'], lang)
     guide=guidance(document)
     if guide: manifest["design_guidance"]=guide

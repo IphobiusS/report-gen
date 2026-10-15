@@ -53,7 +53,15 @@ async function shot(key,lang,selector){
   await page.evaluate(()=>select('finding',0));await shot('finding',lang,'#editor');
   await page.evaluate(()=>select('workflow','evidence'));await page.locator('[data-evidence-uid]').waitFor();await shot('evidence',lang,'#editor');
   await page.evaluate(()=>StudioUI.inspector());await page.locator('dialog[open] .publication-text').waitFor();await shot('privacy',lang,'dialog[open]');await page.keyboard.press('Escape');
-  await page.evaluate(()=>document.querySelector('#deliveryBtn').click());await page.locator('dialog[open] [data-delivery-format]').first().waitFor();await shot('delivery',lang,'dialog[open]');await page.keyboard.press('Escape');
+  await page.evaluate(()=>document.querySelector('#deliveryBtn').click());
+  const exportButtons=page.locator('dialog[open] [data-delivery-format]');
+  await exportButtons.first().waitFor();
+  await exportButtons.last().scrollIntoViewIfNeeded();
+  for(const button of await exportButtons.all()){
+   const visible=await button.evaluate(el=>{const r=el.getBoundingClientRect(),d=el.closest('dialog').getBoundingClientRect();return r.top>=Math.max(0,d.top)&&r.bottom<=Math.min(innerHeight,d.bottom);});
+   if(!visible)throw Error('Delivery screenshot omits an export button: '+lang);
+  }
+  await shot('delivery',lang,'dialog[open]');await page.keyboard.press('Escape');
   await page.evaluate(()=>select('workflow','backup'));await page.locator('#editor .card').waitFor();await shot('backup',lang,'[data-workflow-view="backup"]');
   await context.close();
  }
