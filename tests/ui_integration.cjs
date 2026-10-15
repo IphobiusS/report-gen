@@ -80,7 +80,14 @@ async function until(predicate, attempts=150) {
   // Exercise the new editor flows against the real API, including detached DOM updates.
   const clickText=(text,within=w.document)=>{const b=[...within.querySelectorAll('button')].find(b=>b.textContent.trim()===text);assert.ok(b,'Button '+text);b.click();};
   const setField=(key,value,within=w.document.querySelector('#editor'))=>{const el=within.querySelector(`[data-field="${key}"]`);assert.ok(el,'Field '+key);el.value=value;el.dispatchEvent(new w.Event(el.tagName==='SELECT'?'change':'input',{bubbles:true}));};
-  const view=async kind=>{q.select('workflow',kind);await until(()=>{const box=w.document.querySelector(`[data-workflow-view="${kind}"]`);return kind==='review'?!!box?.querySelector('[data-review-progress]'):box?.childNodes.length>0;});};
+  const view=async kind=>{q.select('workflow',kind);await until(()=>{
+    const box=w.document.querySelector(`[data-workflow-view="${kind}"]`);
+    if(kind==='review')return !!box?.querySelector('[data-review-progress]');
+    // History exposes the independent PDF tool immediately. Wait for the
+    // version form, which arrives after saving and loading actual history.
+    if(kind==='history')return !!box?.querySelector('[data-field="label"]');
+    return box?.childNodes.length>0;
+  });};
   w.document.querySelector('[data-add="blank"]').click();
   setField('title','Control de acceso');setField('description_md','TODO describir');
   const stable=q.S.data.findings[0].uid;assert.ok(stable);
