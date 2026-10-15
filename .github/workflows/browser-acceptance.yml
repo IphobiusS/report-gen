@@ -52,6 +52,11 @@ jobs:
         env:
           RG_PYTHON: python
         run: node tests/test_language_0350_browser.cjs --output out/language-0350
+      - name: SARIF preview and rendered PDF comparison in three languages
+        if: matrix.browser == 'chromium'
+        env:
+          RG_PYTHON: python
+        run: npm run test:review-tools
       - name: Painted native select contrast in both interface themes
         if: matrix.browser == 'chromium'
         run: node tests/test_select_contrast_0345_browser.cjs --browser chromium --output out/select-contrast-chromium
@@ -71,5 +76,6 @@ jobs:
             out/jobs-lifecycle-${{ matrix.browser }}/
             out/restore-language-chromium/
             out/language-0350/
+            out/features-0360/
             out/select-contrast-chromium/
             out/markdown-caption-chromium/

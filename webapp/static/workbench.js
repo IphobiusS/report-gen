@@ -312,6 +312,7 @@ const WorkbenchUI = (() => {
     [w('Captura rápida','Quick capture', "Captura rápida"),capture],
     [w('Ir a evidencias','Go to evidence', "Ir para evidências"),()=>select('workflow','evidence')],
     [w('Comparar entregas','Compare deliveries', "Comparar entregas"),()=>select('workflow','history')],
+    [w('Comparar archivos PDF','Compare PDF files','Comparar arquivos PDF'),()=>PDFComparisonUI.open()],
     [w('Revisar entrega','Review delivery', "Revisar entrega"),()=>select('workflow','review')],
     [w('Importar resultados','Import results', "Importar resultados"),()=>ProgressUI.intake()],
     [w('Continuar informe','Continue report', "Continuar relatório"),resume],

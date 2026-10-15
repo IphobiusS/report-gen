@@ -37,6 +37,7 @@ jobs:
         run: |
           npm test
           npm run test:editor-modules
+          npm run test:pdf-compare-ui
           node --test tests/test_language_0350_core.cjs
           RG_PYTHON=python node tests/test_language_0350_dom.cjs
           RG_PYTHON=python node --test tests/test_portuguese_modules_0350.cjs

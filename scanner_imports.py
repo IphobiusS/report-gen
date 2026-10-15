@@ -219,3 +219,428 @@ def nmap_apply(result, data, selected):
             services=deepcopy(item['services']), import_source=source))
     ensure_data_tree(out)
     return out, len(selected)
+
+# SARIF is a bounded, offline intake subset of OASIS SARIF 2.1.0. It does not
+# interpret scanner levels as report risk or fetch artifacts/property files.
+MAX_SARIF_RUNS = 50
+MAX_SARIF_REFERENCES = 10000
+MAX_SARIF_LOCATIONS = 100
+MAX_SARIF_TEXT = 16384
+MAX_SARIF_RECORD_BYTES = 65536
+MAX_SARIF_OUTPUT_BYTES = 12 * 1024 * 1024
+
+
+def _sarif_invalid(field):
+    return ValueError(backend_message('SARIF: valor inválido o incoherente en {field}.',
+        en='SARIF: invalid or conflicting value at {field}.',
+        pt='SARIF: valor inválido ou conflitante em {field}.', field=field))
+
+
+def _sarif_limit(field, limit):
+    return ValueError(backend_message('SARIF: {field} supera el límite de {limit}.',
+        en='SARIF: {field} exceeds the limit of {limit}.',
+        pt='SARIF: {field} excede o limite de {limit}.', field=field, limit=limit))
+
+
+def _sarif_object(value, field):
+    if not isinstance(value, dict):
+        raise _sarif_invalid(field)
+    return value
+
+
+def _sarif_list(value, field, limit):
+    if not isinstance(value, list):
+        raise _sarif_invalid(field)
+    if len(value) > limit:
+        raise _sarif_limit(field, limit)
+    return value
+
+
+def _sarif_text(value, field, *, required=False):
+    if not isinstance(value, str) or (required and not value.strip()):
+        raise _sarif_invalid(field)
+    if len(value.encode('utf-8')) > MAX_SARIF_TEXT:
+        raise _sarif_limit(field, MAX_SARIF_TEXT)
+    return value
+
+
+def _sarif_index(value, size, field):
+    if type(value) is not int or not 0 <= value < size:
+        raise _sarif_invalid(field)
+    return value
+
+
+def _sarif_json(value):
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
+
+
+def _sarif_message(message, rule, driver):
+    message = _sarif_object(message, 'message')
+    for key in ('text', 'markdown', 'id'):
+        if key in message:
+            _sarif_text(message[key], 'message.' + key)
+    template = message
+    if not message.get('text') and not message.get('markdown') and message.get('id'):
+        strings = _sarif_object(rule.get('messageStrings', {}), 'rule.messageStrings')
+        globals_ = _sarif_object(driver.get('globalMessageStrings', {}), 'driver.globalMessageStrings')
+        template = _sarif_object(strings.get(message['id'], globals_.get(message['id'])), 'message.id')
+    selected = 'text' if template.get('text') else 'markdown'
+    value = _sarif_text(template.get(selected), 'message.' + selected, required=True)
+    arguments = _sarif_list(message.get('arguments', []), 'message.arguments', 100)
+    for argument in arguments:
+        _sarif_text(argument, 'message.arguments')
+    # Expand incrementally: a small template with repeated large arguments must
+    # hit the budget before allocating the full expansion. Literal braces are
+    # decoded even without arguments (OASIS SARIF 2.1.0, section 3.11.5).
+    pieces, expanded_bytes, cursor = [], 0, 0
+    def append(piece):
+        nonlocal expanded_bytes
+        expanded_bytes += len(piece.encode('utf-8'))
+        if expanded_bytes > MAX_SARIF_TEXT:
+            raise _sarif_limit('message.expanded', MAX_SARIF_TEXT)
+        pieces.append(piece)
+    for match in re.finditer(r'\{\{|\}\}|\{[0-9]+\}', value):
+        literal = value[cursor:match.start()]
+        if '{' in literal or '}' in literal:
+            raise _sarif_invalid('message.braces')
+        append(literal)
+        token = match.group()
+        if token in ('{{', '}}'):
+            append(token[0])
+        else:
+            if len(token) > 8 or int(token[1:-1]) >= len(arguments):
+                raise _sarif_invalid('message.arguments')
+            append(arguments[int(token[1:-1])])
+        cursor = match.end()
+    if '{' in value[cursor:] or '}' in value[cursor:]:
+        raise _sarif_invalid('message.braces')
+    append(value[cursor:])
+    return ''.join(pieces), selected
+
+
+def _sarif_rule(result, driver):
+    reference = _sarif_object(result.get('rule', {}), 'result.rule')
+    # Extensions need their own component/rule namespaces. Reject rather than
+    # accidentally resolve their indexes against the driver's rules.
+    if 'toolComponent' in reference:
+        raise ValueError(backend_message('SARIF: importa reglas del driver; las extensiones toolComponent no son compatibles.',
+            en='SARIF: import driver rules; toolComponent extensions are not supported.',
+            pt='SARIF: importe regras do driver; extensões toolComponent não são compatíveis.'))
+    rules = _sarif_list(driver.get('rules', []), 'driver.rules', MAX_SARIF_REFERENCES)
+    identifiers, guids = {}, {}
+    for index, candidate in enumerate(rules):
+        candidate = _sarif_object(candidate, 'driver.rules')
+        identifier = _sarif_text(candidate.get('id'), 'rule.id', required=True)
+        identifiers.setdefault(identifier, []).append(index)
+        if 'guid' in candidate:
+            guid = _sarif_text(candidate['guid'], 'rule.guid', required=True).lower()
+            if not re.fullmatch(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}', guid):
+                raise _sarif_invalid('rule.guid')
+            guids.setdefault(guid, []).append(index)
+    ids = [result[key] for key in ('ruleId',) if key in result]
+    if 'id' in reference:
+        ids.append(reference['id'])
+    for identifier in ids:
+        _sarif_text(identifier, 'ruleId', required=True)
+    if len(set(ids)) > 1:
+        raise _sarif_invalid('ruleId / rule.id')
+    indexes = [result['ruleIndex']] if 'ruleIndex' in result else []
+    if 'index' in reference:
+        indexes.append(reference['index'])
+    for index in indexes:
+        if type(index) is not int or index < -1 or index >= len(rules):
+            raise _sarif_invalid('ruleIndex')
+    if len(set(indexes)) > 1:
+        raise _sarif_invalid('ruleIndex / rule.index')
+    identifier = ids[0] if ids else ''
+    index = indexes[0] if indexes and indexes[0] != -1 else None
+    if 'guid' in reference:
+        guid = _sarif_text(reference['guid'], 'rule.guid', required=True).lower()
+        matches = guids.get(guid, [])
+        if len(matches) != 1 or (index is not None and index != matches[0]):
+            raise _sarif_invalid('rule.guid / ruleIndex')
+        index = matches[0]
+    if index is None and identifier:
+        matches = identifiers.get(identifier, [])
+        if not matches:
+            prefixes = [key for key in identifiers if identifier.startswith(key + '/')]
+            matches = identifiers[max(prefixes, key=len)] if prefixes else []
+        if len(matches) > 1:
+            raise _sarif_invalid('ruleId (ambiguous)')
+        index = matches[0] if matches else None
+    rule = rules[index] if index is not None else {}
+    if rule and identifier and identifier != rule['id'] and not identifier.startswith(rule['id'] + '/'):
+        raise _sarif_invalid('ruleId / ruleIndex')
+    identifier = identifier or rule.get('id', '')
+    if not identifier or (reference and not rule):
+        raise _sarif_invalid('ruleId')
+    # OASIS allows duplicate descriptor IDs when index/GUID disambiguates.
+    # Preserve that distinction without making dedup depend on array order.
+    descriptor_identity = rule.get('guid', '').lower()
+    if not descriptor_identity and rule and len(identifiers[rule['id']]) > 1:
+        descriptor_identity = sha256(_sarif_json(rule)).hexdigest()
+    return identifier, rule, index, descriptor_identity
+
+
+def _sarif_locations(result, run):
+    """Resolve documentary URIs only; no filesystem or network operation."""
+    from urllib.parse import urljoin, urlsplit
+    artifacts = _sarif_list(run.get('artifacts', []), 'artifacts', MAX_SARIF_REFERENCES)
+    bases = _sarif_object(run.get('originalUriBaseIds', {}), 'originalUriBaseIds')
+    if len(bases) > MAX_SARIF_REFERENCES:
+        raise _sarif_limit('originalUriBaseIds', MAX_SARIF_REFERENCES)
+
+    def resolve(location, trail=(), base=False):
+        location = _sarif_object(location, 'artifactLocation')
+        if len(trail) > 32:
+            raise _sarif_limit('artifactLocation.depth', 32)
+        uri = _sarif_text(location.get('uri', ''), 'artifactLocation.uri')
+        base_id = _sarif_text(location.get('uriBaseId', ''), 'artifactLocation.uriBaseId')
+        if 'index' in location and (type(location['index']) is not int or location['index'] < -1):
+            raise _sarif_invalid('artifactLocation.index')
+        if not uri and ('index' not in location or location['index'] == -1) and not base:
+            raise _sarif_invalid('artifactLocation.uri / index')
+        try:
+            parts = urlsplit(uri)
+            absolute = bool(parts.scheme)
+        except ValueError as exc:
+            raise _sarif_invalid('artifactLocation.uri') from exc
+        if re.search(r'[\s\\]', uri) or (absolute and base_id):
+            raise _sarif_invalid('artifactLocation.uri / uriBaseId')
+        if base and uri and (not uri.endswith('/') or parts.query or parts.fragment or (not absolute and not base_id)):
+            raise _sarif_invalid('originalUriBaseIds.uri')
+        resolved, unresolved = uri, ''
+        if base_id:
+            token = ('base', base_id)
+            if token in trail:
+                raise _sarif_invalid('originalUriBaseIds cycle')
+            if base_id in bases:
+                prefix, unresolved = resolve(bases[base_id], trail + (token,), base=True)
+                if prefix and not prefix.endswith('/'):
+                    raise _sarif_invalid('originalUriBaseIds.uri')
+                resolved = urljoin(prefix, uri) if prefix else uri
+                unresolved = unresolved or (base_id if not prefix else '')
+            else:
+                unresolved = base_id
+        if 'index' in location and location['index'] != -1:
+            index = _sarif_index(location['index'], len(artifacts), 'artifactLocation.index')
+            token = ('artifact', index)
+            if token in trail:
+                raise _sarif_invalid('artifactLocation.index cycle')
+            artifact = _sarif_object(artifacts[index], 'artifacts[index]')
+            if 'parentIndex' in artifact and (type(artifact['parentIndex']) is not int or artifact['parentIndex'] != -1):
+                raise ValueError(backend_message('SARIF: los artefactos anidados con parentIndex no son compatibles; exporta ubicaciones de archivos de origen.',
+                    en='SARIF: nested artifacts with parentIndex are not supported; export source-file locations.',
+                    pt='SARIF: artefatos aninhados com parentIndex não são compatíveis; exporte localizações de arquivos de origem.'))
+            target = resolve(artifact.get('location'), trail + (token,))
+            if uri and (resolved, unresolved) != target:
+                raise _sarif_invalid('artifactLocation.uri / index')
+            resolved, unresolved = target
+        _sarif_text(resolved, 'artifactLocation.resolvedUri')
+        return resolved, unresolved
+
+    locations = []
+    for location in _sarif_list(result.get('locations', []), 'locations', MAX_SARIF_LOCATIONS):
+        location = _sarif_object(location, 'location')
+        physical = _sarif_object(location.get('physicalLocation', {}), 'physicalLocation')
+        logical = _sarif_list(location.get('logicalLocations', []), 'logicalLocations', MAX_SARIF_LOCATIONS)
+        entry = {'original': deepcopy(location)}
+        if physical:
+            if 'artifactLocation' not in physical:
+                raise _sarif_invalid('physicalLocation.artifactLocation')
+            uri, unresolved = resolve(physical['artifactLocation'])
+            entry.update(uri=uri, unresolved_base_id=unresolved)
+            region = _sarif_object(physical.get('region', {}), 'region')
+            for key in ('startLine', 'startColumn', 'endLine', 'endColumn', 'charOffset', 'charLength', 'byteOffset', 'byteLength'):
+                if key in region and (type(region[key]) is not int or region[key] < (1 if key.endswith(('Line', 'Column')) else 0)):
+                    raise _sarif_invalid('region.' + key)
+            if 'endLine' in region and region['endLine'] < region.get('startLine', 1):
+                raise _sarif_invalid('region.endLine')
+            if ('endColumn' in region and region.get('endLine', region.get('startLine')) == region.get('startLine')
+                    and region['endColumn'] < region.get('startColumn', 1)):
+                raise _sarif_invalid('region.endColumn')
+            entry['region'] = {key: region[key] for key in ('startLine', 'startColumn', 'endLine', 'endColumn', 'charOffset', 'charLength', 'byteOffset', 'byteLength') if key in region}
+        for item in logical:
+            item = _sarif_object(item, 'logicalLocation')
+            if 'index' in item:
+                raise ValueError(backend_message('SARIF: usa nombres lógicos explícitos; las referencias logicalLocation.index no son compatibles.',
+                    en='SARIF: use explicit logical names; logicalLocation.index references are not supported.',
+                    pt='SARIF: use nomes lógicos explícitos; referências logicalLocation.index não são compatíveis.'))
+            for key in ('fullyQualifiedName', 'name', 'decoratedName', 'kind'):
+                if key in item:
+                    _sarif_text(item[key], 'logicalLocation.' + key)
+            if not (item.get('fullyQualifiedName') or item.get('name') or item.get('decoratedName')):
+                raise _sarif_invalid('logicalLocation.name')
+        if not physical and not logical:
+            raise _sarif_invalid('location')
+        entry['logical_locations'] = deepcopy(logical)
+        locations.append(entry)
+    return locations
+
+
+def _sarif_repositories(run):
+    artifacts = _sarif_list(run.get('artifacts', []), 'artifacts', MAX_SARIF_REFERENCES)
+    repositories = []
+    for item in _sarif_list(run.get('versionControlProvenance', []), 'versionControlProvenance', 100):
+        item = _sarif_object(item, 'versionControlProvenance')
+        repository = {key: _sarif_text(item[key], 'versionControlProvenance.' + key)
+                      for key in ('repositoryUri', 'revisionId', 'branch', 'revisionTag', 'asOfTimeUtc') if key in item}
+        _sarif_text(repository.get('repositoryUri'), 'versionControlProvenance.repositoryUri', required=True)
+        if 'mappedTo' in item:
+            mapping = _sarif_object(item['mappedTo'], 'versionControlProvenance.mappedTo')
+            for key in ('uri', 'uriBaseId'):
+                if key in mapping:
+                    _sarif_text(mapping[key], 'versionControlProvenance.mappedTo.' + key)
+            if 'index' in mapping:
+                _sarif_index(mapping['index'], len(artifacts), 'versionControlProvenance.mappedTo.index')
+            repository['mappedTo'] = deepcopy(mapping)
+        repositories.append(repository)
+    return repositories
+
+
+def sarif_preview(raw, data, origin):
+    """Keep scanner observations unverified, with exclusions visible in preview.
+
+    This intentionally accepts self-contained driver results, not arbitrary
+    SARIF interchange: external property fragments and extension rule references
+    are rejected explicitly. Other unsupported evidence (code flows, fixes,
+    attachments) is counted in provenance but never executed or applied.
+    """
+    if len(raw.encode('utf-8')) > 4 * 1024 * 1024:
+        raise _sarif_limit('bytes', 4 * 1024 * 1024)
+    document = _sarif_object(load_json(raw), 'document')
+    if document.get('version') != '2.1.0':
+        raise _sarif_invalid('version (2.1.0)')
+    runs = _sarif_list(document.get('runs'), 'runs', MAX_SARIF_RUNS)
+    if 'inlineExternalProperties' in document and document['inlineExternalProperties'] != []:
+        raise ValueError(backend_message('SARIF: se requiere un archivo autocontenido, sin propiedades externas.',
+            en='SARIF: a self-contained file without external properties is required.',
+            pt='SARIF: é necessário um arquivo autocontido, sem propriedades externas.'))
+    total = 0
+    for run in runs:
+        run = _sarif_object(run, 'run')
+        results = _sarif_list(run.get('results', []), 'results', MAX_ROWS)
+        total += len(results)
+        if total > MAX_ROWS:
+            raise _sarif_limit('results', MAX_ROWS)
+        if 'externalPropertyFileReferences' in run and run['externalPropertyFileReferences'] != {}:
+            raise ValueError(backend_message('SARIF: se requiere un archivo autocontenido, sin propiedades externas.',
+                en='SARIF: a self-contained file without external properties is required.',
+                pt='SARIF: é necessário um arquivo autocontido, sem propriedades externas.'))
+    project_seen = {finding['import_source']['fingerprint'] for finding in data.get('findings', [])
+                    if isinstance(finding.get('import_source'), dict) and finding['import_source'].get('format') == 'sarif'}
+    seen = set(project_seen)
+    rows, output_bytes = [], 0
+    for run_index, run in enumerate(runs):
+        driver = _sarif_object(_sarif_object(run.get('tool'), 'tool').get('driver'), 'tool.driver')
+        tool = {key: _sarif_text(driver[key], 'tool.driver.' + key) for key in
+                ('name', 'version', 'semanticVersion', 'guid', 'informationUri') if key in driver}
+        _sarif_text(tool.get('name'), 'tool.driver.name', required=True)
+        repositories = _sarif_repositories(run)
+        for result_index, result in enumerate(run.get('results', [])):
+            result = _sarif_object(result, 'result')
+            encoded = _sarif_json(result)
+            if len(encoded) > MAX_SARIF_RECORD_BYTES:
+                raise _sarif_limit('result.bytes', MAX_SARIF_RECORD_BYTES)
+            rule_id, rule, rule_index, descriptor_identity = _sarif_rule(result, driver)
+            message, message_format = _sarif_message(result.get('message'), rule, driver)
+            locations = _sarif_locations(result, run)
+            kind = result.get('kind', 'fail')
+            if kind not in ('notApplicable', 'pass', 'fail', 'review', 'open', 'informational'):
+                raise _sarif_invalid('result.kind')
+            config = _sarif_object(rule.get('defaultConfiguration', {}), 'defaultConfiguration')
+            if 'enabled' in config and type(config['enabled']) is not bool:
+                raise _sarif_invalid('defaultConfiguration.enabled')
+            level = result.get('level', 'none' if kind != 'fail' else config.get('level', 'warning'))
+            if level not in ('none', 'note', 'warning', 'error') or (kind != 'fail' and level != 'none'):
+                raise _sarif_invalid('result.level')
+            # Invocation-level overrides change the meaning of omitted levels.
+            # Require producers to materialize those values, rather than guess.
+            if 'level' not in result and any(inv.get('ruleConfigurationOverrides') for inv in
+                    _sarif_list(run.get('invocations', []), 'invocations', MAX_SARIF_REFERENCES)
+                    if isinstance(inv, dict)):
+                raise ValueError(backend_message('SARIF: los resultados con ruleConfigurationOverrides deben declarar level.',
+                    en='SARIF: results with ruleConfigurationOverrides must declare level.',
+                    pt='SARIF: resultados com ruleConfigurationOverrides devem declarar level.'))
+            baseline = result.get('baselineState', '')
+            if baseline not in ('', 'new', 'unchanged', 'updated', 'absent'):
+                raise _sarif_invalid('baselineState')
+            suppressions = result.get('suppressions')
+            if suppressions is None:
+                suppressions = []
+            suppressions = _sarif_list(suppressions, 'suppressions', MAX_SARIF_LOCATIONS)
+            for suppression in suppressions:
+                suppression = _sarif_object(suppression, 'suppression')
+                if suppression.get('kind') not in ('inSource', 'external') or suppression.get('status', '') not in ('', 'accepted', 'underReview', 'rejected'):
+                    raise _sarif_invalid('suppression.kind / status')
+            excluded = baseline == 'absent' or kind != 'fail' or level == 'none' or config.get('enabled') is False or any(s.get('status') != 'rejected' for s in suppressions)
+            fingerprints = {}
+            for field in ('fingerprints', 'partialFingerprints'):
+                values = _sarif_object(result.get(field, {}), field)
+                if len(values) > 100:
+                    raise _sarif_limit(field, 100)
+                fingerprints[field] = {key: _sarif_text(value, field) for key, value in values.items()}
+            affected = []
+            for location in locations:
+                if 'uri' in location:
+                    label = (location['unresolved_base_id'] + ': ' if location['unresolved_base_id'] else '') + location['uri']
+                    region = location['region']
+                    if 'startLine' in region:
+                        label += ':' + str(region['startLine'])
+                        if 'startColumn' in region:
+                            label += ':' + str(region['startColumn'])
+                    affected.append(label)
+                else:
+                    affected.extend(item.get('fullyQualifiedName') or item.get('name') or item.get('decoratedName') for item in location['logical_locations'])
+            title = tool['name'] + ' · ' + rule_id
+            if 'shortDescription' in rule:
+                short, _ = _sarif_message(rule['shortDescription'], {}, driver)
+                title += ' · ' + short
+            # Identity includes exact context, not just a tool-supplied hash:
+            # colliding fingerprints cannot collapse different observations.
+            identity = {'tool': {key: tool[key] for key in ('name', 'guid') if key in tool},
+                        'rule_id': rule_id, 'rule_descriptor_identity': descriptor_identity, 'message': message,
+                        'repositories': sorted([{key: value for key, value in item.items() if key in ('repositoryUri', 'mappedTo')}
+                                                for item in repositories], key=lambda value: _sarif_json(value)),
+                        'locations': [{key: value for key, value in location.items() if key != 'original'} for location in locations],
+                        **fingerprints}
+            key = sha256(_sarif_json(identity)).hexdigest()
+            source = dict(origin, format='sarif', fingerprint=key, reviewed=False,
+                          external_id=rule_id, confidence='scanner observation; technical review required',
+                          tool=tool, run_index=run_index, result_index=result_index,
+                          version_control_provenance=repositories,
+                          rule_id=rule_id, rule_index=rule_index, rule_name=_sarif_text(rule.get('name', ''), 'rule.name'),
+                          rule_descriptor_identity=descriptor_identity,
+                          rule_reference=deepcopy(result.get('rule', {})),
+                          level=level, level_explicit='level' in result, result_kind=kind, baseline_state=baseline,
+                          message=deepcopy(result['message']), message_text=message, message_format=message_format,
+                          locations=locations, suppressions=deepcopy(suppressions),
+                          record_sha256=sha256(encoded).hexdigest(), record_hash_scope='canonical_result_json',
+                          omitted_fields=sorted(set(result) - {'ruleId', 'ruleIndex', 'rule', 'message', 'locations', 'level', 'kind', 'baselineState', 'suppressions', 'fingerprints', 'partialFingerprints'}),
+                          **fingerprints)
+            finding = dict(title=title, affected='\n'.join(affected),
+                description_md='\n'.join(workflows.md_text(line) for line in message.splitlines()),
+                impact_md='', remediation_md='', cwe='', cvss_vector='', references=[], walkthrough=[],
+                mode='vuln', status='open', verification='unverified', severity='info', import_source=source)
+            errors = [backend_message('SARIF: resultado excluido por supresión pendiente/aceptada, baseline ausente o estado no activo.',
+                en='SARIF: result excluded because of pending/accepted suppression, absent baseline or inactive state.',
+                pt='SARIF: resultado excluído por supressão pendente/aceita, baseline ausente ou estado inativo.')] if excluded else []
+            row = dict(index=len(rows), finding=finding, duplicate=key in seen,
+                       existing_duplicate=key in project_seen, errors=errors, excluded=excluded)
+            if not excluded:
+                seen.add(key)
+            output_bytes += len(_sarif_json(row))
+            if output_bytes > MAX_SARIF_OUTPUT_BYTES:
+                raise _sarif_limit('preview.bytes', MAX_SARIF_OUTPUT_BYTES)
+            rows.append(row)
+    if not rows:
+        raise ValueError(backend_message('SARIF sin resultados para previsualizar.',
+            en='SARIF contains no results to preview.', pt='SARIF sem resultados para pré-visualizar.'))
+    response = dict(format='sarif', kind='findings', sha256=origin['file_sha256'], headers=[], mapping={}, rows=rows,
+        counts=dict(rows=len(rows), valid=sum(not row['errors'] for row in rows),
+                    duplicates=sum(row['duplicate'] for row in rows), excluded=sum(row['excluded'] for row in rows)),
+        notice=backend_message('Observaciones SARIF informativas, sin confirmar y pendientes de revisión humana. No se calcula CVSS. Se excluyen los resultados suprimidos, ausentes o inactivos. Las rutas son texto; no se abren archivos ni enlaces.',
+            en='Informational SARIF observations, unverified and awaiting human review. No CVSS is calculated. Suppressed, absent or inactive results are excluded. Paths are text; no files or links are opened.',
+            pt='Observações SARIF informativas, não verificadas e aguardando revisão humana. O CVSS não é calculado. Resultados suprimidos, ausentes ou inativos são excluídos. Os caminhos são texto; nenhum arquivo ou link é aberto.'))
+    ensure_data_tree(response)
+    return response

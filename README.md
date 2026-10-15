@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.35.0
+# report-gen 0.36.0
 
 <a id="qué-es"></a>
 
@@ -61,6 +61,12 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
+## Novedades de 0.36.0
+
+**SARIF 2.1.0:** importa resultados desde **Importar resultados**, revisa su origen y selecciona qué incorporar. Se conservan como observaciones informativas sin verificar; el nivel del analizador no se convierte en CVSS.
+
+**Comparar PDF:** selecciona dos archivos desde el historial para ver sus páginas y las diferencias resaltadas. Descarga la comparación como HTML autónomo. La comparación es por posición de página; un cambio visual no demuestra por sí solo un cambio de significado.
+
 ## Novedades de 0.35.0
 
 Portugués de Brasil se suma a español e inglés en el editor, los mensajes del servidor, el tutorial, la galería y los cuatro formatos de informe. El selector permite elegir el idioma de la interfaz de forma explícita; el idioma del informe continúa separado y cambiar cualquiera de ellos conserva el contenido redactado.
@@ -114,7 +120,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.35.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.36.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

@@ -174,7 +174,7 @@ def structure_errors(data):
                     else:
                         for field in ('format', 'file_sha256', 'fingerprint', 'external_id', 'confidence', 'imported_at'):
                             text(source, field, path + '.import_source')
-                        if source.get('format') not in ('csv', 'burp', 'nuclei'): err(path, backend_message('origen de importación inválido'))
+                        if source.get('format') not in ('csv', 'burp', 'nuclei', 'sarif'): err(path, backend_message('origen de importación inválido'))
                         if type(source.get('reviewed')) is not bool: err(path, backend_message('revisión de importación inválida'))
                         for field in ('file_sha256', 'fingerprint'):
                             if not isinstance(source.get(field), str) or not re.fullmatch(r'[0-9a-f]{64}', source[field]):

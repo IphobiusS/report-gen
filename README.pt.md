@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen com Prometeo e Evaristo" width="300">
 </p>
 
-# report-gen 0.35.0
+# report-gen 0.36.0
 
 **Um editor local para transformar avaliações de segurança em relatórios claros.** Organize achados, vincule evidências, acompanhe a remediação e os retestes e produza **PDF, Word, Markdown com imagens e HTML portátil** a partir de uma revisão salva.
 
@@ -36,6 +36,12 @@ O português é a variante **Brasil**. A chave interna é `pt`; os argumentos de
 5. Abra os arquivos gerados antes de compartilhar e mantenha um backup privado do projeto editável.
 
 O **tutorial visual** permanece no menu. Seus seis passos têm instruções e capturas reais em espanhol, inglês e português, com ampliação e progresso local. A apresentação inicial pode ser ignorada. Consultar o tutorial não modifica o relatório; ele também funciona quando o navegador não consegue salvar seu progresso.
+
+## Novidades da 0.36.0
+
+**SARIF 2.1.0:** em **Importar resultados**, confira a origem e selecione o que deseja incorporar. Os resultados permanecem como observações informativas não verificadas; o nível do analisador não é convertido em CVSS.
+
+**Comparar PDFs:** selecione dois arquivos no histórico para ver as páginas e as diferenças destacadas. Baixe a comparação como HTML independente. As páginas são pareadas por posição; mudanças visuais não comprovam mudanças de significado.
 
 ## Recursos
 

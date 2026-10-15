@@ -1,6 +1,6 @@
 {
   "name": "report-gen-ui-tests",
-  "version": "0.35.0",
+  "version": "0.36.0",
   "private": true,
   "scripts": {
     "test": "node --test tests/test_save_manager.cjs tests/test_drafts_0200.cjs",
@@ -32,7 +32,9 @@
     "test:backup-routine": "node tests/test_backup_routine_0310_browser.cjs",
     "test:scale": "node scripts/benchmark-workspace-0230.cjs --counts 50,250 --rounds 1 --evidence-limit 0 --image-mode distinct --export-formats pdf,docx,md,html --assert-bounded --output out/workspace-scale-0310",
     "test:project-gallery": "node tests/test_project_gallery_0330.cjs --output out/project-gallery-0330",
-    "test:tutorial": "node tests/test_visual_tutorial_0340.cjs --output out/visual-tutorial-0340"
+    "test:tutorial": "node tests/test_visual_tutorial_0340.cjs --output out/visual-tutorial-0340",
+    "test:review-tools": "node tests/test_features_0360_browser.cjs --output out/features-0360",
+    "test:pdf-compare-ui": "node --test tests/test_pdf_compare_ui_0360.cjs"
   },
   "devDependencies": {
     "jsdom": "26.1.0",

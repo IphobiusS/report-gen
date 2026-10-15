@@ -110,6 +110,8 @@ def protect_local_api():
         request.max_content_length = 17 * 1024 * 1024
     if request.path.endswith('/visual') and request.method == 'POST':
         request.max_content_length = 17 * 1024 * 1024
+    if request.path == '/api/pdf-compare' and request.method == 'POST':
+        request.max_content_length = 33 * 1024 * 1024
     origin = request.headers.get("Origin")
     if origin:
         try:
@@ -125,7 +127,7 @@ def protect_local_api():
         token = session.get("csrf", "")
         if not token or not secrets.compare_digest(supplied.encode('utf-8'), token.encode('utf-8')):
             abort(403, backend_message('Sesión local caducada; vuelve a abrir la aplicación'))
-        if request.content_length and not request.path.endswith(("/image", "/attachments/upload", "/visual")) and request.path not in ("/api/projects/import", "/api/workspace/restore") and not request.is_json:
+        if request.content_length and not request.path.endswith(("/image", "/attachments/upload", "/visual")) and request.path not in ("/api/projects/import", "/api/workspace/restore", "/api/pdf-compare") and not request.is_json:
             abort(415, backend_message('Se requiere application/json'))
 
 
@@ -136,6 +138,8 @@ def security_headers(response):
     response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
     if ('/history/' in request.path and request.path.endswith('/visual')) or request.path.endswith('/retest-diff/visual'):
         response.headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; frame-ancestors 'self'"
+    if request.path == '/api/pdf-compare':
+        response.headers["Content-Security-Policy"] = "default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'"
     if request.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-store"
         if getattr(g, 'browser_workspace_id', None):
@@ -712,6 +716,8 @@ from assistant_api import register as register_assistant  # noqa: E402
 register_assistant(sys.modules[__name__])
 from visual_api import register as register_visual  # noqa: E402
 register_visual(sys.modules[__name__])
+from pdf_compare_api import register as register_pdf_compare  # noqa: E402
+register_pdf_compare(sys.modules[__name__])
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080

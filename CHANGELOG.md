@@ -1,3 +1,17 @@
+# Cambios 0.36.0 (2026-10-15)
+
+- Importación local de SARIF 2.1.0 con vista previa, selección, deduplicación
+  y procedencia. Los resultados permanecen informativos y sin verificar;
+  se distinguen los resultados excluidos y no se infiere CVSS.
+- Comparación de páginas PDF renderizadas, con vistas anterior/posterior,
+  diferencias resaltadas, cambios de dimensiones y páginas añadidas o retiradas.
+  El HTML autónomo conserva hashes y el alcance de la comparación por posición.
+- Procesamiento acotado y aislado de PDF, sin guardar los archivos en proyectos.
+  Interfaz y mensajes en español, inglés y portugués.
+- Corregida la documentación de publicación: siete controles obligatorios
+  y seis documentos ficticios en el corpus opcional de Microsoft Word.
+  La aceptación de Word sigue requiriendo una ejecución real en un equipo apto.
+
 # Cambios 0.35.0 (2026-10-15)
 
 - Recuperados los tres casos Estuario originales y su auditoría reproducible

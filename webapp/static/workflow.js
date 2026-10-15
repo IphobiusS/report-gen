@@ -189,6 +189,7 @@ const WorkflowUI = (() => {
     setTimeout(focus,50);
   }
   async function history(box,slug){
+    box.append(card(hint('Compara visualmente dos archivos PDF de entrega, incluso si no están guardados en el historial.','Visually compare two delivery PDF files, including files outside the version history.','Compare visualmente dois arquivos PDF de entrega, inclusive arquivos fora do histórico de versões.'),button(w('Comparar archivos PDF','Compare PDF files','Comparar arquivos PDF'),event=>PDFComparisonUI.open(event.currentTarget))));
     if(!await doSave())return;
     const {body:records}=await requestJson(url('/history',slug));if(!box.isConnected||S.slug!==slug)return;
     const draft={label:'',stage:'draft'};

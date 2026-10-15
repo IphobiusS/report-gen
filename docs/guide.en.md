@@ -340,10 +340,20 @@ Retention is limited to 20 batches or 4 MiB overall and 16 events per batch; the
 
 ## Downloadable releases
 
-The [latest Release](https://github.com/IphobiusS/report-gen/releases/latest) provides the source ZIP, its SHA-256 file and a JSON manifest. Automatic publication requires all six workflows on the same commit: **tests**, **Browser acceptance**, **Windows compatibility**, **macOS compatibility**, **Additional renderer acceptance** and **Reproducible source package**. The publisher rebuilds from Git, verifies all three uploaded assets and only then publishes the Release. Passing automation does not replace document review or human sessions.
+The [latest Release](https://github.com/IphobiusS/report-gen/releases/latest) provides the source ZIP, its SHA-256 file and a JSON manifest. Automatic publication requires all seven workflows on the same commit: **tests**, **Browser acceptance**, **Windows compatibility**, **macOS compatibility**, **Additional renderer acceptance**, **Reproducible source package** and **R16 trilingual acceptance**. The publisher rebuilds from Git, verifies all three uploaded assets and only then publishes the Release. Passing automation does not replace document review or human sessions.
 
 ## External acceptance materials
 
-`python scripts/prepare-external-acceptance.py --output out/external-acceptance` prepares four synthetic DOCX files and a blank five-participant, three-task CSV. Its manifest records native Word and human sessions as `not_run`. The manual Word workflow requires Windows with desktop Word installed. See CONTRIBUTING.md for the observation protocol and native review command. Material preparation and automated checks are not human observations or native Word acceptance.
+`python scripts/prepare-external-acceptance.py --output out/external-acceptance` prepares six synthetic DOCX files and a blank five-participant, three-task CSV. Its manifest records native Word and human sessions as `not_run`. The manual Word workflow requires Windows with desktop Word installed. See CONTRIBUTING.md for the observation protocol and native review command. Material preparation and automated checks are not human observations or native Word acceptance.
 
 The kit includes `word-review.csv` for visual inspection and `INSTRUCTIONS.txt`. After conducting the checks, run `python scripts/prepare-external-acceptance.py --summarize out/external-acceptance` to validate hashes and records without changing them. Native Word automation, visual review and human sessions retain separate states; prepared materials or completed rows do not establish general usability.
+
+## Import SARIF and compare PDF pages
+
+In **Import results**, choose **SARIF 2.1.0** and a UTF-8 `.sarif` or `.json` file (up to 4 MiB, 50 runs and 500 results). Inspect the preview before importing your selection. Results with accepted, pending or unspecified suppression, absent results and non-failure results appear excluded; rejected suppression does not exclude a result. Previously imported duplicates cannot be imported again. Source, location, analyzer level and file hash are retained. Locations, schemas and external fragments are never fetched; the file must be self-contained. Rules from the primary analyzer (`driver`), physical locations and inline logical names are supported. Extension rules, artifacts nested through `parentIndex` and indexed logical locations are rejected.
+
+Observations arrive with informational severity, no inferred CVSS and pending review. Review meaning and evidence before classifying them. Marking imported content reviewed does not technically confirm a finding.
+
+From revision history, **Compare PDFs** accepts a before and an after file without changing the project. It shows pages side by side, highlighted raster differences, dimension changes and added or removed pages. Pages are paired by number: inserting a page can shift all subsequent comparisons. Visual equality does not establish equality of text, links, attachments or metadata.
+
+The downloadable HTML includes images from both documents and their hashes. Review it before sharing; either PDF may contain private information. Files are processed locally and the comparison is not saved in the project. Limits: 16 MiB and 80 pages per PDF, 64 million total comparison pixels, 32 MiB output and 45 seconds processing time. Encrypted PDFs and files exceeding these limits are explicitly rejected.

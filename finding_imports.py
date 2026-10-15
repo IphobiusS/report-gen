@@ -1,4 +1,4 @@
-"""Offline, bounded CSV/Burp/Nuclei/Nmap intake with preview, provenance and deduplication."""
+"""Offline, bounded scanner intake with preview, provenance and deduplication."""
 from error_messages import message as backend_message
 from copy import deepcopy
 from hashlib import sha256
@@ -129,8 +129,10 @@ def _csv(raw, mapping):
 
 def preview(body, data):
     kind, raw = body.get('format'), body.get('text')
-    if not isinstance(kind, str) or kind not in ('csv', 'burp', 'nuclei', 'nmap'):
-        raise ValueError(backend_message('Selecciona CSV, Burp XML, Nuclei JSONL o Nmap XML', en='Select CSV, Burp XML, Nuclei JSONL or Nmap XML'))
+    if not isinstance(kind, str) or kind not in ('csv', 'burp', 'nuclei', 'nmap', 'sarif'):
+        raise ValueError(backend_message('Selecciona CSV, Burp XML, Nuclei JSONL, Nmap XML o SARIF 2.1.0.',
+            en='Select CSV, Burp XML, Nuclei JSONL, Nmap XML or SARIF 2.1.0.',
+            pt='Selecione CSV, Burp XML, Nuclei JSONL, Nmap XML ou SARIF 2.1.0.'))
     if not isinstance(raw, str) or not raw.strip() or len(raw.encode('utf-8')) > MAX_BYTES:
         raise ValueError(backend_message('El archivo debe contener texto UTF-8 y no superar 4 MiB'))
     original=raw.encode('utf-8')
@@ -147,6 +149,8 @@ def preview(body, data):
     origin = dict(file_sha256=digest, normalized_sha256=normalized_digest, hash_scope='original_bytes' if 'bytes_base64' in body else 'received_utf8_text')
     if kind == 'nmap':
         return scanner_imports.nmap_preview(raw, data, origin)
+    if kind == 'sarif':
+        return scanner_imports.sarif_preview(raw, data, origin)
     headers, mapping, rows = (_csv(raw, body.get('mapping')) if kind == 'csv' else
                               scanner_imports.nuclei(raw, data.get('meta', {}).get('lang', 'es')) if kind == 'nuclei' else _burp(raw))
     seen = {fingerprint(f) for f in data.get('findings', [])}
