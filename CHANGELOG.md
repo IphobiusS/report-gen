@@ -1,4 +1,4 @@
-# Cambios 0.35.0 (2026-10-13)
+# Cambios 0.35.0 (2026-10-15)
 
 - Recuperados los tres casos Estuario originales y su auditoría reproducible
   de doce exportaciones. La publicación exige además la aceptación trilingüe
@@ -7,11 +7,27 @@
   corrobora guiones con lectores independientes y conserva los separadores
   de las celdas. Las tablas con valores repetidos admiten una asignación
   completa sin agotar la búsqueda; se sigue rechazando texto perdido.
+- Los guiones partidos de PDF nativos de LibreOffice se corroboran también
+  en fuentes simples con mapas Unicode de un byte. Los mapas parciales solo
+  se admiten con prueba independiente de la fuente TrueType incrustada, el
+  código del glifo y su posición; no se reconstruye texto desde lo esperado.
+- Los rótulos generados «Causa raíz» y «Acción común» son encabezados
+  semánticos y conservan la unión con el contenido siguiente en DOCX,
+  evitando títulos huérfanos sin alterar el Markdown escrito por el autor.
+- Diez errores internos de composición y regiones PDF disponen de mensajes
+  explícitos en español, inglés y portugués y pasan el control del catálogo.
 - El apéndice describe referencias documentadas sin atribuir acceso ni
   recolección comprobada. Corregidas las etiquetas españolas de evidencia
   y confidencialidad; las notas redactadas por el autor se conservan.
 - Recuperadas las imágenes portuguesas del tutorial y las miniaturas de
   páginas reales de las plantillas. Las pruebas de perfiles exigen ES/EN/PT.
+- Nimbus crea la demostración en el idioma de la interfaz. Las ediciones
+  editoriales inglesa y portuguesa conservan los doce hallazgos, las dieciocho
+  evidencias y las referencias técnicas, con diagramas ficticios localizados
+  y paquetes reproducibles; la edición española original se conserva.
+- Renovadas las veintiuna capturas reales del tutorial, con procedencia y
+  hashes registrados. La vista de entrega incluye todos sus controles.
+- Las comprobaciones HTML en Windows leen UTF-8 de forma explícita.
 - Portugués de Brasil en la interfaz, los mensajes del servidor, el tutorial,
   los catálogos de plantillas y las exportaciones PDF, DOCX, Markdown y HTML.
   La clave interna es `pt`; se admite el alias `pt-BR` en las entradas de idioma.

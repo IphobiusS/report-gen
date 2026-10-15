@@ -1,0 +1,1252 @@
+{
+  "schema_version": 2,
+  "meta": {
+    "lang": "en",
+    "report_title": "Penetration testing report",
+    "report_subtitle": "Nimbus Commerce | Complete fictional demonstration",
+    "client": "Nimbus Commerce (fictional organization)",
+    "assessor": "Sebastián Latorre Muñoz / iphobiuss",
+    "assessor_title": "report-gen sample",
+    "date": "2026-10-02",
+    "version": "1.0",
+    "theme": "corporativo",
+    "branding": {
+      "wordmark": "iphobiuss",
+      "byline": "iphobiuss | fictional sample",
+      "accent": "#235e93",
+      "confidential_text": "DEMO"
+    },
+    "contacts": {
+      "client": [],
+      "assessor": []
+    },
+    "scope": [
+      {
+        "target": "portal.nimbus.example",
+        "description": "Web application and support for two synthetic organizations."
+      },
+      {
+        "target": "api.nimbus.example",
+        "description": "Orders, attachments and integration previews."
+      },
+      {
+        "target": "auth.nimbus.example",
+        "description": "Account recovery and session lifecycle."
+      },
+      {
+        "target": "ci.nimbus.example",
+        "description": "Artifact contents and service identity."
+      },
+      {
+        "target": "ad.nimbus.example",
+        "description": "DC01 delegations and WINAPP01 administration."
+      }
+    ]
+  },
+  "report": {
+    "sections": [
+      {
+        "key": "confidentiality",
+        "title": "Document status and use of this sample",
+        "body": "**FICTIONAL DEMONSTRATION REPORT.** This is a localized editorial edition of the fictional Nimbus Commerce scenario. Nimbus is an invented organization used to demonstrate report-gen and security reporting. It is not a client engagement, an assessment performed, a certification or an actual incident report. No tests against real systems or clients are represented as having taken place.\n\nFindings, assets, people, work dates, evidence and retest results belong to an editorial scenario. Technical images are identified synthetic representations, not screenshots of compromised systems. Statements describing actions or results must be interpreted within that fictional scenario.\n\n### What can be verified in this delivery\n\nThe original structured project was prepared for report-gen 0.14.0. Scores are calculated from the declared vectors; links between findings, assets and evidence are preserved. The editable package allows readers to inspect fields and export the document again. Reproducing the report is not equivalent to reproducing an attack. This English edition translates the authored content while preserving technical identifiers and scenario data.\n\n### Publication purpose and limits\n\nPrepared for the portfolio of Sebastián Latorre Muñoz, iphobiuss, with AI-assisted writing. It may be presented as a demonstration of the tool and report structure while retaining this identification. It must not be presented as client experience or proof that the portfolio owner performed the described actions.\n\nNames ending in `.example`, DEMO identifiers and credential placeholders are example data. No secret in this document is operational. External references are public technical documentation; their authors do not endorse this fictional case.\n\n### Reading guide\n\nManagement can begin with the executive summary, risk posture and remediation plan. Technical teams will find root causes, limits, comparison controls and closure criteria in each finding. The final sections preserve inventory, scenario coverage and remediation tracking.\n\n**Preparation date: October 2, 2026. Editorial version: 1.0. Classification: public fictional sample.**"
+      },
+      {
+        "key": "document_control",
+        "version_history": [
+          {
+            "version": "0.1",
+            "date": "2026-10-02",
+            "author": "Assisted preparation",
+            "notes": "Scenario definition, twelve findings and synthetic assets."
+          },
+          {
+            "version": "0.2",
+            "date": "2026-10-02",
+            "author": "Assisted preparation",
+            "notes": "Educational evidence, coverage matrix and six fictional retests."
+          },
+          {
+            "version": "1.0",
+            "date": "2026-10-02",
+            "author": "Generated with report-gen",
+            "notes": "Complete edition for review and publication as a sample."
+          }
+        ],
+        "distribution": "### Scenario dates\n\nThe fictional assessment window runs from September 21 to 25, 2026. Retests are dated September 30 and remediation targets start on October 2. These are narrative dates, not evidence of professional work during that period.\n\n### Responsibility and provenance\n\n| Item | Provenance and scope |\n| --- | --- |\n| Organization and assets | Invented for this document. |\n| Descriptions and results | Educational scenario written with AI assistance. |\n| Evidence images | Synthetic representations of controls and results. |\n| PDF and project | Originally generated and validated with report-gen 0.14.0. |\n| Recommendations | Scenario analysis and cited public documentation. |\n| Portfolio acceptance | The owner's responsibility before publishing the sample. |\n\n### Intended distribution\n\nPublic reading as a report example. Within the scenario, recipients would be technical management, product, identity, infrastructure and DevOps owners. Functional roles replace real people's names and email addresses.\n\nIDs F01 through F12 remain stable when presentation order changes. A reported correction does not become closure until a represented retest has a conclusive result. No signatures or approvals from fictional people are included."
+      },
+      {
+        "key": "executive_summary",
+        "summary": "Nimbus Commerce represents an ordering platform with two client organizations, integration services and supporting Windows infrastructure. The scenario examines how authorization, account recovery, secret handling and privilege delegation failures could affect data and operations.\n\nThe fictional assessment contains **12 initial findings: 2 critical, 5 high, 4 medium and 1 low**. The most urgent risks involve two public routes to data or accounts and a domain replication delegation. The summary chart retains initial severities; it does not count the issues still open after retesting.\n\n### Decisions required by the scenario\n\n1. Contain vulnerable search and account recovery until their corrections are verified. RT01 and RT02 represent subsequent closure of those two routes.\n2. Prioritize F07, replication rights, despite its high rather than critical technical score. Its broad reach warrants operational priority P0.\n3. Complete F03 and F05: read authorization and direct destination blocking improve, but alternative write and redirect routes remain.\n4. Rotate the CI credential and review group delegations. Superficial cleanup or a deployment notice is insufficient.\n\n### Status at editorial close\n\nThe scenario represents **4 verified fixes**, **5 findings under remediation**, **1 reported fix** and **2 open findings**. Six fictional retests are included: four complete and two partial. Eight findings therefore still lack verified closure.\n\nConsequences are explained in terms of assets and permissions. File read is not equated with remote execution, local administration with proven domain compromise, or a CORS header with universal exploitation. Conditions required for impact are stated explicitly.\n\n### Management guidance\n\nFirst address identity and permission boundaries: object authorization, account recovery and service privileges. Then establish a delivery process that preserves regression checks and closure evidence. Monetary loss, statistical attack probability and return on investment are not calculated because the case contains no supporting data.\n\n**All results in this section are fictional.** Their purpose is to show how evidence, impact, priority and follow-up connect in a report."
+      },
+      {
+        "key": "risk_posture",
+        "title": "Severity, priority and residual risk criteria",
+        "posture": "### Technical severity\n\n**CVSS 3.1 Base** is used consistently so the twelve vectors are comparable within this sample. Each score is calculated by report-gen and accompanied by its vector. Scores from 3.1 and 4.0 are not mixed, and Base metrics are not presented as business risk calculations.\n\n| Band | Range |\n| --- | --- |\n| Critical | 9.0 to 10.0 |\n| High | 7.0 to 8.9 |\n| Medium | 4.0 to 6.9 |\n| Low | 0.1 to 3.9 |\n| Informational | 0.0 |\n\nCVSS belongs to FIRST and is used according to its public documentation: https://www.first.org/cvss/v3.1/specification-document and https://www.first.org/cvss/v3.1/user-guide. Values reflect invented case conditions and would require reassessment in a real environment.\n\n### Operational priority within the scenario\n\n| Priority | Criterion and proposed response |\n| --- | --- |\n| P0 | Broad access to data or shared identity. Immediate containment and coordination. |\n| P1 | Permission or privilege boundary crossing with identified conditions. Prioritized correction and focused retest. |\n| P2 | Exposure conditional on session, interaction or configuration. Planned correction and regression checks. |\n| P3 | Limited disclosure requiring high prior privileges. Include in the hardening cycle. |\n\nThese response expectations are a fictional proposal, not a contractual SLA. F07 illustrates the distinction: its technical prerequisites produce 8.8, while its domain-wide impact receives P0. F12 is P3 because it exposes limited internal information to an already privileged role.\n\n### Residual risk and closure criteria\n\nInitial severity is retained after correction for traceability. Tracking status indicates whether the route remains open. An announced patch, a different HTTP response or a rule blocking one example is insufficient for closure.\n\nThis document requires a negative control, a working legitimate control and an explanation of tested scope. A partial retest keeps the finding under remediation. Any risk acceptance would require an owner, justification, expiry and compensating controls; no acceptance is invented in this sample."
+      },
+      {
+        "key": "scope",
+        "objectives": "### Scenario objective\n\nEvaluate how an unauthenticated person, customer account or operational identity could cross data and administrative boundaries. The case connects entry point, effective permission, result and correction.\n\n![Fictional Nimbus architecture: portal, API, identity, data, files and infrastructure.](img/arquitectura.png)\n\nThe final inventory expands these relationships with functions and links to findings.",
+        "assumptions": "The scenario combines gray-box web/API work and internal review using two canary organizations. AD checks start with provided credentials; an Internet-to-domain entry route is not inferred.\n\nThird parties, production, personal data, phishing, load testing, persistence and destructive operations are excluded. Nimbus is fictional and this document authorizes no testing against any service. Real execution would require written scope, windows, contacts and rules of engagement."
+      },
+      {
+        "key": "methodology",
+        "approach": "The case follows hypothesis, positive control, minimal variation, independent confirmation and closure. Each finding defines what its evidence would and would not demonstrate. Where another explanation is possible, a comparison is added: another identity, object, fresh session or control destination.\n\nConfiguration review is distinguished from behavioral verification. A dangerous permission can establish a risk condition; any attributed capability must match the permission semantics and scenario conditions. An isolated scanner result is not treated as conclusive proof.",
+        "standards": "OWASP guidance informs authorization, parameterized queries, account recovery, SSRF, sessions, XSS and secrets management. CWE classifies technical root causes. Microsoft documentation informs Active Directory delegation interpretation, and FIRST defines CVSS scoring.\n\nThese references guide analysis; full compliance with OWASP ASVS, ISO 27001, PCI DSS or any certification is not claimed. Finding-specific sources are included in their records and collected in the appendix.",
+        "information_gathering": "The inventory contains eight fictional assets, functional owners, roles and trust boundaries. Effective identity and the canary object are established before varying an input. Demonstration request identifiers link each control with its result without using real personal data.",
+        "exploitation": "Evidence consists of synthetic result diagrams, not attack screenshots. In an equivalent exercise, described validations would be restricted to canary objects and reversible changes. Those actions are not executed in this document. Impact metrics model specific capabilities; unsupported capabilities are excluded or identified as potential consequences.",
+        "cleanup": "Every narrative canary modification includes restoration or revocation in its closure criteria: order notes, passwords, sessions, memberships and job labels. This cleanup is fictional too. Actual report preparation only creates project files and exports in the working environment."
+      },
+      {
+        "key": "findings_summary"
+      },
+      {
+        "key": "findings"
+      },
+      {
+        "key": "attack_narrative",
+        "title": "Impact chains and trust boundaries",
+        "narrative": "### Route A: public entry and order data\n\nF01 models a public input that changes a search query. Its root cause is mixing code and data, aggravated by write permissions. Read access and a canary modification support distinct effects; operating-system execution is not claimed. RT01 represents correction of both relevant conditions.\n\nF02 independently reaches portal accounts because a recovery token is not bound to its subject. It does not require F01. Keeping these findings separate avoids an artificial long chain implying dependency between different causes and corrections.\n\n### Route B: legitimate user and organizational boundary\n\nIn F03, the scenario actor already has a valid account. The failure occurs when an object is resolved by ID without enforcing organizational policy. F04 concerns a different boundary: file location and ownership by an order. Replacing IDs with UUIDs fixes neither authorization.\n\nF05 extends the same type of user's capabilities through a server request. Trust in the traffic's internal source contributes to impact. A retest blocking only the direct URL leaves the effective destination after a redirect unresolved.\n\n### Route C: operational identities and privileges\n\nF06 connects artifact read access to a more powerful service identity. The secret enables a change of identity; deleting one copy without revocation does not break that route.\n\nF07 and F08 start with provided internal identities. The web finding is not claimed to provide those accounts. F07 models domain replication rights; F08 ends with WINAPP01 administration. Potential domain control and local server administration remain distinct.\n\n### Which boundaries to address first\n\nPrioritize concentrated permissions: subject identity, object ownership, network destination and administrative delegation. Local controls help, but closure requires the whole route to be checked. Fixing GET while leaving PATCH unchanged improves read isolation but leaves data modification open.\n\n### Positive controls retained\n\nThe scenario includes rejection of anonymous profile access and ordinary users at the administrative panel. These results show that some authentication and role controls work. They do not invalidate object, session or recovery flaws, or establish that the whole platform is secure.\n\nEach route explains the fictional model. It is not an intrusion, executed lateral-movement test or detected incident."
+      },
+      {
+        "key": "remediation_plan",
+        "overview": "The plan retains dependencies between containment, change and verification. Owners and dates are scenario proposals. Closed tasks remain in the record to explain what was verified; they are not removed from the initial report.\n\n| ID | Priority | Proposed owner | Target date |\n| --- | --- | --- | --- |\n| F01 | P0 | Application team | 2026-10-03 |\n| F02 | P0 | Identity team | 2026-10-03 |\n| F03 | P1 | API team | 2026-10-09 |\n| F04 | P1 | API team | 2026-10-09 |\n| F05 | P1 | Platform team | 2026-10-09 |\n| F06 | P1 | DevOps team | 2026-10-05 |\n| F07 | P0 | Identity team | 2026-10-03 |\n| F08 | P1 | Infrastructure team | 2026-10-09 |\n| F09 | P2 | Application team | 2026-10-23 |\n| F10 | P2 | API team | 2026-10-23 |\n| F11 | P2 | Identity team | 2026-10-23 |\n| F12 | P3 | Application team | 2026-11-02 |\n\nA target date does not prove implementation. Tracking records four represented closures, two partial corrections, one reported correction without retest and five additional cases without closure. These dates manage the fictional work; they are not commitments by a real organization.",
+        "short_term": "### Contain and preserve context\n\nPrioritize F07 and confirm the continued closure of F01 and F02. Coordinate privilege removal with legitimate inventory and replication functions. For F06, revoke the previous secret and review its permissions before treating artifact removal as complete.\n\nAssign an owner to each change and a separate verifier in the organizational model. Record deployed version, correction scope and expected tests. Preserve relevant logs with data minimization; do not copy complete tokens into tickets or documents.\n\n**Phase outcome:** priority routes contained, owners assigned and concrete closure checks defined. A deployment notice alone never changes a status to verified.",
+        "medium_term": "### Correct shared root causes\n\nComplete the F03 authorization matrices and F05 destination policy. Review other operations reusing the component. Confirm F08 using a fresh session and effective permissions; review F09, F10 and F11 as distinct browser, origin and session-lifecycle problems.\n\nRetain a negative check and legitimate flow for every change. Blocking all downloads or integrations may stop the scenario but does not demonstrate an acceptable functional correction. Also verify pagination, exports and secondary consumers of the same API.\n\n**Phase outcome:** complete retests for outstanding routes, regression checks incorporated and exceptions documented. Partial fixes retain visible dates, owners and residual scope.",
+        "long_term": "### Maintain and recheck\n\nMake authorization, secrets management and privilege delegation repeatable change-cycle reviews. Inventory service identities and their permissions; review group delegations when teams or functions change.\n\nUse outcome indicators: findings without verified closure, repeated partial fixes, age by priority and percentage of changes with regression tests. No performance values are assigned because no real operation provides them.\n\n**Phase outcome:** a sustainable record of decisions, evidence and owners. Risk acceptance requires justification and expiry; lack of verification time must not automatically become acceptance."
+      },
+      {
+        "key": "appendix",
+        "title": "Technical appendices and references",
+        "changes_cleanup": "### Scenario change log\n\n| Case | Represented change | Described restoration |\n| --- | --- | --- |\n| F01 | Internal canary order note | Previous value restored. |\n| F02 | Demonstration administrator password | Password reset and sessions revoked. |\n| F03 | Another organization's delivery note | Value restored after checking with the second account. |\n| F05 | Document job label | Original label restored. |\n| F08 | Canary member in administrator group | Member removed and test session closed. |\n| F09 | Comment with DOM marker | Demonstration comment removed from the narrative. |\n| F11 | User preference | Initial value restored. |\n\nThis table narrates the fictional procedure. It is not a cleanup record for real systems. Read checks are not turned into modifications, and extra actions are not invented to lengthen the chain.",
+        "tools_used": "### Actual execution and scenario tools\n\n**Executed to produce the original files:** report-gen 0.14.0, its CVSS calculator, exporters and project validation; local PDF inspection and rendering tools. The package's technical log details checks actually performed on files. This localized edition preserves the original scenario dates and version references rather than claiming those checks were newly executed here.\n\n**Described only as methodology:** HTTP proxy, browser, API client and Active Directory permission review. Scanner versions, command logs and durations are not supplied for tests that were not run. Included images E01 to E12 and RT01 to RT10 are educational representations.\n\n### General references\n\n- FIRST, CVSS 3.1 specification: https://www.first.org/cvss/v3.1/specification-document\n- FIRST, user guide: https://www.first.org/cvss/v3.1/user-guide\n- OWASP, API Security 2023, object authorization: https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/\n- Microsoft, replication rights: https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-all\n- Microsoft, Active Directory protection: https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/best-practices-for-securing-active-directory\n\nFinding records contain prevention references and CWE classifications. These sources support technical interpretation, not a claim that the cited organizations reviewed the document.",
+        "glossary": "| Term | Meaning in this report |\n| --- | --- |\n| Canary | Test object or identity enabling a bounded check. |\n| BOLA | Authorization failure when accessing an object by its identifier. |\n| Tenant | Logical organization whose data must remain isolated. |\n| SSRF | Server request to a destination controlled by an input. |\n| ACL | Permission list attached to a resource or object. |\n| CVSS Base | Technical severity score for declared conditions. |\n| Priority | Proposed operational order based on case context. |\n| Retest | Fresh verification of a correction and its limits. |\n| Partial correction | One route is resolved while another stays open. |\n| Synthetic evidence | Editorial representation, not a real-system observation. |\n\n### Reusing the project\n\nThe editable backup includes YAML and linked images for import with “Open backup” in report-gen. Markdown preserves content for textual review. Export project changes again so tables, statuses and the report reflect the same version. Editing only the PDF breaks that correspondence."
+      }
+    ],
+    "workflow": {
+      "include_assets": true,
+      "include_coverage": true,
+      "include_retest": true
+    }
+  },
+  "findings": [
+    {
+      "uid": "d8eecceb-7bfb-575f-9af6-5419615e74f5",
+      "id": "F01",
+      "mode": "vuln",
+      "title": "SQL injection in order search",
+      "severity": "critical",
+      "cvss": "9.1",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-89",
+      "affected": "portal.nimbus.example; db.nimbus.example",
+      "description_md": "The public search builds a SQL condition by concatenating parameter `q`. Its service account shares read and update permissions with the order module. Within the scenario, controlled input changes the query and accesses test records outside the expected results.",
+      "impact_md": "The model includes unauthenticated reading and modification of order data. Educational evidence shows two canary records and a reversible update in an isolated copy. Availability impact and operating-system compromise are not claimed.",
+      "remediation_md": "Separate code and data with parameterized queries and use a read-only search account. Enforce authorization before returning orders and retain regression tests. Escaping quotes or filtering SQL keywords does not replace these measures.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/89.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Context and prerequisites.",
+          "text_md": "The public flow looks up shipment status by reference. A synthetic data copy contains orders DEMO-1001 and DEMO-1002. The case is restricted to that copy; it involves neither bulk extraction nor real personal information."
+        },
+        {
+          "lead": "Establish a baseline response.",
+          "text_md": "Query DEMO-1001 and record the request identifier, HTTP status and returned fields. Repeat with a nonexistent reference. One control returns a record and the other none, distinguishing expected behavior from a cache fault."
+        },
+        {
+          "lead": "Compare two controlled conditions.",
+          "text_md": "E01 contrasts a true condition with a false one. Results change with the SQL condition, not merely the visible search text. The second canary order demonstrates the data boundary crossing. Keep specific test inputs as regression cases without automating enumeration.",
+          "figure": {
+            "src": "img/e01.png",
+            "caption": "E01. Synthetic evidence: The condition controls the query; the check is limited to canary data. This is not a screenshot of an executed test."
+          }
+        },
+        {
+          "lead": "Bound the modification capability.",
+          "text_md": "The demonstration includes a reversible change to internal field demo_note in DEMO-1002 on the isolated copy. Write access comes from database account permissions, not presumed command execution. Restore the initial value afterward."
+        },
+        {
+          "lead": "Interpret evidence and score.",
+          "text_md": "AV:N and PR:N reflect the public entry point; AC:L and UI:N represent a direct request. C:H and I:H describe modeled capabilities over order data. A:N excludes an unrepresented interruption. This vector assesses a scenario, not a real company."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Contain the search endpoint and remove its write permissions. Before reopening, preserve technical logs needed to investigate anomalous requests without storing credentials or complete order bodies.",
+        "medium_md": "Rewrite the query with parameters and check every dynamic filter, including sort and pagination. Negative checks cover quotes, Boolean expressions and another customer's references. Preserve normal results to prevent functional regression.",
+        "long_md": "Include data-access review in ORM and handwritten SQL changes. Close only when canary queries no longer expand results, search cannot modify data and authorization controls still work."
+      },
+      "asset_uids": [
+        "a56b6769-1b56-53fb-bc31-98623f580a97",
+        "c4a6a297-d869-5139-b533-c8df924abe9c"
+      ],
+      "evidence_uids": [
+        "e6a75b09-e809-57a4-ab11-c73913ec520f"
+      ],
+      "owner": "Application team",
+      "due_date": "2026-10-03",
+      "status": "verified_fixed",
+      "retests": [
+        {
+          "uid": "8528c8a0-d4d4-5713-80c0-ddb2b2c6470e",
+          "result": "fixed",
+          "tested_on": "2026-09-30",
+          "assessor": "Fictional scenario assessor",
+          "notes_md": "Fictional retest RT01. Parameterized search retains legitimate results and treats control inputs as data. The search account can no longer update demo_note, and unrelated orders are not returned. F01 closure is represented while its original severity is retained for traceability.",
+          "evidence_uids": [
+            "10ba7b94-cad6-5ccc-adc8-86b2a06c298c"
+          ]
+        }
+      ]
+    },
+    {
+      "uid": "6e67a7d5-f64b-5f78-b973-1fa94a8815e4",
+      "id": "F02",
+      "mode": "vuln",
+      "title": "Password recovery without binding the token to its account",
+      "severity": "critical",
+      "cvss": "9.1",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-640",
+      "affected": "portal.nimbus.example; auth.nimbus.example",
+      "description_md": "The API checks that a recovery token exists and has not expired, but selects the password to change using the account identifier in the request body. It does not check that both values belong to the same recovery request.",
+      "impact_md": "In the scenario, a token issued for a controlled account changes another canary account's password, including an administrative account without a second factor. Portal data and operations are modeled; Active Directory access is not assumed.",
+      "remediation_md": "Resolve the account exclusively from the server-side recovery record. Bind token, purpose, account and expiry, and consume the token only once. Invalidate affected sessions and require additional recovery controls for privileged accounts.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/640.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Context and prerequisites.",
+          "text_md": "Fictional identities usuario.a and admin.demo use synthetic mailboxes. The public recovery flow issues a token for usuario.a; the final request requires no authenticated session."
+        },
+        {
+          "lead": "Prepare a legitimate control.",
+          "text_md": "Request recovery for usuario.a and check that the token can change only that identity. Record expiry and purpose. A valid token alone does not authorize choosing another account."
+        },
+        {
+          "lead": "Change only the target account.",
+          "text_md": "Keep the same canary token and replace account_id with the demonstration administrator identity. E02 represents success followed by login with the test password. HTTP 200 alone is insufficient: the subsequent scenario result confirms the identity change.",
+          "figure": {
+            "src": "img/e02.png",
+            "caption": "E02. Synthetic evidence: The server accepts a client-selected identity different from the token subject. This is not a screenshot of an executed test."
+          }
+        },
+        {
+          "lead": "Rule out an apparent change.",
+          "text_md": "Compare the new session identifier, effective role and a canary administrative operation. Restore the initial password and revoke exercise sessions. Passwords and tokens are fictional labels, not usable secrets."
+        },
+        {
+          "lead": "Define the limits.",
+          "text_md": "C:H and I:H rest on the modeled administrative role; A:N avoids assuming interruption. If a real deployment enforced recovery-resistant MFA, the chain and assessment would need review. Identity binding, not token length, is the defect."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Restrict privileged-account recovery and review password-change logs. Add a server-side identity comparison before any write, without disclosing whether the target account exists.",
+        "medium_md": "Remove account_id from the confirmation contract, or reject any mismatch if compatibility requires retaining it. Test expired, reused, wrong-account and wrong-purpose tokens. Consume tokens atomically to prevent simultaneous reuse.",
+        "long_md": "Document the full recovery lifecycle and its MFA and session controls. An automated two-identity check must fail if a token changes the wrong account. Log identifiers, never complete tokens."
+      },
+      "asset_uids": [
+        "a56b6769-1b56-53fb-bc31-98623f580a97",
+        "3855f32e-8146-5d1b-b417-9eccc2e47140"
+      ],
+      "evidence_uids": [
+        "80147432-b232-5313-a68c-abd091976852"
+      ],
+      "owner": "Identity team",
+      "due_date": "2026-10-03",
+      "status": "verified_fixed",
+      "retests": [
+        {
+          "uid": "0f4de915-fe69-5b72-b10a-3f40436985e3",
+          "result": "fixed",
+          "tested_on": "2026-09-30",
+          "assessor": "Fictional scenario assessor",
+          "notes_md": "Fictional retest RT02. The server derives the subject from the token. Cross-account combinations are rejected; a valid token works once for its own account. Expired and reused tokens also fail. Invalidation of the recovered account's previous sessions is represented.",
+          "evidence_uids": [
+            "fa3f37c7-3b45-5d65-82ff-57eeec78fae7"
+          ]
+        }
+      ]
+    },
+    {
+      "uid": "ff162b64-4c38-5385-8afe-784e5edfe6a4",
+      "id": "F03",
+      "mode": "vuln",
+      "title": "Access to and modification of another organization's orders",
+      "severity": "high",
+      "cvss": "8.1",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-639",
+      "affected": "api.nimbus.example",
+      "description_md": "Order GET and PATCH validate the session but resolve the object by global identifier without filtering by organization. A demo-a member knowing an identifier can read and modify a demo-b order.",
+      "impact_md": "The model includes cross-organization exposure of orders and changes to delivery data. The canary modification affects only a reversible delivery note. Payment-card access, bank transactions and payment-provider compromise are not claimed.",
+      "remediation_md": "Enforce object authorization for reads and writes using the organization and role resolved from the server session. Reuse the policy for exports, batch processing and legacy endpoints. An unpredictable UUID does not replace authorization.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/639.html",
+        "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Context and prerequisites.",
+          "text_md": "Two fictional organizations, demo-a and demo-b, have separate user accounts and orders. Session A remains unchanged across controls. IDs come from the authorized test dataset; no brute force is used."
+        },
+        {
+          "lead": "Confirm identity separation.",
+          "text_md": "Record each session's subject and tenant. First confirm A accesses its own order and B its own. Do not reuse B's cookies for the cross-account check, which would produce a false BOLA conclusion."
+        },
+        {
+          "lead": "Test reads and writes separately.",
+          "text_md": "Using session A, request B's object and then change delivery_note. Reading and modification are separate checks. E03 represents both results and a control read with B confirming the canary change.",
+          "figure": {
+            "src": "img/e03.png",
+            "caption": "E03. Synthetic evidence: The identity is authenticated but is not authorized for this object. This is not a screenshot of an executed test."
+          }
+        },
+        {
+          "lead": "Check alternative routes.",
+          "text_md": "Repeat the matrix on the export endpoint and resource PATCH. The fictional retest shows a partial correction: GET enforces policy while PATCH still allows cross-organization writes. The ticket remains open despite one corrected route."
+        },
+        {
+          "lead": "Interpret the result.",
+          "text_md": "A's authentication works; object authorization fails. PR:L reflects required user access. C:H and I:H describe the modeled cross-organization scope; A:N excludes denial of service. Nested IDs and batch operations also require review."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Disable identified cross-organization routes and review access by tenant. Rejection responses must not disclose object attributes. Keep a controlled way to fulfill legitimate orders during deployment.",
+        "medium_md": "Introduce a common authorization decision using tenant, role, object and operation. Add a positive and negative two-organization matrix for GET, PATCH, export and batch processing. Ensure client bodies cannot override tenant_id.",
+        "long_md": "Close only when every cross-organization operation fails and legitimate operations work. Include concurrency checks for any inter-organization order transfer and cache controls respecting separation."
+      },
+      "asset_uids": [
+        "7993cf01-787a-590b-833f-59bb95756739"
+      ],
+      "evidence_uids": [
+        "6fa1123a-d031-5e56-9138-2b62cd11ac0b"
+      ],
+      "owner": "API team",
+      "due_date": "2026-10-09",
+      "status": "in_progress",
+      "retests": [
+        {
+          "uid": "c0396008-a47c-526b-9c64-73c4c2e0d214",
+          "result": "partial",
+          "tested_on": "2026-09-30",
+          "assessor": "Fictional scenario assessor",
+          "notes_md": "Fictional retest RT03. GET returns 404 for another organization's object. PATCH still accepts delivery_note changes, confirmed using account B. The result is partial and F03 remains under remediation. Eliminating cross-account reads does not remove integrity impact.",
+          "evidence_uids": [
+            "ea51aaf3-9470-510f-8357-db6babb39175"
+          ]
+        }
+      ]
+    },
+    {
+      "uid": "09726a34-a8d5-5f3e-9738-0cf0df7669dc",
+      "id": "F04",
+      "mode": "vuln",
+      "title": "Reading outside the permitted attachment directory",
+      "severity": "medium",
+      "cvss": "6.5",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-22",
+      "affected": "api.nimbus.example; files.nimbus.example",
+      "description_md": "Attachment download concatenates a user-supplied path with the storage directory. It does not verify that the normalized path remains inside the authorized directory or that the file belongs to the order.",
+      "impact_md": "The scenario permits reading a canary file outside the attachment directory. The process can read internal service configurations. Confidentiality impact is modeled; file writes, code execution and unrestricted host access are not represented.",
+      "remediation_md": "Accept an attachment identifier and resolve its server-side location after object authorization. Where paths are used, normalize them and verify actual directory containment, including symbolic links. Reduce process permissions.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/22.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Context and prerequisites.",
+          "text_md": "FILES01 has an attachments directory and a fixtures directory containing canary file outside-marker.txt. Both are fictional resources. The check crosses this controlled boundary without reading real system files or secrets."
+        },
+        {
+          "lead": "Establish a legitimate attachment.",
+          "text_md": "Download a document belonging to the same organization and record type, size and order association. Compare with a nonexistent identifier and another tenant's attachment. Path validation and object authorization are complementary."
+        },
+        {
+          "lead": "Represent directory escape.",
+          "text_md": "E04 contrasts a normal download with a path reaching the canary outside attachments. Compare contents, not just HTTP status. Exact marker F04-OUTSIDE distinguishes unauthorized reading from an error page.",
+          "figure": {
+            "src": "img/e04.png",
+            "caption": "E04. Synthetic evidence: The marker comes from a resource outside the authorized directory. This is not a screenshot of an executed test."
+          }
+        },
+        {
+          "lead": "Cover normalization and links.",
+          "text_md": "The scenario includes relative segments and a symbolic link inside attachments pointing to fixtures. A text-only prefix check does not prove containment. Validate the effective destination and prevent concurrent link changes during opening."
+        },
+        {
+          "lead": "Keep conclusions within scope.",
+          "text_md": "C:H reflects configuration-read access granted to the process in the model; I:N and A:N attribute no further capability. Real metrics must reflect files actually accessible. The canary proves a boundary crossing, not exposure of every disk."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Restrict the endpoint and review service read permissions. Replace exposed paths with internal identifiers. Keep a test canary separate from configuration and credentials for later verification.",
+        "medium_md": "Centralize attachment resolution and order-ownership policy. Test traversal, symbolic links, encoded names, nonexistent files and another tenant's attachments. Rejection errors must not reveal absolute paths.",
+        "long_md": "Include storage-isolation checks in framework updates and volume migrations. Verify unchanged legitimate downloads and ensure the service user cannot read other components' material."
+      },
+      "asset_uids": [
+        "7993cf01-787a-590b-833f-59bb95756739",
+        "9a4db157-7733-5b63-8337-4eddedc0bbd5"
+      ],
+      "evidence_uids": [
+        "d595880a-3c59-575c-bd60-2d0e0f95aa2c"
+      ],
+      "owner": "API team",
+      "due_date": "2026-10-09",
+      "status": "verified_fixed",
+      "retests": [
+        {
+          "uid": "005b6efe-e985-52af-a6db-974e30184944",
+          "result": "fixed",
+          "tested_on": "2026-09-30",
+          "assessor": "Fictional scenario assessor",
+          "notes_md": "Fictional retest RT04. The API accepts attachment IDs and authorizes order and organization before resolving the file. Outside canaries and the symbolic link are rejected. Legitimate attachment content and size are preserved. Finding closure is represented.",
+          "evidence_uids": [
+            "00c75341-d1a9-568d-bcfb-7d885227d4c8"
+          ]
+        }
+      ]
+    },
+    {
+      "uid": "6657a3dc-47b0-58c8-bf95-2ea6287f62ac",
+      "id": "F05",
+      "mode": "vuln",
+      "title": "SSRF in integration previews",
+      "severity": "high",
+      "cvss": "7.1",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-918",
+      "affected": "api.nimbus.example; files.nimbus.example",
+      "description_md": "The preview function requests a user-specified URL and returns its response. It allows method and body selection and follows redirects without enforcing a destination policy at each hop. The service reaches an internal interface that trusts the source network.",
+      "impact_md": "The scenario represents configuration reading and limited changes to a canary job in the internal document service. Cloud-provider metadata access, real credential retrieval and command execution are not modeled.",
+      "remediation_md": "Replace arbitrary URLs with predefined integrations. Restrict destinations, ports and methods; validate resolution and every redirect; enforce network egress controls. Require independent authentication and authorization on the internal interface.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/918.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Context and prerequisites.",
+          "text_md": "The integration account has low API privileges. The check uses a canary receiver and a fictional internal document service. Both destinations are known from the exercise inventory; no port scanning or unrelated address discovery occurs."
+        },
+        {
+          "lead": "Observe an authorized integration.",
+          "text_md": "Submit the canary receiver URL and compare its received correlation identifier with the API identifier. The scenario distinguishes a server connection from a browser request. The visible response must match the same identifier."
+        },
+        {
+          "lead": "Check an internal boundary.",
+          "text_md": "Ask preview to retrieve the internal canary resource. E05 represents the API returning configuration information reserved for the service network. Integrity impact is limited to reversibly changing the DEMO-JOB-05 job label.",
+          "figure": {
+            "src": "img/e05.png",
+            "caption": "E05. Synthetic evidence: Trust in the internal network expands the reach of controlled input. This is not a screenshot of an executed test."
+          }
+        },
+        {
+          "lead": "Evaluate redirects.",
+          "text_md": "The fictional retest blocks direct internal destinations but still follows redirects to the same destination. This difference keeps the finding open. Filtering the initial hostname does not protect later resolved and effective destinations."
+        },
+        {
+          "lead": "Avoid overstated conclusions.",
+          "text_md": "SSRF is not claimed to reach every network or take over a host. PR:L reflects the required account; C:H and I:L represent specific modeled document-service capabilities. Availability is neither tested nor scored."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Disable arbitrary destinations and restrict process egress. Protect the internal interface with service identity. Retain only required integrations with explicit method, path and response-format contracts.",
+        "medium_md": "Enforce policy on resolved destinations and every redirect hop. Test IPv4, IPv6, resolution changes and indirect routes using controlled receivers. Limit response times and sizes to prevent unbounded preview resource consumption.",
+        "long_md": "Close when direct and redirected access to out-of-policy resources both fail. Preserve a working legitimate integration and verify that the internal service rejects unidentified requests even from an allowed network."
+      },
+      "asset_uids": [
+        "7993cf01-787a-590b-833f-59bb95756739",
+        "9a4db157-7733-5b63-8337-4eddedc0bbd5"
+      ],
+      "evidence_uids": [
+        "1e1a4f84-5740-599f-bd56-41cd69f4d35a"
+      ],
+      "owner": "Platform team",
+      "due_date": "2026-10-09",
+      "status": "in_progress",
+      "retests": [
+        {
+          "uid": "09fe9744-c3bd-59d7-a15c-a9a5f8c3c75d",
+          "result": "partial",
+          "tested_on": "2026-09-30",
+          "assessor": "Fictional scenario assessor",
+          "notes_md": "Fictional retest RT05. The direct internal URL is rejected, but a redirect from the canary receiver still reaches the internal resource. The label change is not repeated: reading the marker sufficiently demonstrates that the boundary remains open. F05 stays under remediation.",
+          "evidence_uids": [
+            "111fd17c-4850-5f39-bf1c-0670a77d5d2f"
+          ]
+        }
+      ]
+    },
+    {
+      "uid": "75f54222-a209-576b-a0be-7a144240bc84",
+      "id": "F06",
+      "mode": "vuln",
+      "title": "Service credential published in a CI artifact",
+      "severity": "high",
+      "cvss": "8.1",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-798",
+      "affected": "ci.nimbus.example; api.nimbus.example",
+      "description_md": "A build diagnostic package includes a configuration file containing a reusable credential. Artifact readers can retrieve it. The service identity has read and modification permissions on the order API.",
+      "impact_md": "A CI user with read permissions can assume a more privileged identity. Canary order lookup and updates are modeled. The account does not administer the operating system or infrastructure-provider billing.",
+      "remediation_md": "Revoke and rotate the credential, remove the artifact and review historical access. Issue short-lived credentials through a secrets manager and restrict service permissions. Exclude secrets during packaging and detect regressions before publishing.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/798.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Context and prerequisites.",
+          "text_md": "Artifact build-demo-062 belongs to a fictional pipeline. SECRET-DEMO-NO-VALIDO is an editorial placeholder, not a functional credential. The capabilities of svc_order_sync belong to the scenario and explain the consequence of secret access."
+        },
+        {
+          "lead": "Separate read permission from operational privileges.",
+          "text_md": "The developer account can download artifacts but cannot administer orders. Record that distinction before using the service identity in the narrative. If both actors had identical privileges, the elevation conclusion would require different analysis."
+        },
+        {
+          "lead": "Locate the source of exposure.",
+          "text_md": "E06 identifies the configuration file included by an overly broad packaging rule. The defect concerns artifact contents and distribution, not the mere presence of an environment variable. A synthetic label replaces the secret in the report.",
+          "figure": {
+            "src": "img/e06.png",
+            "caption": "E06. Synthetic evidence: Artifact read access exposes an identity with greater permissions. This is not a screenshot of an executed test."
+          }
+        },
+        {
+          "lead": "Model a minimal check.",
+          "text_md": "The representation uses the service to read and modify one canary order note, without extracting a full catalog. The value is then restored. This illustrates permissions attributed to the example secret without claiming a real credential was used."
+        },
+        {
+          "lead": "Evaluate complete removal.",
+          "text_md": "Deleting the file from a later build does not invalidate downloaded copies or the previous token. Closure requires confirmed revocation, rotation, reduced permissions and review of cache or secondary-store retention."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Revoke the previous secret before treating the represented incident as resolved. Remove pipeline-controlled copies and record the artifact repositories and caches reviewed. Coordinate rotation to avoid unnecessary interruption.",
+        "medium_md": "Separate public configuration from runtime secrets. Restrict svc_order_sync to required operations and organizations. Block publication when content inspection finds secret formats or prohibited files, with reviewed and traceable exceptions.",
+        "long_md": "Closure requires the old secret to fail, the new artifact to exclude it and the restricted identity to preserve legitimate operation. Status remains under remediation: a conclusive rotation retest is not represented."
+      },
+      "asset_uids": [
+        "97681ba0-a07d-5c86-bc81-b2ab2426e2d4",
+        "7993cf01-787a-590b-833f-59bb95756739"
+      ],
+      "evidence_uids": [
+        "42642fb9-36d3-556b-a575-90ac1bc0b1e2"
+      ],
+      "owner": "DevOps team",
+      "due_date": "2026-10-05",
+      "status": "in_progress",
+      "retests": []
+    },
+    {
+      "uid": "ace05d7d-745c-58d1-b909-5ac8f2c6c8e6",
+      "id": "F07",
+      "mode": "vuln",
+      "title": "Domain replication rights assigned to an operational account",
+      "severity": "high",
+      "cvss": "8.8",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "cvss_version": "3.1",
+      "cwe": "CWE-269",
+      "affected": "dc01.ad.nimbus.example",
+      "description_md": "Operational account svc_inventory holds Get-Changes and Get-Changes-All replication rights on the domain naming context. This delegation exceeds its inventory function and allows requests for sensitive domain data through replication.",
+      "impact_md": "The scenario provides a route to authentication secrets and broad domain compromise. The educational check is limited to a canary identity. High integrity and availability metrics reflect potential domain-control impact; they do not represent deletion, shutdown or bulk extraction.",
+      "remediation_md": "Remove unnecessary delegation, review inherited permissions and granting groups, and separate inventory from replication functions. Investigate identity activity and plan secret rotation according to the scope actually established.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/269.html",
+        "https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-all"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Context and prerequisites.",
+          "text_md": "DC01 and domain ad.nimbus.example are fictional. The model supplies a valid operational account and domain-controller connectivity. No real hashes, passwords or authentication material are included; the canary identity illustrates confirmation criteria."
+        },
+        {
+          "lead": "Review effective permissions.",
+          "text_md": "Check explicit entries, transitive group membership and inheritance. E07 represents the combination of both rights at the domain root. A similarly named permission on another organizational unit would not prove the same scope."
+        },
+        {
+          "lead": "Distinguish configuration from confirmation.",
+          "text_md": "ACL review establishes a risk condition. The narrative adds a replication request limited to demo-repl-canary to illustrate capability confirmation. Shown output is synthetic; no secret extraction occurred while creating this report.",
+          "figure": {
+            "src": "img/e07.png",
+            "caption": "E07. Synthetic evidence: An inventory identity receives replication capabilities it does not need. This is not a screenshot of an executed test."
+          }
+        },
+        {
+          "lead": "Bound the impact chain.",
+          "text_md": "Domain compromise is a modeled consequence of authentication-secret exposure, not an additional executed step. Persistence, policy modification and destructive operations are excluded. A real team would determine scope using its telemetry and response procedures."
+        },
+        {
+          "lead": "Justify priority.",
+          "text_md": "The Base score is high with PR:L because a domain identity is required. Business priority is P0 due to domain-wide reach. Recording CVSS and operational priority separately avoids artificially inflating the vector."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Suspend or restrict the exposed identity and remove unjustified rights after checking legitimate dependencies. Preserve relevant authentication and replication logs. Rotation alone does not repair an unchanged delegation.",
+        "medium_md": "Inventory principals with replication rights and document authorized exceptions. Review object-access events and replication requests from non-controller hosts according to enabled auditing and available telemetry.",
+        "long_md": "Using the same identity, verify denial of the canary request while legitimate controller-to-controller replication continues. Proven real secret exposure would require an additional domain recovery procedure; this fictional case does not claim to have performed one."
+      },
+      "asset_uids": [
+        "47b6a54c-4280-59e1-874e-c19578b1a627"
+      ],
+      "evidence_uids": [
+        "6622fc6c-e102-5b8d-aeaa-63bffea4ff5a"
+      ],
+      "owner": "Identity team",
+      "due_date": "2026-10-03",
+      "status": "in_progress",
+      "retests": []
+    },
+    {
+      "uid": "82e71acc-cd39-5e99-a7ec-5aa957a373fd",
+      "id": "F08",
+      "mode": "vuln",
+      "title": "Membership delegation over a server administrator group",
+      "severity": "high",
+      "cvss": "8.8",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "cvss_version": "3.1",
+      "cwe": "CWE-269",
+      "affected": "dc01.ad.nimbus.example; winapp01.ad.nimbus.example",
+      "description_md": "Helpdesk-L1 can change APP-Server-Admins membership. Domain policy makes that group a local administrator on WINAPP01. The delegation lets a support account elevate to application-server administration.",
+      "impact_md": "The model allows administrative access to the application host, its data and services. Local administration is not automatically equated with domain control. The canary check only confirms effective permissions and a harmless administrative operation.",
+      "remediation_md": "Remove membership-write permission and review the complete group and policy path. Separate support management from server administration; use approved temporary grants where operations require them.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/269.html",
+        "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/best-practices-for-securing-active-directory"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Context and prerequisites.",
+          "text_md": "Account helpdesk.demo starts with limited support functions. APP-Server-Admins administers only WINAPP01 in this model. A canary identity and a fresh session reflect token changes correctly and avoid attributing privileges from earlier sessions."
+        },
+        {
+          "lead": "Reconstruct the privilege path.",
+          "text_md": "E08 shows three distinct relationships: permission over member, group membership and local administrator assignment. None follows solely from a group name. Applied server policy confirms the final link."
+        },
+        {
+          "lead": "Represent a reversible change.",
+          "text_md": "The narrative adds demo-helpdesk-canary to the group and opens a fresh WINAPP01 session. Reading a restricted canary resource checks administrative capability without installing services or executing payloads. The change is reversed afterward.",
+          "figure": {
+            "src": "img/e08.png",
+            "caption": "E08. Synthetic evidence: The delegation path ends in local administration, not proven domain control. This is not a screenshot of an executed test."
+          }
+        },
+        {
+          "lead": "Review inheritance and persistence of permission.",
+          "text_md": "Determine whether the entry comes from the object, an organizational unit or an intermediate group. Removing canary membership does not prevent adding it again. Closure must repair delegation and review changes during exposure."
+        },
+        {
+          "lead": "Distinguish reported and verified correction.",
+          "text_md": "Current sample status is Reported fixed: the fictional team reports a new policy but no retest is represented yet. A deployment notice is not closure evidence, and original severity remains unchanged."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Remove excessive delegation and review recent administrator-group members. Ensure a configuration template or policy does not reapply it. Document support tasks requiring a legitimate alternative.",
+        "medium_md": "Separate support groups, administrative accounts and server scopes. Check that helpdesk.demo can neither add nor remove members. Verify effective permissions rather than comparing desired configuration alone.",
+        "long_md": "Close when a retest rejects membership changes and a fresh session lacks local administration while authorized support work remains possible. A deployment report is insufficient; status remains unverified until evidence exists."
+      },
+      "asset_uids": [
+        "47b6a54c-4280-59e1-874e-c19578b1a627",
+        "d9a8ef3e-7b86-5b25-ab7c-9ff47c427c48"
+      ],
+      "evidence_uids": [
+        "8a8883a0-b45d-5168-ae73-9a07ecbd3782"
+      ],
+      "owner": "Infrastructure team",
+      "due_date": "2026-10-09",
+      "status": "reported_fixed",
+      "retests": []
+    },
+    {
+      "uid": "1d016fca-00fb-5170-a71c-9104d81f64cf",
+      "id": "F09",
+      "mode": "vuln",
+      "title": "Stored XSS in support portal comments",
+      "severity": "medium",
+      "cvss": "5.4",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:C/C:L/I:L/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-79",
+      "affected": "portal.nimbus.example",
+      "description_md": "Comments retain HTML fragments inserted into the support agent's browser without adequate sanitization. A customer account can store active content that is processed when an agent opens the ticket.",
+      "impact_md": "The demonstration changes a visible marker and accesses limited information on the open page. Cookie theft, full agent-account access and third-party exfiltration are not represented. Impact requires an agent to view the comment.",
+      "remediation_md": "Render text with safe APIs and contextual encoding. If rich HTML is required, use a maintained sanitizer with a narrow policy. Review existing stored content and apply CSP as supplementary defense, not the primary correction.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/79.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Context and prerequisites.",
+          "text_md": "Account cliente.demo creates a ticket and agente.demo views it in a separate session. The demonstration marker changes only a page element. It makes no external connections and attempts no persistence outside the fictional comment."
+        },
+        {
+          "lead": "Confirm content persistence.",
+          "text_md": "Save an ordinary text comment and reopen it with the second identity. The narrative establishes that content comes from storage, not URL parameters or browser tools operated by the agent."
+        },
+        {
+          "lead": "Distinguish HTML from execution.",
+          "text_md": "E09 represents marker XSS-DEMO-ACTIVO in the agent session's DOM. Displaying an HTML tag alone does not prove script execution; the visible marker change is the chosen scenario observation establishing that distinction.",
+          "figure": {
+            "src": "img/e09.png",
+            "caption": "E09. Synthetic evidence: Stored content crosses into the agent browser's execution context. This is not a screenshot of an executed test."
+          }
+        },
+        {
+          "lead": "Bound context and capabilities.",
+          "text_md": "The comment runs in the portal origin. Reading HttpOnly cookies or bypassing server authorization is not claimed. Available data and actions would remain constrained by the session and specific browser defenses."
+        },
+        {
+          "lead": "Explain interaction and scope.",
+          "text_md": "UI:R reflects the victim opening the ticket; PR:L reflects the account needed to comment. S:C represents crossing from the vulnerable application to the agent browser's security context. C:L and I:L match the limited modeled capabilities."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Temporarily disable comment HTML and neutralize stored entries violating policy. Preserve useful ticket text and document transformations to avoid unnecessary information loss.",
+        "medium_md": "Review comment rendering in detail pages, search, notifications and previews. Test disallowed attributes, URLs and rich-format elements. Apply controls to every consumer of the same content.",
+        "long_md": "Close when comments appear as text or allowed HTML and the marker activates in no view. Retain a legitimate formatted comment as a positive control. No conclusive retest of this correction is represented yet."
+      },
+      "asset_uids": [
+        "a56b6769-1b56-53fb-bc31-98623f580a97"
+      ],
+      "evidence_uids": [
+        "f862f5a3-88a0-5ffa-96d1-75ac8634236d"
+      ],
+      "owner": "Application team",
+      "due_date": "2026-10-23",
+      "status": "in_progress",
+      "retests": []
+    },
+    {
+      "uid": "ebf9e7f3-805c-5c10-bbcb-0373ad2caa8b",
+      "id": "F10",
+      "mode": "vuln",
+      "title": "Credentialed CORS for unauthorized origins",
+      "severity": "medium",
+      "cvss": "6.5",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-942",
+      "affected": "api.nimbus.example; auth.nimbus.example",
+      "description_md": "The API reflects Origin and permits credentials without an authorized-origin list. The scenario session uses SameSite=None; Secure cookies. A browser that permits those cross-site cookies can expose authenticated responses to an unrelated origin.",
+      "impact_md": "The model represents reading order data from an external page visited by an authenticated user. A CORS header alone is not claimed to prove exploitability, nor are all browsers assumed to allow third-party cookies.",
+      "remediation_md": "Define an exact origin allowlist per environment and do not reflect untrusted values. Permit credentials only where needed and check cookie and cache policy. Subdomain wildcards do not replace a list of authorized applications.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/942.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Context and prerequisites.",
+          "text_md": "Receiver origin receptor.canario.nimbus.example contains only demonstration data. The scenario browser permits the cross-site cookie. This condition is explicit because blocking third-party cookies can interrupt the chain even with an incorrect server policy."
+        },
+        {
+          "lead": "Verify server configuration.",
+          "text_md": "Compare requests from the legitimate origin and the canary receiver. E10 shows both accepted with credentials. A wildcard combined with credentials is not used as proof: browsers do not accept it as authorization to read authenticated responses."
+        },
+        {
+          "lead": "Represent the browser check.",
+          "text_md": "The canary page requests the resource with credentials and reads its response body. JavaScript access is the relevant condition; HTTP 200 obtained by an HTTP tool alone would not prove a browser-policy violation.",
+          "figure": {
+            "src": "img/e10.png",
+            "caption": "E10. Synthetic evidence: Authenticated reading also depends on the browser conditions being satisfied. This is not a screenshot of an executed test."
+          }
+        },
+        {
+          "lead": "Maintain a condition matrix.",
+          "text_md": "The narrative distinguishes present or absent sessions and allowed or blocked cookies. Only a valid session, transmitted cookies and permissive CORS together represent authenticated reading. The configuration is not generalized to all users."
+        },
+        {
+          "lead": "Define assessment scope.",
+          "text_md": "PR:N describes the actor controlling the receiver origin; UI:R reflects the victim visiting it. C:H corresponds to the modeled order API. No state changes or interruption are represented, so I and A remain N."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Remove unauthorized origins and verify legitimate clients still work. Review cache headers so a response authorized for one origin is not incorrectly reused for another.",
+        "medium_md": "Centralize CORS policy per environment. Test the exact allowed origin, an unrelated origin, null and subdomains that are not clients. Review cookies and endpoint authorization without treating CORS as an authentication substitute.",
+        "long_md": "Close with a browser check: the legitimate client can read the response, while the canary receiver cannot. Requests without a session must remain rejected. The included fictional retest represents these positive and negative controls."
+      },
+      "asset_uids": [
+        "7993cf01-787a-590b-833f-59bb95756739",
+        "3855f32e-8146-5d1b-b417-9eccc2e47140"
+      ],
+      "evidence_uids": [
+        "55696336-aadc-5bdd-ad40-34100602c432"
+      ],
+      "owner": "API team",
+      "due_date": "2026-10-23",
+      "status": "verified_fixed",
+      "retests": [
+        {
+          "uid": "24dd4938-9e5d-574d-9b78-9f6c9a469733",
+          "result": "fixed",
+          "tested_on": "2026-09-30",
+          "assessor": "Fictional scenario assessor",
+          "notes_md": "Fictional retest RT10. The legitimate origin retains authenticated reading. The canary receiver and Origin:null receive no CORS authorization; JavaScript cannot access the body. Requests without a session are still rejected. The example represents verified correction, not merely changed headers.",
+          "evidence_uids": [
+            "0cce3187-5d6a-5937-a05e-82017fcfa340"
+          ]
+        }
+      ]
+    },
+    {
+      "uid": "09cbd4dd-08b4-54d8-b448-94ce739ac6fe",
+      "id": "F11",
+      "mode": "vuln",
+      "title": "Session remains reusable after logout",
+      "severity": "medium",
+      "cvss": "5.4",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-613",
+      "affected": "auth.nimbus.example; portal.nimbus.example",
+      "description_md": "Logout removes the browser cookie, but the server keeps the previous session valid until expiry. The same session credential can read and update account preferences after logout.",
+      "impact_md": "An actor already holding that session retains limited profile and preference access. The finding does not provide a token-theft method or access to other accounts. Remaining session lifetime determines the exposure window.",
+      "remediation_md": "Revoke sessions server-side at logout and after sensitive account changes. Define refresh-token invalidation and multiple-session exceptions. Client-side cookie deletion does not prove server-side revocation.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/613.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Context and prerequisites.",
+          "text_md": "A synthetic copy of usuario.a's session is retained before browser logout. Only that identity and a preferences endpoint are checked. Nonfunctional labels replace session strings."
+        },
+        {
+          "lead": "Confirm the initial session.",
+          "text_md": "Request the profile using SESSION-DEMO-A and verify the subject identifier. Record scenario logical time and expected expiry. This distinguishes reuse of the same token from new automatic authentication."
+        },
+        {
+          "lead": "Log out and reuse the same credential.",
+          "text_md": "E11 represents cookie deletion followed by a fresh request using the previous value. The server returns the profile. A browser-cached page would be insufficient; the selected evidence is a fresh authenticated response with its request identifier.",
+          "figure": {
+            "src": "img/e11.png",
+            "caption": "E11. Synthetic evidence: The server still accepts the previous session after the browser deletes its cookie. This is not a screenshot of an executed test."
+          }
+        },
+        {
+          "lead": "Check a limited operation.",
+          "text_md": "Change a canary preference, verify it through a fresh legitimate session and restore it. The operation affects neither credentials, orders nor other people's permissions. Its limited scope explains C:L and I:L."
+        },
+        {
+          "lead": "Separate initial access from persistence.",
+          "text_md": "PR:L requires possession of the user's valid session. This finding describes persistence after logout, not cookie theft, phishing or password bypass. Its example status remains open."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Document and apply central revocation of affected sessions. Review token lifetimes and clients maintaining multiple sessions. A shorter expiry reduces exposure but does not by itself implement logout semantics.",
+        "medium_md": "Add checks for logout, password change, account recovery and administrative revocation. Check access and refresh tokens. The design must state whether an action revokes one session or every session belonging to the user.",
+        "long_md": "Closure requires the old token to fail on a fresh request, prohibit preference updates and preserve legitimate fresh sessions. No retest is included for this case; correction remains pending within the scenario."
+      },
+      "asset_uids": [
+        "3855f32e-8146-5d1b-b417-9eccc2e47140",
+        "a56b6769-1b56-53fb-bc31-98623f580a97"
+      ],
+      "evidence_uids": [
+        "3f0cac57-5e0c-5831-a174-a9d167fe03ed"
+      ],
+      "owner": "Identity team",
+      "due_date": "2026-10-23",
+      "status": "open",
+      "retests": []
+    },
+    {
+      "uid": "9d7fecc2-0be2-523b-b910-79859de46e97",
+      "id": "F12",
+      "mode": "vuln",
+      "title": "Internal diagnostics exposed in the support panel",
+      "severity": "low",
+      "cvss": "2.7",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-209",
+      "affected": "portal.nimbus.example; db.nimbus.example",
+      "description_md": "An error in the restricted support panel returns a stack trace, internal database name and deployment paths. Role soporte-admin needs application operational functions but not this internal service information.",
+      "impact_md": "Limited disclosure of internal structure and names to a highly privileged application account is modeled. The response contains no passwords, tokens or customer data. Knowing a version or path is not claimed to demonstrate another vulnerability.",
+      "remediation_md": "Return a generic error with a correlation identifier and keep diagnostics in restricted logs. Disable debug mode in public deployments and sanitize fields that may include secrets or personal data.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/209.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Context and prerequisites.",
+          "text_md": "The flaw occurs in an administrative support-panel view. An ordinary account cannot reach the endpoint. This condition prevents presenting it as unauthenticated public disclosure."
+        },
+        {
+          "lead": "Verify the privilege requirement.",
+          "text_md": "Compare ordinary-account and soporte-admin responses. The ordinary account receives an authorization denial. PR:H records the required application administrative role before vulnerable behavior is reachable."
+        },
+        {
+          "lead": "Identify additional information.",
+          "text_md": "E12 shows exception type, a database name and an application path as synthetic values. Unlike a correlation ID, these reveal internal structure the client does not need to complete the operation.",
+          "figure": {
+            "src": "img/e12.png",
+            "caption": "E12. Synthetic evidence: Disclosure is limited and requires a privileged role; no additional consequences are claimed. This is not a screenshot of an executed test."
+          }
+        },
+        {
+          "lead": "Avoid unsupported exploit chains.",
+          "text_md": "A database engine name or version is not treated as proof of an applicable CVE. Access to the named file is not claimed. Disclosure is assessed independently with C:L and no direct integrity or availability impact."
+        },
+        {
+          "lead": "Define a verifiable correction.",
+          "text_md": "The public response must keep an identifier usable by support while the trace remains in an authorized channel. Checks must confirm both absence of internal details and legitimate error correlation."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Stop returning stack traces to clients and retain a correlation identifier. Review internal logs for sensitive parameters and restrict who can read them.",
+        "medium_md": "Unify API and panel error handling. Test validation failures, dependency failures and unexpected exceptions. Preserve consistent codes and messages without revealing paths, queries or configuration details.",
+        "long_md": "Close when diagnostics are available only through the authorized channel and support can correlate the incident using DEMO-ERR-1201 as a test pattern. The example leaves this finding open at lower priority than routes to data and privileges."
+      },
+      "asset_uids": [
+        "a56b6769-1b56-53fb-bc31-98623f580a97",
+        "c4a6a297-d869-5139-b533-c8df924abe9c"
+      ],
+      "evidence_uids": [
+        "8f04ba1b-e957-5abf-87c8-b60d01f15bb4"
+      ],
+      "owner": "Application team",
+      "due_date": "2026-11-02",
+      "status": "open",
+      "retests": []
+    }
+  ],
+  "assets": [
+    {
+      "uid": "a56b6769-1b56-53fb-bc31-98623f580a97",
+      "name": "PORTAL",
+      "target": "portal.nimbus.example",
+      "kind": "Web",
+      "notes": "Orders and support; two canary organizations."
+    },
+    {
+      "uid": "7993cf01-787a-590b-833f-59bb95756739",
+      "name": "API01",
+      "target": "api.nimbus.example",
+      "kind": "API",
+      "notes": "Orders, attachments and integrations; authenticated access."
+    },
+    {
+      "uid": "3855f32e-8146-5d1b-b417-9eccc2e47140",
+      "name": "AUTH01",
+      "target": "auth.nimbus.example",
+      "kind": "Identity",
+      "notes": "Account recovery, sessions and cookies."
+    },
+    {
+      "uid": "c4a6a297-d869-5139-b533-c8df924abe9c",
+      "name": "DB01",
+      "target": "db.nimbus.example",
+      "kind": "Database",
+      "notes": "Synthetic copy; permissions and canary data."
+    },
+    {
+      "uid": "9a4db157-7733-5b63-8337-4eddedc0bbd5",
+      "name": "FILES01",
+      "target": "files.nimbus.example",
+      "kind": "Files",
+      "notes": "Attachments and internal document service."
+    },
+    {
+      "uid": "97681ba0-a07d-5c86-bc81-b2ab2426e2d4",
+      "name": "CI01",
+      "target": "ci.nimbus.example",
+      "kind": "Development",
+      "notes": "Artifacts and fictional service credentials."
+    },
+    {
+      "uid": "47b6a54c-4280-59e1-874e-c19578b1a627",
+      "name": "DC01",
+      "target": "dc01.ad.nimbus.example",
+      "kind": "Active Directory",
+      "notes": "Delegations and groups in the fictional domain."
+    },
+    {
+      "uid": "d9a8ef3e-7b86-5b25-ab7c-9ff47c427c48",
+      "name": "WINAPP01",
+      "target": "winapp01.ad.nimbus.example",
+      "kind": "Server",
+      "notes": "Local administration through a domain group."
+    }
+  ],
+  "evidence": [
+    {
+      "uid": "e6a75b09-e809-57a4-ab11-c73913ec520f",
+      "title": "E01 | Condition change and canary record",
+      "src": "img/e01.png",
+      "caption": "E01. Synthetic evidence: The condition controls the query; the check is limited to canary data. This is not a screenshot of an executed test."
+    },
+    {
+      "uid": "10ba7b94-cad6-5ccc-adc8-86b2a06c298c",
+      "title": "RT01 | Fictional retest",
+      "src": "img/rt01.png",
+      "caption": "RT01. Synthetic retest evidence; no execution against real systems."
+    },
+    {
+      "uid": "80147432-b232-5313-a68c-abd091976852",
+      "title": "E02 | Valid token, wrong identity",
+      "src": "img/e02.png",
+      "caption": "E02. Synthetic evidence: The server accepts a client-selected identity different from the token subject. This is not a screenshot of an executed test."
+    },
+    {
+      "uid": "fa3f37c7-3b45-5d65-82ff-57eeec78fae7",
+      "title": "RT02 | Fictional retest",
+      "src": "img/rt02.png",
+      "caption": "RT02. Synthetic retest evidence; no execution against real systems."
+    },
+    {
+      "uid": "6fa1123a-d031-5e56-9138-2b62cd11ac0b",
+      "title": "E03 | Cross-organization authorization matrix",
+      "src": "img/e03.png",
+      "caption": "E03. Synthetic evidence: The identity is authenticated but is not authorized for this object. This is not a screenshot of an executed test."
+    },
+    {
+      "uid": "ea51aaf3-9470-510f-8357-db6babb39175",
+      "title": "RT03 | Fictional retest",
+      "src": "img/rt03.png",
+      "caption": "RT03. Synthetic retest evidence; no execution against real systems."
+    },
+    {
+      "uid": "d595880a-3c59-575c-bd60-2d0e0f95aa2c",
+      "title": "E04 | Download directory containment check",
+      "src": "img/e04.png",
+      "caption": "E04. Synthetic evidence: The marker comes from a resource outside the authorized directory. This is not a screenshot of an executed test."
+    },
+    {
+      "uid": "00c75341-d1a9-568d-bcfb-7d885227d4c8",
+      "title": "RT04 | Fictional retest",
+      "src": "img/rt04.png",
+      "caption": "RT04. Synthetic retest evidence; no execution against real systems."
+    },
+    {
+      "uid": "1e1a4f84-5740-599f-bd56-41cd69f4d35a",
+      "title": "E05 | Initial and effective destination",
+      "src": "img/e05.png",
+      "caption": "E05. Synthetic evidence: Trust in the internal network expands the reach of controlled input. This is not a screenshot of an executed test."
+    },
+    {
+      "uid": "111fd17c-4850-5f39-bf1c-0670a77d5d2f",
+      "title": "RT05 | Fictional retest",
+      "src": "img/rt05.png",
+      "caption": "RT05. Synthetic retest evidence; no execution against real systems."
+    },
+    {
+      "uid": "42642fb9-36d3-556b-a575-90ac1bc0b1e2",
+      "title": "E06 | Build artifact and privileges",
+      "src": "img/e06.png",
+      "caption": "E06. Synthetic evidence: Artifact read access exposes an identity with greater permissions. This is not a screenshot of an executed test."
+    },
+    {
+      "uid": "6622fc6c-e102-5b8d-aeaa-63bffea4ff5a",
+      "title": "E07 | Replication delegation and scope",
+      "src": "img/e07.png",
+      "caption": "E07. Synthetic evidence: An inventory identity receives replication capabilities it does not need. This is not a screenshot of an executed test."
+    },
+    {
+      "uid": "8a8883a0-b45d-5168-ae73-9a07ecbd3782",
+      "title": "E08 | Server administration path",
+      "src": "img/e08.png",
+      "caption": "E08. Synthetic evidence: The delegation path ends in local administration, not proven domain control. This is not a screenshot of an executed test."
+    },
+    {
+      "uid": "f862f5a3-88a0-5ffa-96d1-75ac8634236d",
+      "title": "E09 | Persistent comment and browser context",
+      "src": "img/e09.png",
+      "caption": "E09. Synthetic evidence: Stored content crosses into the agent browser's execution context. This is not a screenshot of an executed test."
+    },
+    {
+      "uid": "55696336-aadc-5bdd-ad40-34100602c432",
+      "title": "E10 | CORS policy and cross-origin reading",
+      "src": "img/e10.png",
+      "caption": "E10. Synthetic evidence: Authenticated reading also depends on the browser conditions being satisfied. This is not a screenshot of an executed test."
+    },
+    {
+      "uid": "0cce3187-5d6a-5937-a05e-82017fcfa340",
+      "title": "RT10 | Fictional retest",
+      "src": "img/rt10.png",
+      "caption": "RT10. Synthetic retest evidence; no execution against real systems."
+    },
+    {
+      "uid": "3f0cac57-5e0c-5831-a174-a9d167fe03ed",
+      "title": "E11 | Session before and after logout",
+      "src": "img/e11.png",
+      "caption": "E11. Synthetic evidence: The server still accepts the previous session after the browser deletes its cookie. This is not a screenshot of an executed test."
+    },
+    {
+      "uid": "8f04ba1b-e957-5abf-87c8-b60d01f15bb4",
+      "title": "E12 | Error response and information boundary",
+      "src": "img/e12.png",
+      "caption": "E12. Synthetic evidence: Disclosure is limited and requires a privileged role; no additional consequences are claimed. This is not a screenshot of an executed test."
+    }
+  ],
+  "coverage": [
+    {
+      "uid": "a07df0a2-2e24-5516-b37a-087eede6e4cc",
+      "asset_uid": "a56b6769-1b56-53fb-bc31-98623f580a97",
+      "test": "Search and data access",
+      "status": "done",
+      "notes": "Represented scenario: F01; legitimate control and Boolean inputs."
+    },
+    {
+      "uid": "0eb6e143-2978-51ce-8101-46a2132406b3",
+      "asset_uid": "3855f32e-8146-5d1b-b417-9eccc2e47140",
+      "test": "Password recovery",
+      "status": "done",
+      "notes": "Represented scenario: F02; two identities and single use."
+    },
+    {
+      "uid": "b8b56d65-4c57-58f6-9240-02d505aba08c",
+      "asset_uid": "7993cf01-787a-590b-833f-59bb95756739",
+      "test": "Object authorization",
+      "status": "done",
+      "notes": "Represented scenario: F03; cross-organization reads and writes."
+    },
+    {
+      "uid": "b956297c-8ca5-52bf-ae90-c01325c20cfe",
+      "asset_uid": "9a4db157-7733-5b63-8337-4eddedc0bbd5",
+      "test": "Attachment isolation",
+      "status": "done",
+      "notes": "Represented scenario: F04; canary path and symbolic link."
+    },
+    {
+      "uid": "a18ac98e-db54-5b38-bfd4-3087d7fe3a1e",
+      "asset_uid": "7993cf01-787a-590b-833f-59bb95756739",
+      "test": "Integration destinations",
+      "status": "done",
+      "notes": "Represented scenario: F05; direct access and redirect."
+    },
+    {
+      "uid": "09dab28d-f07c-549a-8db8-71eff4f3054f",
+      "asset_uid": "97681ba0-a07d-5c86-bc81-b2ab2426e2d4",
+      "test": "Artifact contents",
+      "status": "done",
+      "notes": "Represented scenario: F06; excessive service-identity permissions."
+    },
+    {
+      "uid": "8f214cb6-c9c8-558d-b25d-bdbdab6ce221",
+      "asset_uid": "47b6a54c-4280-59e1-874e-c19578b1a627",
+      "test": "Replication delegations",
+      "status": "done",
+      "notes": "Represented scenario: F07; ACL and effective principal."
+    },
+    {
+      "uid": "d19fe872-98e2-5f83-b167-eb5fd9782455",
+      "asset_uid": "47b6a54c-4280-59e1-874e-c19578b1a627",
+      "test": "Group membership",
+      "status": "done",
+      "notes": "Represented scenario: F08; path to local administration."
+    },
+    {
+      "uid": "e2a61d74-b8f3-5ccd-b899-61de2b2a8ebb",
+      "asset_uid": "d9a8ef3e-7b86-5b25-ab7c-9ff47c427c48",
+      "test": "Local policy enforcement",
+      "status": "done",
+      "notes": "Represented scenario: F08; fresh session and canary identity."
+    },
+    {
+      "uid": "1753f63e-f0f3-5790-8d24-a577cc46580e",
+      "asset_uid": "a56b6769-1b56-53fb-bc31-98623f580a97",
+      "test": "Rich-text comments",
+      "status": "done",
+      "notes": "Represented scenario: F09; persistence and agent view."
+    },
+    {
+      "uid": "556e73d2-b516-5331-83e5-f3725663b73c",
+      "asset_uid": "7993cf01-787a-590b-833f-59bb95756739",
+      "test": "Credentialed CORS",
+      "status": "done",
+      "notes": "Represented scenario: F10; reading through a canary browser."
+    },
+    {
+      "uid": "1eb26c4f-305f-5240-adb8-be0e0eaa1efb",
+      "asset_uid": "3855f32e-8146-5d1b-b417-9eccc2e47140",
+      "test": "Session revocation",
+      "status": "done",
+      "notes": "Represented scenario: F11; fresh request after logout."
+    },
+    {
+      "uid": "61c1a236-2162-54f9-9c57-82174acda6b6",
+      "asset_uid": "a56b6769-1b56-53fb-bc31-98623f580a97",
+      "test": "Error handling",
+      "status": "done",
+      "notes": "Represented scenario: F12; ordinary account versus soporte-admin."
+    },
+    {
+      "uid": "4bcee216-ce56-545e-a917-72ac59b95342",
+      "asset_uid": "7993cf01-787a-590b-833f-59bb95756739",
+      "test": "Positive authorization control",
+      "status": "done",
+      "notes": "Represented control without a finding: anonymous user receives 401 on profile."
+    },
+    {
+      "uid": "2c968980-dff1-5b1e-bf55-a6dafe33797e",
+      "asset_uid": "a56b6769-1b56-53fb-bc31-98623f580a97",
+      "test": "Administrative role separation",
+      "status": "done",
+      "notes": "Represented control without a finding: ordinary account cannot open the restricted panel."
+    },
+    {
+      "uid": "68d9ad53-e887-53fe-ac29-bd3e202990be",
+      "asset_uid": "c4a6a297-d869-5139-b533-c8df924abe9c",
+      "test": "Destructive operations",
+      "status": "not_applicable",
+      "notes": "Excluded from the narrative. No deletion or disruption is represented."
+    },
+    {
+      "uid": "98bbe2b2-a090-5e23-84de-d6ca35992c15",
+      "asset_uid": "97681ba0-a07d-5c86-bc81-b2ab2426e2d4",
+      "test": "Secrets in historical versions",
+      "status": "blocked",
+      "notes": "Pending within the scenario because artifact retention is incomplete."
+    },
+    {
+      "uid": "f93417ae-58cd-5928-a2f6-2a959bbda820",
+      "asset_uid": "47b6a54c-4280-59e1-874e-c19578b1a627",
+      "test": "Domain compromise response",
+      "status": "not_applicable",
+      "notes": "The document does not represent actual Active Directory recovery."
+    },
+    {
+      "uid": "55359781-ce9a-5d2c-aa3a-dca7123a2f5a",
+      "asset_uid": "d9a8ef3e-7b86-5b25-ab7c-9ff47c427c48",
+      "test": "Server persistence",
+      "status": "not_applicable",
+      "notes": "Outside the educational scope; no component is installed."
+    },
+    {
+      "uid": "b89f1f25-bd98-5901-953a-59c492ca8941",
+      "asset_uid": "3855f32e-8146-5d1b-b417-9eccc2e47140",
+      "test": "Browser and cookie variants",
+      "status": "blocked",
+      "notes": "The CORS scenario represents one configuration, not universal coverage."
+    },
+    {
+      "uid": "00332d0a-bedd-5133-9cad-eb58e57f3061",
+      "asset_uid": "7993cf01-787a-590b-833f-59bb95756739",
+      "test": "Load and availability",
+      "status": "not_applicable",
+      "notes": "Stress testing and resource exhaustion are excluded."
+    },
+    {
+      "uid": "6e537965-dede-5c52-88b6-bdaad79d98bd",
+      "asset_uid": "9a4db157-7733-5b63-8337-4eddedc0bbd5",
+      "test": "External copy retention",
+      "status": "pending",
+      "notes": "The scenario does not include a complete copy and backup inventory."
+    }
+  ],
+  "limitations_md": "**This matrix describes the fictional narrative.** The automatic “Done” label means that a check is documented within the scenario, not that it was executed against a system. Blocked and pending rows show how to record limits without turning them into favorable results.\n\nNimbus infrastructure was not deployed, requests were not sent to the described targets, and exploitation tools were not run while preparing this example. Actual execution is limited to report-gen and validation of the produced files.\n\nCoverage of mobile applications, payment providers, public cloud, phishing, physical security, denial of service, persistence and comprehensive code review is not represented. Positive table controls apply only to the stated routes. They are not an overall security certification."
+}

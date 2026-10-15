@@ -405,17 +405,19 @@ def _pdf_hyphen_donor(page, reader):
     def resolved(value):
         return value.get_object() if hasattr(value, 'get_object') else value
 
-    def codespace(stream):
+    def codespace(stream, width):
         data = re.sub(rb'%[^\r\n]*', b'', stream.get_data())
         if '/UseCMap' in stream or re.search(rb'\busecmap\b', data):
             raise ValueError(backend_message('No se puede corroborar el CMap heredado',
                                              en='Inherited CMap is not corroborated'))
         blocks = re.findall(rb'\b(\d+)\s+begincodespacerange\s*(.*?)\s*endcodespacerange\b', data, re.S)
-        pair = (re.fullmatch(rb'\s*<([\da-fA-F]{4})>\s*<([\da-fA-F]{4})>\s*', blocks[0][1])
+        digits = str(width * 2).encode('ascii')
+        pair = (re.fullmatch(rb'\s*<([\da-fA-F]{' + digits + rb'})>\s*<([\da-fA-F]{' + digits + rb'})>\s*', blocks[0][1])
                 if len(blocks) == 1 and int(blocks[0][0]) == 1 else None)
         if pair is None:
-            raise ValueError(backend_message('El CMap no usa códigos fijos de dos bytes',
-                                             en='CMap is not fixed two-byte'))
+            raise ValueError(backend_message('El CMap no usa códigos fijos de {width} bytes',
+                                             en='CMap does not use fixed {width}-byte codes',
+                                             pt='O CMap não usa códigos fixos de {width} bytes', width=width))
         lo, hi = (int(value, 16) for value in pair.groups())
         if lo > hi:
             raise ValueError(backend_message('Intervalo de códigos inválido', en='Invalid codespace'))
@@ -425,13 +427,23 @@ def _pdf_hyphen_donor(page, reader):
     xobjects = resolved(resources.get('/XObject', {}))
     mappings = {}
     fonts = {}
+    widths = {}
     for name, ref in resolved(resources.get('/Font', {})).items():
         font = resolved(ref)
-        if font.get('/Subtype') != '/Type0':
-            raise ValueError(backend_message('La fuente no es Type0', en='Font is not Type0'))
+        subtype = font.get('/Subtype')
+        if subtype not in ('/Type0', '/TrueType', '/Type1'):
+            raise ValueError(backend_message('No se puede corroborar el tipo de fuente',
+                                             en='Font type is not corroborated',
+                                             pt='O tipo de fonte não foi corroborado'))
         encoding = resolved(font.get('/Encoding'))
-        if isinstance(encoding, StreamObject):
-            lo, hi, data = codespace(encoding)
+        width = 2 if subtype == '/Type0' else 1
+        if subtype != '/Type0':
+            if isinstance(encoding, StreamObject):
+                raise ValueError(backend_message('No se puede corroborar la codificación con nombre',
+                                                 en='Named encoding is not corroborated'))
+            lo, hi = 0, 255
+        elif isinstance(encoding, StreamObject):
+            lo, hi, data = codespace(encoding, width)
             if encoding.get('/WMode', 0) != 0 or re.search(rb'/WMode\s+1\b', data):
                 raise ValueError(backend_message('No se puede corroborar la codificación vertical',
                                                  en='Vertical encoding is not corroborated'))
@@ -443,7 +455,7 @@ def _pdf_hyphen_donor(page, reader):
         unicode_map = resolved(font.get('/ToUnicode'))
         if not isinstance(unicode_map, StreamObject):
             raise ValueError(backend_message('Falta el mapa ToUnicode', en='Missing ToUnicode map'))
-        tlo, thi, data = codespace(unicode_map)
+        tlo, thi, data = codespace(unicode_map, width)
         if b'beginbfrange' in data:
             raise ValueError(backend_message('No se pueden corroborar las asignaciones por intervalos',
                                              en='Range mappings are not corroborated'))
@@ -453,7 +465,8 @@ def _pdf_hyphen_donor(page, reader):
             # the cluster's leading glyph supplies the complete Unicode text.
             # The source code still needs an explicit entry; absence is not
             # equivalent to this explicitly empty mapping.
-            pair_pattern = rb'<([\da-fA-F]{4})>\s*<([\da-fA-F]*)>'
+            digits = str(width * 2).encode('ascii')
+            pair_pattern = rb'<([\da-fA-F]{' + digits + rb'})>\s*<([\da-fA-F]*)>'
             pairs = re.findall(pair_pattern, block)
             if re.sub(pair_pattern, b'', block).strip() or int(count) != len(pairs):
                 raise ValueError(backend_message('Asignación Unicode mal formada',
@@ -467,7 +480,9 @@ def _pdf_hyphen_donor(page, reader):
         if not mapping:
             raise ValueError(backend_message('Asignación explícita vacía', en='Empty explicit mapping'))
         mappings[name] = mapping
-        fonts[id(font)] = font
+        widths[name] = width
+        if subtype == '/Type0':
+            fonts[id(font)] = font
     selected = None
     stack = []
     for operands, operator in ContentStream(page.get_contents(), reader).operations:
@@ -493,10 +508,11 @@ def _pdf_hyphen_donor(page, reader):
                 if not isinstance(value, (ByteStringObject, TextStringObject)):
                     continue
                 blob = value.original_bytes if isinstance(value, TextStringObject) else bytes(value)
-                if len(blob) % 2 or selected not in mappings:
+                width = widths.get(selected)
+                if width is None or len(blob) % width:
                     raise ValueError(backend_message('Codificación de texto sin corroborar',
                                                      en='Unproved text encoding'))
-                if any(int.from_bytes(blob[i:i+2], 'big') not in mappings[selected] for i in range(0, len(blob), 2)):
+                if any(int.from_bytes(blob[i:i+width], 'big') not in mappings[selected] for i in range(0, len(blob), width)):
                     raise ValueError(backend_message('El código fuente no tiene una asignación Unicode explícita',
                                                      en='Source code missing explicit Unicode mapping'))
     # Only the reader-local decoding width changes. ToUnicode remains intact:
@@ -525,7 +541,10 @@ def _pdf_shaping_text(page, reader, textpage, primary):
     native = [raw.FPDFText_GetUnicode(textpage, i) for i in range(textpage.count_chars())]
     if (''.join(chr(c) for c in native if not chr(c).isspace())
             != ''.join(c for c in primary if not c.isspace())):
-        raise ValueError('Native PDF shaping sequence differs')
+        raise ValueError(backend_message(
+            'La secuencia nativa de composición PDF difiere',
+            en='Native PDF shaping sequence differs',
+            pt='A sequência nativa de composição do PDF difere'))
     empty = {}
     for ref in page['/Resources']['/Font'].values():
         font = ref.get_object()
@@ -544,11 +563,15 @@ def _pdf_shaping_text(page, reader, textpage, primary):
                 pattern = rb'<([\da-fA-F]{4})>\s*<([\da-fA-F]*)>'
                 pairs = re.findall(pattern, block)
                 if len(pairs) != int(count) or re.sub(pattern, b'', block).strip():
-                    raise ValueError('Malformed PDF shaping map')
+                    raise ValueError(backend_message(
+                        'Mapa de composición PDF mal formado',
+                        en='Malformed PDF shaping map', pt='Mapa de composição do PDF malformado'))
                 for code, value in pairs:
                     code = int(code, 16)
                     if code in mapping:
-                        raise ValueError('Duplicate PDF shaping map')
+                        raise ValueError(backend_message(
+                            'Mapa de composición PDF duplicado',
+                            en='Duplicate PDF shaping map', pt='Mapa de composição do PDF duplicado'))
                     mapping[code] = bytes.fromhex(value.decode()).decode('utf-16-be', errors='strict')
             empty[str(font['/BaseFont']).lstrip('/')] = {code for code, text in mapping.items() if text == ''}
     position = reader.stream.tell()
@@ -566,7 +589,10 @@ def _pdf_shaping_text(page, reader, textpage, primary):
             continue
         obj = raw.FPDFText_GetTextObject(textpage, index)
         if not obj:
-            raise ValueError('PDF shaping glyph has no text object')
+            raise ValueError(backend_message(
+                'El glifo de composición PDF no tiene un objeto de texto',
+                en='PDF shaping glyph has no text object',
+                pt='O glifo de composição do PDF não tem um objeto de texto'))
         font = raw.FPDFTextObj_GetFont(obj)
         size = raw.FPDFFont_GetBaseFontName(font, None, 0)
         name = ctypes.create_string_buffer(size)
@@ -578,17 +604,140 @@ def _pdf_shaping_text(page, reader, textpage, primary):
                        and abs(g['x0'] - left) < .25
                        and g['y0'] - g['size'] <= (top + bottom) / 2 <= g['y1'] + g['size']]
             if len(matches) != 1:
-                raise ValueError('Empty PDF shaping glyph lacks independent position proof')
+                raise ValueError(backend_message(
+                    'El glifo vacío de composición PDF carece de corroboración independiente de posición',
+                    en='Empty PDF shaping glyph lacks independent position proof',
+                    pt='O glifo vazio de composição do PDF não tem comprovação independente de posição'))
             continue
         if char != '\x02' or error != 0 or raw.FPDFText_IsHyphen(textpage, index) != 1:
-            raise ValueError('Unproved PDF Unicode mapping error')
+            raise ValueError(backend_message(
+                'Error de asignación Unicode PDF no corroborado',
+                en='Unproved PDF Unicode mapping error',
+                pt='Erro de mapeamento Unicode do PDF não comprovado'))
         matches = [g for g in glyphs if g['fontname'] == fontname
                    and g['x0'] - .25 <= (left + right) / 2 <= g['x1'] + .25
                    and g['y0'] - .25 <= (top + bottom) / 2 <= g['y1'] + .25]
         if len(matches) != 1 or matches[0]['text'] != '-':
-            raise ValueError('PDF hyphen lacks independent glyph proof')
+            raise ValueError(backend_message(
+                'El guion PDF carece de corroboración independiente del glifo',
+                en='PDF hyphen lacks independent glyph proof',
+                pt='O hífen do PDF não tem comprovação independente do glifo'))
         result.append('-')
     return unicodedata.normalize('NFC', ''.join(result))
+
+
+def _pdf_simple_hyphens(page, reader, textpage, native):
+    """Prove only hard hyphens from an exactly identified embedded simple font.
+
+    LibreOffice can omit continuation-glyph Unicode mappings elsewhere on a
+    page. That prevents whole-page donor agreement even when PDFium reads the
+    shaped text correctly. This path leaves every other native character
+    untouched and requires independent source-code, font-byte and position
+    proof for each hyphen. Font names alone never establish font identity.
+    """
+    import ctypes
+    from pdfminer.converter import PDFPageAggregator
+    from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
+    from pdfminer.pdfpage import PDFPage
+    from pypdf.generic import ContentStream, StreamObject
+    import pypdfium2.raw as raw
+
+    def fail():
+        raise ValueError(backend_message('Extracción de región PDF ambigua',
+                                         en='Ambiguous PDF region extraction'))
+
+    resources = page.get('/Resources', {}).get_object()
+    xobjects = resources.get('/XObject', {})
+    # Keep the established rejection of executed Form content. No nested or
+    # inherited resource mapping is silently accepted by this narrow reader.
+    for operands, operator in ContentStream(page.get_contents(), reader).operations:
+        if operator == b'Do':
+            obj = xobjects.get(operands[0]) if operands else None
+            if obj is None or obj.get_object().get('/Subtype') != '/Image':
+                fail()
+    indices = [i for i in range(textpage.count_chars()) if raw.FPDFText_GetUnicode(textpage, i) == 2]
+    if not indices or any(raw.FPDFText_HasUnicodeMapError(textpage, i) != 0
+                          for i in range(textpage.count_chars())):
+        fail()
+
+    class Glyphs(PDFPageAggregator):
+        def __init__(self, manager):
+            super().__init__(manager)
+            self.glyphs = []
+
+        def render_char(self, matrix, font, fontsize, scaling, rise, cid, ncs, graphicstate):
+            advance = super().render_char(matrix, font, fontsize, scaling, rise, cid, ncs, graphicstate)
+            glyph = self.cur_item._objs[-1]
+            self.glyphs.append((font.fontname, cid, glyph.get_text(), glyph.bbox, fontsize))
+            return advance
+
+    position = reader.stream.tell()
+    manager = PDFResourceManager()
+    device = Glyphs(manager)
+    try:
+        independent_page = next(PDFPage.get_pages(reader.stream, pagenos={reader.get_page_number(page)}))
+        PDFPageInterpreter(manager, device).process_page(independent_page)
+    finally:
+        device.close()
+        reader.stream.seek(position)
+
+    fonts = [ref.get_object() for ref in resources.get('/Font', {}).values()]
+    for index in indices:
+        if raw.FPDFText_IsHyphen(textpage, index) != 1:
+            fail()
+        obj = raw.FPDFText_GetTextObject(textpage, index)
+        native_font = raw.FPDFTextObj_GetFont(obj) if obj else None
+        size = ctypes.c_ulong()
+        if (not native_font or not raw.FPDFFont_GetFontData(native_font, None, 0, ctypes.byref(size))
+                or not 0 < size.value <= 16 * 1024 * 1024):
+            fail()
+        font_bytes = (ctypes.c_ubyte * size.value)()
+        if not raw.FPDFFont_GetFontData(native_font, font_bytes, size.value, ctypes.byref(size)):
+            fail()
+        matches = []
+        for font in fonts:
+            descriptor = font.get('/FontDescriptor')
+            embedded = descriptor.get_object().get('/FontFile2') if descriptor else None
+            if embedded is not None and embedded.get_object().get_data() == bytes(font_bytes):
+                matches.append(font)
+        if len(matches) != 1 or matches[0].get('/Subtype') != '/TrueType':
+            fail()
+        font = matches[0]
+        encoding = font.get('/Encoding')
+        if encoding is not None and isinstance(encoding.get_object(), StreamObject):
+            fail()
+        cmap = font.get('/ToUnicode')
+        cmap = cmap.get_object() if cmap is not None else None
+        if not isinstance(cmap, StreamObject) or '/UseCMap' in cmap:
+            fail()
+        data = re.sub(rb'%[^\r\n]*', b'', cmap.get_data())
+        if re.search(rb'\busecmap\b|beginbfrange', data):
+            fail()
+        spaces = re.findall(rb'\b(\d+)\s+begincodespacerange\s*(.*?)\s*endcodespacerange\b', data, re.S)
+        if (len(spaces) != 1 or int(spaces[0][0]) != 1
+                or not re.fullmatch(rb'\s*<00>\s*<ff>\s*', spaces[0][1], re.I)):
+            fail()
+        mapping = {}
+        for count, block in re.findall(rb'\b(\d+)\s+beginbfchar\s*(.*?)\s*endbfchar\b', data, re.S):
+            pattern = rb'<([\da-fA-F]{2})>\s*<([\da-fA-F]*)>'
+            pairs = re.findall(pattern, block)
+            if int(count) != len(pairs) or re.sub(pattern, b'', block).strip():
+                fail()
+            for code, value in pairs:
+                code = int(code, 16)
+                if code in mapping:
+                    fail()
+                mapping[code] = bytes.fromhex(value.decode('ascii')).decode('utf-16-be', errors='strict')
+        left, bottom, right, top = textpage.get_charbox(index)
+        fontsize = raw.FPDFText_GetFontSize(textpage, index)
+        fontname = str(font.get('/BaseFont', '')).lstrip('/')
+        proved = [(cid, text) for name, cid, text, (x0, y0, x1, y1), independent_size in device.glyphs
+                  if name == fontname and abs(fontsize - independent_size) < .01
+                  and x0 - .25 <= left <= right <= x1 + .25
+                  and y0 - .25 <= bottom <= top <= y1 + .25]
+        if len(proved) != 1 or proved[0][1] != '-' or mapping.get(proved[0][0]) != '-':
+            fail()
+    return unicodedata.normalize('NFC', native.replace('\x02', '-'))
 
 
 def _pdf_proved_hyphens(page, reader, textpage, primary):
@@ -607,7 +756,10 @@ def _pdf_proved_hyphens(page, reader, textpage, primary):
                           or raw.FPDFText_HasUnicodeMapError(textpage, index) != 0):
             raise ValueError(backend_message('El marcador no tiene corroboración nativa de guion',
                                              en='Marker lacks native hyphen proof'))
-    donor = [char for char in _pdf_hyphen_donor(page, reader) if not char.isspace()]
+    try:
+        donor = [char for char in _pdf_hyphen_donor(page, reader) if not char.isspace()]
+    except ValueError:
+        return _pdf_simple_hyphens(page, reader, textpage, native)
     # Bounded extraction can omit native generated separators between table
     # cells. Retain the native separators only after exact nonspace agreement;
     # no expected content participates in this reconciliation.
@@ -710,7 +862,10 @@ def _pdf_native_region_text(page, reader, textpage, bounded, top, bottom):
     chars = [chr(raw.FPDFText_GetUnicode(textpage, i)) for i in range(textpage.count_chars())]
     full = textpage.get_text_bounded(errors='strict')
     if ''.join(c for c in chars if not c.isspace()) != ''.join(c for c in full if not c.isspace()):
-        raise ValueError('Native PDF region sequence differs')
+        raise ValueError(backend_message(
+            'La secuencia nativa de la región PDF difiere',
+            en='Native PDF region sequence differs',
+            pt='A sequência nativa da região do PDF difere'))
     map_errors = {i for i in range(len(chars)) if raw.FPDFText_HasUnicodeMapError(textpage, i) == 1}
     corrected = list(chars)
     if '\x02' in full or '\ufffe' in full or map_errors:
@@ -718,7 +873,10 @@ def _pdf_native_region_text(page, reader, textpage, bounded, top, bottom):
         corrected = ['' if i in map_errors else '-' if char == '\x02' else char
                      for i, char in enumerate(chars)]
         if unicodedata.normalize('NFC', ''.join(corrected)) != proved:
-            raise ValueError('Native PDF region corrections differ')
+            raise ValueError(backend_message(
+                'Las correcciones nativas de la región PDF difieren',
+                en='Native PDF region corrections differ',
+                pt='As correções nativas da região do PDF diferem'))
     selected = []
     for index, char in enumerate(chars):
         if not char.isspace():
@@ -726,7 +884,10 @@ def _pdf_native_region_text(page, reader, textpage, bounded, top, bottom):
             if bottom <= (low + high) / 2 <= top:
                 selected.append(index)
     if ''.join(chars[i] for i in selected) != ''.join(c for c in bounded if not c.isspace()):
-        raise ValueError('Native PDF region bounds differ')
+        raise ValueError(backend_message(
+            'Los límites nativos de la región PDF difieren',
+            en='Native PDF region bounds differ',
+            pt='Os limites nativos da região do PDF diferem'))
     if not selected:
         return ''
     kept = set(selected)

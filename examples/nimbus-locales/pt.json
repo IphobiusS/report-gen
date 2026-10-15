@@ -1,0 +1,1252 @@
+{
+  "schema_version": 2,
+  "meta": {
+    "lang": "pt",
+    "report_title": "Relatório de pentest",
+    "report_subtitle": "Nimbus Commerce | Demonstração fictícia completa",
+    "client": "Nimbus Commerce (organização fictícia)",
+    "assessor": "Sebastián Latorre Muñoz / iphobiuss",
+    "assessor_title": "Exemplo do report-gen",
+    "date": "2026-10-02",
+    "version": "1.0",
+    "theme": "corporativo",
+    "branding": {
+      "wordmark": "iphobiuss",
+      "byline": "iphobiuss | exemplo fictício",
+      "accent": "#235e93",
+      "confidential_text": "DEMO"
+    },
+    "contacts": {
+      "client": [],
+      "assessor": []
+    },
+    "scope": [
+      {
+        "target": "portal.nimbus.example",
+        "description": "Aplicação web e suporte de duas organizações sintéticas."
+      },
+      {
+        "target": "api.nimbus.example",
+        "description": "Pedidos, anexos e prévia de integrações."
+      },
+      {
+        "target": "auth.nimbus.example",
+        "description": "Recuperação de contas e ciclo de sessões."
+      },
+      {
+        "target": "ci.nimbus.example",
+        "description": "Conteúdo de artefatos e identidade de serviço."
+      },
+      {
+        "target": "ad.nimbus.example",
+        "description": "Delegações de DC01 e administração de WINAPP01."
+      }
+    ]
+  },
+  "report": {
+    "sections": [
+      {
+        "key": "confidentiality",
+        "title": "Natureza do documento e uso do exemplo",
+        "body": "**RELATÓRIO FICTÍCIO DE DEMONSTRAÇÃO.** Esta é uma edição editorial localizada em português do Brasil do caso fictício Nimbus Commerce. A organização foi inventada para demonstrar os recursos do report-gen e uma forma de documentar uma avaliação de segurança. Não é um cliente, uma auditoria executada, uma certificação nem um relatório de incidente real. Esta tradução não representa novos testes ou atividades em sistemas reais.\n\nOs achados, ativos, pessoas, datas de trabalho, evidências e resultados de reteste pertencem a um cenário editorial. As imagens técnicas são representações sintéticas identificadas como tais, e não capturas de sistemas comprometidos. As frases que descrevem ações ou resultados devem ser interpretadas dentro desse cenário.\n\n### O que pode ser verificado nesta entrega\n\nO projeto estruturado original foi preparado com report-gen 0.14.0. Esta edição localizada preserva os dados do cenário e pode ser exportada novamente com a versão instalada da ferramenta. As pontuações são calculadas a partir dos vetores declarados; o relatório preserva as referências entre achados, ativos e evidências. O pacote editável permite revisar os campos e exportar novamente o documento com a ferramenta. Reproduzir o relatório não equivale a reproduzir um ataque.\n\n### Finalidade e limites de publicação\n\nEste exemplo foi preparado para o portfólio de Sebastián Latorre Muñoz, iphobiuss, com redação assistida por IA. Pode ser apresentado como demonstração da ferramenta e da estrutura de relatórios, desde que essa identificação seja mantida. Não deve ser apresentado como experiência com um cliente ou como prova de que as ações descritas foram executadas pelo titular do portfólio.\n\nOs nomes terminados em `.example`, os identificadores DEMO e os marcadores de credenciais são dados de exemplo. Nenhum segredo do documento é operacional. As referências externas apontam para documentação técnica pública; seus autores não endossam este caso fictício.\n\n### Como ler o relatório\n\nA direção pode começar pelo resumo executivo, pela postura de risco e pelo plano de remediação. As equipes técnicas encontrarão causa raiz, limites, controles de comparação e critérios de encerramento em cada achado. A parte final preserva o inventário, a cobertura do roteiro e o acompanhamento das correções.\n\n**Data de preparação: 2 de outubro de 2026. Versão editorial: 1.0. Classificação: exemplo público fictício.**"
+      },
+      {
+        "key": "document_control",
+        "version_history": [
+          {
+            "version": "0.1",
+            "date": "2026-10-02",
+            "author": "Preparação assistida",
+            "notes": "Definição do cenário, doze achados e ativos sintéticos."
+          },
+          {
+            "version": "0.2",
+            "date": "2026-10-02",
+            "author": "Preparação assistida",
+            "notes": "Evidências didáticas, matriz de cobertura e seis retestes fictícios."
+          },
+          {
+            "version": "1.0",
+            "date": "2026-10-02",
+            "author": "Geração com report-gen",
+            "notes": "Edição completa para revisão e publicação como exemplo."
+          }
+        ],
+        "distribution": "### Datas do cenário\n\nA janela fictícia de avaliação vai de 21 a 25 de setembro de 2026. Os retestes se situam em 30 de setembro, e os prazos de correção partem de 2 de outubro. São datas narrativas; não comprovam atividade profissional realizada nesse período.\n\n### Responsabilidade e procedência\n\n| Elemento | Procedência e escopo |\n| --- | --- |\n| Organização e ativos | Inventados para este documento. |\n| Descrições e resultados | Cenário didático redigido com assistência de IA. |\n| Imagens de evidência | Representações sintéticas de controles e resultados. |\n| PDF e projeto | Originalmente gerados e validados com report-gen 0.14.0. |\n| Recomendações | Análise do cenário e documentação pública citada. |\n| Aceitação do portfólio | Cabe ao titular antes de publicar o exemplo. |\n\n### Distribuição prevista\n\nLeitura pública como exemplo de relatório. No cenário, os destinatários seriam a direção técnica e os responsáveis por produto, identidade, infraestrutura e DevOps. São utilizadas funções em vez de nomes ou e-mails de pessoas reais.\n\nOs IDs F01 a F12 permanecem estáveis mesmo que a ordem de apresentação mude. Uma correção informada não se transforma em encerramento até que haja um reteste representado com resultado conclusivo. Não são incluídas assinaturas de aceitação nem aprovações de pessoas fictícias."
+      },
+      {
+        "key": "executive_summary",
+        "summary": "Nimbus Commerce representa uma plataforma de pedidos com duas organizações clientes, serviços de integração e uma infraestrutura Windows de apoio. O cenário examina como falhas de autorização, recuperação de contas, tratamento de segredos e delegação de privilégios poderiam afetar os dados e a operação.\n\nA avaliação fictícia contém **12 achados iniciais: 2 críticos, 5 altos, 4 médios e 1 baixo**. O risco mais urgente está concentrado em duas rotas públicas para dados ou contas e em uma delegação de replicação do domínio. O gráfico do resumo preserva as severidades iniciais; não representa o número de problemas ainda abertos após o reteste.\n\n### Decisões exigidas pelo cenário\n\n1. Conter a busca vulnerável e a recuperação de contas até verificar suas correções. Os retestes RT01 e RT02 representam o encerramento posterior dessas duas rotas.\n2. Priorizar F07, direitos de replicação, mesmo com pontuação técnica alta e não crítica. Seu alcance transversal justifica a prioridade operacional P0.\n3. Concluir F03 e F05: a autorização de leitura e o bloqueio direto de destinos melhoram, mas permanecem rotas alternativas de escrita e redirecionamento.\n4. Rotacionar a credencial de CI e revisar as delegações de grupos; uma limpeza superficial ou um aviso de implantação não bastam.\n\n### Situação no fechamento editorial\n\nSão representados **4 achados corrigidos e verificados**, **5 em correção**, **1 com correção informada** e **2 abertos**. Há seis retestes fictícios: quatro completos e dois parciais. Portanto, oito achados ainda não possuem encerramento verificado no cenário.\n\nAs consequências são explicadas por ativos e permissões. O relatório evita transformar uma leitura de arquivo em execução remota, uma administração local em comprometimento comprovado do domínio ou um cabeçalho CORS em exploração universal. Quando o impacto depende de uma condição, ela é declarada.\n\n### Orientação para a direção\n\nO primeiro investimento se concentra nas fronteiras de identidade e permissões: autorização por objeto, recuperação de contas e privilégios de serviço. Em seguida, consolida-se um processo de entrega que preserve controles de regressão e evidências de encerramento. Não são calculadas perdas monetárias, probabilidade estatística de ataque ou retorno sobre investimento, pois o caso não fornece dados que sustentem esses números.\n\n**Todos os resultados desta seção são fictícios.** Seu objetivo é mostrar como um relatório conecta evidência, impacto, prioridade e acompanhamento."
+      },
+      {
+        "key": "risk_posture",
+        "title": "Critérios de severidade, prioridade e risco residual",
+        "posture": "### Severidade técnica\n\nO **CVSS 3.1 Base** é utilizado de maneira uniforme para permitir a comparação dos doze vetores neste exemplo. Cada pontuação é calculada pelo report-gen e acompanhada de seu vetor. Não são misturadas pontuações 3.1 e 4.0, nem apresentadas as métricas Base como um cálculo de risco de negócio.\n\n| Faixa | Intervalo |\n| --- | --- |\n| Crítica | 9,0 a 10,0 |\n| Alta | 7,0 a 8,9 |\n| Média | 4,0 a 6,9 |\n| Baixa | 0,1 a 3,9 |\n| Informativa | 0,0 |\n\nO CVSS pertence à FIRST e é utilizado conforme sua documentação pública. Referências: https://www.first.org/cvss/v3.1/specification-document e https://www.first.org/cvss/v3.1/user-guide. Os valores refletem as condições inventadas do caso e exigiriam nova avaliação em um ambiente real.\n\n### Prioridade operacional do cenário\n\n| Prioridade | Critério e resposta proposta |\n| --- | --- |\n| P0 | Acesso amplo a dados ou identidade transversal. Contenção e coordenação imediatas. |\n| P1 | Violação de permissões ou privilégios com condições identificadas. Correção prioritária e reteste direcionado. |\n| P2 | Exposição condicionada por sessão, interação ou configuração. Correção planejada e regressão. |\n| P3 | Divulgação limitada com privilégios prévios altos. Inclusão no ciclo de fortalecimento. |\n\nEsses prazos são uma proposta de trabalho fictícia, não um SLA contratual. F07 exemplifica a diferença: recebe 8,8 por seus requisitos técnicos e P0 por afetar o domínio. F12 permanece em P3 porque expõe dados internos limitados a uma função já privilegiada.\n\n### Risco residual e critério de encerramento\n\nA severidade inicial é preservada após a correção para manter a rastreabilidade. O estado do acompanhamento indica se a rota continua aberta. Um patch anunciado, uma resposta HTTP diferente ou uma regra que bloqueia um único exemplo não bastam para encerrar o achado.\n\nEste documento exige um controle negativo, um controle legítimo que continue funcionando e uma explicação do escopo testado. Um reteste parcial mantém o achado em correção. A aceitação de risco, se existisse, exigiria responsável, justificativa, vencimento e controles compensatórios; nenhuma aceitação é inventada neste exemplo."
+      },
+      {
+        "key": "scope",
+        "objectives": "### Objetivo do cenário\n\nAvaliar como uma pessoa sem sessão, uma conta de cliente ou uma identidade operacional poderiam ultrapassar as fronteiras de dados e administração. O caso conecta entrada, permissão efetiva, resultado e correção.\n\n![Arquitetura fictícia da Nimbus: portal, API, identidade, dados, arquivos e infraestrutura.](img/arquitectura.png)\n\nO inventário final amplia essas relações com as funções e os vínculos aos achados.",
+        "assumptions": "O roteiro combina caixa cinza web/API e revisão interna com duas organizações canário. As verificações de AD partem de credenciais fornecidas; não se deduz uma entrada da Internet para o domínio.\n\nTerceiros, produção, dados pessoais, phishing, carga, persistência e operações destrutivas ficam fora do escopo. Nimbus é fictícia, e este documento não autoriza testes em nenhum serviço. Uma execução real exigiria escopo, janelas, contatos e regras de engajamento acordados por escrito."
+      },
+      {
+        "key": "methodology",
+        "approach": "O caso segue uma sequência de hipótese, controle positivo, variação mínima, verificação independente e encerramento. Cada achado delimita o que sua evidência demonstraria e o que não demonstraria. Quando a observação pode ter outra explicação, acrescenta-se uma comparação: outra identidade, outro objeto, uma sessão nova ou um destino de controle.\n\nA revisão de configuração e a verificação de comportamento são diferenciadas. Identificar uma permissão perigosa pode sustentar uma condição de risco; a capacidade atribuída deve ser comparada à semântica da permissão e às condições do cenário. Um resultado isolado de scanner não é apresentado como prova conclusiva.",
+        "standards": "São consultadas as orientações da OWASP sobre autorização, consultas parametrizadas, recuperação de contas, SSRF, sessões, XSS e gestão de segredos. CWE é utilizada para classificar a causa técnica. A documentação da Microsoft ajuda a interpretar as delegações do Active Directory, e a FIRST define a pontuação CVSS.\n\nEssas referências orientam a análise; não se afirma conformidade integral com OWASP ASVS, ISO 27001, PCI DSS ou outra certificação. As fontes específicas aparecem em cada achado e são reunidas no apêndice.",
+        "information_gathering": "O inventário contém oito ativos fictícios, responsáveis funcionais, funções e fronteiras de confiança. Antes de variar uma entrada, são estabelecidos a identidade efetiva e o objeto canário. Identificadores de requisição de demonstração são preservados para vincular o controle ao resultado, sem incluir dados de pessoas reais.",
+        "exploitation": "As evidências são diagramas de resultados sintéticos, não capturas de ataques. Em um exercício equivalente, as validações descritas se limitariam a objetos canário e alterações reversíveis. Essas ações não são executadas neste documento. As métricas de impacto modelam capacidades concretas; as não sustentadas são excluídas ou indicadas como consequências potenciais.",
+        "cleanup": "Cada alteração canário do relato inclui restauração ou revogação como parte do critério de encerramento: notas de pedidos, senhas, sessões, associações a grupos e etiquetas de tarefas. Essa limpeza também é fictícia. A preparação real do relatório cria apenas arquivos de projeto e exportações no ambiente de trabalho."
+      },
+      {
+        "key": "findings_summary"
+      },
+      {
+        "key": "findings"
+      },
+      {
+        "key": "attack_narrative",
+        "title": "Cadeias de impacto e fronteiras de confiança",
+        "narrative": "### Rota A: entrada pública e dados de pedidos\n\nF01 modela uma entrada pública que altera a consulta de busca. A causa raiz é a mistura de código e dados, agravada por uma conta com permissões de escrita. A leitura e a alteração canário sustentam dois efeitos distintos; o relato não se estende à execução no sistema operacional. RT01 representa a correção de ambas as condições relevantes.\n\nF02 oferece uma rota independente para contas do portal: o token de recuperação não fica vinculado ao seu titular. F01 não é necessário para que ela funcione. Separar os achados evita criar uma longa cadeia artificial que faça parecer dependentes dois problemas com causas e correções diferentes.\n\n### Rota B: usuário legítimo e fronteira entre organizações\n\nEm F03, o atacante do cenário já possui uma conta válida. A falha surge ao resolver um objeto por ID sem aplicar a política de organização. F04 afeta outra fronteira: a localização de um arquivo e seu vínculo ao pedido. Trocar IDs por UUIDs não corrige nenhuma dessas duas autorizações.\n\nF05 amplia as capacidades do mesmo tipo de usuário por meio de uma requisição do servidor. A confiança na origem interna do tráfego contribui para o impacto. O reteste que bloqueia apenas a URL direta deixa pendente o destino efetivo após um redirecionamento.\n\n### Rota C: identidades operacionais e privilégios\n\nF06 relaciona a leitura de artefatos ao uso de uma identidade de serviço mais poderosa. O segredo representa uma mudança de identidade; excluir uma cópia sem revogá-lo não interrompe a rota.\n\nF07 e F08 partem de identidades internas fornecidas. Não se afirma que o achado web tenha permitido alcançar essas contas. F07 modela direitos de replicação do domínio; F08 termina na administração de WINAPP01. O relatório mantém separados o controle potencial do domínio e a administração local de um servidor.\n\n### O que deve ser interrompido primeiro\n\nA resposta prioriza as fronteiras que concentram permissões: identidade do titular, vínculo do objeto, destino de rede e delegação administrativa. Controles locais ajudam, mas o encerramento exige verificar o caminho completo. Por exemplo, corrigir GET sem revisar PATCH melhora a leitura e mantém aberta a alteração de dados.\n\n### Controles positivos preservados\n\nO cenário inclui a rejeição de usuários anônimos no perfil e de usuários comuns no painel administrativo. Esses resultados mostram que parte da autenticação e das funções funciona. Não invalidam as falhas de objeto, sessão ou recuperação, nem permitem declarar toda a plataforma segura.\n\nCada rota descrita aqui explica o modelo fictício. Não representa uma invasão, um teste de movimentação lateral executado ou um incidente detectado."
+      },
+      {
+        "key": "remediation_plan",
+        "overview": "O plano preserva as dependências entre contenção, alteração e verificação. Os responsáveis e as datas são uma proposta do cenário. As tarefas encerradas permanecem no registro para explicar o que foi verificado; não são excluídas do relatório inicial.\n\n| ID | Prioridade | Responsável proposto | Prazo |\n| --- | --- | --- | --- |\n| F01 | P0 | Equipe de aplicações | 2026-10-03 |\n| F02 | P0 | Equipe de identidade | 2026-10-03 |\n| F03 | P1 | Equipe de API | 2026-10-09 |\n| F04 | P1 | Equipe de API | 2026-10-09 |\n| F05 | P1 | Equipe de plataforma | 2026-10-09 |\n| F06 | P1 | Equipe de DevOps | 2026-10-05 |\n| F07 | P0 | Equipe de identidade | 2026-10-03 |\n| F08 | P1 | Equipe de infraestrutura | 2026-10-09 |\n| F09 | P2 | Equipe de aplicações | 2026-10-23 |\n| F10 | P2 | Equipe de API | 2026-10-23 |\n| F11 | P2 | Equipe de identidade | 2026-10-23 |\n| F12 | P3 | Equipe de aplicações | 2026-11-02 |\n\nUm prazo não comprova que a alteração foi realizada. A seção de acompanhamento reflete o estado: quatro encerramentos representados, duas correções parciais, uma correção informada sem reteste e cinco casos adicionais sem encerramento. A tabela de datas serve para gerenciar o trabalho; não é um compromisso de uma organização real.",
+        "short_term": "### Conter e preservar o contexto\n\nPriorizar F07 e confirmar a continuidade dos encerramentos de F01 e F02. A retirada de direitos deve ser coordenada com as funções legítimas de inventário e replicação. Para F06, revogar o segredo anterior e revisar suas permissões antes de considerar concluída a retirada de artefatos.\n\nDesignar um responsável por cada alteração e um verificador distinto dentro do modelo organizacional. Registrar a versão implantada, o escopo da correção e os testes esperados. Preservar registros relevantes com minimização de dados; não copiar tokens completos para tickets ou documentos.\n\n**Resultado desta fase:** rotas prioritárias contidas, responsáveis atribuídos e verificações de encerramento concretas. Nenhum estado muda para verificado pelo simples envio de um aviso de implantação.",
+        "medium_term": "### Corrigir causas comuns\n\nConcluir as matrizes de autorização de F03 e a política de destinos de F05. Revisar as demais operações que reutilizam o mesmo componente. Confirmar F08 com uma sessão nova e permissões efetivas; revisar F09, F10 e F11 como problemas distintos de navegador, origem e ciclo de sessão.\n\nPara cada alteração, preservar um teste negativo e um fluxo legítimo. Um sistema que bloqueia todo download ou toda integração pode interromper o caso, mas não demonstra uma correção funcional aceitável. Verificar também paginação, exportações e consumidores secundários da mesma API.\n\n**Resultado desta fase:** retestes completos das rotas pendentes, regressões incorporadas e exceções documentadas. Correções parciais mantêm data, responsável e escopo residual visíveis.",
+        "long_term": "### Manter e verificar novamente\n\nTransformar autorização, gestão de segredos e delegação de privilégios em revisões repetíveis do ciclo de alterações. Manter um inventário de identidades de serviço e de suas permissões; revisar as delegações de grupos quando equipes ou funções mudarem.\n\nUtilizar indicadores de resultado: achados sem encerramento verificado, correções parciais repetidas, antiguidade por prioridade e porcentagem de alterações com teste de regressão. Não são atribuídos valores de desempenho a esses indicadores porque não há operação real da qual obtê-los.\n\n**Resultado desta fase:** um registro sustentável de decisões, evidências e responsáveis. Se um risco for aceito, deve haver justificativa e vencimento; a falta de tempo para verificá-lo não deve se transformar automaticamente em aceitação."
+      },
+      {
+        "key": "appendix",
+        "title": "Apêndices técnicos e referências",
+        "changes_cleanup": "### Registro de alterações do cenário\n\n| Caso | Alteração representada | Restauração descrita |\n| --- | --- | --- |\n| F01 | Nota interna de pedido canário | Valor anterior restaurado. |\n| F02 | Senha administrativa de demonstração | Redefinição e revogação de sessões. |\n| F03 | Nota de entrega de outra organização | Valor restaurado após controle com a segunda conta. |\n| F05 | Etiqueta de tarefa de documentos | Etiqueta original recuperada. |\n| F08 | Membro canário em grupo administrador | Membro removido e sessão de teste encerrada. |\n| F09 | Comentário com marcador de DOM | Comentário de demonstração excluído do relato. |\n| F11 | Preferência de usuário | Valor inicial restaurado. |\n\nEsta tabela narra o procedimento previsto na ficção. Não é um registro de limpeza de sistemas reais. Testes de leitura não são transformados em alterações, nem são atribuídas ações adicionais para alongar a cadeia.",
+        "tools_used": "### Execuções reais e ferramentas do cenário\n\n**Executado para produzir os arquivos originais:** report-gen 0.14.0, sua calculadora CVSS, exportadores e validação do projeto; ferramentas locais de inspeção e renderização de PDF. O registro técnico do pacote detalha as verificações realizadas sobre os arquivos.\n\n**Apenas descrito como metodologia:** proxy HTTP, navegador, cliente de API e revisão de permissões do Active Directory. Não são incluídas versões de scanners, registros de comandos ou durações de testes que não foram executados. As imagens E01 a E12 e RT01 a RT10 incluídas são representações didáticas.\n\n### Referências gerais\n\n- FIRST, CVSS 3.1, especificação: https://www.first.org/cvss/v3.1/specification-document\n- FIRST, guia de uso: https://www.first.org/cvss/v3.1/user-guide\n- OWASP, API Security 2023, autorização por objeto: https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/\n- Microsoft, direitos de replicação: https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-all\n- Microsoft, proteção do Active Directory: https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/best-practices-for-securing-active-directory\n\nAs referências específicas de prevenção e as classificações CWE aparecem na ficha de cada achado. São apoio técnico para interpretar o caso, não uma declaração de que as organizações citadas revisaram este documento.",
+        "glossary": "| Termo | Uso neste relatório |\n| --- | --- |\n| Canário | Objeto ou identidade de teste que permite uma verificação delimitada. |\n| BOLA | Falha de autorização ao acessar um objeto por seu identificador. |\n| Tenant | Organização lógica cujos dados devem permanecer separados. |\n| SSRF | Requisição realizada por um servidor para um destino controlado por uma entrada. |\n| ACL | Lista de permissões associada a um recurso ou objeto. |\n| CVSS Base | Pontuação de severidade técnica para condições declaradas. |\n| Prioridade | Ordem operacional proposta conforme o contexto do caso. |\n| Reteste | Nova verificação de uma correção e de seus limites. |\n| Correção parcial | Uma rota é resolvida e outra continua aberta. |\n| Evidência sintética | Representação editorial; não é uma observação de um sistema real. |\n\n### Reutilização do projeto\n\nO backup editável inclui o YAML e as imagens vinculadas para importação pela opção «Abrir backup» do report-gen. O Markdown preserva o conteúdo para revisão textual. As alterações do projeto devem ser exportadas novamente para que tabelas, estados e relatório reflitam a mesma versão. Alterar apenas o PDF quebra essa correspondência."
+      }
+    ],
+    "workflow": {
+      "include_assets": true,
+      "include_coverage": true,
+      "include_retest": true
+    }
+  },
+  "findings": [
+    {
+      "uid": "d8eecceb-7bfb-575f-9af6-5419615e74f5",
+      "id": "F01",
+      "mode": "vuln",
+      "title": "Injeção SQL na busca de pedidos",
+      "severity": "critical",
+      "cvss": "9.1",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-89",
+      "affected": "portal.nimbus.example; db.nimbus.example",
+      "description_md": "O mecanismo público de busca constrói uma condição SQL concatenando o parâmetro `q`. A conta de serviço compartilha permissões de leitura e atualização com o módulo de pedidos. No cenário, uma entrada controlada altera a consulta e permite acessar registros de teste fora do resultado esperado.",
+      "impact_md": "O modelo contempla leitura e alteração de dados de pedidos sem autenticação. A evidência didática mostra dois registros canário e uma atualização reversível em uma cópia isolada. Não são atribuídos impacto de disponibilidade ou comprometimento do sistema operacional.",
+      "remediation_md": "Separar código e dados com consultas parametrizadas; usar uma conta somente de leitura nas buscas. Aplicar autorização antes de retornar pedidos e preservar testes de regressão. Escapar aspas ou filtrar palavras SQL não substitui essas medidas.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/89.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Contexto e pré-condições.",
+          "text_md": "O fluxo público permite consultar o estado de uma entrega por uma referência. Há uma cópia de dados sintéticos com os pedidos DEMO-1001 e DEMO-1002. O caso se limita a essa cópia; não propõe extração em massa ou acesso a informações de pessoas."
+        },
+        {
+          "lead": "Estabelecer a resposta de referência.",
+          "text_md": "Consultar DEMO-1001 e guardar o identificador da requisição, o código HTTP e os campos retornados. Repetir com uma referência inexistente. O primeiro controle retorna um registro, e o segundo nenhum; esse par permite distinguir o comportamento normal de uma falha de cache."
+        },
+        {
+          "lead": "Comparar duas condições controladas.",
+          "text_md": "A representação E01 compara uma condição verdadeira com uma falsa. O resultado muda com a condição SQL, e não apenas com o texto visível da busca. O registro canário do segundo pedido mostra a violação da fronteira de dados. As entradas concretas do ensaio são preservadas como casos de regressão, sem automatizar enumerações.",
+          "figure": {
+            "src": "img/e01.png",
+            "caption": "E01. Evidência sintética: A condição controla a consulta; o teste se limita a dados canário. Não é uma captura de um teste executado."
+          }
+        },
+        {
+          "lead": "Delimitar a capacidade de alteração.",
+          "text_md": "O roteiro da demonstração inclui uma alteração reversível do campo interno demo_note em DEMO-1002 na cópia isolada. O acesso de escrita é atribuído às permissões da conta do banco de dados, não a uma suposta execução de comandos. O valor original é restaurado ao final."
+        },
+        {
+          "lead": "Interpretar a evidência e a pontuação.",
+          "text_md": "AV:N e PR:N correspondem à entrada pública; AC:L e UI:N refletem uma requisição direta. C:H e I:H descrevem as capacidades modeladas sobre a base de pedidos. A:N evita pontuar uma interrupção não representada. O vetor avalia o cenário, não mede uma empresa real."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Conter o endpoint de busca e separar suas permissões de escrita. Antes de reabri-lo, preservar os registros técnicos necessários para investigar requisições anômalas, sem armazenar credenciais ou corpos completos de pedidos.",
+        "medium_md": "Reescrever a consulta com parâmetros e verificar todos os filtros dinâmicos, incluindo ordenação e paginação. O teste negativo deve incluir aspas, expressões booleanas e referências de outro cliente. Os resultados normais devem permanecer para evitar regressão funcional.",
+        "long_md": "Incorporar revisão de acesso a dados às alterações do ORM e do SQL manual. Encerrar o ticket apenas quando as consultas canário deixarem de ampliar resultados, alterações pela busca forem rejeitadas e os controles de autorização continuarem funcionando."
+      },
+      "asset_uids": [
+        "a56b6769-1b56-53fb-bc31-98623f580a97",
+        "c4a6a297-d869-5139-b533-c8df924abe9c"
+      ],
+      "evidence_uids": [
+        "e6a75b09-e809-57a4-ab11-c73913ec520f"
+      ],
+      "owner": "Equipe de aplicações",
+      "due_date": "2026-10-03",
+      "status": "verified_fixed",
+      "retests": [
+        {
+          "uid": "8528c8a0-d4d4-5713-80c0-ddb2b2c6470e",
+          "result": "fixed",
+          "tested_on": "2026-09-30",
+          "assessor": "Avaliador fictício do cenário",
+          "notes_md": "Reteste fictício RT01. A busca parametrizada preserva o resultado legítimo e trata as entradas de controle como dados. A conta de busca já não pode atualizar demo_note. Os pedidos de terceiros não são retornados. O encerramento de F01 é representado, preservando a severidade original para rastreabilidade.",
+          "evidence_uids": [
+            "10ba7b94-cad6-5ccc-adc8-86b2a06c298c"
+          ]
+        }
+      ]
+    },
+    {
+      "uid": "6e67a7d5-f64b-5f78-b973-1fa94a8815e4",
+      "id": "F02",
+      "mode": "vuln",
+      "title": "Recuperação de senha sem vínculo entre token e conta",
+      "severity": "critical",
+      "cvss": "9.1",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-640",
+      "affected": "portal.nimbus.example; auth.nimbus.example",
+      "description_md": "A API verifica se um token de recuperação existe e não expirou, mas usa o identificador de conta enviado no corpo para selecionar qual senha será alterada. Falta verificar se ambos os valores pertencem à mesma solicitação de recuperação.",
+      "impact_md": "No cenário, um token emitido para uma conta controlada permite alterar a senha de outra conta canário, incluindo uma conta administrativa sem segundo fator. São modelados acesso a dados e operações do portal; não se pressupõe acesso ao Active Directory.",
+      "remediation_md": "Resolver a conta exclusivamente a partir do registro de recuperação do servidor. Vincular token, finalidade, conta e validade; permitir consumo único. Invalidar as sessões afetadas e exigir controles adicionais na recuperação de contas privilegiadas.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/640.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Contexto e pré-condições.",
+          "text_md": "São utilizadas as identidades fictícias usuario.a e admin.demo. Ambas pertencem ao cenário e suas caixas de e-mail são sintéticas. O fluxo público de recuperação emite um token para usuario.a; uma sessão autenticada não é necessária para enviar a solicitação final."
+        },
+        {
+          "lead": "Preparar um controle legítimo.",
+          "text_md": "Solicitar recuperação para usuario.a e verificar se o token permite alterar apenas essa identidade. Registrar sua expiração e finalidade. A simples existência de um token válido não autoriza escolher outra conta."
+        },
+        {
+          "lead": "Variar apenas a conta de destino.",
+          "text_md": "Manter o mesmo token canário e substituir account_id pela identidade administrativa de demonstração. E02 representa uma resposta de sucesso e o login posterior com a senha de teste. Um 200 isolado não bastaria: a mudança de identidade é sustentada pelo resultado posterior no roteiro.",
+          "figure": {
+            "src": "img/e02.png",
+            "caption": "E02. Evidência sintética: O servidor aceita que o cliente escolha uma identidade diferente da vinculada ao token. Não é uma captura de um teste executado."
+          }
+        },
+        {
+          "lead": "Descartar uma alteração aparente.",
+          "text_md": "Comparar o identificador da nova sessão, a função efetiva e uma operação canário de administração. Restaurar a senha inicial e revogar as sessões do exercício. Senhas e tokens aparecem como etiquetas fictícias, não como segredos utilizáveis."
+        },
+        {
+          "lead": "Estabelecer os limites.",
+          "text_md": "C:H e I:H se apoiam na função administrativa modelada; A:N evita presumir capacidade de interrupção. Se uma instalação real impusesse MFA resistente à recuperação, a cadeia e a avaliação exigiriam revisão. O problema é o vínculo de identidade, não o comprimento do token."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Restringir a recuperação de contas privilegiadas e revisar os registros de alterações de senha. Aplicar um controle no servidor que compare a identidade do token antes de gravar qualquer alteração, sem informar se a conta de destino existe.",
+        "medium_md": "Eliminar account_id do contrato de confirmação ou rejeitar qualquer divergência se o campo precisar ser mantido por compatibilidade. Testar token expirado, reutilizado, de outra conta e de outra finalidade. A invalidação deve ser atômica para evitar consumos simultâneos.",
+        "long_md": "Documentar o ciclo completo de recuperação e seus controles de MFA e sessões. Um teste automatizado com duas identidades deve falhar se um token alterar a conta errada. Registrar o evento com identificadores, nunca com o token integral."
+      },
+      "asset_uids": [
+        "a56b6769-1b56-53fb-bc31-98623f580a97",
+        "3855f32e-8146-5d1b-b417-9eccc2e47140"
+      ],
+      "evidence_uids": [
+        "80147432-b232-5313-a68c-abd091976852"
+      ],
+      "owner": "Equipe de identidade",
+      "due_date": "2026-10-03",
+      "status": "verified_fixed",
+      "retests": [
+        {
+          "uid": "0f4de915-fe69-5b72-b10a-3f40436985e3",
+          "result": "fixed",
+          "tested_on": "2026-09-30",
+          "assessor": "Avaliador fictício do cenário",
+          "notes_md": "Reteste fictício RT02. O servidor obtém o titular a partir do token. A combinação cruzada é rejeitada; um token válido funciona apenas uma vez para sua conta. Tokens expirados e reutilizados também falham. A invalidação das sessões anteriores da conta recuperada é representada.",
+          "evidence_uids": [
+            "fa3f37c7-3b45-5d65-82ff-57eeec78fae7"
+          ]
+        }
+      ]
+    },
+    {
+      "uid": "ff162b64-4c38-5385-8afe-784e5edfe6a4",
+      "id": "F03",
+      "mode": "vuln",
+      "title": "Acesso e alteração de pedidos de outra organização",
+      "severity": "high",
+      "cvss": "8.1",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-639",
+      "affected": "api.nimbus.example",
+      "description_md": "GET e PATCH de pedidos validam a sessão, mas buscam o objeto pelo identificador global sem filtrar por organização. Um membro de demo-a pode ler e alterar um pedido de demo-b conhecendo seu identificador.",
+      "impact_md": "São modeladas a exposição de pedidos e a alteração de seus dados de entrega entre organizações. A alteração canário afeta apenas uma nota de entrega reversível. Não são afirmados acesso a cartões de pagamento, execução de ordens bancárias ou comprometimento do provedor de pagamentos.",
+      "remediation_md": "Aplicar autorização por objeto na leitura e na escrita, usando a organização e a função resolvidas a partir da sessão do servidor. Reutilizar a mesma política em exportações, processos em lote e endpoints legados. Um UUID difícil de adivinhar não substitui esse controle.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/639.html",
+        "https://owasp.org/API-Security/editions/2023/en/0xa1-broken-object-level-authorization/"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Contexto e pré-condições.",
+          "text_md": "Há duas organizações fictícias, demo-a e demo-b, com duas contas de usuário distintas e pedidos próprios. A sessão A permanece idêntica durante os controles. Os identificadores vêm do conjunto de teste autorizado; não é utilizada força bruta."
+        },
+        {
+          "lead": "Confirmar a separação das identidades.",
+          "text_md": "Guardar subject e tenant de cada sessão. Primeiro verificar se A acessa seu pedido e B acessa o seu. Evitar reutilizar cookies da conta B no teste cruzado, pois isso produziria uma falsa conclusão de BOLA."
+        },
+        {
+          "lead": "Testar leitura e escrita separadamente.",
+          "text_md": "Com a sessão A, solicitar o objeto de B e depois alterar seu campo delivery_note. Leitura e alteração são verificações distintas. E03 representa ambos os resultados e a leitura de controle com B que confirma a alteração canário.",
+          "figure": {
+            "src": "img/e03.png",
+            "caption": "E03. Evidência sintética: A identidade está autenticada, mas o objeto não está autorizado para ela. Não é uma captura de um teste executado."
+          }
+        },
+        {
+          "lead": "Verificar rotas alternativas.",
+          "text_md": "Repetir a matriz no endpoint de exportação e no PATCH do recurso. O reteste fictício mostra correção parcial: GET aplica a política, mas PATCH ainda permite escrita cruzada. O ticket permanece aberto mesmo com uma das rotas corrigida."
+        },
+        {
+          "lead": "Interpretar o resultado.",
+          "text_md": "A autenticação de A funciona; falha a autorização sobre o objeto. PR:L reflete esse acesso de usuário. C:H e I:H descrevem o alcance entre organizações modelado, e A:N não inclui negação de serviço. IDs aninhados e operações em lote também devem ser revisados."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Desabilitar as rotas cruzadas identificadas e revisar acessos por tenant. Evitar respostas que revelem atributos do objeto rejeitado. Manter uma forma controlada de atender pedidos legítimos durante a implantação.",
+        "medium_md": "Introduzir um ponto comum de decisão de autorização com tenant, função, objeto e operação. Adicionar uma matriz positiva e negativa de duas organizações a GET, PATCH, exportação e processos em lote. Verificar se tenant_id não pode ser sobrescrito pelo corpo enviado pelo cliente.",
+        "long_md": "Encerrar apenas quando todas as operações cruzadas falharem e as legítimas continuarem funcionando. Incluir verificações de concorrência se houver transferência de pedidos entre organizações e controles de cache que respeitem essa separação."
+      },
+      "asset_uids": [
+        "7993cf01-787a-590b-833f-59bb95756739"
+      ],
+      "evidence_uids": [
+        "6fa1123a-d031-5e56-9138-2b62cd11ac0b"
+      ],
+      "owner": "Equipe de API",
+      "due_date": "2026-10-09",
+      "status": "in_progress",
+      "retests": [
+        {
+          "uid": "c0396008-a47c-526b-9c64-73c4c2e0d214",
+          "result": "partial",
+          "tested_on": "2026-09-30",
+          "assessor": "Avaliador fictício do cenário",
+          "notes_md": "Reteste fictício RT03. GET retorna 404 para o objeto de outra organização. PATCH ainda aceita a alteração de delivery_note, confirmada com a conta B. O resultado é parcial, e F03 continua em correção. A ausência de leitura cruzada não elimina o impacto de integridade.",
+          "evidence_uids": [
+            "ea51aaf3-9470-510f-8357-db6babb39175"
+          ]
+        }
+      ]
+    },
+    {
+      "uid": "09726a34-a8d5-5f3e-9738-0cf0df7669dc",
+      "id": "F04",
+      "mode": "vuln",
+      "title": "Leitura fora do diretório permitido de anexos",
+      "severity": "medium",
+      "cvss": "6.5",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-22",
+      "affected": "api.nimbus.example; files.nimbus.example",
+      "description_md": "O download de anexos concatena um caminho fornecido pelo usuário à pasta de armazenamento. Não verifica se o caminho normalizado permanece no diretório autorizado nem se o arquivo pertence ao pedido.",
+      "impact_md": "O cenário permite ler um arquivo canário fora da pasta de anexos. O processo possui acesso de leitura às configurações internas do serviço. É modelado impacto de confidencialidade; não são representados escrita de arquivos, execução de código ou acesso ilimitado ao host.",
+      "remediation_md": "Receber um identificador de anexo e resolver sua localização no servidor após autorizar o objeto. Se caminhos forem utilizados, normalizá-los e verificar se o destino real pertence ao diretório permitido, considerando links simbólicos. Reduzir as permissões do processo.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/22.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Contexto e pré-condições.",
+          "text_md": "O serviço FILES01 contém uma pasta attachments e outra fixtures com um canário chamado outside-marker.txt. Ambos são recursos fictícios. O teste atravessa essa fronteira controlada; não depende da leitura de arquivos reais do sistema ou de segredos."
+        },
+        {
+          "lead": "Estabelecer um anexo legítimo.",
+          "text_md": "Baixar um documento da própria organização e registrar tipo, tamanho e vínculo ao pedido. Comparar com um identificador inexistente e com um de outro tenant. Validação de caminho e autorização de objeto são controles complementares."
+        },
+        {
+          "lead": "Representar a saída do diretório.",
+          "text_md": "E04 compara um download normal a um caminho que alcança o arquivo canário fora de attachments. Os conteúdos são comparados, não apenas os códigos HTTP. A presença exata do marcador F04-OUTSIDE distingue a leitura indevida de uma página de erro.",
+          "figure": {
+            "src": "img/e04.png",
+            "caption": "E04. Evidência sintética: O marcador vem de um recurso externo ao diretório autorizado. Não é uma captura de um teste executado."
+          }
+        },
+        {
+          "lead": "Cobrir normalização e links.",
+          "text_md": "O roteiro inclui segmentos relativos e um link simbólico dentro de attachments apontando para fixtures. Uma verificação puramente textual do prefixo não demonstra contenção. É preciso validar o destino efetivo e evitar alterações concorrentes no link durante a abertura."
+        },
+        {
+          "lead": "Manter o escopo da conclusão.",
+          "text_md": "C:H se baseia na leitura de configurações que o modelo concede ao processo; I:N e A:N não atribuem outras capacidades. Em uma avaliação real, as métricas seriam ajustadas ao conjunto de arquivos realmente acessível. O canário testa a fronteira, não a exposição de todos os discos."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Restringir o endpoint e revisar as permissões de leitura do serviço. Substituir caminhos expostos por identificadores internos. Preservar um canário de teste separado de configurações e credenciais para as verificações posteriores.",
+        "medium_md": "Centralizar a resolução de anexos e a política de vínculo ao pedido. Testar traversal, links simbólicos, nomes codificados, arquivo inexistente e anexo de outro tenant. A correção deve rejeitar o acesso sem revelar o caminho absoluto no erro.",
+        "long_md": "Incorporar testes de isolamento do armazenamento às atualizações do framework e às migrações de volume. Verificar se um download normal permanece igual e se o usuário do serviço não consegue ler material de outros componentes."
+      },
+      "asset_uids": [
+        "7993cf01-787a-590b-833f-59bb95756739",
+        "9a4db157-7733-5b63-8337-4eddedc0bbd5"
+      ],
+      "evidence_uids": [
+        "d595880a-3c59-575c-bd60-2d0e0f95aa2c"
+      ],
+      "owner": "Equipe de API",
+      "due_date": "2026-10-09",
+      "status": "verified_fixed",
+      "retests": [
+        {
+          "uid": "005b6efe-e985-52af-a6db-974e30184944",
+          "result": "fixed",
+          "tested_on": "2026-09-30",
+          "assessor": "Avaliador fictício do cenário",
+          "notes_md": "Reteste fictício RT04. A API recebe IDs de anexos e autoriza pedido e organização antes de resolver o arquivo. Os canários externos e o link simbólico são rejeitados. O anexo legítimo preserva conteúdo e tamanho. O cenário representa o encerramento do achado.",
+          "evidence_uids": [
+            "00c75341-d1a9-568d-bcfb-7d885227d4c8"
+          ]
+        }
+      ]
+    },
+    {
+      "uid": "6657a3dc-47b0-58c8-bf95-2ea6287f62ac",
+      "id": "F05",
+      "mode": "vuln",
+      "title": "SSRF na prévia de integrações",
+      "severity": "high",
+      "cvss": "7.1",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-918",
+      "affected": "api.nimbus.example; files.nimbus.example",
+      "description_md": "A função de prévia solicita uma URL indicada pelo usuário e retorna a resposta. Permite selecionar método e corpo e segue redirecionamentos sem aplicar uma política de destino a cada salto. O serviço alcança uma interface interna que confia na rede de origem.",
+      "impact_md": "O cenário representa leitura de configurações e alterações limitadas em uma tarefa canário do serviço interno de documentos. Não são modelados acesso a metadados de um provedor de nuvem, obtenção de credenciais reais ou execução de comandos.",
+      "remediation_md": "Substituir URLs arbitrárias por integrações predefinidas. Limitar destinos, portas e métodos; validar a resolução e cada redirecionamento; aplicar controles de saída de rede. Exigir autenticação e autorização próprias na interface interna.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/918.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Contexto e pré-condições.",
+          "text_md": "A conta de integração possui permissões baixas na API. O teste utiliza um receptor canário e um serviço interno fictício de documentos. Ambos os destinos são conhecidos pelo inventário do exercício; não são realizadas varreduras de portas nem descobertas de endereços de terceiros."
+        },
+        {
+          "lead": "Observar uma integração autorizada.",
+          "text_md": "Enviar uma URL do receptor canário e comparar o identificador de correlação recebido com o da API. O cenário distingue uma conexão realizada pelo servidor de uma requisição do navegador. A resposta visível deve corresponder ao mesmo identificador."
+        },
+        {
+          "lead": "Verificar uma fronteira interna.",
+          "text_md": "Solicitar à prévia o recurso canário interno. E05 representa a API retornando informações de configuração reservadas à rede de serviços. O impacto de integridade se limita a alterar uma etiqueta da tarefa DEMO-JOB-05, operação reversível incluída no modelo.",
+          "figure": {
+            "src": "img/e05.png",
+            "caption": "E05. Evidência sintética: A confiança na rede interna amplia o alcance de uma entrada controlada. Não é uma captura de um teste executado."
+          }
+        },
+        {
+          "lead": "Avaliar redirecionamentos.",
+          "text_md": "O reteste fictício adiciona um bloqueio de destinos internos diretos, mas mantém redirecionamentos para o mesmo destino. Essa diferença explica por que o achado continua aberto. Um filtro do primeiro hostname não protege as resoluções e os destinos efetivos posteriores."
+        },
+        {
+          "lead": "Evitar conclusões excessivas.",
+          "text_md": "Não se afirma que uma SSRF permita alcançar qualquer rede ou controlar um host. PR:L reflete a conta exigida; C:H e I:L são as capacidades concretas do serviço de documentos representado. A disponibilidade não é testada nem pontuada."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Desativar destinos arbitrários e restringir a saída de rede do processo. Proteger a interface interna com identidade de serviço. Manter apenas as integrações necessárias com um contrato explícito de método, caminho e formato de resposta.",
+        "medium_md": "Aplicar uma política ao destino resolvido e a cada salto de redirecionamento. Testar IPv4, IPv6, mudanças de resolução e rotas indiretas com receptores controlados. Limitar tempos e tamanhos de resposta para impedir consumo ilimitado de recursos pela prévia.",
+        "long_md": "Encerrar quando tanto o acesso direto quanto o redirecionado a recursos fora da política falharem. Preservar uma integração positiva que continue funcionando e um teste demonstrando que o serviço interno rejeita requisições sem identidade, mesmo a partir de uma rede permitida."
+      },
+      "asset_uids": [
+        "7993cf01-787a-590b-833f-59bb95756739",
+        "9a4db157-7733-5b63-8337-4eddedc0bbd5"
+      ],
+      "evidence_uids": [
+        "1e1a4f84-5740-599f-bd56-41cd69f4d35a"
+      ],
+      "owner": "Equipe de plataforma",
+      "due_date": "2026-10-09",
+      "status": "in_progress",
+      "retests": [
+        {
+          "uid": "09fe9744-c3bd-59d7-a15c-a9a5f8c3c75d",
+          "result": "partial",
+          "tested_on": "2026-09-30",
+          "assessor": "Avaliador fictício do cenário",
+          "notes_md": "Reteste fictício RT05. A URL interna direta é rejeitada, mas um redirecionamento a partir do receptor canário alcança novamente o recurso interno. A alteração de etiqueta não é repetida: ler o marcador basta para demonstrar que a fronteira continua aberta. F05 permanece em correção.",
+          "evidence_uids": [
+            "111fd17c-4850-5f39-bf1c-0670a77d5d2f"
+          ]
+        }
+      ]
+    },
+    {
+      "uid": "75f54222-a209-576b-a0be-7a144240bc84",
+      "id": "F06",
+      "mode": "vuln",
+      "title": "Credencial de serviço publicada em um artefato de CI",
+      "severity": "high",
+      "cvss": "8.1",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-798",
+      "affected": "ci.nimbus.example; api.nimbus.example",
+      "description_md": "O pacote de diagnóstico de uma compilação incorpora um arquivo de configuração com uma credencial reutilizável. Membros com acesso de leitura aos artefatos podem recuperá-la. A identidade de serviço possui permissões de leitura e alteração na API de pedidos.",
+      "impact_md": "Um usuário de CI com permissão de leitura pode assumir os privilégios de uma identidade mais poderosa. São modeladas consulta e atualização de pedidos canário. A conta não administra o sistema operacional nem o faturamento do provedor de infraestrutura.",
+      "remediation_md": "Revogar e rotacionar a credencial, retirar o artefato e revisar seu histórico de acessos. Emitir credenciais de curta duração por um gerenciador de segredos e limitar as permissões do serviço. Excluir segredos do empacotamento e detectar regressões antes da publicação.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/798.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Contexto e pré-condições.",
+          "text_md": "O artefato build-demo-062 pertence a um pipeline fictício. A sequência SECRET-DEMO-NO-VALIDO é um marcador editorial, não uma credencial funcional. As capacidades de svc_order_sync são descritas no cenário para explicar a consequência do acesso a segredos."
+        },
+        {
+          "lead": "Separar permissão de leitura e permissão de execução.",
+          "text_md": "A conta de desenvolvedor pode baixar artefatos, mas não administrar pedidos. Registrar essa diferença antes de usar a identidade de serviço no roteiro. Se ambos os atores tivessem os mesmos privilégios, a conclusão sobre elevação exigiria outra análise."
+        },
+        {
+          "lead": "Localizar a origem da exposição.",
+          "text_md": "E06 identifica o arquivo de configuração incluído por uma regra de empacotamento ampla demais. O erro é atribuído ao conteúdo e à distribuição do artefato, não à simples existência de uma variável de ambiente. O relatório preserva uma etiqueta sintética no lugar do segredo.",
+          "figure": {
+            "src": "img/e06.png",
+            "caption": "E06. Evidência sintética: O acesso de leitura ao artefato expõe uma identidade com maiores permissões. Não é uma captura de um teste executado."
+          }
+        },
+        {
+          "lead": "Modelar uma verificação mínima.",
+          "text_md": "A representação utiliza o serviço para ler e alterar uma nota de um pedido canário. Não extrai um catálogo completo. O valor é restaurado depois. O resultado demonstra as permissões atribuídas ao segredo no exemplo, sem afirmar o uso de uma credencial real."
+        },
+        {
+          "lead": "Avaliar a retirada completa.",
+          "text_md": "Excluir o arquivo de uma compilação posterior não invalida cópias baixadas nem o token anterior. O encerramento exige confirmar revogação, rotação, permissões reduzidas e revisão da retenção em caches ou repositórios secundários."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Revogar o segredo anterior antes de considerar resolvido o incidente representado. Retirar as cópias controladas pelo pipeline e registrar quais repositórios de artefatos e caches foram revisados. Coordenar a rotação para evitar interrupção desnecessária.",
+        "medium_md": "Separar configuração pública e segredos em tempo de execução. Reduzir svc_order_sync às operações e organizações necessárias. Impedir a publicação quando a análise de conteúdo detectar formatos de segredo ou arquivos proibidos, com exceções revisadas e rastreáveis.",
+        "long_md": "O encerramento exige que o segredo antigo falhe, que o novo artefato não o contenha e que a identidade limitada preserve o fluxo legítimo. O estado continua em correção: este documento ainda não representa um reteste conclusivo dessa rotação."
+      },
+      "asset_uids": [
+        "97681ba0-a07d-5c86-bc81-b2ab2426e2d4",
+        "7993cf01-787a-590b-833f-59bb95756739"
+      ],
+      "evidence_uids": [
+        "42642fb9-36d3-556b-a575-90ac1bc0b1e2"
+      ],
+      "owner": "Equipe de DevOps",
+      "due_date": "2026-10-05",
+      "status": "in_progress",
+      "retests": []
+    },
+    {
+      "uid": "ace05d7d-745c-58d1-b909-5ac8f2c6c8e6",
+      "id": "F07",
+      "mode": "vuln",
+      "title": "Direitos de replicação do domínio atribuídos a uma conta operacional",
+      "severity": "high",
+      "cvss": "8.8",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "cvss_version": "3.1",
+      "cwe": "CWE-269",
+      "affected": "dc01.ad.nimbus.example",
+      "description_md": "A conta operacional svc_inventory possui os direitos de replicação Get-Changes e Get-Changes-All sobre o contexto de nomenclatura do domínio. Essa delegação excede sua função de inventário e permite solicitar dados sensíveis do domínio por replicação.",
+      "impact_md": "O cenário concede uma rota para segredos de autenticação e comprometimento amplo do domínio. A verificação didática se limita a uma identidade canário. As métricas altas de integridade e disponibilidade refletem o impacto potencial do controle do domínio; não representam exclusão, paralisação ou extração em massa.",
+      "remediation_md": "Retirar a delegação desnecessária, revisar permissões herdadas e grupos que a concedem e separar inventário das funções de replicação. Investigar a atividade da identidade e planejar a rotação de segredos conforme o alcance realmente determinado.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/269.html",
+        "https://learn.microsoft.com/en-us/windows/win32/adschema/r-ds-replication-get-changes-all"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Contexto e pré-condições.",
+          "text_md": "DC01 e o domínio ad.nimbus.example são fictícios. O modelo fornece uma conta operacional válida e conectividade com o controlador de domínio. Não são incluídos hashes, senhas ou material de autenticação real; a identidade canário ilustra apenas o critério de confirmação."
+        },
+        {
+          "lead": "Revisar permissões efetivas.",
+          "text_md": "Verificar entradas explícitas, associação transitiva a grupos e herança. E07 representa a combinação dos dois direitos na raiz do domínio. Uma permissão de nome semelhante sobre outra unidade organizacional não demonstraria o mesmo alcance."
+        },
+        {
+          "lead": "Distinguir configuração e confirmação.",
+          "text_md": "A revisão de ACL sustenta uma condição de risco. O roteiro acrescenta uma solicitação de replicação limitada a demo-repl-canary para ilustrar como confirmar a capacidade. As saídas mostradas são sintéticas; não houve extração de segredos na criação deste relatório.",
+          "figure": {
+            "src": "img/e07.png",
+            "caption": "E07. Evidência sintética: Uma identidade de inventário recebe poderes de replicação desnecessários. Não é uma captura de um teste executado."
+          }
+        },
+        {
+          "lead": "Delimitar a cadeia de impacto.",
+          "text_md": "O comprometimento do domínio é uma consequência modelada da exposição de segredos de autenticação, não uma etapa adicional executada. Não são incluídas persistência, alteração de políticas ou operações destrutivas. A equipe precisaria avaliar o alcance com sua telemetria e seus procedimentos de resposta."
+        },
+        {
+          "lead": "Justificar a prioridade.",
+          "text_md": "A pontuação base é alta com PR:L porque uma identidade de domínio é necessária. A prioridade de negócio é P0 pelo alcance transversal. Essa diferença mostra por que CVSS e prioridade operacional são registrados separadamente, em vez de elevar artificialmente o vetor."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Suspender ou limitar a identidade suscetível a comprometimento e retirar os direitos injustificados após verificar dependências legítimas. Preservar registros relevantes de autenticação e replicação. Uma rotação isolada não corrige uma delegação ainda existente.",
+        "medium_md": "Inventariar entidades de segurança com direitos de replicação e documentar exceções autorizadas. Revisar eventos de acesso a objetos e solicitações de replicação de máquinas que não sejam controladores, conforme a auditoria habilitada e a telemetria realmente disponível.",
+        "long_md": "Verificar com a mesma identidade se a solicitação canário é negada, enquanto a replicação legítima entre controladores continua. Se a exposição real de segredos fosse comprovada, a recuperação do domínio exigiria procedimento adicional; este caso fictício não afirma tê-lo executado."
+      },
+      "asset_uids": [
+        "47b6a54c-4280-59e1-874e-c19578b1a627"
+      ],
+      "evidence_uids": [
+        "6622fc6c-e102-5b8d-aeaa-63bffea4ff5a"
+      ],
+      "owner": "Equipe de identidade",
+      "due_date": "2026-10-03",
+      "status": "in_progress",
+      "retests": []
+    },
+    {
+      "uid": "82e71acc-cd39-5e99-a7ec-5aa957a373fd",
+      "id": "F08",
+      "mode": "vuln",
+      "title": "Delegação de associação a um grupo administrador de servidores",
+      "severity": "high",
+      "cvss": "8.8",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "cvss_version": "3.1",
+      "cwe": "CWE-269",
+      "affected": "dc01.ad.nimbus.example; winapp01.ad.nimbus.example",
+      "description_md": "Helpdesk-L1 pode alterar a associação de membros de APP-Server-Admins. Esse segundo grupo é administrador local em WINAPP01 por uma política de domínio. A delegação permite elevar uma conta de suporte à administração do servidor de aplicação.",
+      "impact_md": "O modelo permite acesso administrativo ao host de aplicação, a seus dados e serviços. Essa administração local não é equiparada automaticamente a controle do domínio. O teste canário verifica apenas a permissão efetiva e uma operação administrativa inofensiva.",
+      "remediation_md": "Retirar a permissão de escrita de membros e revisar toda a rota de grupos e políticas. Separar a gestão de suporte da administração de servidores; aplicar concessões temporárias e aprovadas quando a operação exigir.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/269.html",
+        "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/best-practices-for-securing-active-directory"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Contexto e pré-condições.",
+          "text_md": "A conta helpdesk.demo começa com funções de suporte limitadas. APP-Server-Admins administra exclusivamente WINAPP01 neste modelo. São utilizadas uma identidade canário e uma sessão nova para refletir corretamente as mudanças do token e evitar atribuir privilégios de sessões anteriores."
+        },
+        {
+          "lead": "Reconstruir a rota de privilégios.",
+          "text_md": "E08 mostra três relações distintas: permissão sobre member, associação ao grupo e atribuição de administrador local. Nenhuma é deduzida apenas do nome do grupo. A política aplicada ao servidor confirma o último trecho da cadeia."
+        },
+        {
+          "lead": "Representar uma alteração reversível.",
+          "text_md": "O roteiro adiciona demo-helpdesk-canary ao grupo e abre uma sessão nova em WINAPP01. A capacidade administrativa é verificada pela leitura de um recurso canário restrito, sem instalar serviços ou executar payloads. A alteração é revertida ao final.",
+          "figure": {
+            "src": "img/e08.png",
+            "caption": "E08. Evidência sintética: A rota de delegação termina em administração local, não em controle comprovado do domínio. Não é uma captura de um teste executado."
+          }
+        },
+        {
+          "lead": "Revisar a herança e a permanência da permissão.",
+          "text_md": "Verificar se a entrada provém do objeto, de uma unidade organizacional ou de um grupo intermediário. Remover um membro canário não elimina a possibilidade de adicioná-lo novamente. O encerramento deve corrigir a delegação e revisar alterações feitas durante a exposição."
+        },
+        {
+          "lead": "Distinguir correção informada de correção verificada.",
+          "text_md": "O estado atual do exemplo é Correção informada: a equipe fictícia informa uma nova política, mas o reteste ainda não está representado. Um aviso de implantação não é apresentado como evidência de encerramento, nem a severidade original é reduzida."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Retirar a delegação excessiva e revisar membros recentes do grupo administrador. Confirmar se a alteração não volta a ser aplicada por um modelo ou uma política de configuração. Documentar as tarefas de suporte que precisam de uma alternativa legítima.",
+        "medium_md": "Separar grupos de suporte, contas administrativas e escopos de servidores. Testar se a conta helpdesk.demo não pode mais adicionar ou remover membros. Verificar permissões efetivas, além de comparar a configuração desejada.",
+        "long_md": "Encerrar quando um reteste rejeitar a alteração e uma sessão nova não possuir administração local, preservando as tarefas de suporte autorizadas. A implantação informada não basta: este relatório mantém o estado sem verificação até haver essa evidência."
+      },
+      "asset_uids": [
+        "47b6a54c-4280-59e1-874e-c19578b1a627",
+        "d9a8ef3e-7b86-5b25-ab7c-9ff47c427c48"
+      ],
+      "evidence_uids": [
+        "8a8883a0-b45d-5168-ae73-9a07ecbd3782"
+      ],
+      "owner": "Equipe de infraestrutura",
+      "due_date": "2026-10-09",
+      "status": "reported_fixed",
+      "retests": []
+    },
+    {
+      "uid": "1d016fca-00fb-5170-a71c-9104d81f64cf",
+      "id": "F09",
+      "mode": "vuln",
+      "title": "XSS armazenado nos comentários do portal de suporte",
+      "severity": "medium",
+      "cvss": "5.4",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:C/C:L/I:L/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-79",
+      "affected": "portal.nimbus.example",
+      "description_md": "Os comentários preservam fragmentos de HTML inseridos sem sanitização adequada no navegador do agente de suporte. Uma conta de cliente pode armazenar conteúdo ativo processado quando o agente abre o ticket.",
+      "impact_md": "A demonstração altera um marcador visível e acessa informações limitadas da página aberta. Não representa roubo de cookies, acesso total à conta do agente ou extração de dados para terceiros. O impacto depende da visualização do comentário por um agente.",
+      "remediation_md": "Renderizar texto com APIs seguras e codificação contextual. Se HTML enriquecido for necessário, aplicar um sanitizador mantido com uma política restrita. Revisar conteúdo já armazenado e usar CSP como defesa complementar, sem transformá-la na correção principal.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/79.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Contexto e pré-condições.",
+          "text_md": "A conta cliente.demo cria um ticket, e agente.demo o consulta em uma sessão separada. O marcador de demonstração altera apenas um elemento da página. Não abre conexões externas nem tenta persistir fora do comentário do caso fictício."
+        },
+        {
+          "lead": "Confirmar a persistência do conteúdo.",
+          "text_md": "Salvar um comentário de texto normal e reabri-lo com a segunda identidade. O roteiro verifica se o conteúdo vem do armazenamento, e não de parâmetros do link ou de ferramentas do navegador utilizadas pelo próprio agente."
+        },
+        {
+          "lead": "Diferenciar HTML e execução.",
+          "text_md": "E09 representa o marcador XSS-DEMO-ACTIVO no DOM da sessão do agente. Mostrar uma tag HTML não comprova, por si só, execução de script: a mudança visível do marcador é a observação escolhida para essa distinção no cenário.",
+          "figure": {
+            "src": "img/e09.png",
+            "caption": "E09. Evidência sintética: O conteúdo armazenado passa ao contexto de execução do navegador do agente. Não é uma captura de um teste executado."
+          }
+        },
+        {
+          "lead": "Delimitar contexto e capacidades.",
+          "text_md": "O comentário é processado na origem do portal. A demonstração não atribui capacidade de ler cookies HttpOnly ou contornar controles de autorização do servidor. O acesso a dados e as ações disponíveis continuariam limitados pela sessão e pelas defesas concretas do navegador."
+        },
+        {
+          "lead": "Justificar interação e alcance.",
+          "text_md": "UI:R reflete a abertura do ticket pela vítima; PR:L, a conta necessária para comentar. S:C representa a passagem da aplicação vulnerável ao contexto de segurança do navegador do agente. C:L e I:L correspondem às capacidades limitadas representadas."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Desativar temporariamente o HTML dos comentários e neutralizar entradas armazenadas que violem a política. Preservar o texto útil dos tickets e documentar as transformações aplicadas para evitar perda desnecessária de informação.",
+        "medium_md": "Revisar a renderização de comentários em detalhes, buscas, notificações e prévias. Incorporar testes de atributos, URLs e elementos não permitidos no formato enriquecido. O controle deve ser aplicado a todos os consumidores do mesmo conteúdo.",
+        "long_md": "Encerrar quando os comentários forem exibidos como texto ou HTML permitido e o marcador não for ativado em nenhuma visualização. Manter um comentário legítimo formatado como controle positivo. O cenário ainda não inclui reteste conclusivo dessa correção."
+      },
+      "asset_uids": [
+        "a56b6769-1b56-53fb-bc31-98623f580a97"
+      ],
+      "evidence_uids": [
+        "f862f5a3-88a0-5ffa-96d1-75ac8634236d"
+      ],
+      "owner": "Equipe de aplicações",
+      "due_date": "2026-10-23",
+      "status": "in_progress",
+      "retests": []
+    },
+    {
+      "uid": "ebf9e7f3-805c-5c10-bbcb-0373ad2caa8b",
+      "id": "F10",
+      "mode": "vuln",
+      "title": "CORS com credenciais para origens não autorizadas",
+      "severity": "medium",
+      "cvss": "6.5",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-942",
+      "affected": "api.nimbus.example; auth.nimbus.example",
+      "description_md": "A API reflete o cabeçalho Origin e permite credenciais sem verificar uma lista de origens autorizadas. A sessão do cenário uso cookies SameSite=None; Secure. Um navegador que aceita esses cookies entre sites pode expor respostas autenticadas a uma origem externa.",
+      "impact_md": "É modelada a leitura de dados de pedidos por uma página externa visitada por um usuário autenticado. Não se afirma que um cabeçalho CORS isolado baste para explorar a falha ou que todos os navegadores permitam cookies de terceiros.",
+      "remediation_md": "Definir uma lista exata de origens por ambiente e evitar refletir valores não confiáveis. Permitir credenciais apenas onde necessário; verificar a política de cookies e cache. Não usar curingas de subdomínio como substitutos de uma lista de aplicações autorizadas.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/942.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Contexto e pré-condições.",
+          "text_md": "A origem receptora é receptor.canario.nimbus.example e contém apenas dados de demonstração. O navegador do roteiro permite o cookie entre sites. Essa condição é declarada explicitamente porque o bloqueio de cookies de terceiros pode interromper a cadeia mesmo com uma política incorreta no servidor."
+        },
+        {
+          "lead": "Verificar a configuração do servidor.",
+          "text_md": "Comparar uma requisição com a origem legítima a outra com o receptor canário. E10 mostra que ambas são aceitas com credenciais. A combinação de asterisco e credenciais não é utilizada como prova: navegadores não a tratam como autorização válida para leitura autenticada."
+        },
+        {
+          "lead": "Representar a verificação no navegador.",
+          "text_md": "A página canário solicita o recurso com credenciais e acessa o corpo da resposta. Esse acesso por JavaScript é a condição relevante; obter um 200 com uma ferramenta HTTP não demonstraria, por si só, violação da política do navegador.",
+          "figure": {
+            "src": "img/e10.png",
+            "caption": "E10. Evidência sintética: A leitura autenticada exige que as condições do navegador também sejam atendidas. Não é uma captura de um teste executado."
+          }
+        },
+        {
+          "lead": "Manter uma matriz de condições.",
+          "text_md": "O roteiro diferencia sessão presente ou ausente e cookies permitidos ou bloqueados. Apenas a combinação de sessão válida, envio de cookies e política CORS permissiva representa leitura autenticada. O relatório não transforma a configuração em uma afirmação universal sobre todos os usuários."
+        },
+        {
+          "lead": "Definir o escopo da avaliação.",
+          "text_md": "PR:N descreve o ator que controla a origem receptora; UI:R reflete a necessidade de a vítima visitá-la. C:H corresponde à API de pedidos acessível no modelo. Não são representadas alterações de estado ou interrupção; portanto, I e A permanecem em N."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Retirar origens não autorizadas e verificar o funcionamento dos clientes legítimos. Revisar cabeçalhos de cache para impedir que uma resposta autorizada para uma origem seja reutilizada incorretamente para outra.",
+        "medium_md": "Centralizar a política CORS por ambiente. Testar origem exata permitida, origem externa, valor null e subdomínios que não correspondam a clientes. Revisar cookies e controles de autorização de cada endpoint sem presumir que CORS substitua autenticação.",
+        "long_md": "Encerrar com uma verificação no navegador: o cliente legítimo consegue ler a resposta, e o receptor canário não. Variantes sem sessão devem continuar rejeitando o acesso. O reteste fictício incluído representa esses controles positivos e negativos."
+      },
+      "asset_uids": [
+        "7993cf01-787a-590b-833f-59bb95756739",
+        "3855f32e-8146-5d1b-b417-9eccc2e47140"
+      ],
+      "evidence_uids": [
+        "55696336-aadc-5bdd-ad40-34100602c432"
+      ],
+      "owner": "Equipe de API",
+      "due_date": "2026-10-23",
+      "status": "verified_fixed",
+      "retests": [
+        {
+          "uid": "24dd4938-9e5d-574d-9b78-9f6c9a469733",
+          "result": "fixed",
+          "tested_on": "2026-09-30",
+          "assessor": "Avaliador fictício do cenário",
+          "notes_md": "Reteste fictício RT10. A origem legítima mantém a leitura autenticada. O receptor canário e Origin:null não recebem autorização CORS; JavaScript não acessa o corpo. Requisições sem sessão continuam sendo rejeitadas. O exemplo representa correção verificada, não apenas uma mudança de cabeçalhos.",
+          "evidence_uids": [
+            "0cce3187-5d6a-5937-a05e-82017fcfa340"
+          ]
+        }
+      ]
+    },
+    {
+      "uid": "09cbd4dd-08b4-54d8-b448-94ce739ac6fe",
+      "id": "F11",
+      "mode": "vuln",
+      "title": "Sessão reutilizável após o logout",
+      "severity": "medium",
+      "cvss": "5.4",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:L/I:L/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-613",
+      "affected": "auth.nimbus.example; portal.nimbus.example",
+      "description_md": "O logout exclui o cookie do navegador, mas o servidor mantém a sessão anterior válida até expirar. A mesma credencial de sessão permite consultar e alterar preferências da conta após o encerramento da sessão.",
+      "impact_md": "Um ator que já possua essa sessão mantém acesso limitado ao perfil e às preferências. O relatório não atribui ao achado uma forma de roubar o token ou acesso a outras contas. A duração restante da sessão determina a janela de exposição.",
+      "remediation_md": "Revogar a sessão no servidor no logout e em alterações sensíveis da conta. Definir a invalidação de tokens de atualização e as exceções de sessões múltiplas. Excluir um cookie no cliente não comprova revogação no servidor.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/613.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Contexto e pré-condições.",
+          "text_md": "Uma cópia sintética da sessão de usuario.a é preservada antes do logout no navegador. Apenas essa identidade e um endpoint de preferências são testados. As sequências de sessão são substituídas por etiquetas não funcionais."
+        },
+        {
+          "lead": "Confirmar a sessão inicial.",
+          "text_md": "Consultar o perfil com SESSION-DEMO-A e verificar o identificador do titular. Registrar a hora lógica do cenário e a expiração prevista. O controle distingue a reutilização do mesmo token de uma nova autenticação automática."
+        },
+        {
+          "lead": "Encerrar a sessão e reutilizar a mesma credencial.",
+          "text_md": "E11 representa a exclusão do cookie e uma nova requisição com o valor anterior. O servidor retorna o perfil. Ver a página no cache do navegador não basta: a evidência escolhida é uma nova resposta autenticada com seu identificador de requisição.",
+          "figure": {
+            "src": "img/e11.png",
+            "caption": "E11. Evidência sintética: O servidor continua aceitando a sessão anterior mesmo após o navegador excluir o cookie. Não é uma captura de um teste executado."
+          }
+        },
+        {
+          "lead": "Verificar uma operação limitada.",
+          "text_md": "Alterar uma preferência canário e verificá-la em uma nova sessão legítima. Restaurar o valor. A operação não afeta credenciais, pedidos ou permissões de outras pessoas. O escopo limitado explica C:L e I:L."
+        },
+        {
+          "lead": "Separar origem do acesso e persistência.",
+          "text_md": "PR:L expressa o requisito de possuir uma sessão válida do usuário. O achado descreve a persistência desse acesso após o logout; não demonstra roubo de cookies, phishing ou desvio da senha. O estado permanece aberto no exemplo."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Documentar e aplicar a revogação central das sessões afetadas. Revisar a duração dos tokens e o comportamento dos clientes com várias sessões. Uma expiração mais curta reduz a janela, mas não cumpre sozinha a semântica do logout.",
+        "medium_md": "Adicionar testes de logout, alteração de senha, recuperação de conta e revogação administrativa. Verificar tokens de acesso e de atualização. O projeto deve esclarecer se uma ação revoga uma sessão ou todas as sessões do usuário.",
+        "long_md": "O encerramento exige que o token anterior falhe em uma requisição nova, não permita atualizar preferências e que uma nova sessão legítima funcione. Este caso não apresenta reteste: a correção permanece pendente no cenário."
+      },
+      "asset_uids": [
+        "3855f32e-8146-5d1b-b417-9eccc2e47140",
+        "a56b6769-1b56-53fb-bc31-98623f580a97"
+      ],
+      "evidence_uids": [
+        "3f0cac57-5e0c-5831-a174-a9d167fe03ed"
+      ],
+      "owner": "Equipe de identidade",
+      "due_date": "2026-10-23",
+      "status": "open",
+      "retests": []
+    },
+    {
+      "uid": "9d7fecc2-0be2-523b-b910-79859de46e97",
+      "id": "F12",
+      "mode": "vuln",
+      "title": "Diagnósticos internos expostos no painel de suporte",
+      "severity": "low",
+      "cvss": "2.7",
+      "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
+      "cvss_version": "3.1",
+      "cwe": "CWE-209",
+      "affected": "portal.nimbus.example; db.nimbus.example",
+      "description_md": "Um erro do painel restrito de suporte retorna a stack trace, o nome interno do banco de dados e caminhos de implantação. A função soporte-admin precisa de recursos operacionais da aplicação, mas não de acesso a essas informações internas do serviço.",
+      "impact_md": "É modelada uma divulgação limitada de estrutura e nomes internos a uma conta com privilégios altos na aplicação. A resposta não contém senhas, tokens ou dados de clientes. Não se afirma que conhecer uma versão ou um caminho comprove outra vulnerabilidade.",
+      "remediation_md": "Retornar um erro genérico com identificador de correlação e guardar o diagnóstico em registros de acesso restrito. Desativar a depuração em entregas públicas e sanitizar campos que possam conter segredos ou dados pessoais.",
+      "references": [
+        "https://cwe.mitre.org/data/definitions/209.html",
+        "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html"
+      ],
+      "walkthrough": [
+        {
+          "lead": "Contexto e pré-condições.",
+          "text_md": "A falha aparece em uma visualização administrativa do painel de suporte. Uma conta comum não alcança esse endpoint. Essa condição evita inflar o risco como se fosse divulgação pública sem autenticação."
+        },
+        {
+          "lead": "Verificar o requisito de privilégios.",
+          "text_md": "Comparar a resposta de uma conta comum à de soporte-admin. A primeira recebe uma rejeição de autorização. PR:H registra a necessidade de uma função administrativa da aplicação antes de alcançar o comportamento vulnerável."
+        },
+        {
+          "lead": "Identificar informações adicionais.",
+          "text_md": "E12 mostra o tipo de exceção, o nome de um banco e um caminho da aplicação. É preservada uma representação sintética desses valores. Diferentemente de um identificador de erro, ela fornece estrutura interna desnecessária ao cliente para concluir a operação.",
+          "figure": {
+            "src": "img/e12.png",
+            "caption": "E12. Evidência sintética: O vazamento é limitado e exige uma função privilegiada; não são atribuídas consequências adicionais. Não é uma captura de um teste executado."
+          }
+        },
+        {
+          "lead": "Evitar encadeamentos não comprovados.",
+          "text_md": "O relatório não transforma o nome de um mecanismo ou sua versão em um CVE aplicável. Tampouco atribui acesso ao arquivo mencionado. A exposição é avaliada por si só com C:L e sem impacto direto em integridade ou disponibilidade."
+        },
+        {
+          "lead": "Definir uma correção verificável.",
+          "text_md": "A resposta pública deve preservar um identificador utilizável pelo suporte, enquanto a stack trace permanece em um canal autorizado. Os testes devem verificar tanto a ausência de detalhes quanto a capacidade de correlacionar o erro legitimamente."
+        }
+      ],
+      "remediation_summary": {
+        "short_md": "Desativar o retorno de stack traces ao cliente e manter um identificador de correlação. Revisar se os registros internos armazenam parâmetros sensíveis e limitar quem pode consultá-los.",
+        "medium_md": "Unificar o tratamento de erros da API e do painel. Testar falhas de validação, dependências e exceções inesperadas. A aplicação deve manter códigos e mensagens consistentes sem expor caminhos, consultas ou detalhes de configuração.",
+        "long_md": "Encerrar quando o diagnóstico estiver disponível apenas no canal autorizado e o suporte puder correlacionar o incidente usando DEMO-ERR-1201 como padrão de teste. O exemplo mantém o achado aberto, com prioridade inferior às rotas de acesso a dados e privilégios."
+      },
+      "asset_uids": [
+        "a56b6769-1b56-53fb-bc31-98623f580a97",
+        "c4a6a297-d869-5139-b533-c8df924abe9c"
+      ],
+      "evidence_uids": [
+        "8f04ba1b-e957-5abf-87c8-b60d01f15bb4"
+      ],
+      "owner": "Equipe de aplicações",
+      "due_date": "2026-11-02",
+      "status": "open",
+      "retests": []
+    }
+  ],
+  "assets": [
+    {
+      "uid": "a56b6769-1b56-53fb-bc31-98623f580a97",
+      "name": "PORTAL",
+      "target": "portal.nimbus.example",
+      "kind": "Web",
+      "notes": "Pedidos e suporte; duas organizações canário."
+    },
+    {
+      "uid": "7993cf01-787a-590b-833f-59bb95756739",
+      "name": "API01",
+      "target": "api.nimbus.example",
+      "kind": "API",
+      "notes": "Pedidos, anexos e integrações; acesso autenticado."
+    },
+    {
+      "uid": "3855f32e-8146-5d1b-b417-9eccc2e47140",
+      "name": "AUTH01",
+      "target": "auth.nimbus.example",
+      "kind": "Identidade",
+      "notes": "Recuperação de contas, sessões e cookies."
+    },
+    {
+      "uid": "c4a6a297-d869-5139-b533-c8df924abe9c",
+      "name": "DB01",
+      "target": "db.nimbus.example",
+      "kind": "Banco de dados",
+      "notes": "Cópia sintética; permissões e dados canário."
+    },
+    {
+      "uid": "9a4db157-7733-5b63-8337-4eddedc0bbd5",
+      "name": "FILES01",
+      "target": "files.nimbus.example",
+      "kind": "Arquivos",
+      "notes": "Anexos e serviço interno de documentos."
+    },
+    {
+      "uid": "97681ba0-a07d-5c86-bc81-b2ab2426e2d4",
+      "name": "CI01",
+      "target": "ci.nimbus.example",
+      "kind": "Desenvolvimento",
+      "notes": "Artefatos e credenciais de serviço fictícias."
+    },
+    {
+      "uid": "47b6a54c-4280-59e1-874e-c19578b1a627",
+      "name": "DC01",
+      "target": "dc01.ad.nimbus.example",
+      "kind": "Active Directory",
+      "notes": "Delegações e grupos do domínio fictício."
+    },
+    {
+      "uid": "d9a8ef3e-7b86-5b25-ab7c-9ff47c427c48",
+      "name": "WINAPP01",
+      "target": "winapp01.ad.nimbus.example",
+      "kind": "Servidor",
+      "notes": "Administração local por grupo de domínio."
+    }
+  ],
+  "evidence": [
+    {
+      "uid": "e6a75b09-e809-57a4-ab11-c73913ec520f",
+      "title": "E01 | Alteração de condição e registro canário",
+      "src": "img/e01.png",
+      "caption": "E01. Evidência sintética: A condição controla a consulta; o teste se limita a dados canário. Não é uma captura de um teste executado."
+    },
+    {
+      "uid": "10ba7b94-cad6-5ccc-adc8-86b2a06c298c",
+      "title": "RT01 | Reteste fictício",
+      "src": "img/rt01.png",
+      "caption": "RT01. Evidência sintética do reteste; sem execução contra sistemas reais."
+    },
+    {
+      "uid": "80147432-b232-5313-a68c-abd091976852",
+      "title": "E02 | Token válido, identidade incorreta",
+      "src": "img/e02.png",
+      "caption": "E02. Evidência sintética: O servidor aceita que o cliente escolha uma identidade diferente da vinculada ao token. Não é uma captura de um teste executado."
+    },
+    {
+      "uid": "fa3f37c7-3b45-5d65-82ff-57eeec78fae7",
+      "title": "RT02 | Reteste fictício",
+      "src": "img/rt02.png",
+      "caption": "RT02. Evidência sintética do reteste; sem execução contra sistemas reais."
+    },
+    {
+      "uid": "6fa1123a-d031-5e56-9138-2b62cd11ac0b",
+      "title": "E03 | Matriz de autorização entre organizações",
+      "src": "img/e03.png",
+      "caption": "E03. Evidência sintética: A identidade está autenticada, mas o objeto não está autorizado para ela. Não é uma captura de um teste executado."
+    },
+    {
+      "uid": "ea51aaf3-9470-510f-8357-db6babb39175",
+      "title": "RT03 | Reteste fictício",
+      "src": "img/rt03.png",
+      "caption": "RT03. Evidência sintética do reteste; sem execução contra sistemas reais."
+    },
+    {
+      "uid": "d595880a-3c59-575c-bd60-2d0e0f95aa2c",
+      "title": "E04 | Verificação do diretório de download",
+      "src": "img/e04.png",
+      "caption": "E04. Evidência sintética: O marcador vem de um recurso externo ao diretório autorizado. Não é uma captura de um teste executado."
+    },
+    {
+      "uid": "00c75341-d1a9-568d-bcfb-7d885227d4c8",
+      "title": "RT04 | Reteste fictício",
+      "src": "img/rt04.png",
+      "caption": "RT04. Evidência sintética do reteste; sem execução contra sistemas reais."
+    },
+    {
+      "uid": "1e1a4f84-5740-599f-bd56-41cd69f4d35a",
+      "title": "E05 | Destino inicial e destino efetivo",
+      "src": "img/e05.png",
+      "caption": "E05. Evidência sintética: A confiança na rede interna amplia o alcance de uma entrada controlada. Não é uma captura de um teste executado."
+    },
+    {
+      "uid": "111fd17c-4850-5f39-bf1c-0670a77d5d2f",
+      "title": "RT05 | Reteste fictício",
+      "src": "img/rt05.png",
+      "caption": "RT05. Evidência sintética do reteste; sem execução contra sistemas reais."
+    },
+    {
+      "uid": "42642fb9-36d3-556b-a575-90ac1bc0b1e2",
+      "title": "E06 | Artefato de compilação e privilégios",
+      "src": "img/e06.png",
+      "caption": "E06. Evidência sintética: O acesso de leitura ao artefato expõe uma identidade com maiores permissões. Não é uma captura de um teste executado."
+    },
+    {
+      "uid": "6622fc6c-e102-5b8d-aeaa-63bffea4ff5a",
+      "title": "E07 | Delegação de replicação e alcance",
+      "src": "img/e07.png",
+      "caption": "E07. Evidência sintética: Uma identidade de inventário recebe poderes de replicação desnecessários. Não é uma captura de um teste executado."
+    },
+    {
+      "uid": "8a8883a0-b45d-5168-ae73-9a07ecbd3782",
+      "title": "E08 | Rota de administração de um servidor",
+      "src": "img/e08.png",
+      "caption": "E08. Evidência sintética: A rota de delegação termina em administração local, não em controle comprovado do domínio. Não é uma captura de um teste executado."
+    },
+    {
+      "uid": "f862f5a3-88a0-5ffa-96d1-75ac8634236d",
+      "title": "E09 | Comentário persistente e contexto do navegador",
+      "src": "img/e09.png",
+      "caption": "E09. Evidência sintética: O conteúdo armazenado passa ao contexto de execução do navegador do agente. Não é uma captura de um teste executado."
+    },
+    {
+      "uid": "55696336-aadc-5bdd-ad40-34100602c432",
+      "title": "E10 | Política CORS e leitura de outra origem",
+      "src": "img/e10.png",
+      "caption": "E10. Evidência sintética: A leitura autenticada exige que as condições do navegador também sejam atendidas. Não é uma captura de um teste executado."
+    },
+    {
+      "uid": "0cce3187-5d6a-5937-a05e-82017fcfa340",
+      "title": "RT10 | Reteste fictício",
+      "src": "img/rt10.png",
+      "caption": "RT10. Evidência sintética do reteste; sem execução contra sistemas reais."
+    },
+    {
+      "uid": "3f0cac57-5e0c-5831-a174-a9d167fe03ed",
+      "title": "E11 | Sessão antes e depois do logout",
+      "src": "img/e11.png",
+      "caption": "E11. Evidência sintética: O servidor continua aceitando a sessão anterior mesmo após o navegador excluir o cookie. Não é uma captura de um teste executado."
+    },
+    {
+      "uid": "8f04ba1b-e957-5abf-87c8-b60d01f15bb4",
+      "title": "E12 | Resposta de erro e limite de informação",
+      "src": "img/e12.png",
+      "caption": "E12. Evidência sintética: O vazamento é limitado e exige uma função privilegiada; não são atribuídas consequências adicionais. Não é uma captura de um teste executado."
+    }
+  ],
+  "coverage": [
+    {
+      "uid": "a07df0a2-2e24-5516-b37a-087eede6e4cc",
+      "asset_uid": "a56b6769-1b56-53fb-bc31-98623f580a97",
+      "test": "Busca e acesso a dados",
+      "status": "done",
+      "notes": "Cenário representado: F01; controle legítimo e entradas booleanas."
+    },
+    {
+      "uid": "0eb6e143-2978-51ce-8101-46a2132406b3",
+      "asset_uid": "3855f32e-8146-5d1b-b417-9eccc2e47140",
+      "test": "Recuperação de senha",
+      "status": "done",
+      "notes": "Cenário representado: F02; duas identidades e uso único."
+    },
+    {
+      "uid": "b8b56d65-4c57-58f6-9240-02d505aba08c",
+      "asset_uid": "7993cf01-787a-590b-833f-59bb95756739",
+      "test": "Autorização por objeto",
+      "status": "done",
+      "notes": "Cenário representado: F03; leitura e escrita cruzadas."
+    },
+    {
+      "uid": "b956297c-8ca5-52bf-ae90-c01325c20cfe",
+      "asset_uid": "9a4db157-7733-5b63-8337-4eddedc0bbd5",
+      "test": "Isolamento de anexos",
+      "status": "done",
+      "notes": "Cenário representado: F04; caminho canário e link simbólico."
+    },
+    {
+      "uid": "a18ac98e-db54-5b38-bfd4-3087d7fe3a1e",
+      "asset_uid": "7993cf01-787a-590b-833f-59bb95756739",
+      "test": "Destinos de integrações",
+      "status": "done",
+      "notes": "Cenário representado: F05; acesso direto e redirecionamento."
+    },
+    {
+      "uid": "09dab28d-f07c-549a-8db8-71eff4f3054f",
+      "asset_uid": "97681ba0-a07d-5c86-bc81-b2ab2426e2d4",
+      "test": "Conteúdo de artefatos",
+      "status": "done",
+      "notes": "Cenário representado: F06; identidade de serviço com permissões excessivas."
+    },
+    {
+      "uid": "8f214cb6-c9c8-558d-b25d-bdbdab6ce221",
+      "asset_uid": "47b6a54c-4280-59e1-874e-c19578b1a627",
+      "test": "Delegações de replicação",
+      "status": "done",
+      "notes": "Cenário representado: F07; ACL e entidade de segurança efetiva."
+    },
+    {
+      "uid": "d19fe872-98e2-5f83-b167-eb5fd9782455",
+      "asset_uid": "47b6a54c-4280-59e1-874e-c19578b1a627",
+      "test": "Associação a grupos",
+      "status": "done",
+      "notes": "Cenário representado: F08; rota até a administração local."
+    },
+    {
+      "uid": "e2a61d74-b8f3-5ccd-b899-61de2b2a8ebb",
+      "asset_uid": "d9a8ef3e-7b86-5b25-ab7c-9ff47c427c48",
+      "test": "Aplicação de política local",
+      "status": "done",
+      "notes": "Cenário representado: F08; sessão nova e identidade canário."
+    },
+    {
+      "uid": "1753f63e-f0f3-5790-8d24-a577cc46580e",
+      "asset_uid": "a56b6769-1b56-53fb-bc31-98623f580a97",
+      "test": "Comentários enriquecidos",
+      "status": "done",
+      "notes": "Cenário representado: F09; persistência e visualização pelo agente."
+    },
+    {
+      "uid": "556e73d2-b516-5331-83e5-f3725663b73c",
+      "asset_uid": "7993cf01-787a-590b-833f-59bb95756739",
+      "test": "CORS com credenciais",
+      "status": "done",
+      "notes": "Cenário representado: F10; leitura pelo navegador canário."
+    },
+    {
+      "uid": "1eb26c4f-305f-5240-adb8-be0e0eaa1efb",
+      "asset_uid": "3855f32e-8146-5d1b-b417-9eccc2e47140",
+      "test": "Revogação de sessões",
+      "status": "done",
+      "notes": "Cenário representado: F11; requisição nova após o logout."
+    },
+    {
+      "uid": "61c1a236-2162-54f9-9c57-82174acda6b6",
+      "asset_uid": "a56b6769-1b56-53fb-bc31-98623f580a97",
+      "test": "Tratamento de erros",
+      "status": "done",
+      "notes": "Cenário representado: F12; conta comum comparada a soporte-admin."
+    },
+    {
+      "uid": "4bcee216-ce56-545e-a917-72ac59b95342",
+      "asset_uid": "7993cf01-787a-590b-833f-59bb95756739",
+      "test": "Controle positivo de autorização",
+      "status": "done",
+      "notes": "Controle representado sem achado: usuário anônimo recebe 401 no perfil."
+    },
+    {
+      "uid": "2c968980-dff1-5b1e-bf55-a6dafe33797e",
+      "asset_uid": "a56b6769-1b56-53fb-bc31-98623f580a97",
+      "test": "Separação da função administrativa",
+      "status": "done",
+      "notes": "Controle representado sem achado: conta comum não abre o painel restrito."
+    },
+    {
+      "uid": "68d9ad53-e887-53fe-ac29-bd3e202990be",
+      "asset_uid": "c4a6a297-d869-5139-b533-c8df924abe9c",
+      "test": "Operações destrutivas",
+      "status": "not_applicable",
+      "notes": "Excluídas do roteiro. Não são representadas exclusões ou interrupções."
+    },
+    {
+      "uid": "98bbe2b2-a090-5e23-84de-d6ca35992c15",
+      "asset_uid": "97681ba0-a07d-5c86-bc81-b2ab2426e2d4",
+      "test": "Segredos em versões históricas",
+      "status": "blocked",
+      "notes": "Pendente no cenário devido à retenção incompleta de artefatos."
+    },
+    {
+      "uid": "f93417ae-58cd-5928-a2f6-2a959bbda820",
+      "asset_uid": "47b6a54c-4280-59e1-874e-c19578b1a627",
+      "test": "Resposta a comprometimento do domínio",
+      "status": "not_applicable",
+      "notes": "O documento não representa uma recuperação real do Active Directory."
+    },
+    {
+      "uid": "55359781-ce9a-5d2c-aa3a-dca7123a2f5a",
+      "asset_uid": "d9a8ef3e-7b86-5b25-ab7c-9ff47c427c48",
+      "test": "Persistência em servidores",
+      "status": "not_applicable",
+      "notes": "Fora do escopo didático; nenhum componente é instalado."
+    },
+    {
+      "uid": "b89f1f25-bd98-5901-953a-59c492ca8941",
+      "asset_uid": "3855f32e-8146-5d1b-b417-9eccc2e47140",
+      "test": "Variedade de navegadores e cookies",
+      "status": "blocked",
+      "notes": "O cenário CORS representa uma configuração; não comprova cobertura universal."
+    },
+    {
+      "uid": "00332d0a-bedd-5133-9cad-eb58e57f3061",
+      "asset_uid": "7993cf01-787a-590b-833f-59bb95756739",
+      "test": "Carga e disponibilidade",
+      "status": "not_applicable",
+      "notes": "Testes de estresse e esgotamento de recursos são excluídos."
+    },
+    {
+      "uid": "6e537965-dede-5c52-88b6-bdaad79d98bd",
+      "asset_uid": "9a4db157-7733-5b63-8337-4eddedc0bbd5",
+      "test": "Retenção de cópias externas",
+      "status": "pending",
+      "notes": "O cenário não inclui inventário completo de cópias e backups."
+    }
+  ],
+  "limitations_md": "**Esta matriz descreve o roteiro fictício.** O rótulo automático «Realizada» significa que a verificação está representada documentalmente no cenário, não que tenha sido executada contra um sistema. As linhas bloqueadas e pendentes mostram como registrar limites sem transformá-los em resultados favoráveis.\n\nA infraestrutura Nimbus não foi implantada, nenhuma requisição foi enviada aos destinos descritos e nenhuma ferramenta de exploração foi executada durante a preparação do exemplo. As únicas execuções reais correspondem ao report-gen e à validação dos arquivos produzidos.\n\nNão é representada cobertura de aplicações móveis, provedores de pagamento, nuvem pública, phishing, segurança física, negação de serviço, persistência ou revisão completa de código. Os controles positivos da tabela se limitam às rotas indicadas. Não constituem uma certificação global de segurança."
+}

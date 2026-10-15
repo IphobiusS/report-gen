@@ -427,8 +427,8 @@ def report_sections(data):
             for group, members in groups:
                 block = '### ' + md_text(group.get('name') or ((('Grupo sin nombre', 'Unnamed group', 'Grupo sem nome')[language_index(lang)])))
                 block += '\n\n' + ((('Hallazgos: ', 'Findings: ', 'Achados: ')[language_index(lang)])) + ', '.join(md_text(f.get('id', '')) for f in members)
-                block += '\n\n**' + ((('Causa raíz', 'Root cause', 'Causa raiz')[language_index(lang)])) + '**\n\n' + group.get('cause_md', '')
-                block += '\n\n**' + ((('Acción común', 'Shared action', 'Ação comum')[language_index(lang)])) + '**\n\n' + group.get('remediation_md', '')
+                block += '\n\n#### ' + ((('Causa raíz', 'Root cause', 'Causa raiz')[language_index(lang)])) + '\n\n' + group.get('cause_md', '')
+                block += '\n\n#### ' + ((('Acción común', 'Shared action', 'Ação comum')[language_index(lang)])) + '\n\n' + group.get('remediation_md', '')
                 blocks.append(block)
             add('rg_root_causes', (('Causas raíz y acciones comunes', 'Root causes and shared actions', 'Causas raiz e ações comuns')[language_index(lang)]), '\n\n'.join(blocks))
     fs = data.get('findings', [])

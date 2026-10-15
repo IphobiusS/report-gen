@@ -20,7 +20,7 @@ const ExperienceUI = (() => {
     if(S.slug && !await doSave())return;
     busyProject(true);
     try {
-      const r=await requireOk(await api.post('/api/demo',{}));const {slug}=await r.json();
+      const r=await requireOk(await api.post('/api/demo',{lang:S.uiLang}));const {slug}=await r.json();
       demoSlugs.add(slug);try{localStorage.setItem('rg.demoProjects',JSON.stringify([...demoSlugs]));}catch(_){}
       await refreshProjects();await loadProject(slug);
       toast(w('Copia de Nimbus creada. Puedes editarla.','Nimbus copy created. You can edit it.', "Cópia do Nimbus criada. Você pode editá-la."),'ok');

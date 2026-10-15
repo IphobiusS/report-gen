@@ -1,0 +1,240 @@
+{
+  "screens": [
+    {
+      "key": "gallery",
+      "lang": "es",
+      "file": "gallery-es.webp",
+      "width": 1320,
+      "height": 1016,
+      "sha256": "d2f1fce4cdd229adcfbe0bafdd73e051105e3735c455b374a0a0a9589c9599f7",
+      "captured_css_dimensions": {
+        "width": 1320,
+        "height": 1015
+      }
+    },
+    {
+      "key": "metadata",
+      "lang": "es",
+      "file": "metadata-es.webp",
+      "width": 1216,
+      "height": 948,
+      "sha256": "8e28d89f031a04b7a4bc609d1b452b66bed354b6d3f3b806dd9d8acdbd6c6b53"
+    },
+    {
+      "key": "finding",
+      "lang": "es",
+      "file": "finding-es.webp",
+      "width": 1216,
+      "height": 948,
+      "sha256": "a689d31f5ddcde2ca6d83c6dd24d6b4e90fe4db463df9054ff686eaddb1586a7"
+    },
+    {
+      "key": "evidence",
+      "lang": "es",
+      "file": "evidence-es.webp",
+      "width": 1216,
+      "height": 948,
+      "sha256": "34c4cd6d1ce5be98c110570243a128376087664c0c72b3bb8abe4a91532f57f0"
+    },
+    {
+      "key": "privacy",
+      "lang": "es",
+      "file": "privacy-es.webp",
+      "width": 1000,
+      "height": 972,
+      "sha256": "94be446fda7ab88bcf313fbb3979905e33ef0f2c312e9a23b474dda16a3b23a4"
+    },
+    {
+      "key": "delivery",
+      "lang": "es",
+      "file": "delivery-es.webp",
+      "width": 780,
+      "height": 972,
+      "sha256": "7366c0b59f85730d7ec8acc1e34d83bc509f85a5e790fcb2620889dd4e232f72"
+    },
+    {
+      "key": "backup",
+      "lang": "es",
+      "file": "backup-es.webp",
+      "width": 1152,
+      "height": 203,
+      "sha256": "1025da3f3a44e6be01b7ffdc14f8aecc79a96f269d7c71e05d2828452faddeae",
+      "captured_css_dimensions": {
+        "width": 1152,
+        "height": 202
+      }
+    },
+    {
+      "key": "gallery",
+      "lang": "en",
+      "file": "gallery-en.webp",
+      "width": 1320,
+      "height": 1016,
+      "sha256": "7ebbf5c678958a06a42429b991ff2bf114d74a6e1753a9f85ef7c6da58f638a0",
+      "captured_css_dimensions": {
+        "width": 1320,
+        "height": 1015
+      }
+    },
+    {
+      "key": "metadata",
+      "lang": "en",
+      "file": "metadata-en.webp",
+      "width": 1216,
+      "height": 948,
+      "sha256": "644aa84035c19f576bc132a6f89a7e04f5b58444b5bba1c4b760e01fe092f19c"
+    },
+    {
+      "key": "finding",
+      "lang": "en",
+      "file": "finding-en.webp",
+      "width": 1216,
+      "height": 948,
+      "sha256": "fa07a0aabe4513cd1c56972d08fdb377ae5ea1aadf9e92f1e176fcdb028f7ea0"
+    },
+    {
+      "key": "evidence",
+      "lang": "en",
+      "file": "evidence-en.webp",
+      "width": 1216,
+      "height": 948,
+      "sha256": "300b93a488c23cdbfff50bac74cb7f8e363963083b2083a1cfaaad2da2bb1eea"
+    },
+    {
+      "key": "privacy",
+      "lang": "en",
+      "file": "privacy-en.webp",
+      "width": 1000,
+      "height": 972,
+      "sha256": "78f62cebcee3a7a06dd539f44cdb163651cdaa65e41d70ac028cd81e017ea513"
+    },
+    {
+      "key": "delivery",
+      "lang": "en",
+      "file": "delivery-en.webp",
+      "width": 780,
+      "height": 972,
+      "sha256": "1e9f63322cff87f1bb220ae45de6ea13fc024a78066c73aa32831b52a4786ff1"
+    },
+    {
+      "key": "backup",
+      "lang": "en",
+      "file": "backup-en.webp",
+      "width": 1152,
+      "height": 203,
+      "sha256": "9b9b3410ef2f9a24984adbd3f0deb65d60f9b518ae468f5dd58c38279aab8570",
+      "captured_css_dimensions": {
+        "width": 1152,
+        "height": 202
+      }
+    },
+    {
+      "key": "gallery",
+      "lang": "pt",
+      "file": "gallery-pt.webp",
+      "width": 1320,
+      "height": 1016,
+      "sha256": "e7c6c4239b75306a3155d1a6073282f027f39309de3f489cabd3b131506eb2e9",
+      "captured_css_dimensions": {
+        "width": 1320,
+        "height": 1015
+      }
+    },
+    {
+      "key": "metadata",
+      "lang": "pt",
+      "file": "metadata-pt.webp",
+      "width": 1216,
+      "height": 948,
+      "sha256": "d0d14bdaaf18b67aa828efe0ec58149f8afa2a075c9677a951e45fa151b23105"
+    },
+    {
+      "key": "finding",
+      "lang": "pt",
+      "file": "finding-pt.webp",
+      "width": 1216,
+      "height": 948,
+      "sha256": "93322ebe5ab5f5a84e6344ee94700d47bb5695aa8e581880e6d09dd08eae854a"
+    },
+    {
+      "key": "evidence",
+      "lang": "pt",
+      "file": "evidence-pt.webp",
+      "width": 1216,
+      "height": 948,
+      "sha256": "739f7d13f65c26d02cc4584ad9e661415c40356d4630c68ed02dba436f5b329c"
+    },
+    {
+      "key": "privacy",
+      "lang": "pt",
+      "file": "privacy-pt.webp",
+      "width": 1000,
+      "height": 972,
+      "sha256": "d0b561b3072ce5ec3414e0c35db3b60701e23fa77a666b0311cd63cec9457f57"
+    },
+    {
+      "key": "delivery",
+      "lang": "pt",
+      "file": "delivery-pt.webp",
+      "width": 780,
+      "height": 972,
+      "sha256": "0b254a270313992d4e2aa03e02fe8cc243cc97d959c24edbcca7225db57193d7"
+    },
+    {
+      "key": "backup",
+      "lang": "pt",
+      "file": "backup-pt.webp",
+      "width": 1152,
+      "height": 203,
+      "sha256": "d8c81875eb6d3744f93b9ff642562189a41bee1a2ce33d9206903b99fb8e26a5",
+      "captured_css_dimensions": {
+        "width": 1152,
+        "height": 202
+      }
+    }
+  ],
+  "errors": [],
+  "external": [],
+  "fixture": "Authored synthetic tutorial project; no real security test",
+  "languages": [
+    "es",
+    "en",
+    "pt"
+  ],
+  "browser": "151.0.7922.34",
+  "provenance": {
+    "repository": "IphobiusS/report-gen",
+    "commit_sha": "b5e824d621756950654ba6530381f328f175a303",
+    "tree_sha": "dcac8307f48e6f32fcfad52c742e9545ae90b51b",
+    "github_actions_run_id": 38803256391,
+    "artifact_id": 12005776077,
+    "artifact_name": "tutorial-captures-b5e824d621756950654ba6530381f328f175a303",
+    "artifact_zip_sha256": "2806cfe4da12ce2020131b190febdcec055c8b46c5668fb0db39dd37d6c82601",
+    "downloaded_date_utc": "2026-10-15",
+    "source": "GitHub Actions artifact; downloaded and verified by coordinating agent",
+    "capture_type": "Real browser screenshots, not mockups"
+  },
+  "visual_review": {
+    "reviewed_date_utc": "2026-10-15",
+    "screens_reviewed": 21,
+    "status": "passed_for_tutorial_use",
+    "delivery_formats_visible": [
+      "PDF",
+      "Word",
+      "Markdown + images",
+      "Portable HTML"
+    ],
+    "delivery_actions_visible": {
+      "es": "Generar paquete",
+      "en": "Generate package",
+      "pt": "Gerar pacote"
+    },
+    "notes": [
+      "Localized gallery, metadata, finding, evidence, publication inspector, delivery and backup screens inspected at native image dimensions.",
+      "Delivery images intentionally frame the lower portion of a scrollable panel so the formats and generation action are visible.",
+      "Synthetic demonstration data are explicitly labelled.",
+      "Screenshot review does not itself validate interaction or export correctness.",
+      "Encoded dimensions recorded above. Gallery and backup encoded heights are one pixel larger than the captured CSS dimensions; original values preserved in captured_css_dimensions."
+    ]
+  }
+}

@@ -1,0 +1,212 @@
+{
+  "e01": {
+    "title": ["Condition change and canary record", "Mudança de condição e registro canário"],
+    "rows": [
+      ["GET /search?q=DEMO-1001", ["200; rows: 1", "200; linhas: 1"]],
+      [["True Boolean control", "Controle booleano verdadeiro"], ["200; rows: 2", "200; linhas: 2"]],
+      [["False Boolean control", "Controle booleano falso"], ["200; rows: 0", "200; linhas: 0"]],
+      [["Additional canary", "Canário adicional"], "DEMO-1002"],
+      [["Reversible change", "Alteração reversível"], "demo_note: CHECK-F01"],
+      [["Data restoration", "Restauração dos dados"], ["Original value restored", "Valor original restaurado"]]
+    ],
+    "note": ["The condition controls the query; the example is limited to canary data.", "A condição controla a consulta; o exemplo se limita a dados canário."]
+  },
+  "e02": {
+    "title": ["Valid token, incorrect identity", "Token válido, identidade incorreta"],
+    "rows": [
+      [["Token issued to", "Token emitido para"], "usuario.a"],
+      [["Account submitted at confirmation", "Conta enviada na confirmação"], "admin.demo"],
+      [["Confirmation response", "Resposta de confirmação"], "200; password changed"],
+      [["Subsequent session", "Sessão posterior"], "subject: admin.demo"],
+      [["Canary session role", "Papel da sessão canário"], "administrator"],
+      [["Scenario cleanup", "Limpeza do cenário"], ["Password and sessions restored", "Senha e sessões restauradas"]]
+    ],
+    "note": ["The server lets the client select an identity different from the token subject.", "O servidor permite que o cliente escolha uma identidade diferente da associada ao token."]
+  },
+  "e03": {
+    "title": ["Authorization matrix across organizations", "Matriz de autorização entre organizações"],
+    "rows": [
+      [["Session A > order A / GET", "Sessão A > pedido A / GET"], ["200; authorized", "200; autorizado"]],
+      [["Session A > order B / GET", "Sessão A > pedido B / GET"], ["200; unauthorized access", "200; acesso indevido"]],
+      [["Session A > order B / PATCH", "Sessão A > pedido B / PATCH"], ["200; unauthorized change", "200; alteração indevida"]],
+      [["Session B > order B / GET", "Sessão B > pedido B / GET"], "note CHECK-F03"],
+      [["Canary object", "Objeto canário"], "DEMO-B-2001"],
+      [["Final change state", "Estado final da alteração"], ["Restored", "Restaurado"]]
+    ],
+    "note": ["The identity is authenticated, but it has no authorization over the object.", "A identidade está autenticada, mas não tem autorização sobre o objeto."]
+  },
+  "e04": {
+    "title": ["Download directory boundary", "Limite do diretório de download"],
+    "rows": [
+      [["Allowed directory", "Diretório permitido"], "/srv/nimbus/attachments"],
+      [["Control file", "Arquivo de controle"], "/srv/nimbus/fixtures/outside-marker.txt"],
+      [["Legitimate download", "Download legítimo"], ["200; demonstration PDF", "200; PDF de demonstração"]],
+      [["Represented escape", "Escape representado"], "200; F04-OUTSIDE"],
+      [["Link to fixtures", "Link para fixtures"], "200; F04-OUTSIDE"],
+      [["Modeled capability", "Capacidade modelada"], ["Read; no write capability", "Leitura; sem capacidade de escrita"]]
+    ],
+    "note": ["The marker comes from a resource outside the authorized directory.", "O marcador vem de um recurso fora do diretório autorizado."]
+  },
+  "e05": {
+    "title": ["Initial and effective destination", "Destino inicial e destino efetivo"],
+    "rows": [
+      [["Request origin", "Origem da requisição"], ["Preview service", "Serviço de pré-visualização"]],
+      [["Authorized destination", "Destino autorizado"], "receptor.canario.nimbus.example"],
+      [["Internal destination", "Destino interno"], "files.nimbus.example/internal/demo"],
+      [["Internal response", "Resposta interna"], ["Canary configuration visible", "Configuração canário visível"]],
+      [["Limited operation", "Operação limitada"], ["DEMO-JOB-05 label can be changed", "Rótulo DEMO-JOB-05 pode ser alterado"]],
+      [["Redirect", "Redirecionamento"], ["Preserves access to internal destination", "Mantém acesso ao destino interno"]]
+    ],
+    "note": ["Trust in the internal network extends the reach of user-controlled input.", "A confiança na rede interna amplia o alcance de uma entrada controlada pelo usuário."]
+  },
+  "e06": {
+    "title": ["Build artifact and privileges", "Artefato de compilação e privilégios"],
+    "rows": [
+      [["Artifact", "Artefato"], "build-demo-062.zip"],
+      [["Included file", "Arquivo incluído"], "diagnostics/service.env"],
+      [["Published value", "Valor publicado"], "SECRET-DEMO-NO-VALIDO"],
+      [["Artifact access", "Acesso ao artefato"], ["CI read role", "Papel de leitura de CI"]],
+      [["Represented identity", "Identidade representada"], "svc_order_sync"],
+      [["Identity permissions", "Permissões da identidade"], ["Orders: read and update", "Pedidos: ler e atualizar"]]
+    ],
+    "note": ["Read access to the artifact exposes an identity with greater privileges.", "O acesso de leitura ao artefato expõe uma identidade com privilégios maiores."]
+  },
+  "e07": {
+    "title": ["Replication delegation and scope", "Delegação de replicação e escopo"],
+    "rows": [
+      ["Principal", "AD\\svc_inventory"],
+      [["Object", "Objeto"], "DC=ad,DC=nimbus,DC=example"],
+      [["Effective right 1", "Direito efetivo 1"], "DS-Replication-Get-Changes"],
+      [["Effective right 2", "Direito efetivo 2"], "DS-Replication-Get-Changes-All"],
+      [["Scenario canary", "Canário do cenário"], "demo-repl-canary"],
+      [["Published secrets", "Segredos publicados"], ["None", "Nenhum"]]
+    ],
+    "note": ["An inventory identity receives unnecessary replication rights.", "Uma identidade de inventário recebe direitos de replicação desnecessários."]
+  },
+  "e08": {
+    "title": ["Server administration path", "Caminho de administração de um servidor"],
+    "rows": [
+      ["helpdesk.demo", ["Member of Helpdesk-L1", "Membro de Helpdesk-L1"]],
+      ["Helpdesk-L1", "WriteProperty(member)"],
+      [["Permission object", "Objeto da permissão"], "APP-Server-Admins"],
+      [["Applied policy", "Política aplicada"], ["Local administrator on WINAPP01", "Administrador local em WINAPP01"]],
+      [["Canary check", "Verificação canário"], ["Restricted administrative resource readable", "Recurso administrativo restrito legível"]],
+      [["Current state", "Estado atual"], ["Reported fixed; no retest", "Correção comunicada; sem reteste"]]
+    ],
+    "note": ["The delegation path ends in local administration, not proven domain control.", "A delegação termina em administração local, sem comprovação de controle do domínio."]
+  },
+  "e09": {
+    "title": ["Stored comment and browser context", "Comentário persistente e contexto do navegador"],
+    "rows": [
+      [["Comment author", "Autor do comentário"], "cliente.demo"],
+      [["Ticket reader", "Leitor do chamado"], "agente.demo"],
+      [["Persistence", "Persistência"], ["Comment retrieved from server", "Comentário recuperado do servidor"]],
+      [["DOM marker", "Marcador DOM"], "XSS-DEMO-ACTIVO"],
+      [["External connections", "Conexões externas"], ["None in this scenario", "Nenhuma neste cenário"]],
+      [["HttpOnly cookie access", "Acesso a cookies HttpOnly"], ["Not attributed", "Não atribuído"]]
+    ],
+    "note": ["Stored content crosses into the agent browser execution context.", "O conteúdo armazenado passa ao contexto de execução do navegador do agente."]
+  },
+  "e10": {
+    "title": ["CORS policy and cross-origin reading", "Política CORS e leitura entre origens"],
+    "rows": [
+      [["Submitted origin", "Origem enviada"], "receptor.canario.nimbus.example"],
+      ["Allow-Origin", ["Same unauthorized origin", "Mesma origem não autorizada"]],
+      ["Allow-Credentials", "true"],
+      [["Scenario cookie", "Cookie do cenário"], "SameSite=None; Secure"],
+      [["Scenario browser", "Navegador do cenário"], ["Cross-site cookies allowed", "Cookies entre sites permitidos"]],
+      [["JavaScript reading", "Leitura por JavaScript"], ["Order response body accessible", "Corpo da resposta de pedidos acessível"]]
+    ],
+    "note": ["Authenticated reading also requires the stated browser conditions.", "A leitura autenticada também depende das condições declaradas do navegador."]
+  },
+  "e11": {
+    "title": ["Session before and after logout", "Sessão antes e depois do logout"],
+    "rows": [
+      [["Before logout", "Antes do logout"], "/profile: 200; usuario.a"],
+      [["Browser logout", "Logout no navegador"], ["Cookie removed", "Cookie removido"]],
+      [["Same token afterwards", "Mesmo token depois"], "/profile: 200; usuario.a"],
+      [["New request", "Nova requisição"], "request-id: DEMO-F11-02"],
+      [["Canary preference", "Preferência canário"], ["Changed and restored", "Alterada e restaurada"]],
+      [["New authentication", "Nova autenticação"], ["Not performed for reuse", "Não realizada para a reutilização"]]
+    ],
+    "note": ["The server still accepts the old session after the browser removes its cookie.", "O servidor continua aceitando a sessão anterior após a remoção do cookie pelo navegador."]
+  },
+  "e12": {
+    "title": ["Error response and information boundary", "Resposta de erro e limite de informação"],
+    "rows": [
+      [["Ordinary account", "Conta comum"], "403"],
+      [["soporte-admin role", "Papel soporte-admin"], ["500 with diagnostics", "500 com diagnóstico"]],
+      [["Exposed path", "Caminho exposto"], "/srv/nimbus/app/orders.py"],
+      [["Internal database", "Banco de dados interno"], "nimbus_orders_demo"],
+      [["Secrets in response", "Segredos na resposta"], ["None in the scenario", "Nenhum no cenário"]],
+      [["Useful identifier", "Identificador útil"], "DEMO-ERR-1201"]
+    ],
+    "note": ["Disclosure is limited and requires a privileged role; no additional effects are attributed.", "A divulgação é limitada e exige um papel privilegiado; não são atribuídos efeitos adicionais."]
+  },
+  "rt01": {
+    "title": ["Fictional retest", "Reteste fictício"],
+    "rows": [
+      [["Own reference", "Referência própria"], ["200; one order", "200; um pedido"]],
+      [["Control condition", "Condição de controle"], ["200; zero matches", "200; zero correspondências"]],
+      [["Other customer reference", "Referência de outro cliente"], "404"],
+      [["UPDATE with search account", "UPDATE com conta de busca"], ["Permission denied", "Permissão negada"]],
+      [["Scenario result", "Resultado do cenário"], ["Fixed", "Corrigido"]]
+    ],
+    "note": ["Synthetic retest result; this is not a real execution.", "Resultado sintético do reteste; não se trata de uma execução real."]
+  },
+  "rt02": {
+    "title": ["Fictional retest", "Reteste fictício"],
+    "rows": [
+      [["Token A + account B", "Token A + conta B"], ["400; invalid request", "400; requisição inválida"]],
+      [["Token A + account A", "Token A + conta A"], ["Change allowed", "Alteração permitida"]],
+      [["Second use of token A", "Segundo uso do token A"], "400"],
+      [["Expired token", "Token expirado"], "400"],
+      [["Previous sessions", "Sessões anteriores"], ["Revoked", "Revogadas"]]
+    ],
+    "note": ["Synthetic retest result; this is not a real execution.", "Resultado sintético do reteste; não se trata de uma execução real."]
+  },
+  "rt03": {
+    "title": ["Fictional retest", "Reteste fictício"],
+    "rows": [
+      ["A > B / GET", ["404; fixed", "404; corrigido"]],
+      ["A > B / PATCH", ["200; still open", "200; continua aberto"]],
+      [["Check delivery_note", "Verificar delivery_note"], "CHECK-RT03"],
+      [["Canary change", "Alteração canário"], ["Restored", "Restaurada"]],
+      [["Conclusion", "Conclusão"], ["Partial fix", "Correção parcial"]]
+    ],
+    "note": ["Synthetic retest result; this is not a real execution.", "Resultado sintético do reteste; não se trata de uma execução real."]
+  },
+  "rt04": {
+    "title": ["Fictional retest", "Reteste fictício"],
+    "rows": [
+      [["Own attachment by ID", "Anexo próprio por ID"], ["200; intact content", "200; conteúdo íntegro"]],
+      [["External canary", "Canário externo"], ["404; no content", "404; sem conteúdo"]],
+      [["Link outside volume", "Link para fora do volume"], ["Rejected", "Rejeitado"]],
+      [["Other tenant attachment", "Anexo de outro tenant"], "404"],
+      [["Absolute path in error", "Caminho absoluto no erro"], ["Absent", "Ausente"]]
+    ],
+    "note": ["Synthetic retest result; this is not a real execution.", "Resultado sintético do reteste; não se trata de uma execução real."]
+  },
+  "rt05": {
+    "title": ["Fictional retest", "Reteste fictício"],
+    "rows": [
+      [["Direct internal destination", "Destino interno direto"], ["Blocked", "Bloqueado"]],
+      [["Valid canary receiver", "Receptor canário válido"], ["Allowed", "Permitido"]],
+      [["Redirect to internal destination", "Redirecionamento para destino interno"], ["Marker visible", "Marcador visível"]],
+      [["State change during retest", "Alteração de estado no reteste"], ["Not represented", "Não representada"]],
+      [["Conclusion", "Conclusão"], ["Partial fix", "Correção parcial"]]
+    ],
+    "note": ["Synthetic retest result; this is not a real execution.", "Resultado sintético do reteste; não se trata de uma execução real."]
+  },
+  "rt10": {
+    "title": ["Fictional retest", "Reteste fictício"],
+    "rows": [
+      [["Legitimate origin + session", "Origem legítima + sessão"], ["Response readable", "Resposta legível"]],
+      [["Canary origin + session", "Origem canário + sessão"], ["Reading blocked", "Leitura bloqueada"]],
+      ["Origin: null", ["Reading blocked", "Leitura bloqueada"]],
+      [["No valid session", "Sem sessão válida"], "401"],
+      [["Scenario result", "Resultado do cenário"], ["Fixed", "Corrigido"]]
+    ],
+    "note": ["Synthetic retest result; this is not a real execution.", "Resultado sintético do reteste; não se trata de uma execução real."]
+  }
+}

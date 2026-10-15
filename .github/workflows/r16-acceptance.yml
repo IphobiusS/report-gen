@@ -38,7 +38,7 @@ jobs:
           python -m pip freeze > out/r16-runtime/python-packages.txt
           dpkg-query -W 'libreoffice*' 'fonts-noto*' > out/r16-runtime/system-packages.txt
       - name: Verify shaping, literal URLs, regional content and repeated cells
-        run: python -m pytest tests/test_pdf_shaping_0350.py tests/test_pdf_hyphens_0315.py tests/test_pdf_finding_regions_0342.py tests/test_pdf_repeated_cells_0350.py tests/test_portuguese_exports_0350.py --junitxml=out/r16-runtime/regressions.xml
+        run: python -m pytest tests/test_pdf_shaping_0350.py tests/test_pdf_simple_fonts_0350.py tests/test_pdf_hyphens_0315.py tests/test_pdf_finding_regions_0342.py tests/test_pdf_repeated_cells_0350.py tests/test_portuguese_exports_0350.py tests/test_root_cause_headings_0350.py --junitxml=out/r16-runtime/regressions.xml
       - name: Export and inspect the complete fictional case in ES, EN and PT
         run: python scripts/audit-estuario-r16.py --output out/estuario-r16
       - name: Render every DOCX with stable LibreOffice and preserve review pages

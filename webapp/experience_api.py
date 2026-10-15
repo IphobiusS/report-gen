@@ -22,10 +22,15 @@ def register(api):
     @app.post('/api/demo')
     @api.project_lock
     def demo():
-        api._json_dict()
+        body = api._json_dict()
+        lang = normalize_language(body.get('lang', 'es'), None)
+        if lang is None or set(body) - {'lang'}:
+            abort(422, backend_message('Idioma de demostración inválido',
+                                      en='Invalid demo language', pt='Idioma de demonstração inválido'))
         # Every click creates a separate copy; no existing project is reset.
         slug = 'nimbus-demo-' + uuid.uuid4().hex[:12]
-        source = api.REPORT_ROOT/'examples/nimbus-demo-project.zip'
+        suffix = '' if lang == 'es' else '-' + lang
+        source = api.REPORT_ROOT / f'examples/nimbus-demo-project{suffix}.zip'
         project_history.import_bundle(source.read_bytes(), api.PROJECTS/slug)
         return jsonify({'slug': slug})
 

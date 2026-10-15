@@ -83,7 +83,7 @@ def test_four_exports_keep_portuguese_accented_text_long_url_and_inspection(tmp_
         captured = delivery.capture(tmp_path, tmp_path / 'capture')
         artifact = export.export(source, fmt, tmp_path / ('relatorio.' + ('zip' if fmt == 'md' else fmt)))
         delivery.inspect_export(artifact, fmt, captured)
-    text = (html.document_fromstring(artifact.read_text()).text_content() if fmt == 'html'
+    text = (html.document_fromstring(artifact.read_text(encoding='utf-8')).text_content() if fmt == 'html'
             else export_contract.profile(artifact, fmt)['text'])
     for expected in ['Resumo dos achados', 'Avaliação pendente',
                      'Remediação', 'Arquivo de evidência no alvo', 'Conciliação', 'Ação pendente']:
@@ -93,14 +93,14 @@ def test_four_exports_keep_portuguese_accented_text_long_url_and_inspection(tmp_
         assert 'Percurso documentado' in text
         assert 'ordem de documentação' in text
     elif fmt == 'html':
-        tree = html.document_fromstring(artifact.read_text())
+        tree = html.document_fromstring(artifact.read_text(encoding='utf-8'))
         assert tree.get('lang') == 'pt-BR'
         assert tree.xpath('//nav/@aria-label') == ['Leitura do relatório']
         assert tree.xpath('//a[@href=$url]', url=URL)
         assert 'Tabela de dados' in ' '.join(tree.xpath('//*[@class="report-table-region"]/@aria-label'))
         assert all('Role horizontalmente' in hint for hint in tree.xpath('//*[@data-scroll-hint]/@data-scroll-hint'))
         assert 'Relatório completo' in tree.text_content()
-        assert 'Scroll horizontally' not in artifact.read_text()
+        assert 'Scroll horizontally' not in artifact.read_text(encoding='utf-8')
     elif fmt == 'docx':
         with zipfile.ZipFile(artifact) as package:
             core = etree.fromstring(package.read('docProps/core.xml'))
