@@ -67,6 +67,21 @@ async function nativeViewerProbe(lang,dialog){
  if(headed)check(lang+' native PDF viewer paints the generated Meridiano cover',!record.paint_error&&record.pixels?.navy_fraction>.05,record);
 }
 async function workflow(page,name){await click(page,'[data-workflow="'+name+'"]');await page.locator('[data-workflow-view="'+name+'"]').waitFor();await clean(page);}
+async function tutorialImages(lang,step){
+ const images=page.locator('.tutorial-screenshot img'),count=await images.count();
+ for(let index=0;index<count;index++){
+  const image=images.nth(index);
+  results.tutorialImageProgress={language:lang,step:step+1,image:index+1,count,stage:'scroll'};save();
+  // Reach every lazy image as a user would; do not rewrite loading or src.
+  await image.scrollIntoViewIfNeeded({timeout:10000});
+  results.tutorialImageProgress.stage='load';save();
+  await page.waitForFunction(index=>{const node=document.querySelectorAll('.tutorial-screenshot img')[index];return !!node?.complete&&node.naturalWidth>0;},index,{timeout:10000});
+  results.tutorialImageProgress.stage='decode';save();
+  await boundedDiagnostic(image.evaluate(node=>node.decode()),10000,lang+' tutorial step '+(step+1)+' image '+(index+1));
+ }
+ check(lang+' tutorial step '+(step+1)+' uses localized images',await boundedDiagnostic(images.evaluateAll((nodes,value)=>nodes.length>0&&nodes.every(node=>node.complete&&node.naturalWidth>500&&node.src.endsWith('-'+value+'.webp')&&node.alt.length>50),lang),10000,'Tutorial image attributes'));
+ results.tutorialImageProgress={language:lang,step:step+1,count,stage:'complete'};save();
+}
 const expectedFailures=[];
 function expectFailure(method,pathname,status){const entry={method,pathname,status,consumed:false};expectedFailures.push(entry);return entry;}
 function responseFor(page,method,pathname){return page.waitForResponse(response=>response.request().method()===method&&new URL(response.url()).pathname===pathname,{timeout:240000});}
@@ -162,6 +177,7 @@ async function privacyPDF(lang,annex){
  const executable=opt('--executable',engine==='chromium'?(process.env.RG_CHROMIUM_EXECUTABLE||process.env.REPORT_GEN_CHROMIUM):undefined);
  browser=await playwright[engine].launch({headless:!headed,...(executable?{executablePath:executable}:{})});results.browser=browser.version();
  const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce',acceptDownloads:true});
+ context.setDefaultTimeout(30000);context.setDefaultNavigationTimeout(60000);
  await context.route('**/*',route=>{const url=route.request().url();if(/^https?:/.test(url)&&!url.startsWith(base+'/')){results.externalRequests.push(url);return route.abort();}return route.continue();});
  await context.addInitScript(()=>{window.__reportGenCsp=[];document.addEventListener('securitypolicyviolation',event=>window.__reportGenCsp.push({effectiveDirective:event.effectiveDirective,blockedURI:event.blockedURI,originalPolicy:event.originalPolicy}));if(window!==window.top)return;localStorage.setItem('rg.uiLang','es');localStorage.setItem('rg.previewVisible','0');});
  page=await context.newPage();page.on('pageerror',error=>{results.pageErrors.push(String(error));save();});
@@ -174,7 +190,7 @@ async function privacyPDF(lang,annex){
  await screen(page,'01-meridiano-dashboard');
  for(const view of ['assets','coverage','evidence','root_causes','retest','retest_matrix','retest_diff','review','history','backup','remediation_tasks']){await workflow(page,view);check('Complete-case '+view+' view renders',await page.locator('[data-workflow-view="'+view+'"] [role="alert"]').count()===0);if(view==='evidence')await screen(page,'02-meridiano-evidence');}
  const unchanged=await snapshot(page);
- for(const lang of ['es','en','pt']){await language(page,lang);await click(page,'#guideBtn');await page.locator('[data-guide-page]').waitFor();for(let step=0;step<6;step++){await page.locator('[data-guide-step="'+step+'"]').click();const images=page.locator('.tutorial-screenshot img');await images.evaluateAll(nodes=>Promise.all(nodes.map(node=>node.decode())));check(lang+' tutorial step '+(step+1)+' uses localized images',await images.evaluateAll((nodes,value)=>nodes.length>0&&nodes.every(node=>node.naturalWidth>500&&node.src.endsWith('-'+value+'.webp')&&node.alt.length>50),lang));if(step===0)await screen(page,'tutorial-'+lang);}await click(page,'#navHome');await diagnostics(lang);}
+ for(const lang of ['es','en','pt']){await language(page,lang);await click(page,'#guideBtn');await page.locator('[data-guide-page]').waitFor();for(let step=0;step<6;step++){await page.locator('[data-guide-step="'+step+'"]').click();await tutorialImages(lang,step);if(step===0)await screen(page,'tutorial-'+lang);}await click(page,'#navHome');await diagnostics(lang);}
  check('Tutorial and rejected imports preserve the complete source',await snapshot(page)===unchanged);
  const exported=await createDocxJob(),capabilities=await page.evaluate(()=>api.get('/api/docx-preview/capabilities'));
  check('Required native LibreOffice preview is available',capabilities.available,capabilities);
