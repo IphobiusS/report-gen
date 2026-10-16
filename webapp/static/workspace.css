@@ -95,11 +95,6 @@ button:focus-visible,a:focus-visible,summary:focus-visible,[tabindex="0"]:focus-
 .workspace-severity { font-size:10px; font-weight:600; padding:3px 7px; background:var(--panel2); border:1px solid var(--line); border-radius:4px; white-space:nowrap; }
 .severity-critical { color:#ffafb2; border-color:#9a4c58; }.severity-high { color:#ffd49e; border-color:#88643a; }.severity-medium { color:#eee19c; border-color:#847c42; }
 [data-theme="light"] .severity-critical { color:#932732; }[data-theme="light"] .severity-high { color:#794208; }[data-theme="light"] .severity-medium { color:#605000; }
-.workspace-step { display:flex; align-items:start; width:100%; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:16px; color:var(--fg); text-align:left; margin-bottom:8px; cursor:pointer; gap:16px; font:inherit; }
-.workspace-step:hover { border-color:var(--accent); }
-.workspace-step-number { font-family:var(--mono); font-size:12px; color:var(--accent); padding-top:2px; }
-.workspace-step strong { display:block; font-size:14px; margin-bottom:3px; }
-.workspace-step span span { display:block; font-size:12px; color:var(--muted); line-height:1.55; }
 .workspace-projects { margin:32px 0; }
 .workspace-footnote { display:flex; align-items:center; justify-content:space-between; gap:16px; border-top:1px solid var(--line); padding-top:20px; color:var(--muted); font-size:11px; }
 .workspace-footnote .btn { font-size:12px; background:none; }

@@ -1,0 +1,57 @@
+{
+  "schema": "report-gen-meridiano-plan/1",
+  "case": "Grupo Meridiano Logística",
+  "document_version": "GML 1.0",
+  "application_version": "0.38.0",
+  "status": "planned_not_an_acceptance_receipt",
+  "generation": "Report documents only through report-gen exporters, queue, audience and delivery APIs; external tools inspect or render existing outputs only.",
+  "fictional": true,
+  "network_to_scenario_targets": false,
+  "source": {
+    "languages": ["es", "en", "pt"],
+    "prose_language": "es",
+    "vulnerabilities": 30,
+    "machine_notebooks": 4,
+    "assets": 16,
+    "evidence_images": 32,
+    "coverage_contracts": 90,
+    "sections": 16,
+    "root_causes": 5,
+    "retest_records": 10,
+    "annexes_included": 4,
+    "annexes_excluded": 1,
+    "expected_preflight_errors": 0,
+    "expected_deliberate_preflight_warnings": 31
+  },
+  "matrix": {
+    "complete": {"languages": 3, "formats": ["pdf", "docx", "html", "md"], "outputs": 12},
+    "general_samples": {"themes": "Every current general theme other than corporate", "formats": ["pdf", "docx", "html", "md"], "outputs": 20},
+    "specialized_samples": {"profiles": ["enterprise-control-review", "htb-cpts"], "variants": ["brand", "quiet"], "formats": ["pdf", "docx"], "outputs": 8},
+    "sample_findings": ["F01", "F12", "M01"],
+    "rationale": "All general rendering layouts plus corporate control-review and machine-oriented specialized structures, using a conventional finding, linked/adjacent table figures and machine phases.",
+    "scope_limit": "Forty native outputs, including twenty-eight excerpts; not forty complete reports or every specialized catalog profile."
+  },
+  "families": [
+    {"id": "GML-01", "scope": "Native source validation, stable identities, real public snapshot and source immutability", "runner": "tests/test_meridiano_fixture_0380.py"},
+    {"id": "GML-02", "scope": "Complete PDF/DOCX/HTML/MD, exact text/images/links/table associations and deliverable manifests", "runner": "scripts/audit-meridiano-exports.py"},
+    {"id": "GML-03", "scope": "General layout and selected specialized variants on declared excerpts", "runner": "scripts/audit-meridiano-exports.py --mode styles"},
+    {"id": "GML-04", "scope": "Native LibreOffice content, links, contents, geometry and declared visual review", "runner": "scripts/audit-meridiano-exports.py --native-executable --require-stable"},
+    {"id": "GML-05", "scope": "Technical, executive and public audience deliveries with consent and source invariance", "runner": "scripts/audit-meridiano-api.py"},
+    {"id": "GML-06", "scope": "Five valid imports with CDATA Burp reference roundtrip", "runner": "scripts/audit-meridiano-api.py"},
+    {"id": "GML-07", "scope": "CSV multiline/invalid field plus four parser errors with exact private-safe locations", "runner": "scripts/audit-meridiano-api.py"},
+    {"id": "GML-08", "scope": "Actual queued DOCX, native preview, source/derivative hashes, declared engine, deletion and unavailable branch", "runner": "scripts/audit-meridiano-api.py"},
+    {"id": "GML-09", "scope": "Native PDF uploaded as annex and structurally inspected without changing bytes or approval", "runner": "scripts/audit-meridiano-api.py"},
+    {"id": "GML-10", "scope": "Real browser new-function interactions, diagnostics, native preview and PDF locations, ES/EN/PT and actual screenshots", "runner": "scripts/audit-meridiano-browser.cjs"},
+    {"id": "GML-11", "scope": "Decoded publication scan and visual inspection of all Spanish direct-PDF pages plus selected native/layout pages", "runner": "independent retained receipts with file hashes"},
+    {"id": "GML-12", "scope": "Dead-code inventory, specific removals, regressions and exact-commit release gates", "runner": "repository audit and GitHub CI receipts"}
+  ],
+  "limits": [
+    "Every security finding, CVSS value, coverage state and retest in the scenario is invented.",
+    "Changing UI/report presentation language does not translate authored Spanish prose.",
+    "Flask test-client acceptance is API-handler acceptance, not a browser or HTTP-server claim.",
+    "A native LibreOffice preview does not establish Microsoft Word pagination.",
+    "PDF privacy inspection remains partial and heuristic; no OCR, embedded-file opening or action execution is claimed.",
+    "Plans and repeated combinations are not additional unique regression identities.",
+    "No universal absence of bugs or dead code is inferred from bounded audit evidence."
+  ]
+}

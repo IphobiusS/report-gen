@@ -185,7 +185,9 @@ def api_error(error):
 
 @app.errorhandler(ValueError)
 def invalid_data(error):
-    response = jsonify({'error': str(error)})
+    from diagnostic_locations import error_diagnostics
+    details = error_diagnostics(error)
+    response = jsonify({'error': str(error), **({'diagnostics': details} if details else {})})
     response.headers['Content-Language'] = language_tag(current_language())
     return response, 422
 
@@ -677,6 +679,8 @@ from backup_routine_api import register as register_backup_routine  # noqa: E402
 backup_routine = register_backup_routine(sys.modules[__name__])
 from progress_api import register as register_progress  # noqa: E402
 register_progress(sys.modules[__name__])
+from docx_preview_api import register as register_docx_preview  # noqa: E402
+register_docx_preview(sys.modules[__name__])
 from workbench_api import register as register_workbench  # noqa: E402
 register_workbench(sys.modules[__name__])
 

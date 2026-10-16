@@ -3,6 +3,7 @@
 Checks bind metadata, ordered links and evidence placements to their finding.
 Static CSS checks cover the default screen view; they are not a layout engine.
 """
+from diagnostic_locations import DiagnosticError
 from error_messages import message as backend_message
 from base64 import b64decode
 from hashlib import sha256
@@ -308,25 +309,33 @@ def check(scope, actual, fmt):
     expected = scope['semantic']
     for field in expected['fields']:
         if field not in actual['fields']:
-            raise ValueError(backend_message('Metadato alterado ({p0}: {p1}) / Metadata changed', p0=scope['id'] or backend_message('informe', en='report', pt='relatório'), p1=field[0]))
+            raise DiagnosticError(backend_message('Metadato alterado ({p0}: {p1}) / Metadata changed', p0=scope['id'] or backend_message('informe', en='report', pt='relatório'), p1=field[0]),
+                                  code='export.metadata.changed', location={'field': 'metadata'})
     if scope['id'] and expected['severity'] != actual['severity']:
-        raise ValueError(backend_message('Severidad alterada ({p0}) / Severity changed', p0=scope['id']))
+        raise DiagnosticError(backend_message('Severidad alterada ({p0}) / Severity changed', p0=scope['id']),
+                              code='export.severity.changed', location={'field': 'severity'})
     links = expected['links']
     if fmt == 'docx':
         from exporters.navigation import reference_name
         links = [[label, '#'+reference_name(target[1:]) if target.startswith('#') else target] for label,target in links]
     if not (_word_links_match(links, actual, expected.get('link_parts', ()), expected.get('link_raw_labels', ()))
             if fmt == 'docx' else links == actual['links']):
-        raise ValueError(backend_message('Destino u orden de enlaces alterado ({p0}) / Links changed', p0=scope['id'] or backend_message('informe', en='report', pt='relatório')))
+        raise DiagnosticError(backend_message('Destino u orden de enlaces alterado ({p0}) / Links changed', p0=scope['id'] or backend_message('informe', en='report', pt='relatório')),
+                              code='export.links.changed', location={'field': 'links'})
     images_ok=len(expected['images'])==len(actual['images'])
-    for wanted,found in zip(expected['images'],actual['images']):
+    changed_image = None
+    for image_index, (wanted, found) in enumerate(zip(expected['images'], actual['images'])):
         digest = wanted.get('docx_sha256', wanted['sha256']) if fmt == 'docx' else wanted['sha256']
-        images_ok=images_ok and digest==found['sha256'] and all(wanted[k]==found[k] for k in ('caption','code_index'))
-        images_ok=images_ok and found['preceding_text'].endswith(wanted['preceding_text'])
+        image_ok=digest==found['sha256'] and all(wanted[k]==found[k] for k in ('caption','code_index'))
+        image_ok=image_ok and found['preceding_text'].endswith(wanted['preceding_text'])
         if fmt == 'docx' and 'link_target' in wanted:
             target = wanted['link_target']
             if target.startswith('#'): target = '#' + reference_name(target[1:])
-            images_ok = images_ok and target == found.get('link_target', '')
+            image_ok = image_ok and target == found.get('link_target', '')
+        if not image_ok and changed_image is None:
+            changed_image = image_index
+        images_ok = images_ok and image_ok
     if not images_ok:
-        raise ValueError(backend_message('Asociación de evidencia alterada ({p0}) / Evidence placement changed', p0=scope['id'] or backend_message('informe', en='report', pt='relatório')))
+        raise DiagnosticError(backend_message('Asociación de evidencia alterada ({p0}) / Evidence placement changed', p0=scope['id'] or backend_message('informe', en='report', pt='relatório')),
+                              code='export.evidence.changed', location={'field': 'images', 'evidence_index': changed_image})
     return len(expected['fields'])+bool(expected['severity']),len(links),len(expected['images'])

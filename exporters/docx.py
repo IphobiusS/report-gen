@@ -108,21 +108,6 @@ def to_docx(data, meta, L, engagement_dir, out_path):
         s = OxmlElement("w:shd"); s.set(qn("w:val"), "clear"); s.set(qn("w:fill"), fill)
         run._r.get_or_add_rPr().append(s)
 
-    def cell_border(cell, spec):
-        tcPr = cell._tc.get_or_add_tcPr()
-        tb = tcPr.find(qn("w:tcBorders"))
-        if tb is None:
-            tb = OxmlElement("w:tcBorders"); tcPr.append(tb)
-        for edge, (color, sz) in spec.items():
-            e = OxmlElement("w:" + edge)
-            e.set(qn("w:val"), "single"); e.set(qn("w:sz"), str(sz)); e.set(qn("w:space"), "0"); e.set(qn("w:color"), color)
-            tb.append(e)
-
-    def run_border(run, color, sz=4, space=3):
-        b = OxmlElement("w:bdr")
-        b.set(qn("w:val"), "single"); b.set(qn("w:sz"), str(sz)); b.set(qn("w:space"), str(space)); b.set(qn("w:color"), color)
-        run._r.get_or_add_rPr().append(b)
-
     def field(p, instr):
         r = p.add_run()
         b = OxmlElement("w:fldChar"); b.set(qn("w:fldCharType"), "begin")

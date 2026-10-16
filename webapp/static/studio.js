@@ -71,7 +71,7 @@ async function recovery(){
   const generation=++recoveryGeneration,slug=S.slug,data=S.data,etag=projectStore.etag,lang=S.uiLang,rows=projectStore.recovery||[];
   if(recoveryDialog?.isConnected&&recoveryDialog.dataset.recoveryProject!==slug){recoveryDialog.close();recoveryDialog.remove();recoveryDialog=null;}
   if(!slug||projectStore.loading||projectBusyCount>0)return;
-  let pending=[];try{if(typeof PendingUI!=='undefined')pending=await PendingUI.list(slug);}catch(error){/* Form status reports unavailable storage when edited. */}
+  let pending=[];try{if(typeof PendingUI!=='undefined')pending=await PendingUI.list(slug);}catch{/* Form status reports unavailable storage when edited. */}
   // Loading and the explicit recovery action can overlap. Only the latest
   // request for this exact project view may present its private records.
   if(generation!==recoveryGeneration||S.slug!==slug||S.data!==data||projectStore.etag!==etag||S.uiLang!==lang||projectStore.loading||projectBusyCount>0)return;

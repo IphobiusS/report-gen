@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.37.1
+# report-gen 0.38.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -50,6 +50,16 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Word | An editable `.docx` with its own table-of-contents fields. |
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
+
+## New in 0.38.0
+
+**Error locations:** imports show the available record, field and line; failed exports identify a finding, table, row, cell or evidence item when the contract can locate it reliably. Otherwise, the original general error remains. These private details are excluded from delivery manifests.
+
+**DOCX preview with LibreOffice:** from a completed export containing Word, explicitly generate a PDF view using LibreOffice installed on your computer. The view is linked to the exact DOCX by SHA-256 and revision without modifying it. It is private and temporary; it shows LibreOffice layout and does not establish Microsoft Word equivalence.
+
+**PDF annex inspection:** examine extractable text, metadata and PDF structures within explicit limits. Results show categories and locations without revealing sensitive values or changing the file. Scope is always partial: no OCR, arbitrary binary inspection or reconstruction of earlier PDF revisions. Manual annex authorization remains necessary.
+
+Cleanup removes private helpers, unused bindings, obsolete constants and 20 CSS rules with no current emitters. Public adapters, library callbacks and resources with documented roles remain. This does not claim universal absence of dead code. [New feature workflow and limits](docs/guide.en.md#review-errors-and-documents-in-0380).
 
 ## Fixes in 0.37.1
 
@@ -117,7 +127,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.37.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.38.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

@@ -1,4 +1,4 @@
-# Guia do usuário do report-gen 0.37.1
+# Guia do usuário do report-gen 0.38.0
 
 [Boas-vindas](../README.pt.md) · [Español](guide.es.md) · [English](guide.en.md) · [Histórico de alterações](../CHANGELOG.md)
 
@@ -112,7 +112,7 @@ O teste DOCX cria e relê o documento. Não comprova paginação nem abertura no
 
 Anexos ficam excluídos até serem revisados e selecionados individualmente. Somente a entrega combinada os inclui. São copiados sem alteração, censura ou remoção de metadados; envie cópias já revisadas. Anexos obrigatórios bloqueiam a entrega até estarem revisados, incluídos e íntegros. Confirmar avisos não ignora esse requisito. Backups com anexos exigem 0.21.0 ou superior; registros com `required`, mesmo falso, exigem 0.21.1 ou superior.
 
-O scanner de anexos lê o primeiro MiB de texto UTF-8 ou conta metadados de imagens. Não faz OCR nem inspeciona o conteúdo de PDFs. O OCR de imagens publicadas é outra ação, opcional e explícita, no inspetor.
+O scanner de anexos lê o primeiro MiB de texto UTF-8, conta metadados de imagens e inspeciona PDFs com escopo limitado. [Consulte o percurso e os limites](#revisar-erros-e-documentos-na-0380). Não faz OCR de anexos, não os autoriza nem modifica. O OCR de imagens publicadas é outra ação, opcional e explícita, no inspetor. Os resultados apresentam escopo e limitações sem reproduzir valores sensíveis.
 
 As verificações estruturadas comparam texto, código literal, metadados, tabelas nativas, links e posição de evidências no achado. Normalizam somente finais de linha do código. Destinos internos ausentes bloqueiam a publicação. A visibilidade estática do HTML não comprova geometria, sobreposição, CSS condicional ou estados dinâmicos.
 
@@ -151,7 +151,7 @@ O provedor UNO deve pertencer à mesma instalação do LibreOffice. A `.venv` do
 Crie a OXT sem instalá-la:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.37.1.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.38.0.oxt
 ```
 
 1. No LibreOffice escolhido, abra **Ferramentas → Extensões → Adicionar**; algumas versões usam **Gerenciador de extensões**.
@@ -348,3 +348,31 @@ O recibo temporário pertence à sessão, expira após 30 minutos e mantém até
 Os registros salvos permanecem no projeto, nas revisões e nos backups, sem expiração nem exclusão automática. Baixe o JSON para conservar o registro e o HTML separadamente para conservar as imagens. PDFs, HTML, imagens e nomes dos arquivos originais não são copiados automaticamente; o texto informado em autor e nota é salvo. A autoria é autodeclarada, inclusive nos registros importados: o JSON não é uma assinatura e não comprova autenticidade, equivalência semântica nem validação do Microsoft Word. Gerencie também as cópias históricas e os backups ao remover um registro definitivamente.
 
 A proteção de memória depende do sistema: Linux limita o espaço virtual a 768 MiB e Windows limita a memória comprometida do processo. No macOS, o crescimento virtual é limitado a 768 MiB acima dos mapas iniciais, e um supervisor encerra o processo se uma amostra de memória residente ou de pegada física exceder 768 MiB. O intervalo-alvo é 50 ms; pode haver excesso entre amostras, portanto não é um teto físico instantâneo.
+
+## Revisar erros e documentos na 0.38.0
+
+### Localizar a origem de um erro
+
+Em **Importar resultados**, a localização aparece abaixo do erro ou da linha correspondente. CSV identifica o registro e, quando disponíveis, as linhas físicas inicial/final e a coluna mapeada; um registro pode ocupar várias linhas. Burp mostra a entrada e a localização XML; Nuclei, o registro, linha e campo; Nmap, o host ou a porta. SARIF identifica a execução e o resultado com índices a partir de zero, como no arquivo. Uma linha JSON só aparece quando vem do analisador de sintaxe.
+
+Em **Exportações e downloads**, uma exportação com falha pode mostrar o identificador do achado e o campo afetado. Nas tabelas redigidas, os números de tabela, linha e célula começam em um, incluindo o cabeçalho como linha. O índice de evidência começa em zero. Nenhuma célula é inventada quando várias tabelas têm cabeçalhos ou dimensões ambíguos; uma falha global pode indicar apenas operação e formato. Corrija a origem, salve e gere novamente. Esses detalhes ficam na interface e no estado privado da tarefa, fora dos manifestos e entregas.
+
+### Ver o DOCX com LibreOffice
+
+1. Instale o **LibreOffice Writer** no computador se estiver indisponível. O report-gen o detecta localmente; não o baixa nem instala. Reabra o editor após a instalação.
+2. Gere uma exportação com **Word** e aguarde a conclusão. Em **Exportações e downloads**, escolha **Visualização DOCX com LibreOffice** e depois **Gerar visualização nativa**.
+3. Examine o PDF derivado, especialmente sumário, tabelas, URLs, legendas e quebras de página. Baixe o PDF e seu recibo se necessário; o recibo identifica mecanismo, versão, SHA-256 do DOCX, revisão e hash do PDF.
+
+A conversão usa o DOCX já gerado, inclusive quando está dentro de uma entrega combinada; não reconstrói o documento a partir do projeto atual nem altera a origem. Uma vista anterior continua vinculada à revisão original. Essa operação opcional usa processo e perfil temporário separados: até 16 MiB de entrada, 32 MiB de PDF, 500 páginas e 180 segundos. Só há uma conversão simultânea. Ausência do mecanismo, falhas e limites são informados sem atribuir uma revisão concluída.
+
+A vista e o recibo são privados e expiram após 15 minutos; o servidor limpa o material expirado durante operações ou ao encerrar. Fechar o diálogo cancela a operação ativa e solicita a remoção dos temporários. Os resultados não são salvos automaticamente no projeto. Downloads mantidos continuam privados e devem ser gerenciados por você. **Essa vista comprova apenas o resultado do LibreOffice para aqueles bytes, não equivalência nem aceitação do Microsoft Word.** A revisão nativa no Word permanece independente.
+
+Com Windows e Microsoft Word de desktop instalado e licenciado, você pode vincular essa verificação ao mesmo DOCX: mantenha somente esse documento em `word-input` e execute `powershell -NoProfile -File .\scripts\verify-microsoft-word.ps1 -InputDirectory .\word-input -OutputDirectory .\word-output -ExpectedSourceReceipt .\docx-libreoffice-preview.json`. Use uma pasta de saída vazia. O recibo baixado verifica o hash e mantém a revisão de origem antes de abrir o Word; o script trabalha numa cópia, atualiza campos, exporta um PDF e registra versão, métricas e hashes. Examine esse PDF depois: possuir o comando ou recibo do LibreOffice não comprova que o Word foi executado.
+
+### Inspecionar um anexo PDF
+
+Em **Inventário de anexos → Verificar possíveis segredos**, revise as categorias e localizações detectadas. Os resultados PDF mostram páginas, objetos e caracteres examinados. A inspeção abrange texto extraível, metadados Info/XMP e cadeias de texto nas estruturas atuais, incluindo links, anotações, formulários e JavaScript como texto estático. Detecta a presença de ações, imagens e arquivos incorporados sem executar ações, visitar links ou abrir esses arquivos.
+
+Os resultados nunca reproduzem valores sensíveis e ficam vinculados ao hash e à revisão inspecionados. A análise é temporária e fica fora das entregas e de seus manifestos. O estado “inspecionado” indica que aquele escopo limitado terminou, não que o arquivo seja seguro. O escopo sempre é parcial e exige revisão manual: não há OCR nem inspeção exaustiva de binários incorporados ou do histórico de revisões incrementais. PDFs criptografados, mesmo com senha vazia, não são inspecionados. Erros, limites e partes omitidas são informados explicitamente.
+
+Os limites incluem 16 MiB por PDF, 200 páginas, 8000 objetos, 2.097.152 caracteres e 20 segundos, além de limites de profundidade e fluxos de texto. **A análise não censura, modifica nem autoriza o anexo.** Revise a cópia que será compartilhada e marque expressamente sua revisão e inclusão. Alertas orientam a revisão; anexos obrigatórios continuam bloqueando entregas incompletas.

@@ -61,7 +61,7 @@ async function refreshLivePreview() {
     f.srcdoc = html.replace(/<head(?:\s[^>]*)?>/i,head=>head+'<meta name="rg-preview-generation" content="'+generation+'">');
     releasePdfPreview();
     setPvStatus(t("uptodate"));
-  } catch (e) { if (generation === previewGeneration) setPvStatus(t("err")); }
+  } catch { if (generation === previewGeneration) setPvStatus(t("err")); }
   finally {
     if (!waitingForDocument && livePreviewRequest === generation) livePreviewRequest = null;
     if (generation === previewGeneration) hidePreviewLoading();

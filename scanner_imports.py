@@ -11,34 +11,50 @@ from lxml import etree
 from input_guard import ensure_data_tree, load_json
 from project_history import now
 import workflows
+from diagnostic_locations import DiagnosticError, diagnostic, location_scope
 
 MAX_ROWS = 500
 MAX_PORTS = 10000
 
 
-def _text(obj, key, default='', *, strip=True):
+def _json_document(raw, first_line=1):
+    try:
+        return load_json(raw)
+    except ValueError as exc:
+        cause = exc.__cause__
+        if isinstance(cause, json.JSONDecodeError):
+            raise DiagnosticError(str(exc), code='import.json.invalid',
+                                  location={'line': first_line + cause.lineno - 1,
+                                            'column': cause.colno}) from exc
+        raise
+
+
+def _text(obj, key, default='', *, strip=True, field=None):
     value = obj.get(key, default)
     if not isinstance(value, str):
-        raise ValueError(backend_message('{key}: debe ser texto / expected text', en='{key}: expected text', key=key))
+        raise DiagnosticError(backend_message('{key}: debe ser texto / expected text', en='{key}: expected text', key=key),
+                              code='import.type.text', location={'field': field or key})
     return value.strip() if strip else value
 
 
-def _object(obj, key):
+def _object(obj, key, *, field=None):
     value = obj.get(key, {})
     if value is None:
         return {}
     if not isinstance(value, dict):
-        raise ValueError(backend_message('{key}: debe ser un objeto / expected object', en='{key}: expected object', key=key))
+        raise DiagnosticError(backend_message('{key}: debe ser un objeto / expected object', en='{key}: expected object', key=key),
+                              code='import.type.object', location={'field': field or key})
     return value
 
 
-def _strings(value, label):
+def _strings(value, label, *, field=None):
     if value is None:
         return []
     if isinstance(value, str):
         return [value] if value else []
     if not isinstance(value, list) or any(not isinstance(v, str) for v in value):
-        raise ValueError(backend_message('{label}: lista de textos inválida / invalid text list', en='{label}: invalid text list', label=label))
+        raise DiagnosticError(backend_message('{label}: lista de textos inválida / invalid text list', en='{label}: invalid text list', label=label),
+                              code='import.type.text_list', location={'field': field or label})
     return value
 
 
@@ -50,39 +66,43 @@ def nuclei(raw, lang='es'):
             continue
         if len(rows) >= MAX_ROWS:
             raise ValueError(backend_message('Máximo 500 resultados por archivo / Maximum 500 results per file', en='Maximum 500 results per file'))
-        item = load_json(line)
-        if not isinstance(item, dict):
-            raise ValueError(backend_message('Línea {line}: se esperaba un objeto Nuclei / expected Nuclei object', en='Line {line}: expected Nuclei object', line=line_number))
-        info = _object(item, 'info')
-        classification = _object(info, 'classification')
-        template_id = _text(item, 'template-id')
-        title = _text(info, 'name')
-        affected = _text(item, 'matched-at') or _text(item, 'host')
-        if not template_id or not title or not affected:
-            raise ValueError(backend_message('Línea {line}: faltan template-id, info.name u objetivo / missing template-id, info.name or target', en='Line {line}: missing template-id, info.name or target', line=line_number))
-        if 'matcher-status' in item and item['matcher-status'] is not True:
-            raise ValueError(backend_message('Línea {line}: no es una coincidencia positiva / not a positive match', en='Line {line}: not a positive match', line=line_number))
-        references = _strings(info.get('reference', []), 'reference')
-        if any(not re.match(r'^https?://', ref, re.I) for ref in references):
-            raise ValueError(backend_message('Referencias Nuclei: solo HTTP(S) / Nuclei references: HTTP(S) only', en='Nuclei references: HTTP(S) only'))
-        walkthrough = []
-        for key in ('request', 'response'):
-            value = _text(item, key, strip=False)
-            if value:
-                walkthrough.append({'lead': 'Nuclei HTTP ' + {'request': ('solicitud', 'request', 'requisição'), 'response': ('respuesta', 'response', 'resposta')}[key][language_index(lang)], 'command': value})
-        extracted = _strings(item.get('extracted-results', []), 'extracted-results')
-        if extracted:
-            walkthrough.append({'lead': ('Nuclei: resultados extraídos', 'Nuclei: extracted results', 'Nuclei: resultados extraídos')[language_index(lang)], 'command': '\n'.join(extracted)})
-        rows.append(dict(title=title, affected=affected, severity=_text(info, 'severity'),
-                         description_md=_text(info, 'description'), remediation_md=_text(info, 'remediation'),
-                         impact_md='', cvss_vector=_text(classification, 'cvss-metrics'),
-                         cwe=', '.join(_strings(classification.get('cwe-id', []), 'cwe-id')),
-                         external_id=template_id, confidence='scanner match; technical review required',
-                         references=references, walkthrough=walkthrough,
-                         origin={'template_id': template_id, 'matcher_name': _text(item, 'matcher-name'),
-                                 'scanner_type': _text(item, 'type'), 'matched_at': affected,
-                                 'observed_at': _text(item, 'timestamp'), 'source_line': line_number,
-                                 'record_sha256': sha256(line.encode()).hexdigest()}))
+        with location_scope(operation='import', format='nuclei', record=len(rows) + 1, line=line_number, code='import.nuclei.invalid'):
+            item = _json_document(line, line_number)
+            if not isinstance(item, dict):
+                raise ValueError(backend_message('Línea {line}: se esperaba un objeto Nuclei / expected Nuclei object', en='Line {line}: expected Nuclei object', line=line_number))
+            info = _object(item, 'info')
+            classification = _object(info, 'classification', field='info.classification')
+            template_id = _text(item, 'template-id')
+            title = _text(info, 'name', field='info.name')
+            affected = _text(item, 'matched-at') or _text(item, 'host')
+            if not template_id or not title or not affected:
+                raise ValueError(backend_message('Línea {line}: faltan template-id, info.name u objetivo / missing template-id, info.name or target', en='Line {line}: missing template-id, info.name or target', line=line_number))
+            if 'matcher-status' in item and item['matcher-status'] is not True:
+                raise DiagnosticError(backend_message('Línea {line}: no es una coincidencia positiva / not a positive match', en='Line {line}: not a positive match', line=line_number),
+                                      code='import.nuclei.match', location={'field': 'matcher-status'})
+            references = _strings(info.get('reference', []), 'reference', field='info.reference')
+            if any(not re.match(r'^https?://', ref, re.I) for ref in references):
+                raise DiagnosticError(backend_message('Referencias Nuclei: solo HTTP(S) / Nuclei references: HTTP(S) only', en='Nuclei references: HTTP(S) only'),
+                                      code='import.nuclei.reference', location={'field': 'info.reference'})
+            walkthrough = []
+            for key in ('request', 'response'):
+                value = _text(item, key, strip=False)
+                if value:
+                    walkthrough.append({'lead': 'Nuclei HTTP ' + {'request': ('solicitud', 'request', 'requisição'), 'response': ('respuesta', 'response', 'resposta')}[key][language_index(lang)], 'command': value})
+            extracted = _strings(item.get('extracted-results', []), 'extracted-results')
+            if extracted:
+                walkthrough.append({'lead': ('Nuclei: resultados extraídos', 'Nuclei: extracted results', 'Nuclei: resultados extraídos')[language_index(lang)], 'command': '\n'.join(extracted)})
+            rows.append(dict(title=title, affected=affected, severity=_text(info, 'severity', field='info.severity'),
+                             description_md=_text(info, 'description', field='info.description'), remediation_md=_text(info, 'remediation', field='info.remediation'),
+                             impact_md='', cvss_vector=_text(classification, 'cvss-metrics', field='info.classification.cvss-metrics'),
+                             cwe=', '.join(_strings(classification.get('cwe-id', []), 'cwe-id', field='info.classification.cwe-id')),
+                             external_id=template_id, confidence='scanner match; technical review required',
+                             references=references, walkthrough=walkthrough,
+                             _source_location=dict(record=len(rows) + 1, line=line_number),
+                             origin={'template_id': template_id, 'matcher_name': _text(item, 'matcher-name'),
+                                     'scanner_type': _text(item, 'type'), 'matched_at': affected,
+                                     'observed_at': _text(item, 'timestamp'), 'source_line': line_number,
+                                     'record_sha256': sha256(line.encode()).hexdigest()}))
     if not rows:
         raise ValueError(backend_message('JSONL sin resultados / JSONL contains no results', en='JSONL contains no results'))
     return [], {}, rows
@@ -99,7 +119,9 @@ def _xml(raw):
         root = etree.fromstring(encoded, etree.XMLParser(resolve_entities=False, load_dtd=False,
                                                        no_network=True, huge_tree=False))
     except (etree.XMLSyntaxError, ValueError) as exc:
-        raise ValueError(backend_message('XML de Nmap inválido / Invalid Nmap XML', en='Invalid Nmap XML')) from exc
+        line, column = getattr(exc, 'position', (None, None))
+        raise DiagnosticError(backend_message('XML de Nmap inválido / Invalid Nmap XML', en='Invalid Nmap XML'),
+            code='import.xml.invalid', location=dict(line=line, column=column)) from exc
     if root.tag != 'nmaprun' or root.get('scanner', 'nmap') != 'nmap':
         raise ValueError(backend_message('Se esperaba <nmaprun> / Expected <nmaprun>', en='Expected <nmaprun>'))
     if sum(1 for _ in root.iter()) > 30000:
@@ -130,49 +152,52 @@ def nmap_preview(raw, data, origin):
                 for scan in root.findall('scaninfo')]
     rows = []
     for index, host in enumerate(hosts):
-        addresses = [a.get('addr', '') for a in host.findall('address') if a.get('addrtype') in ('ipv4', 'ipv6')]
-        if not addresses:
-            raise ValueError(backend_message('Host {index}: dirección IP ausente / missing IP address', en='Host {index}: missing IP address', index=index + 1))
-        try:
-            addresses = [str(ipaddress.ip_address(a)) for a in addresses]
-        except ValueError as exc:
-            raise ValueError(backend_message('Host {index}: dirección IP inválida / invalid IP address', en='Host {index}: invalid IP address', index=index + 1)) from exc
-        target = addresses[0]
-        hostnames = list(dict.fromkeys(n.get('name', '') for n in host.findall('hostnames/hostname') if n.get('name')))
-        state_node = host.find('status')
-        host_state = state_node.get('state', 'unknown') if state_node is not None else 'unknown'
-        services = []
-        for port in host.findall('ports/port'):
-            port_count += 1
-            if port_count > MAX_PORTS:
-                raise ValueError(backend_message('Máximo 10000 puertos por archivo / Maximum 10000 ports per file', en='Maximum 10000 ports per file'))
-            number, protocol = port.get('portid', ''), port.get('protocol', '')
-            if not re.fullmatch(r'[0-9]{1,5}', number) or not 0 <= int(number) <= 65535 or protocol not in ('tcp', 'udp', 'sctp', 'ip'):
-                raise ValueError(backend_message('Puerto o protocolo Nmap inválido / Invalid Nmap port or protocol', en='Invalid Nmap port or protocol'))
-            if protocol == 'ip' and int(number) > 255:
-                raise ValueError(backend_message('Número de protocolo IP inválido / Invalid IP protocol number', en='Invalid IP protocol number'))
-            state = port.find('state')
-            if state is None or not state.get('state'):
-                raise ValueError(backend_message('Puerto sin estado / Port without state', en='Port without state'))
-            service = port.find('service')
-            values = {key: service.get(key, '') if service is not None else ''
-                      for key in ('name', 'product', 'version', 'extrainfo', 'tunnel', 'method', 'conf')}
-            services.append(dict(port=int(number), protocol=protocol, state=state.get('state'), **values))
-        if len({(s['protocol'], s['port']) for s in services}) != len(services):
-            raise ValueError(backend_message('Puerto duplicado en un host / Duplicate port within a host', en='Duplicate port within a host'))
-        services.sort(key=lambda s: (s['protocol'], s['port']))
-        extra = [{'state': p.get('state', ''), 'count': p.get('count', '')} for p in host.findall('ports/extraports')]
-        observation = dict(target=target, addresses=addresses, hostnames=hostnames, state=host_state,
-                           services=services, extraports=extra, scan_complete=scan_complete, scaninfo=scaninfo)
-        key = sha256(json.dumps(observation, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
-        source = dict(origin, format='nmap', fingerprint=key, external_id=target, confidence='scanner observation',
-                      reviewed=False, scanner_version=root.get('version', ''), observed_at=root.get('startstr', ''),
-                      scan_complete=scan_complete, omitted_scripts=len(host.findall('.//script')))
-        observation['import_source'] = source
-        duplicate = key in seen
-        seen.add(key)
-        rows.append(dict(index=index, kind='inventory', inventory=observation, duplicate=duplicate,
-                         existing_duplicate=key in project_seen, existing_asset=target in assets, errors=[]))
+        with location_scope(operation='import', format='nmap', record=index + 1, line=host.sourceline, code='import.nmap.host'):
+            addresses = [a.get('addr', '') for a in host.findall('address') if a.get('addrtype') in ('ipv4', 'ipv6')]
+            if not addresses:
+                raise ValueError(backend_message('Host {index}: dirección IP ausente / missing IP address', en='Host {index}: missing IP address', index=index + 1))
+            try:
+                addresses = [str(ipaddress.ip_address(a)) for a in addresses]
+            except ValueError as exc:
+                raise ValueError(backend_message('Host {index}: dirección IP inválida / invalid IP address', en='Host {index}: invalid IP address', index=index + 1)) from exc
+            target = addresses[0]
+            hostnames = list(dict.fromkeys(n.get('name', '') for n in host.findall('hostnames/hostname') if n.get('name')))
+            state_node = host.find('status')
+            host_state = state_node.get('state', 'unknown') if state_node is not None else 'unknown'
+            services = []
+            for port in host.findall('ports/port'):
+                with location_scope(line=port.sourceline, field='ports.port', code='import.nmap.port'):
+                    port_count += 1
+                    if port_count > MAX_PORTS:
+                        raise ValueError(backend_message('Máximo 10000 puertos por archivo / Maximum 10000 ports per file', en='Maximum 10000 ports per file'))
+                    number, protocol = port.get('portid', ''), port.get('protocol', '')
+                    if not re.fullmatch(r'[0-9]{1,5}', number) or not 0 <= int(number) <= 65535 or protocol not in ('tcp', 'udp', 'sctp', 'ip'):
+                        raise ValueError(backend_message('Puerto o protocolo Nmap inválido / Invalid Nmap port or protocol', en='Invalid Nmap port or protocol'))
+                    if protocol == 'ip' and int(number) > 255:
+                        raise ValueError(backend_message('Número de protocolo IP inválido / Invalid IP protocol number', en='Invalid IP protocol number'))
+                    state = port.find('state')
+                    if state is None or not state.get('state'):
+                        raise ValueError(backend_message('Puerto sin estado / Port without state', en='Port without state'))
+                    service = port.find('service')
+                    values = {key: service.get(key, '') if service is not None else ''
+                              for key in ('name', 'product', 'version', 'extrainfo', 'tunnel', 'method', 'conf')}
+                    services.append(dict(port=int(number), protocol=protocol, state=state.get('state'), **values))
+            if len({(s['protocol'], s['port']) for s in services}) != len(services):
+                raise ValueError(backend_message('Puerto duplicado en un host / Duplicate port within a host', en='Duplicate port within a host'))
+            services.sort(key=lambda s: (s['protocol'], s['port']))
+            extra = [{'state': p.get('state', ''), 'count': p.get('count', '')} for p in host.findall('ports/extraports')]
+            observation = dict(target=target, addresses=addresses, hostnames=hostnames, state=host_state,
+                               services=services, extraports=extra, scan_complete=scan_complete, scaninfo=scaninfo)
+            key = sha256(json.dumps(observation, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()).hexdigest()
+            source = dict(origin, format='nmap', fingerprint=key, external_id=target, confidence='scanner observation',
+                          reviewed=False, scanner_version=root.get('version', ''), observed_at=root.get('startstr', ''),
+                          scan_complete=scan_complete, omitted_scripts=len(host.findall('.//script')))
+            observation['import_source'] = source
+            duplicate = key in seen
+            seen.add(key)
+            rows.append(dict(index=index, kind='inventory', inventory=observation, duplicate=duplicate,
+                             existing_duplicate=key in project_seen, existing_asset=target in assets, errors=[], diagnostics=[],
+                             source_location=dict(operation='import', format='nmap', record=index + 1, line=host.sourceline)))
     if not rows:
         raise ValueError(backend_message('XML sin hosts importables / XML contains no importable hosts', en='XML contains no importable hosts'))
     return dict(format='nmap', kind='inventory', sha256=origin['file_sha256'], headers=[], mapping={}, rows=rows,
@@ -192,7 +217,8 @@ def nmap_apply(result, data, selected):
         source = deepcopy(item['import_source'])
         key = source['fingerprint']
         if row['existing_duplicate'] or key in selected_keys:
-            raise ValueError(backend_message('La selección contiene observaciones duplicadas / Selection contains duplicate observations', en='Selection contains duplicate observations'))
+            raise DiagnosticError(backend_message('La selección contiene observaciones duplicadas / Selection contains duplicate observations', en='Selection contains duplicate observations'),
+                                  code='import.selection.duplicate', location=row.get('source_location', {}))
         selected_keys.add(key)
         source['imported_at'] = now()
         target = item['target']
@@ -232,15 +258,17 @@ MAX_SARIF_OUTPUT_BYTES = 12 * 1024 * 1024
 
 
 def _sarif_invalid(field):
-    return ValueError(backend_message('SARIF: valor inválido o incoherente en {field}.',
+    return DiagnosticError(backend_message('SARIF: valor inválido o incoherente en {field}.',
         en='SARIF: invalid or conflicting value at {field}.',
-        pt='SARIF: valor inválido ou conflitante em {field}.', field=field))
+        pt='SARIF: valor inválido ou conflitante em {field}.', field=field),
+        code='import.sarif.invalid', location={'field': field})
 
 
 def _sarif_limit(field, limit):
-    return ValueError(backend_message('SARIF: {field} supera el límite de {limit}.',
+    return DiagnosticError(backend_message('SARIF: {field} supera el límite de {limit}.',
         en='SARIF: {field} exceeds the limit of {limit}.',
-        pt='SARIF: {field} excede o limite de {limit}.', field=field, limit=limit))
+        pt='SARIF: {field} excede o limite de {limit}.', field=field, limit=limit),
+        code='import.sarif.limit', location={'field': field})
 
 
 def _sarif_object(value, field):
@@ -584,7 +612,7 @@ def sarif_preview(raw, data, origin):
     """
     if len(raw.encode('utf-8')) > 4 * 1024 * 1024:
         raise _sarif_limit('bytes', 4 * 1024 * 1024)
-    document = _sarif_object(load_json(raw), 'document')
+    document = _sarif_object(_json_document(raw), 'document')
     if document.get('version') != '2.1.0':
         raise _sarif_invalid('version (2.1.0)')
     runs = _sarif_list(document.get('runs'), 'runs', MAX_SARIF_RUNS)
@@ -593,129 +621,137 @@ def sarif_preview(raw, data, origin):
             en='SARIF: a self-contained file without external properties is required.',
             pt='SARIF: é necessário um arquivo autocontido, sem propriedades externas.'))
     total = 0
-    for run in runs:
-        run = _sarif_object(run, 'run')
-        results = _sarif_list(run.get('results', []), 'results', MAX_ROWS)
-        total += len(results)
-        if total > MAX_ROWS:
-            raise _sarif_limit('results', MAX_ROWS)
-        if 'externalPropertyFileReferences' in run and run['externalPropertyFileReferences'] != {}:
-            raise ValueError(backend_message('SARIF: se requiere un archivo autocontenido, sin propiedades externas.',
-                en='SARIF: a self-contained file without external properties is required.',
-                pt='SARIF: é necessário um arquivo autocontido, sem propriedades externas.'))
+    for run_index, run in enumerate(runs):
+        with location_scope(operation='import', format='sarif', run_index=run_index, code='import.sarif.invalid'):
+            run = _sarif_object(run, 'run')
+            results = _sarif_list(run.get('results', []), 'results', MAX_ROWS)
+            total += len(results)
+            if total > MAX_ROWS:
+                raise _sarif_limit('results', MAX_ROWS)
+            if 'externalPropertyFileReferences' in run and run['externalPropertyFileReferences'] != {}:
+                raise ValueError(backend_message('SARIF: se requiere un archivo autocontenido, sin propiedades externas.',
+                    en='SARIF: a self-contained file without external properties is required.',
+                    pt='SARIF: é necessário um arquivo autocontido, sem propriedades externas.'))
     project_seen = {finding['import_source']['fingerprint'] for finding in data.get('findings', [])
                     if isinstance(finding.get('import_source'), dict) and finding['import_source'].get('format') == 'sarif'}
     seen = set(project_seen)
     rows, output_bytes = [], 0
     for run_index, run in enumerate(runs):
-        components = _sarif_components(run.get('tool'))
-        tool = components[0][0]['metadata']
-        repositories = _sarif_repositories(run)
-        for result_index, result in enumerate(run.get('results', [])):
-            result = _sarif_object(result, 'result')
-            encoded = _sarif_json(result)
-            if len(encoded) > MAX_SARIF_RECORD_BYTES:
-                raise _sarif_limit('result.bytes', MAX_SARIF_RECORD_BYTES)
-            component = _sarif_component(result, components)
-            rule_id, rule, rule_index, descriptor_identity = _sarif_rule(result, component['rules'])
-            message, message_format = _sarif_message(result.get('message'), rule, component['raw'])
-            locations = _sarif_locations(result, run)
-            kind = result.get('kind', 'fail')
-            if kind not in ('notApplicable', 'pass', 'fail', 'review', 'open', 'informational'):
-                raise _sarif_invalid('result.kind')
-            config = _sarif_object(rule.get('defaultConfiguration', {}), 'defaultConfiguration')
-            if 'enabled' in config and type(config['enabled']) is not bool:
-                raise _sarif_invalid('defaultConfiguration.enabled')
-            level = result.get('level', 'none' if kind != 'fail' else config.get('level', 'warning'))
-            if level not in ('none', 'note', 'warning', 'error') or (kind != 'fail' and level != 'none'):
-                raise _sarif_invalid('result.level')
-            # Invocation-level overrides change the meaning of omitted levels.
-            # Require producers to materialize those values, rather than guess.
-            if 'level' not in result and any(inv.get('ruleConfigurationOverrides') for inv in
-                    _sarif_list(run.get('invocations', []), 'invocations', MAX_SARIF_REFERENCES)
-                    if isinstance(inv, dict)):
-                raise ValueError(backend_message('SARIF: los resultados con ruleConfigurationOverrides deben declarar level.',
-                    en='SARIF: results with ruleConfigurationOverrides must declare level.',
-                    pt='SARIF: resultados com ruleConfigurationOverrides devem declarar level.'))
-            baseline = result.get('baselineState', '')
-            if baseline not in ('', 'new', 'unchanged', 'updated', 'absent'):
-                raise _sarif_invalid('baselineState')
-            suppressions = result.get('suppressions')
-            if suppressions is None:
-                suppressions = []
-            suppressions = _sarif_list(suppressions, 'suppressions', MAX_SARIF_LOCATIONS)
-            for suppression in suppressions:
-                suppression = _sarif_object(suppression, 'suppression')
-                if suppression.get('kind') not in ('inSource', 'external') or suppression.get('status', '') not in ('', 'accepted', 'underReview', 'rejected'):
-                    raise _sarif_invalid('suppression.kind / status')
-            excluded = baseline == 'absent' or kind != 'fail' or level == 'none' or config.get('enabled') is False or any(s.get('status') != 'rejected' for s in suppressions)
-            fingerprints = {}
-            for field in ('fingerprints', 'partialFingerprints'):
-                values = _sarif_object(result.get(field, {}), field)
-                if len(values) > 100:
-                    raise _sarif_limit(field, 100)
-                fingerprints[field] = {key: _sarif_text(value, field) for key, value in values.items()}
-            affected = []
-            for location in locations:
-                if 'uri' in location:
-                    label = (location['unresolved_base_id'] + ': ' if location['unresolved_base_id'] else '') + location['uri']
-                    region = location['region']
-                    if 'startLine' in region:
-                        label += ':' + str(region['startLine'])
-                        if 'startColumn' in region:
-                            label += ':' + str(region['startColumn'])
-                    affected.append(label)
-                else:
-                    affected.extend(item.get('fullyQualifiedName') or item.get('name') or item.get('decoratedName') for item in location['logical_locations'])
-            title = tool['name'] + ' · ' + rule_id
-            if component['kind'] == 'extension':
-                title = tool['name'] + ' · ' + component['metadata']['name'] + ' · ' + rule_id
-            if 'shortDescription' in rule:
-                short, _ = _sarif_message(rule['shortDescription'], {}, component['raw'])
-                title += ' · ' + short
-            # Identity includes exact context, not just a tool-supplied hash:
-            # colliding fingerprints cannot collapse different observations.
-            identity = {'tool': {key: tool[key] for key in ('name', 'guid') if key in tool},
-                        'rule_id': rule_id, 'rule_descriptor_identity': descriptor_identity, 'message': message,
-                        'repositories': sorted([{key: value for key, value in item.items() if key in ('repositoryUri', 'mappedTo')}
-                                                for item in repositories], key=lambda value: _sarif_json(value)),
-                        'locations': [{key: value for key, value in location.items() if key != 'original'} for location in locations],
-                        **fingerprints}
-            # Keep driver fingerprints byte-for-byte compatible with v0.36.0.
-            if component['kind'] == 'extension':
-                identity['extension'] = component['identity']
-            key = sha256(_sarif_json(identity)).hexdigest()
-            source = dict(origin, format='sarif', fingerprint=key, reviewed=False,
-                          external_id=rule_id, confidence='scanner observation; technical review required',
-                          tool=tool, run_index=run_index, result_index=result_index,
-                          tool_component=component['metadata'], tool_component_kind=component['kind'],
-                          tool_component_index=component['index'],
-                          tool_component_identity=component.get('identity', {}),
-                          version_control_provenance=repositories,
-                          rule_id=rule_id, rule_index=rule_index, rule_name=_sarif_text(rule.get('name', ''), 'rule.name'),
-                          rule_descriptor_identity=descriptor_identity,
-                          rule_reference=deepcopy(result.get('rule', {})),
-                          level=level, level_explicit='level' in result, result_kind=kind, baseline_state=baseline,
-                          message=deepcopy(result['message']), message_text=message, message_format=message_format,
-                          locations=locations, suppressions=deepcopy(suppressions),
-                          record_sha256=sha256(encoded).hexdigest(), record_hash_scope='canonical_result_json',
-                          omitted_fields=sorted(set(result) - {'ruleId', 'ruleIndex', 'rule', 'message', 'locations', 'level', 'kind', 'baselineState', 'suppressions', 'fingerprints', 'partialFingerprints'}),
-                          **fingerprints)
-            finding = dict(title=title, affected='\n'.join(affected),
-                description_md='\n'.join(workflows.md_text(line) for line in message.splitlines()),
-                impact_md='', remediation_md='', cwe='', cvss_vector='', references=[], walkthrough=[],
-                mode='vuln', status='open', verification='unverified', severity='info', import_source=source)
-            errors = [backend_message('SARIF: resultado excluido por supresión pendiente/aceptada, baseline ausente o estado no activo.',
-                en='SARIF: result excluded because of pending/accepted suppression, absent baseline or inactive state.',
-                pt='SARIF: resultado excluído por supressão pendente/aceita, baseline ausente ou estado inativo.')] if excluded else []
-            row = dict(index=len(rows), finding=finding, duplicate=key in seen,
-                       existing_duplicate=key in project_seen, errors=errors, excluded=excluded)
-            if not excluded:
-                seen.add(key)
-            output_bytes += len(_sarif_json(row))
-            if output_bytes > MAX_SARIF_OUTPUT_BYTES:
-                raise _sarif_limit('preview.bytes', MAX_SARIF_OUTPUT_BYTES)
-            rows.append(row)
+        with location_scope(operation='import', format='sarif', run_index=run_index, code='import.sarif.invalid'):
+            components = _sarif_components(run.get('tool'))
+            tool = components[0][0]['metadata']
+            repositories = _sarif_repositories(run)
+            for result_index, result in enumerate(run.get('results', [])):
+                with location_scope(operation='import', format='sarif', record=len(rows) + 1, run_index=run_index,
+                                    result_index=result_index, code='import.sarif.invalid'):
+                    result = _sarif_object(result, 'result')
+                    encoded = _sarif_json(result)
+                    if len(encoded) > MAX_SARIF_RECORD_BYTES:
+                        raise _sarif_limit('result.bytes', MAX_SARIF_RECORD_BYTES)
+                    component = _sarif_component(result, components)
+                    rule_id, rule, rule_index, descriptor_identity = _sarif_rule(result, component['rules'])
+                    message, message_format = _sarif_message(result.get('message'), rule, component['raw'])
+                    locations = _sarif_locations(result, run)
+                    kind = result.get('kind', 'fail')
+                    if kind not in ('notApplicable', 'pass', 'fail', 'review', 'open', 'informational'):
+                        raise _sarif_invalid('result.kind')
+                    config = _sarif_object(rule.get('defaultConfiguration', {}), 'defaultConfiguration')
+                    if 'enabled' in config and type(config['enabled']) is not bool:
+                        raise _sarif_invalid('defaultConfiguration.enabled')
+                    level = result.get('level', 'none' if kind != 'fail' else config.get('level', 'warning'))
+                    if level not in ('none', 'note', 'warning', 'error') or (kind != 'fail' and level != 'none'):
+                        raise _sarif_invalid('result.level')
+                    # Invocation-level overrides change the meaning of omitted levels.
+                    # Require producers to materialize those values, rather than guess.
+                    if 'level' not in result and any(inv.get('ruleConfigurationOverrides') for inv in
+                            _sarif_list(run.get('invocations', []), 'invocations', MAX_SARIF_REFERENCES)
+                            if isinstance(inv, dict)):
+                        raise ValueError(backend_message('SARIF: los resultados con ruleConfigurationOverrides deben declarar level.',
+                            en='SARIF: results with ruleConfigurationOverrides must declare level.',
+                            pt='SARIF: resultados com ruleConfigurationOverrides devem declarar level.'))
+                    baseline = result.get('baselineState', '')
+                    if baseline not in ('', 'new', 'unchanged', 'updated', 'absent'):
+                        raise _sarif_invalid('baselineState')
+                    suppressions = result.get('suppressions')
+                    if suppressions is None:
+                        suppressions = []
+                    suppressions = _sarif_list(suppressions, 'suppressions', MAX_SARIF_LOCATIONS)
+                    for suppression in suppressions:
+                        suppression = _sarif_object(suppression, 'suppression')
+                        if suppression.get('kind') not in ('inSource', 'external') or suppression.get('status', '') not in ('', 'accepted', 'underReview', 'rejected'):
+                            raise _sarif_invalid('suppression.kind / status')
+                    excluded = baseline == 'absent' or kind != 'fail' or level == 'none' or config.get('enabled') is False or any(s.get('status') != 'rejected' for s in suppressions)
+                    fingerprints = {}
+                    for field in ('fingerprints', 'partialFingerprints'):
+                        values = _sarif_object(result.get(field, {}), field)
+                        if len(values) > 100:
+                            raise _sarif_limit(field, 100)
+                        fingerprints[field] = {key: _sarif_text(value, field) for key, value in values.items()}
+                    affected = []
+                    for location in locations:
+                        if 'uri' in location:
+                            label = (location['unresolved_base_id'] + ': ' if location['unresolved_base_id'] else '') + location['uri']
+                            region = location['region']
+                            if 'startLine' in region:
+                                label += ':' + str(region['startLine'])
+                                if 'startColumn' in region:
+                                    label += ':' + str(region['startColumn'])
+                            affected.append(label)
+                        else:
+                            affected.extend(item.get('fullyQualifiedName') or item.get('name') or item.get('decoratedName') for item in location['logical_locations'])
+                    title = tool['name'] + ' · ' + rule_id
+                    if component['kind'] == 'extension':
+                        title = tool['name'] + ' · ' + component['metadata']['name'] + ' · ' + rule_id
+                    if 'shortDescription' in rule:
+                        short, _ = _sarif_message(rule['shortDescription'], {}, component['raw'])
+                        title += ' · ' + short
+                    # Identity includes exact context, not just a tool-supplied hash:
+                    # colliding fingerprints cannot collapse different observations.
+                    identity = {'tool': {key: tool[key] for key in ('name', 'guid') if key in tool},
+                                'rule_id': rule_id, 'rule_descriptor_identity': descriptor_identity, 'message': message,
+                                'repositories': sorted([{key: value for key, value in item.items() if key in ('repositoryUri', 'mappedTo')}
+                                                        for item in repositories], key=lambda value: _sarif_json(value)),
+                                'locations': [{key: value for key, value in location.items() if key != 'original'} for location in locations],
+                                **fingerprints}
+                    # Keep driver fingerprints byte-for-byte compatible with v0.36.0.
+                    if component['kind'] == 'extension':
+                        identity['extension'] = component['identity']
+                    key = sha256(_sarif_json(identity)).hexdigest()
+                    source = dict(origin, format='sarif', fingerprint=key, reviewed=False,
+                                  external_id=rule_id, confidence='scanner observation; technical review required',
+                                  tool=tool, run_index=run_index, result_index=result_index,
+                                  tool_component=component['metadata'], tool_component_kind=component['kind'],
+                                  tool_component_index=component['index'],
+                                  tool_component_identity=component.get('identity', {}),
+                                  version_control_provenance=repositories,
+                                  rule_id=rule_id, rule_index=rule_index, rule_name=_sarif_text(rule.get('name', ''), 'rule.name'),
+                                  rule_descriptor_identity=descriptor_identity,
+                                  rule_reference=deepcopy(result.get('rule', {})),
+                                  level=level, level_explicit='level' in result, result_kind=kind, baseline_state=baseline,
+                                  message=deepcopy(result['message']), message_text=message, message_format=message_format,
+                                  locations=locations, suppressions=deepcopy(suppressions),
+                                  record_sha256=sha256(encoded).hexdigest(), record_hash_scope='canonical_result_json',
+                                  omitted_fields=sorted(set(result) - {'ruleId', 'ruleIndex', 'rule', 'message', 'locations', 'level', 'kind', 'baselineState', 'suppressions', 'fingerprints', 'partialFingerprints'}),
+                                  **fingerprints)
+                    finding = dict(title=title, affected='\n'.join(affected),
+                        description_md='\n'.join(workflows.md_text(line) for line in message.splitlines()),
+                        impact_md='', remediation_md='', cwe='', cvss_vector='', references=[], walkthrough=[],
+                        mode='vuln', status='open', verification='unverified', severity='info', import_source=source)
+                    errors = [backend_message('SARIF: resultado excluido por supresión pendiente/aceptada, baseline ausente o estado no activo.',
+                        en='SARIF: result excluded because of pending/accepted suppression, absent baseline or inactive state.',
+                        pt='SARIF: resultado excluído por supressão pendente/aceita, baseline ausente ou estado inativo.')] if excluded else []
+                    source_location = dict(operation='import', format='sarif', record=len(rows) + 1,
+                                           run_index=run_index, result_index=result_index)
+                    row = dict(index=len(rows), finding=finding, duplicate=key in seen,
+                               existing_duplicate=key in project_seen, errors=errors, excluded=excluded,
+                               source_location=source_location,
+                               diagnostics=[diagnostic('import.sarif.excluded', error, **source_location) for error in errors])
+                    if not excluded:
+                        seen.add(key)
+                    output_bytes += len(_sarif_json(row))
+                    if output_bytes > MAX_SARIF_OUTPUT_BYTES:
+                        raise _sarif_limit('preview.bytes', MAX_SARIF_OUTPUT_BYTES)
+                    rows.append(row)
     if not rows:
         raise ValueError(backend_message('SARIF sin resultados para previsualizar.',
             en='SARIF contains no results to preview.', pt='SARIF sem resultados para pré-visualizar.'))

@@ -1,4 +1,4 @@
-# report-gen 0.37.1 user guide
+# report-gen 0.38.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Português (Brasil)](guide.pt.md) · [Changelog](../CHANGELOG.md)
 
@@ -116,7 +116,7 @@ The DOCX check creates and rereads a document. It does not establish pagination 
 
 Annexes are excluded until individually reviewed and selected. Only the combined delivery includes them. They are copied unchanged, without redaction or metadata removal; upload reviewed copies. Backups containing attachments require 0.21.0 or newer. Annex records with `required` need 0.21.1 or newer, including when false. Required annexes block delivery until reviewed, included and intact; acknowledging warnings does not bypass this.
 
-The annex scanner searches the first MiB of UTF-8 text or counts image metadata. That annex scan does not perform OCR or inspect PDF contents. The Publication inspector offers a separate optional local OCR action for published images. Results include scope and limitations, never matched secret values.
+The annex scanner searches the first MiB of UTF-8 text, counts image metadata and inspects PDFs within a bounded scope. [See the workflow and limits](#review-errors-and-documents-in-0380). It does not perform annex OCR, authorize files or modify them. The Publication inspector offers separate optional local OCR for published images. Results state scope and limitations without reproducing sensitive values.
 
 Structured export checks compare paragraphs, literal code, metadata, native tables, links and evidence placement within their finding. Only code line endings are normalized. Missing internal destinations block publication. Static HTML visibility checks do not certify geometry, occlusion, conditional CSS or dynamic states. PDF checks text presence, including table cells and list items, image counts and index destinations. Text presence is global and does not prove the location or association of a cell or item. Wrapped parts of a logical code line stay on one page; a line taller than the printable page is rejected while preserving the previous output. In PDF, literal whitespace, block association and layout require manual review. Markdown includes the severity chart as a PNG, alternative text with its counts and its scope caption. Checks compare the generated image bytes, text and position relative to the summary, separately from evidence images.
 
@@ -172,11 +172,11 @@ Extension installation failed with **Ubuntu's LibreOffice 24.2.7.2 packages**, e
 Build the OXT from the downloaded report-gen source without installing it:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.37.1.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.38.0.oxt
 ```
 
 1. In the chosen LibreOffice installation, open **Tools → Extensions → Add**. Some versions call it **Extension Manager**.
-2. Select `report-gen-libreoffice-0.37.1.oxt` and install it for your user.
+2. Select `report-gen-libreoffice-0.38.0.oxt` and install it for your user.
 3. Close every window of that LibreOffice installation, reopen it and open a copy of the DOCX freshly exported by report-gen.
 4. Inspect its URLs, lists and tables after opening, editing and saving it. To remove the extension, disable or remove it in the same manager and restart LibreOffice.
 
@@ -369,3 +369,31 @@ The temporary receipt belongs to the session, expires after 30 minutes and retai
 Saved records remain in the project, its revisions and backups without automatic expiry or deletion. Download JSON to retain the record and download the HTML separately to retain the images. PDFs, HTML, images and original filenames are not copied automatically; text you enter as the author and note is saved. Authorship is self-declared, including in imported records: the JSON is not a signature and does not establish authenticity, semantic equivalence or Microsoft Word validation. Manage historical copies and backups too when permanently removing a record.
 
 Memory protection is platform-specific: Linux limits virtual address space to 768 MiB and Windows limits process committed memory. On macOS, virtual growth is limited to 768 MiB above the initial mappings, and a supervisor terminates the process if a resident-memory or physical-footprint sample exceeds 768 MiB. The target sampling interval is 50 ms; memory may exceed the threshold between samples, so this is not an instantaneous physical-memory ceiling.
+
+## Review errors and documents in 0.38.0
+
+### Locate an error
+
+In **Import results**, the location appears below the error or relevant row. CSV identifies the record and, when available, its first/last physical lines and mapped column; one record can span several lines. Burp shows the issue and XML location; Nuclei, the record, line and field; Nmap, the host or port. SARIF identifies its run and result using zero-based indices, matching the file. A JSON line is shown only when it comes from the syntax parser.
+
+In **Exports and downloads**, a failed export can show the finding identifier and affected field. For authored tables, table, row and cell numbers start at one, with the header counted as a row. Evidence indices start at zero. A cell is not invented when several tables have ambiguous headers or dimensions; a global failure may identify only the operation and format. Correct the source, save and generate again. These details stay in the interface and private job state, outside manifests and deliveries.
+
+### View the DOCX with LibreOffice
+
+1. Install **LibreOffice Writer** on your computer if unavailable. report-gen detects it locally and does not download or install it. Reopen the editor after installation.
+2. Generate an export containing **Word** and wait for completion. In **Exports and downloads**, choose **DOCX preview with LibreOffice**, then **Generate native preview**.
+3. Inspect the derived PDF, especially its contents, tables, URLs, captions and page breaks. Download the PDF and receipt if needed; the receipt identifies the engine, version, DOCX SHA-256, revision and PDF hash.
+
+Conversion uses the already generated DOCX, including one inside a combined delivery; it neither rebuilds the document from the current project nor changes the source. An earlier view remains tied to its original revision. This optional operation uses a separate process and temporary profile: at most 16 MiB input, 32 MiB PDF, 500 pages and 180 seconds. Only one conversion runs at a time. An unavailable engine, failure or limit is reported without claiming completed review.
+
+The view and receipt are private and expire after 15 minutes; the server cleans expired material during operations or shutdown. Closing the dialog cancels an active operation and requests removal of its temporary files. Results are not automatically saved in the project. Downloads you retain remain private and are yours to manage. **This view establishes only LibreOffice's output for those bytes, not Microsoft Word equivalence or acceptance.** Native Word review remains an independent check.
+
+With Windows and an installed, licensed desktop Microsoft Word, you can bind that check to the same DOCX: place only that document in `word-input` and run `powershell -NoProfile -File .\scripts\verify-microsoft-word.ps1 -InputDirectory .\word-input -OutputDirectory .\word-output -ExpectedSourceReceipt .\docx-libreoffice-preview.json`. Use an empty output folder. The downloaded receipt verifies the hash and retains the source revision before Word opens; the script works on a copy, updates fields, exports a PDF and records version, metrics and hashes. Inspect that PDF afterwards: having the command or LibreOffice receipt does not establish that Word was executed.
+
+### Inspect a PDF annex
+
+In **Annex inventory → Check for possible secrets**, review detected categories and locations. PDF results show the pages, objects and characters inspected. Inspection covers extractable text, Info/XMP metadata and strings in current structures, including links, annotations, forms and JavaScript as static text. It detects the presence of actions, images and embedded files without running actions, visiting links or opening those files.
+
+Results never reproduce sensitive values and are bound to the inspected hash and revision. The scan is temporary and excluded from deliveries and their manifests. An “inspected” status means the bounded scope finished, not that the file is safe. Scope is always partial and requires manual review: there is no OCR or exhaustive inspection of embedded binaries or incremental revision history. Encrypted PDFs, even with an empty password, remain uninspected. Errors, limits and omitted parts are stated explicitly.
+
+Limits include 16 MiB per PDF, 200 pages, 8000 objects, 2,097,152 characters and 20 seconds, plus depth and text-stream limits. **Scanning does not redact, modify or authorize the annex.** Review the copy you will actually share and explicitly mark its review and inclusion. Alerts guide review; required-annex checks still block incomplete deliveries.

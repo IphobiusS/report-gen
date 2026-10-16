@@ -108,9 +108,9 @@ def capture(data, directory, target):
 def scan(directory, row):
     """Advisory inspection bound to a validated hash. Never return matched secrets.
 
-    UTF-8 text: bounded pattern scan. Images: metadata keys, no OCR. PDFs are
-    explicitly uninspected: opening arbitrary PDFs in the editor request would
-    require a separate resource-limited worker, not a misleading clean result.
+    UTF-8 text: bounded pattern scan. Images: metadata keys, no OCR. PDF text
+    and structural objects are inspected in a separate resource-limited worker.
+    No type is certified free of private information; PDF coverage is partial.
     """
     from io import BytesIO
     from collections import Counter
@@ -130,6 +130,9 @@ def scan(directory, row):
                 counts[kind]+=1
         result.update(scope='utf8_patterns',bytes_inspected=min(limit,len(blob)),complete=len(blob)<=limit,
                       alerts=[dict(kind=k,count=v) for k,v in sorted(counts.items())])
+    elif suffix == '.pdf':
+        from pdf_attachment_inspection import inspect_pdf
+        result.update(inspect_pdf(blob))
     elif suffix in {'.png','.jpg','.jpeg','.webp'}:
         from PIL import Image
         with Image.open(BytesIO(blob)) as image:

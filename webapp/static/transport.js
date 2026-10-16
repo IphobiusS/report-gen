@@ -9,7 +9,13 @@
 'use strict';
 
 async function requireOk(response) {
-  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || `HTTP ${response.status}`);
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const error = new Error(typeof body?.error === 'string' ? body.error : `HTTP ${response.status}`);
+    error.status = response.status;
+    error.diagnostics = Array.isArray(body?.diagnostics) ? body.diagnostics.slice(0,64) : [];
+    throw error;
+  }
   return response;
 }
 

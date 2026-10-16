@@ -1,6 +1,6 @@
 {
   "name": "report-gen-ui-tests",
-  "version": "0.37.1",
+  "version": "0.38.0",
   "private": true,
   "scripts": {
     "test": "node --test tests/test_save_manager.cjs tests/test_drafts_0200.cjs",
@@ -34,6 +34,8 @@
     "test:project-gallery": "node tests/test_project_gallery_0330.cjs --output out/project-gallery-0330",
     "test:tutorial": "node tests/test_visual_tutorial_0340.cjs --output out/visual-tutorial-0340",
     "test:review-tools": "node tests/test_features_0360_browser.cjs --output out/features-0360",
+    "test:docx-preview-ui": "node --test tests/test_docx_preview_ui_0380.cjs",
+    "test:diagnostics-ui": "node --test tests/test_diagnostics_ui_0380.cjs",
     "test:pdf-compare-ui": "node --test tests/test_pdf_compare_ui_0360.cjs tests/test_pdf_compare_ui_0370.cjs",
     "test:comparison-workflow": "node tests/test_features_0370_browser.cjs --output out/features-0370"
   },

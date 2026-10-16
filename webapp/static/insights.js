@@ -31,7 +31,6 @@ const InsightsUI = (() => {
   }
   document.addEventListener('input',event=>{if(event.target.matches('[data-insights-field]'))protectForms();});
   document.addEventListener('change',event=>{if(event.target.matches('[data-insights-field],[data-insights-check]'))protectForms();});
-  const url = path => '/api/projects/' + encodeURIComponent(S.slug) + path;
   const clone = value => JSON.parse(JSON.stringify(value));
   function notice(es, en, pt) { return h('p', {class: 'insights-note'}, w(es, en, pt)); }
   function actions(...nodes) { return h('div', {class: 'insights-actions'}, ...nodes); }

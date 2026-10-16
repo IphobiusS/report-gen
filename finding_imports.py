@@ -12,6 +12,7 @@ import workflows
 import scanner_imports
 from input_guard import ensure_data_tree
 from project_history import now
+from diagnostic_locations import DiagnosticError, diagnostic, location_scope
 
 MAX_BYTES = 4 * 1024 * 1024
 MAX_ROWS = 500
@@ -56,7 +57,9 @@ def _burp(raw):
     try:
         root = etree.fromstring(encoded, parser)
     except (etree.XMLSyntaxError, ValueError) as exc:
-        raise ValueError(backend_message('XML inválido; selecciona un informe XML de issues de Burp')) from exc
+        line, column = getattr(exc, 'position', (None, None))
+        raise DiagnosticError(backend_message('XML inválido; selecciona un informe XML de issues de Burp'),
+            code='import.xml.invalid', location=dict(line=line, column=column)) from exc
     if root.tag != 'issues':
         raise ValueError(backend_message('Se esperaba un informe Burp con raíz <issues>, no un historial HTTP'))
     if len(list(root.iter())) > 30000:
@@ -65,34 +68,38 @@ def _burp(raw):
     if len(issues) > MAX_ROWS:
         raise ValueError(backend_message('Importa como máximo 500 hallazgos por archivo'))
     rows = []
-    for issue in issues:
-        text = lambda key: issue.findtext(key, default='').strip()
-        item = dict(title=text('name'), severity=text('severity'), affected=text('host') + text('path'),
-                    description_md='\n\n'.join(filter(None, [_plain(text('issueBackground')), _plain(text('issueDetail'))])),
-                    remediation_md='\n\n'.join(filter(None, [_plain(text('remediationBackground')), _plain(text('remediationDetail'))])),
-                    impact_md='', external_id=text('serialNumber'), confidence=text('confidence'),
-                    references=[], walkthrough=[])
-        references = text('references')
-        if references:
-            tree = html.fragment_fromstring(references, create_parent='div')
-            # XPath smart strings retain XML nodes and are not safe-YAML scalars.
-            item['references'] = [link for link in tree.xpath('.//a/@href', smart_strings=False)
-                                  if link.startswith(('https://', 'http://'))]
-        for exchange in issue.findall('requestresponse'):
-            for name in ('request', 'response'):
-                node = exchange.find(name)
-                if node is None or not node.text:
-                    continue
-                value = node.text
-                if node.get('base64') == 'true':
-                    try:
-                        value = base64.b64decode(re.sub(r'\s+', '', value), validate=True).decode('utf-8', errors='backslashreplace')
-                    except ValueError as exc:
-                        raise ValueError(backend_message('Mensaje HTTP base64 inválido en Burp XML')) from exc
-                # Binary control bytes remain visible as escapes; never silently discard evidence.
-                value = ''.join(c if c in '\r\n\t' or ord(c) >= 32 else f'\\x{ord(c):02x}' for c in value)
-                item['walkthrough'].append({'lead': 'HTTP ' + name, 'command': value})
-        rows.append(item)
+    for issue_index, issue in enumerate(issues):
+        with location_scope(record=issue_index + 1, line=issue.sourceline, code='import.burp.issue'):
+            text = lambda key: issue.findtext(key, default='').strip()
+            item = dict(title=text('name'), severity=text('severity'), affected=text('host') + text('path'),
+                        description_md='\n\n'.join(filter(None, [_plain(text('issueBackground')), _plain(text('issueDetail'))])),
+                        remediation_md='\n\n'.join(filter(None, [_plain(text('remediationBackground')), _plain(text('remediationDetail'))])),
+                        impact_md='', external_id=text('serialNumber'), confidence=text('confidence'),
+                        references=[], walkthrough=[],
+                        _source_location=dict(record=issue_index + 1, line=issue.sourceline))
+            references = text('references')
+            if references:
+                tree = html.fragment_fromstring(references, create_parent='div')
+                # XPath smart strings retain XML nodes and are not safe-YAML scalars.
+                item['references'] = [link for link in tree.xpath('.//a/@href', smart_strings=False)
+                                      if link.startswith(('https://', 'http://'))]
+            for exchange_index, exchange in enumerate(issue.findall('requestresponse')):
+                for name in ('request', 'response'):
+                    node = exchange.find(name)
+                    if node is None or not node.text:
+                        continue
+                    value = node.text
+                    if node.get('base64') == 'true':
+                        try:
+                            value = base64.b64decode(re.sub(r'\s+', '', value), validate=True).decode('utf-8', errors='backslashreplace')
+                        except ValueError as exc:
+                            raise DiagnosticError(backend_message('Mensaje HTTP base64 inválido en Burp XML'),
+                                code='import.burp.http_base64', location=dict(record=issue_index + 1,
+                                    line=node.sourceline, field=f'requestresponse[{exchange_index}].{name}')) from exc
+                    # Binary control bytes remain visible as escapes; never silently discard evidence.
+                    value = ''.join(c if c in '\r\n\t' or ord(c) >= 32 else f'\\x{ord(c):02x}' for c in value)
+                    item['walkthrough'].append({'lead': 'HTTP ' + name, 'command': value})
+            rows.append(item)
     return [], {}, rows
 
 
@@ -105,7 +112,8 @@ def _csv(raw, mapping):
         reader = csv.reader(StringIO(raw, newline=''), dialect, strict=True)
         headers = [x.strip() for x in next(reader)]
         if not headers or len(headers) > 64 or any(not x for x in headers) or len(set(headers)) != len(headers):
-            raise ValueError(backend_message('Cabeceras CSV vacías, duplicadas o más de 64 columnas'))
+            raise DiagnosticError(backend_message('Cabeceras CSV vacías, duplicadas o más de 64 columnas'),
+                                  code='import.csv.headers', location={'line': 1, 'field': 'headers'})
         if mapping is None:
             mapping = {key: next((head for head in headers if head.casefold() in ALIASES[key]), '') for key in FIELDS}
         if not isinstance(mapping, dict) or set(mapping) - set(FIELDS) or any(
@@ -115,21 +123,33 @@ def _csv(raw, mapping):
         if len(chosen) != len(set(chosen)):
             raise ValueError(backend_message('Cada columna solo puede asignarse a un campo'))
         rows = []
+        line_start = reader.line_num + 1
         for line in reader:
             if not line or not any(line):
+                line_start = reader.line_num + 1
                 continue
             if len(line) != len(headers):
-                raise ValueError(backend_message('Fila {p0}: número de columnas incoherente', p0=reader.line_num))
+                raise DiagnosticError(backend_message('Fila {p0}: número de columnas incoherente', p0=reader.line_num),
+                    code='import.csv.columns', location=dict(record=len(rows) + 1, line=line_start,
+                        line_end=reader.line_num))
             values = dict(zip(headers, line))
-            rows.append({field: values[column] for field, column in mapping.items() if column})
+            rows.append({**{field: values[column] for field, column in mapping.items() if column},
+                         '_source_location': dict(record=len(rows) + 1, line=line_start, line_end=reader.line_num)})
+            line_start = reader.line_num + 1
             if len(rows) > MAX_ROWS:
                 raise ValueError(backend_message('Importa como máximo 500 hallazgos por archivo'))
         return headers, mapping, rows
     except (csv.Error, StopIteration) as exc:
-        raise ValueError(backend_message('CSV inválido o vacío. Usa UTF-8 y columnas delimitadas por coma, punto y coma o tabulador')) from exc
+        raise DiagnosticError(backend_message('CSV inválido o vacío. Usa UTF-8 y columnas delimitadas por coma, punto y coma o tabulador'),
+            code='import.csv.invalid', location=dict(line=max(1, reader.line_num))) from exc
 
 
 def preview(body, data):
+    with location_scope(operation='import', format=body.get('format'), code='import.invalid'):
+        return _preview(body, data)
+
+
+def _preview(body, data):
     kind, raw = body.get('format'), body.get('text')
     if not isinstance(kind, str) or kind not in ('csv', 'burp', 'nuclei', 'nmap', 'sarif'):
         raise ValueError(backend_message('Selecciona CSV, Burp XML, Nuclei JSONL, Nmap XML o SARIF 2.1.0.',
@@ -167,15 +187,27 @@ def preview(body, data):
         refs = source.get('references', [])
         f['references'] = refs if isinstance(refs, list) else [x.strip() for x in refs.splitlines() if x.strip()]
         errors = []
-        if not f['title'].strip(): errors.append(backend_message('Falta título / Missing title', en='Missing title', pt='Título ausente'))
-        if not f['severity']: errors.append(backend_message('Severidad desconocida / Unknown severity', en='Unknown severity', pt='Severidade desconhecida'))
+        diagnostics = []
+        source_location = dict(operation='import', format=kind,
+                               **{'record': index + 1, **source.get('_source_location', {})})
+        def invalid(code, field, message):
+            errors.append(message)
+            location = dict(source_location, field=field)
+            if kind == 'nuclei':
+                location['field'] = {'title': 'info.name', 'severity': 'info.severity',
+                                     'cvss_vector': 'info.classification.cvss-metrics'}.get(field, field)
+            if kind == 'csv' and mapping.get(field) in headers:
+                location['column'] = headers.index(mapping[field]) + 1
+            diagnostics.append(diagnostic(code, message, **location))
+        if not f['title'].strip(): invalid('import.title.missing', 'title', backend_message('Falta título / Missing title', en='Missing title', pt='Título ausente'))
+        if not f['severity']: invalid('import.severity.unknown', 'severity', backend_message('Severidad desconocida / Unknown severity', en='Unknown severity', pt='Severidade desconhecida'))
         if f['cvss_vector']:
             try:
                 score = cvss.score(f['cvss_vector'])
                 f.update(cvss=score['score'], cvss_version=f['cvss_vector'].split('/')[0].split(':')[1])
-                if score['severity'] != f['severity']: errors.append(backend_message('La severidad no coincide con CVSS / Severity differs from CVSS', en='Severity differs from CVSS', pt='A severidade não corresponde ao CVSS'))
+                if score['severity'] != f['severity']: invalid('import.cvss.severity_mismatch', 'cvss_vector', backend_message('La severidad no coincide con CVSS / Severity differs from CVSS', en='Severity differs from CVSS', pt='A severidade não corresponde ao CVSS'))
             except ValueError:
-                errors.append(backend_message('Vector CVSS inválido / Invalid CVSS vector', en='Invalid CVSS vector', pt='Vetor CVSS inválido'))
+                invalid('import.cvss.invalid', 'cvss_vector', backend_message('Vector CVSS inválido / Invalid CVSS vector', en='Invalid CVSS vector', pt='Vetor CVSS inválido'))
         key = fingerprint(f)
         duplicate = key in seen
         if not errors: seen.add(key)
@@ -183,7 +215,8 @@ def preview(body, data):
                               'external_id': source.get('external_id', ''), 'confidence': source.get('confidence', ''),
                               'reviewed': False, **source.get('origin', {})}
         ensure_data_tree(f)
-        result.append(dict(index=index, finding=f, duplicate=duplicate, existing_duplicate=key in project_seen, errors=errors))
+        result.append(dict(index=index, finding=f, duplicate=duplicate, existing_duplicate=key in project_seen,
+                           errors=errors, diagnostics=diagnostics, source_location=source_location))
     return dict(format=kind, kind='findings', sha256=digest, headers=headers, mapping=mapping, rows=result,
                 counts=dict(rows=len(result), valid=sum(not r['errors'] for r in result),
                             duplicates=sum(r['duplicate'] for r in result)))
@@ -203,7 +236,9 @@ def apply(body, data):
     for index in selected:
         row = result['rows'][index]
         if row['errors'] or row['existing_duplicate'] or row['finding']['import_source']['fingerprint'] in selected_keys:
-            raise ValueError(backend_message('La selección contiene filas inválidas o duplicadas; revisa la vista previa'))
+            message = backend_message('La selección contiene filas inválidas o duplicadas; revisa la vista previa')
+            raise DiagnosticError(message, code='import.selection.invalid', location=row.get('source_location', {}),
+                                  diagnostics=row.get('diagnostics') or None)
         f = row['finding']
         selected_keys.add(f['import_source']['fingerprint'])
         f.update(id=workflows.allocate_finding_id(out), uid=workflows.new_uid())

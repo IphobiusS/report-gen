@@ -1,0 +1,2 @@
+.diagnostic-locations { border-inline-start: 3px solid var(--accent, #477a86); padding-inline-start: .7rem; margin-block: .6rem; overflow-wrap: anywhere; }
+.diagnostic-locations p { font-size: .85rem; margin-block: .3rem; }

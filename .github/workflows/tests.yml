@@ -38,6 +38,8 @@ jobs:
           npm test
           npm run test:editor-modules
           npm run test:pdf-compare-ui
+          npm run test:diagnostics-ui
+          npm run test:docx-preview-ui
           node --test tests/test_language_0350_core.cjs
           RG_PYTHON=python node tests/test_language_0350_dom.cjs
           RG_PYTHON=python node --test tests/test_portuguese_modules_0350.cjs

@@ -2,6 +2,7 @@
 """report-gen / engine.py  (Fase 2: informe completo desde YAML)"""
 
 import argparse
+import json
 import re
 import sys
 import tempfile
@@ -651,9 +652,40 @@ def main():
                     help=w("idioma de los errores; no cambia el idioma del informe",
                            "error language; does not change the report language",
                            "idioma dos erros; não altera o idioma do relatório"))
+    ap.add_argument('--private-diagnostics', action='store_true', help=argparse.SUPPRESS)
     args = ap.parse_args()
     with language_scope(args.error_language):
-        return _run(args)
+        try:
+            return _run(args)
+        except ValueError as exc:
+            if args.private_diagnostics and args.out:
+                _write_private_diagnostics(Path(args.out), exc)
+            raise
+
+
+def _write_private_diagnostics(output, error):
+    """Private child protocol inside the PDF exporter's disposable directory.
+
+    No caller-selected sidecar path, overwrites or public report metadata. A
+    sidecar failure must preserve the historical renderer error on stderr.
+    """
+    from diagnostic_locations import error_diagnostics
+    directory = output.parent
+    if output.name != 'report.pdf' or not directory.name.startswith('.report-gen-pdf-'):
+        return
+    details = error_diagnostics(error)
+    if not details:
+        return
+    payload = json.dumps(details, ensure_ascii=False).encode('utf-8')
+    if len(payload) > 512 * 1024:
+        return
+    try:
+        if directory.is_symlink():
+            return
+        with (directory / 'engine-error.json').open('xb') as stream:
+            stream.write(payload)
+    except OSError:
+        pass
 
 
 def _run(args):

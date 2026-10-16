@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen com Prometeo e Evaristo" width="300">
 </p>
 
-# report-gen 0.37.1
+# report-gen 0.38.0
 
 **Um editor local para transformar avaliações de segurança em relatórios claros.** Organize achados, vincule evidências, acompanhe a remediação e os retestes e produza **PDF, Word, Markdown com imagens e HTML portátil** a partir de uma revisão salva.
 
@@ -36,6 +36,16 @@ O português é a variante **Brasil**. A chave interna é `pt`; os argumentos de
 5. Abra os arquivos gerados antes de compartilhar e mantenha um backup privado do projeto editável.
 
 O **tutorial visual** permanece no menu. Seus seis passos têm instruções e capturas reais em espanhol, inglês e português, com ampliação e progresso local. A apresentação inicial pode ser ignorada. Consultar o tutorial não modifica o relatório; ele também funciona quando o navegador não consegue salvar seu progresso.
+
+## Novidades da 0.38.0
+
+**Erros com localização:** importações mostram o registro, campo e linha disponíveis; exportações com falha identificam o achado, tabela, linha, célula ou evidência quando o contrato pode localizá-los com segurança. Caso contrário, o erro geral é preservado. Esses detalhes privados ficam fora dos manifestos de entrega.
+
+**Visualização DOCX com LibreOffice:** a partir de uma exportação concluída com Word, gere explicitamente uma vista PDF usando o LibreOffice instalado no computador. A vista está vinculada ao DOCX exato por SHA-256 e revisão, sem modificá-lo. É privada e temporária; mostra a diagramação do LibreOffice e não comprova equivalência com o Microsoft Word.
+
+**Inspeção de anexos PDF:** examine texto extraível, metadados e estruturas do PDF dentro de limites explícitos. Os resultados mostram categorias e localizações, sem revelar valores sensíveis nem alterar o arquivo. O escopo sempre é parcial: não inclui OCR, inspeção de binários arbitrários nem reconstrução de versões anteriores do PDF. A autorização manual do anexo continua necessária.
+
+A limpeza remove auxiliares privados, variáveis sem uso, constantes obsoletas e 20 regras CSS sem emissores atuais. Adaptadores públicos, callbacks de bibliotecas e recursos com funções documentadas são preservados. Isso não afirma ausência universal de código morto. [Uso e limites dos novos recursos](docs/guide.pt.md#revisar-erros-e-documentos-na-0380).
 
 ## Correções da 0.37.1
 

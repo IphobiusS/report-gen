@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory=$true)][string]$InputDirectory,
-    [Parameter(Mandatory=$true)][string]$OutputDirectory
+    [Parameter(Mandatory=$true)][string]$OutputDirectory,
+    [string]$ExpectedSourceReceipt
 )
 function Test-ReportGenWordFieldInstruction {
     param([string]$Instruction)
@@ -94,6 +95,30 @@ if ((Test-Path -LiteralPath $target) -and @(Get-ChildItem -LiteralPath $target -
 New-Item -ItemType Directory -Force -Path $target | Out-Null
 $files = @(Get-ChildItem -LiteralPath $source -Filter *.docx -File)
 if ($files.Count -eq 0) { throw "No DOCX documents found." }
+$sourceProvenance = $null
+if ($ExpectedSourceReceipt) {
+    # Optional binding to the native-preview receipt exported by report-gen.
+    # A LibreOffice receipt establishes source identity, never Word acceptance.
+    if ($files.Count -ne 1) { throw "A source receipt binds exactly one DOCX; use an input directory containing only that document." }
+    $receiptFile = Get-Item -LiteralPath $ExpectedSourceReceipt
+    if ($receiptFile.Length -gt 65536) { throw "Source receipt exceeds 64 KiB." }
+    $sourceReceipt = Get-Content -LiteralPath $receiptFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($sourceReceipt.format -cne 'report-gen-docx-native-preview' -or $sourceReceipt.version -ne 1 -or
+        $sourceReceipt.source_docx_sha256 -cnotmatch '\A[0-9a-f]{64}\z' -or
+        $sourceReceipt.source_revision -isnot [string] -or -not $sourceReceipt.source_revision -or
+        $sourceReceipt.word_verified -ne $false) {
+        throw "Invalid report-gen native DOCX preview receipt."
+    }
+    $actualHash = (Get-FileHash -LiteralPath $files[0].FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actualHash -cne $sourceReceipt.source_docx_sha256) { throw "DOCX source hash does not match the expected preview receipt." }
+    $sourceProvenance = @{
+        source_revision = $sourceReceipt.source_revision
+        job_id = $sourceReceipt.job_id
+        source_docx_sha256 = $actualHash
+        receipt_sha256 = (Get-FileHash -LiteralPath $receiptFile.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+        binding = 'source_bytes_only_not_renderer_equivalence'
+    }
+}
 $results = @()
 $word = $null
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -155,7 +180,7 @@ try {
             $pdf = Join-Path $target ($file.BaseName + '-word.pdf')
             $document.ExportAsFixedFormat($pdf, 17) # wdExportFormatPDF
             if ($pages -lt 1 -or -not (Test-Path -LiteralPath $pdf)) { throw "Empty Word rendering." }
-            $results += @{file=$file.Name;word_version=$word.Version;pages=$pages;pdf=[System.IO.Path]::GetFileName($pdf);pdf_sha256=(Get-FileHash -LiteralPath $pdf -Algorithm SHA256).Hash;status="fields_updated_and_rendered";updated_docx=[System.IO.Path]::GetFileName($copy);index_count=$contents.native_toc_count;contents_entry_count=$contents.contents_entry_count;page_reference_field_count=$contents.page_reference_field_count;contents_page_reference_count=$contents.contents_page_reference_count;source_sha256=$beforeHash;updated_sha256=(Get-FileHash -LiteralPath $copy -Algorithm SHA256).Hash}
+            $results += @{file=$file.Name;word_version=$word.Version;word_build=$word.Build;pages=$pages;pdf=[System.IO.Path]::GetFileName($pdf);pdf_sha256=(Get-FileHash -LiteralPath $pdf -Algorithm SHA256).Hash;status="fields_updated_and_rendered";updated_docx=[System.IO.Path]::GetFileName($copy);index_count=$contents.native_toc_count;contents_entry_count=$contents.contents_entry_count;page_reference_field_count=$contents.page_reference_field_count;contents_page_reference_count=$contents.contents_page_reference_count;source_sha256=$beforeHash;updated_sha256=(Get-FileHash -LiteralPath $copy -Algorithm SHA256).Hash;source_provenance=$sourceProvenance;native_tables=$document.Tables.Count;native_inline_shapes=$document.InlineShapes.Count;native_hyperlinks=$document.Hyperlinks.Count;native_bookmarks=$document.Bookmarks.Count}
         } finally {
             if ($null -ne $document) {
                 $document.Close(0)

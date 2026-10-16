@@ -1,5 +1,6 @@
 """Preserve protected tables and paginate genuinely oversized narrative rows."""
 from error_messages import message as backend_message
+from diagnostic_locations import DiagnosticError
 import re
 
 
@@ -128,8 +129,11 @@ def keep_short_labelled_lists(source):
 
 
 def table_error(finding):
-    return ValueError(
-        backend_message('Hallazgo {p0}: una tabla no cabe completa en una página junto a su encabezado. Reduce o divide la tabla, o muévela a una sección narrativa o anexo del informe. Las tablas del procedimiento del mismo hallazgo tienen el mismo límite. El PDF no se ha generado para evitar cortar la tabla.', p0=finding)
+    return DiagnosticError(
+        backend_message('Hallazgo {p0}: una tabla no cabe completa en una página junto a su encabezado. Reduce o divide la tabla, o muévela a una sección narrativa o anexo del informe. Las tablas del procedimiento del mismo hallazgo tienen el mismo límite. El PDF no se ha generado para evitar cortar la tabla.', p0=finding),
+        code='export.pdf.table_oversized',
+        location={'operation': 'export', 'format': 'pdf',
+                  'finding_id': finding if finding != 'sin ID' else None},
     )
 
 

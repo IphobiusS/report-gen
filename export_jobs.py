@@ -17,6 +17,7 @@ import uuid
 from hashlib import sha256
 
 from storage import atomic_write
+from diagnostic_locations import DiagnosticError, error_diagnostics, sanitize_diagnostics
 
 TERMINAL = {'done', 'error', 'cancelled'}
 
@@ -361,6 +362,7 @@ class ExportQueue:
             self.jobs[key] = dict(id=key, owner=owner, root=root, stage='queued', updated=time.time(),
                                   label=specification['label'], revision=specification['revision'],
                                   error=None, cancelled=False, process=None, filename=specification['filename'], verification=None,
+                                  formats=list(specification.get('formats', [])), diagnostics=[],
                                   error_language=current_language())
             self.pending.append(key)
             self.wake.set()
@@ -377,6 +379,8 @@ class ExportQueue:
             self._purge()
             job = self._get(owner, key)
             result = {k: job[k] for k in ('id', 'stage', 'label', 'revision', 'error', 'filename')}
+            result['formats'] = list(job.get('formats', []))
+            result['diagnostics'] = sanitize_diagnostics(job.get('diagnostics'))
             result['verification_available'] = bool(job.get('verification')) and job['stage'] == 'done'
             result['position'] = list(self.pending).index(key) + 1 if key in self.pending else 0
             return result
@@ -484,7 +488,14 @@ class ExportQueue:
                         time.sleep(.1)
                     if not job['cancelled'] and not self.closed and returncode:
                         failure = job['root'] / 'error.txt'
-                        raise ValueError(failure.read_text(encoding='utf-8') if failure.exists() else backend_message('El motor terminó sin generar el archivo'))
+                        details = []
+                        metadata = job['root'] / 'error.json'
+                        if metadata.exists() and metadata.stat().st_size <= 512 * 1024:
+                            try:
+                                details = sanitize_diagnostics(json.loads(metadata.read_text(encoding='utf-8')))
+                            except (ValueError, OSError):
+                                pass  # Preserve the original worker error if metadata is damaged.
+                        raise DiagnosticError(failure.read_text(encoding='utf-8') if failure.exists() else backend_message('El motor terminó sin generar el archivo'), diagnostics=details)
                 with self.lock:
                     outcome = 'cancelled' if job['cancelled'] or self.closed else 'done'
                     if outcome == 'done':
@@ -494,6 +505,7 @@ class ExportQueue:
                 with self.lock:
                     outcome = 'cancelled' if job['cancelled'] else 'error'
                     job['error'] = str(exc)[:2000]
+                    job['diagnostics'] = error_diagnostics(exc) if outcome == 'error' else []
             finally:
                 cleanup_errors = []
                 try:
@@ -516,6 +528,7 @@ class ExportQueue:
                 with self.lock:
                     if cleanup_errors:
                         job['verification'] = None
+                        job['diagnostics'] = []
                         detail = '; '.join(cleanup_errors)
                         job['error'] = backend_message(
                             'No se pudo completar la limpieza de la exportación: {detail}',
@@ -572,6 +585,7 @@ def worker(root):
             atomic_write(root / 'verification.json', json.dumps(record,ensure_ascii=False).encode())
     except Exception as exc:
         atomic_write(root / 'error.txt', str(exc)[:2000].encode('utf-8'))
+        atomic_write(root / 'error.json', json.dumps(error_diagnostics(exc), ensure_ascii=False).encode('utf-8'))
         return 1
     finally:
         reset_language(language_token)

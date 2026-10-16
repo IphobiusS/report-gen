@@ -131,3 +131,53 @@ jobs:
             ${{ runner.temp }}/horizonte/updater/results.json
           if-no-files-found: error
           retention-days: 14
+
+  meridiano:
+    name: Meridiano logistics case and 0.38 feature acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      RG_PYTHON: python
+      REPORT_GEN_LIBREOFFICE: /usr/bin/libreoffice
+    steps:
+      - name: Keep acceptance data outside the installation
+        run: echo "MERIDIANO_OUTPUT=$RUNNER_TEMP/meridiano" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-audited.txt
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install stable document renderer and fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto-core fonts-noto-cjk libpango-1.0-0 libpangocairo-1.0-0
+          fc-cache -f
+          libreoffice --version
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Compose the fictional source inputs
+        run: python scripts/build-meridiano-case.py --output "$MERIDIANO_OUTPUT/case"
+      - name: Generate twelve complete reports and twenty-eight targeted samples only with report-gen
+        run: python scripts/audit-meridiano-exports.py --projects "$MERIDIANO_OUTPUT/case/projects" --output "$MERIDIANO_OUTPUT/exports" --mode all --native-executable /usr/bin/libreoffice --require-stable
+      - name: Inspect decoded outputs for the four named synthetic privacy controls
+        run: python scripts/audit-meridiano-publication.py --exports "$MERIDIANO_OUTPUT/exports" --case "$MERIDIANO_OUTPUT/case" --output "$MERIDIANO_OUTPUT/publication-scan.json"
+      - name: Exercise imports, audiences, PDF annex inspection and immutable DOCX preview
+        run: python scripts/audit-meridiano-api.py --case "$MERIDIANO_OUTPUT/case/projects/es" --inputs "$MERIDIANO_OUTPUT/case/inputs" --pdf "$MERIDIANO_OUTPUT/exports/principal/es/outputs/informe.pdf" --output "$MERIDIANO_OUTPUT/api" --ui-bundle "$MERIDIANO_OUTPUT/meridiano-project.zip" --require-stable-native
+      - name: Traverse the new features and complete logistics project in Chromium
+        if: ${{ !cancelled() }}
+        run: node scripts/audit-meridiano-browser.cjs --bundle "$MERIDIANO_OUTPUT/meridiano-project.zip" --project-dir "$MERIDIANO_OUTPUT/case/projects/es" --pdf "$MERIDIANO_OUTPUT/exports/principal/es/outputs/informe.pdf" --output "$MERIDIANO_OUTPUT/browser"
+      - name: Preserve exact reports, checks and native inspection
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: meridiano-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/meridiano/
+          if-no-files-found: error
+          retention-days: 14

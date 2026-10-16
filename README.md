@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.37.1
+# report-gen 0.38.0
 
 <a id="qué-es"></a>
 
@@ -60,6 +60,16 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Word | Documento editable `.docx`, con campos propios para el índice. |
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
+
+## Novedades de 0.38.0
+
+**Errores con ubicación:** las importaciones muestran el registro, campo y línea disponibles; las exportaciones fallidas identifican el hallazgo, tabla, fila, celda o evidencia cuando el contrato puede localizarlos con certeza. Si no puede, conserva el error general. Estos detalles privados no se copian a los manifiestos de entrega.
+
+**Vista DOCX con LibreOffice:** desde una exportación finalizada que incluya Word, genera explícitamente una vista PDF con LibreOffice instalado en tu equipo. La vista se vincula al DOCX exacto por SHA-256 y revisión, sin modificarlo. Es temporal y privada; muestra la composición de LibreOffice, sin acreditar equivalencia con Microsoft Word.
+
+**Inspección de anexos PDF:** analiza texto extraíble, metadatos y estructuras del PDF con límites explícitos. Señala categorías y ubicaciones, sin mostrar valores sensibles ni modificar el archivo. El alcance siempre es parcial: no incluye OCR, binarios arbitrarios ni reconstrucción de versiones anteriores del PDF. La autorización manual del anexo sigue siendo necesaria.
+
+La limpieza retira helpers privados, bindings sin uso, constantes obsoletas y 20 reglas CSS sin emisores actuales. Se conservan adaptadores públicos, callbacks de bibliotecas y recursos con funciones documentadas. No se afirma ausencia universal de código muerto. [Uso y límites de las funciones nuevas](docs/guide.es.md#revisar-errores-y-documentos-en-0380).
 
 ## Correcciones de 0.37.1
 
@@ -132,7 +142,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.37.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.38.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

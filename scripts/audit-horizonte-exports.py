@@ -130,7 +130,8 @@ def native_checks(source, outputs, destination, executable, require_stable):
     return result
 
 
-def export_job(source, destination, formats, *, complete_delivery=False):
+def export_job(source, destination, formats, *, complete_delivery=False,
+               case_title='Banco Horizonte — escenario ficticio'):
     """Fail visibly and retain failed artifacts for diagnosis; never label them passed."""
     before = hashes(source)
     producer_before = producer_identity()
@@ -160,7 +161,7 @@ def export_job(source, destination, formats, *, complete_delivery=False):
                 result['stage'] = stage
                 print(json.dumps({'job': str(destination), 'stage': stage}), flush=True)
             blob = delivery.build(snapshot, list(formats), identity(before),
-                                  'Banco Horizonte — escenario ficticio', captured, output, progress)
+                                  case_title, captured, output, progress)
             (destination / 'delivery.zip').write_bytes(blob)
             with zipfile.ZipFile(BytesIO(blob)) as archive:
                 manifest = json.loads(archive.read('verificacion.json'))

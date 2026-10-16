@@ -1,7 +1,6 @@
 """Supported interface/report language keys and public language tags."""
 
 LANGUAGES = ("es", "en", "pt")
-LANGUAGE_NAMES = {"es": "Español", "en": "English", "pt": "Português (Brasil)"}
 LANGUAGE_TAGS = {"es": "es", "en": "en", "pt": "pt-BR"}
 
 

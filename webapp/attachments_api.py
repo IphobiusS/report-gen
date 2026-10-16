@@ -69,6 +69,7 @@ def register(api):
         attachments.validate_rows(data.get('attachments',[]))
         row=next((x for x in data.get('attachments',[]) if x['uid']==request.args.get('uid')),None)
         if row is None:abort(404,backend_message('Anexo inexistente / Annex not found'))
-        response=jsonify(attachments.scan(directory,row))
+        response=jsonify(dict(attachments.scan(directory,row), uid=row['uid']))
         response.set_etag(revision(directory/'engagement.yaml'))
+        response.headers['Cache-Control']='no-store'
         return response

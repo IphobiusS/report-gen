@@ -9,7 +9,7 @@ catalogo canonico.
 """
 from error_messages import message as backend_message
 from error_messages import language_argument
-from languages import LANGUAGES, normalize_language
+from languages import normalize_language
 import re
 import math
 from collections import Counter
@@ -23,7 +23,6 @@ except Exception:  # pragma: no cover - catalogo opcional en validacion aislada
 
 SEVERITIES = {"critical", "high", "medium", "low", "info"}
 MODES = {"vuln", "machine"}
-LANGS = set(LANGUAGES)
 # The portable shell owns these destinations. A contract checks them against
 # the generated shell so a new control cannot silently steal a report anchor.
 PORTABLE_CONTROL_IDS = {'view', 'kind', 'query', 'severity', 'clear-filters',

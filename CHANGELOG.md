@@ -1,3 +1,35 @@
+# Cambios 0.38.0 (2026-10-16)
+
+- Diagnósticos privados de importación y exportación con registro, línea, campo,
+  hallazgo o coordenadas de tabla/evidencia cuando se conocen con certeza.
+  Se conserva el error general si no hay localización inequívoca; los detalles
+  no se copian a los hallazgos importados ni a manifiestos de entrega.
+  Se conserva también el hallazgo al rechazar tablas PDF demasiado altas,
+  incluso cuando el motor se ejecuta en un proceso separado.
+- Vista PDF opcional del DOCX exacto de una exportación mediante LibreOffice
+  instalado localmente. Incluye hashes, revisión y motor en un recibo privado;
+  usa proceso/perfil temporal y caducidad de 15 minutos. No cambia el DOCX
+  ni atribuye equivalencia o aceptación de Microsoft Word.
+  La cancelación se conserva si el servidor aún no devolvió el identificador.
+  La verificación optativa con Word admite vincular el DOCX al recibo de
+  esta vista mediante su hash y revisión, sin atribuir una ejecución de Word.
+- Inspección acotada de anexos PDF: texto extraíble, metadatos, anotaciones,
+  formularios y otras cadenas de las estructuras actuales. Muestra categorías
+  y ubicaciones sin reproducir valores. El resultado siempre exige revisión
+  manual; no hace OCR, no ejecuta acciones ni modifica o autoriza anexos.
+- Limpieza comprobada de dos helpers DOCX privados, un helper JS, cinco
+  bindings ignorados, dos constantes y un import redundante, y 20 reglas CSS
+  de controles retirados. Se preservan las llamadas con efectos, los protocolos
+  de bibliotecas y los adaptadores públicos. La inspección no constituye una
+  garantía universal de ausencia de código muerto.
+- Nuevo caso ficticio Grupo Meridiano Logística (GML 1.0): 30 hallazgos,
+  cuatro cuadernos de máquinas, 16 activos y 32 evidencias. La matriz prevista
+  distingue 12 salidas completas en tres idiomas de 28 salidas de muestras
+  para otros estilos y perfiles; no presenta 40 informes completos. La prosa
+  redactada permanece en español al localizar las etiquetas EN/PT. Los estados
+  de aceptación se registran por ejecución, sin declarar resultados anticipados.
+- Guías ES/EN/PT actualizadas para los recorridos nuevos y sus límites.
+
 # Cambios 0.37.1 (2026-10-16)
 
 - Corregidas las imágenes enlazadas dentro de celdas de tablas Word: se conservan

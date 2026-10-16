@@ -4,6 +4,7 @@ PDF extraction is a textual presence check, never a proof of literal whitespace,
 block association or pixel layout. Its limitations travel with the check record.
 """
 from error_messages import current_language, message as backend_message
+from diagnostic_locations import DiagnosticError, location_scope
 from collections import Counter
 from copy import deepcopy
 import re
@@ -1776,7 +1777,39 @@ def _pdf_code_lines(code, text):
     return checked, wrapped
 
 
+def _table_row_location(scope, actual, row_index):
+    """Locate the expected authored row, and a cell only when unambiguous.
+
+    Observed formats can include additional generated metadata tables. A unique
+    matching header and row count are therefore required before comparing cells;
+    positional guesses across those tables would point at the wrong content.
+    """
+    location = {'field': 'table_rows', 'row': row_index + 1}
+    cursor = 0
+    for table_index, table in enumerate(scope.get('tables', [])):
+        if cursor <= row_index < cursor + len(table):
+            row = row_index - cursor
+            location.update(field='tables', table=table_index + 1, row=row + 1)
+            candidates = [found for found in actual.get('tables', [])
+                          if found and table and len(found) == len(table) and found[0] == table[0]]
+            expected_matches = [wanted for wanted in scope.get('tables', [])
+                                if wanted and table and len(wanted) == len(table) and wanted[0] == table[0]]
+            if len(expected_matches) == len(candidates) == 1 and len(candidates[0][row]) == len(table[row]):
+                changed = [i for i, (wanted, found) in enumerate(zip(table[row], candidates[0][row]))
+                           if wanted != found]
+                if len(changed) == 1:
+                    location['cell'] = changed[0] + 1
+            break
+        cursor += len(table)
+    return location
+
+
 def inspect(path, fmt, expected):
+    with location_scope(operation='export', format=fmt, code='export.contract.invalid'):
+        return _inspect(path, fmt, expected)
+
+
+def _inspect(path, fmt, expected):
     if not expected: return {}
     if expected.get('version') != 3: raise ValueError(backend_message('Contrato de exportación antiguo: vuelve a generarlo / Regenerate old export contract'))
     observed = profile(path, fmt, expected)
@@ -1819,105 +1852,116 @@ def inspect(path, fmt, expected):
             (code for scope in expected['scopes'] for code in scope['codes']),
             observed['']['raw_text'])
     for scope in expected['scopes']:
-        key = '' if fmt == 'pdf' else scope['id']
-        if key not in observed: raise ValueError(backend_message('Falta el hallazgo {p0} / Finding missing', p0=scope['id']))
-        actual = observed[key]; text = actual['text']
-        # Authored headings are content too. They previously fell between the
-        # paragraph and generated-title checks, allowing silent loss/changes.
-        heading_cursor = 0
-        for heading in scope.get('headings', []):
-            if not heading:
-                continue
+        with location_scope(finding_id=scope['id'], code='export.finding.changed'):
+            key = '' if fmt == 'pdf' else scope['id']
+            if key not in observed: raise ValueError(backend_message('Falta el hallazgo {p0} / Finding missing', p0=scope['id']))
+            actual = observed[key]; text = actual['text']
+            # Authored headings are content too. They previously fell between the
+            # paragraph and generated-title checks, allowing silent loss/changes.
+            heading_cursor = 0
+            for heading in scope.get('headings', []):
+                if not heading:
+                    continue
+                if fmt != 'pdf':
+                    found = next((i for i in range(heading_cursor, len(actual['headings']))
+                                  if actual['headings'][i] == heading), None)
+                    if found is None:
+                        raise DiagnosticError(backend_message('Encabezado ausente o alterado', en='Missing or changed heading'),
+                                          code='export.heading.changed', location={'field': 'headings'})
+                    heading_cursor = found + 1
+                headings_checked += 1
+            if scope['title']:
+                if fmt != 'pdf':
+                    _ordered([scope['title']], text, 'Título')
+                content += 1
+            # Repeated paragraphs consume separate occurrences and cannot move to
+            # another finding in HTML, Markdown or Word.
+            prose=scope['paragraphs_md'] if fmt=='md' else scope['paragraphs']
             if fmt != 'pdf':
-                found = next((i for i in range(heading_cursor, len(actual['headings']))
-                              if actual['headings'][i] == heading), None)
-                if found is None:
-                    raise ValueError(backend_message('Encabezado ausente o alterado', en='Missing or changed heading'))
-                heading_cursor = found + 1
-            headings_checked += 1
-        if scope['title']:
-            if fmt != 'pdf':
-                _ordered([scope['title']], text, 'Título')
-            content += 1
-        # Repeated paragraphs consume separate occurrences and cannot move to
-        # another finding in HTML, Markdown or Word.
-        prose=scope['paragraphs_md'] if fmt=='md' else scope['paragraphs']
-        if fmt != 'pdf': _paragraphs(prose, actual['paragraphs'], scope['id'])
-        paragraphs += len(prose)
-        if fmt == 'pdf':
-            region = actual.get('finding_regions', {}).get(scope['id'])
-            if region is not None:
-                _pdf_present([scope['title'], *scope.get('headings', [])], region,
-                             'encabezado en región de hallazgo', 'heading in finding region')
-                _pdf_present(scope['paragraphs'], region,
-                             'párrafo en región de hallazgo', 'paragraph in finding region')
-                _pdf_present((cell for row in scope.get('table_rows', []) for cell in row), region,
-                             'tabla en región de hallazgo', 'table in finding region')
-                _pdf_present(scope.get('list_sequence', []), region,
-                             'lista en región de hallazgo', 'list in finding region')
-                _pdf_code_multiplicity(scope['codes'], region['raw_text'])
+                with location_scope(field='paragraphs', code='export.paragraph.changed'):
+                    _paragraphs(prose, actual['paragraphs'], scope['id'])
+            paragraphs += len(prose)
+            if fmt == 'pdf':
+                region = actual.get('finding_regions', {}).get(scope['id'])
+                if region is not None:
+                    _pdf_present([scope['title'], *scope.get('headings', [])], region,
+                                 'encabezado en región de hallazgo', 'heading in finding region')
+                    _pdf_present(scope['paragraphs'], region,
+                                 'párrafo en región de hallazgo', 'paragraph in finding region')
+                    _pdf_present((cell for row in scope.get('table_rows', []) for cell in row), region,
+                                 'tabla en región de hallazgo', 'table in finding region')
+                    _pdf_present(scope.get('list_sequence', []), region,
+                                 'lista en región de hallazgo', 'list in finding region')
+                    _pdf_code_multiplicity(scope['codes'], region['raw_text'])
+                    for code in scope['codes']:
+                        _pdf_code_lines(code, region['raw_text'])
+                    pdf_regions_checked += 1
+                for label,value in scope['semantic']['fields']:
+                    if not _pdf_pattern(value).search(text): raise ValueError(backend_message('Metadato PDF ausente o alterado: {p0}', p0=label))
+                    if region is not None and not _pdf_pattern(value).search(region['text']):
+                        raise ValueError(backend_message('Metadato ausente en la región PDF: {p0}',
+                                                         en='Missing metadata in PDF region: {p0}', p0=label))
+                    metadata+=1
                 for code in scope['codes']:
-                    _pdf_code_lines(code, region['raw_text'])
-                pdf_regions_checked += 1
-            for label,value in scope['semantic']['fields']:
-                if not _pdf_pattern(value).search(text): raise ValueError(backend_message('Metadato PDF ausente o alterado: {p0}', p0=label))
-                if region is not None and not _pdf_pattern(value).search(region['text']):
-                    raise ValueError(backend_message('Metadato ausente en la región PDF: {p0}',
-                                                     en='Missing metadata in PDF region: {p0}', p0=label))
-                metadata+=1
-            for code in scope['codes']:
-                checked, wrapped = _pdf_code_lines(code, actual['raw_text'])
-                content += checked
-                wrapped_code_lines += wrapped
-            continue
-        from export_semantics import check
-        m,l,p=check(scope,actual['semantic'],fmt)
-        metadata+=m;links+=l;placements+=p
-        if scope['codes'] != actual['codes']:
-            raise ValueError(backend_message('Código literal alterado ({p0}) / Literal code changed', p0=scope['id'] or backend_message('informe', en='report', pt='relatório')))
-        codes += len(scope['codes'])
-        content += sum(len([line for line in c.splitlines() if line]) for c in scope['codes'])
-        # Multiplicity alone would accept a reordered procedure or priority
-        # table. Consume each expected row in source order, while allowing
-        # format-specific metadata rows between authored table rows.
-        rows = [tuple(row) for row in actual['table_rows']]
-        row_cursor = 0
-        for row in scope['table_rows']:
-            record = tuple(row)
-            found = next((i for i in range(row_cursor, len(rows)) if rows[i] == record), None)
-            if found is None: raise ValueError(backend_message('Tabla alterada o filas desordenadas / Table changed or rows reordered'))
-            row_cursor = found + 1; structure += 1
-        # Table boundaries also matter. Two similar tables can be swapped or
-        # merged while retaining exactly the same flattened row sequence.
-        table_cursor = 0
-        for table in scope.get('tables', []):
-            found = next((i for i in range(table_cursor, len(actual['tables']))
-                          if actual['tables'][i] == table), None)
-            if found is None: raise ValueError(backend_message('Tabla alterada o tablas desordenadas / Table changed or tables reordered'))
-            table_cursor = found + 1; tables_checked += 1
-        list_items = _word_list_items(scope, actual) if fmt == 'docx' else actual['list_items']
-        counts=Counter(list_items)
-        for item,count in Counter(x for items in scope['lists'] for x in items).items():
-            if counts[item]<count:raise ValueError(backend_message('Lista alterada / List changed'))
-        for items in scope['lists']:
+                    checked, wrapped = _pdf_code_lines(code, actual['raw_text'])
+                    content += checked
+                    wrapped_code_lines += wrapped
+                continue
+            if scope['codes'] != actual['codes']:
+                raise DiagnosticError(backend_message('Código literal alterado ({p0}) / Literal code changed', p0=scope['id'] or backend_message('informe', en='report', pt='relatório')),
+                                      code='export.code.changed', location={'field': 'codes'})
+            codes += len(scope['codes'])
+            content += sum(len([line for line in c.splitlines() if line]) for c in scope['codes'])
+            # Multiplicity alone would accept a reordered procedure or priority
+            # table. Consume each expected row in source order, while allowing
+            # format-specific metadata rows between authored table rows.
+            rows = [tuple(row) for row in actual['table_rows']]
+            row_cursor = 0
+            for row_index, row in enumerate(scope['table_rows']):
+                record = tuple(row)
+                found = next((i for i in range(row_cursor, len(rows)) if rows[i] == record), None)
+                if found is None:
+                    raise DiagnosticError(backend_message('Tabla alterada o filas desordenadas / Table changed or rows reordered'),
+                                          code='export.table.row_changed', location=_table_row_location(scope, actual, row_index))
+                row_cursor = found + 1; structure += 1
+            # Table boundaries also matter. Two similar tables can be swapped or
+            # merged while retaining exactly the same flattened row sequence.
+            table_cursor = 0
+            for table_index, table in enumerate(scope.get('tables', [])):
+                found = next((i for i in range(table_cursor, len(actual['tables']))
+                              if actual['tables'][i] == table), None)
+                if found is None:
+                    raise DiagnosticError(backend_message('Tabla alterada o tablas desordenadas / Table changed or tables reordered'),
+                                          code='export.table.changed', location={'field': 'tables', 'table': table_index + 1})
+                table_cursor = found + 1; tables_checked += 1
+            # Diagnose changed authored table content before image-context
+            # comparisons, whose preceding prose also includes those cells.
+            from export_semantics import check
+            m,l,p=check(scope,actual['semantic'],fmt)
+            metadata+=m;links+=l;placements+=p
+            list_items = _word_list_items(scope, actual) if fmt == 'docx' else actual['list_items']
+            counts=Counter(list_items)
+            for item,count in Counter(x for items in scope['lists'] for x in items).items():
+                if counts[item]<count:raise ValueError(backend_message('Lista alterada / List changed'))
+            for items in scope['lists']:
+                cursor = 0
+                for item in items:
+                    found = next((i for i in range(cursor, len(list_items)) if list_items[i] == item), None)
+                    if found is None: raise ValueError(backend_message('Lista alterada / List changed'))
+                    cursor = found + 1; structure += 1
             cursor = 0
-            for item in items:
-                found = next((i for i in range(cursor, len(list_items)) if list_items[i] == item), None)
-                if found is None: raise ValueError(backend_message('Lista alterada / List changed'))
-                cursor = found + 1; structure += 1
-        cursor = 0
-        source_list_parts = {record['index']: record['parts'] for record in scope.get('list_figure_parts', [])}
-        flows = actual.get('list_flows', [])
-        for item_index, item in enumerate(scope.get('list_sequence', [])):
-            found = next((i for i in range(cursor, len(list_items))
-                          if list_items[i] == item
-                          and ('list_markers' not in scope
-                               or actual['list_markers'][i] == scope['list_markers'][item_index])
-                          and (fmt != 'docx' or item_index not in source_list_parts
-                               or (i < len(flows) and _word_figure_list_matches(source_list_parts[item_index], flows[i])))), None)
-            if found is None: raise ValueError(backend_message('Lista alterada o listas desordenadas / List changed or lists reordered'))
-            cursor = found + 1; list_order_checked += 1
-            if 'list_markers' in scope: list_markers_checked += 1
+            source_list_parts = {record['index']: record['parts'] for record in scope.get('list_figure_parts', [])}
+            flows = actual.get('list_flows', [])
+            for item_index, item in enumerate(scope.get('list_sequence', [])):
+                found = next((i for i in range(cursor, len(list_items))
+                              if list_items[i] == item
+                              and ('list_markers' not in scope
+                                   or actual['list_markers'][i] == scope['list_markers'][item_index])
+                              and (fmt != 'docx' or item_index not in source_list_parts
+                                   or (i < len(flows) and _word_figure_list_matches(source_list_parts[item_index], flows[i])))), None)
+                if found is None: raise ValueError(backend_message('Lista alterada o listas desordenadas / List changed or lists reordered'))
+                cursor = found + 1; list_order_checked += 1
+                if 'list_markers' in scope: list_markers_checked += 1
     return dict(content_units_checked=content, structure_units_checked=structure,
                 paragraphs_checked=paragraphs, literal_code_blocks_checked=codes,
                 finding_association_checked=fmt != 'pdf', contract_version=3,

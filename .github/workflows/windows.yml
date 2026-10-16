@@ -37,13 +37,15 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Native export lifecycle and regression checks
         run: |
-          python -m pytest tests/test_export_job_lifecycle_0341.py tests/test_pdf_render_budget_0341.py tests/test_pdf_page_map_reuse_0341.py tests/test_word_header_spacing_0341.py tests/test_word_table_chapter_0341.py tests/test_portuguese_exports_0350.py tests/test_language_0350_launchers.py tests/test_pdf_compare_0360.py tests/test_sarif_imports_0360.py tests/test_pdf_pairing_0370.py tests/test_pdf_comparison_reviews_0370.py tests/test_sarif_imports_0370.py --junitxml=windows-lifecycle-results.xml
+          python -m pytest tests/test_export_job_lifecycle_0341.py tests/test_pdf_render_budget_0341.py tests/test_pdf_page_map_reuse_0341.py tests/test_word_header_spacing_0341.py tests/test_word_table_chapter_0341.py tests/test_portuguese_exports_0350.py tests/test_language_0350_launchers.py tests/test_pdf_compare_0360.py tests/test_sarif_imports_0360.py tests/test_pdf_pairing_0370.py tests/test_pdf_comparison_reviews_0370.py tests/test_sarif_imports_0370.py tests/test_diagnostic_locations_0380.py tests/test_diagnostic_transport_0380.py tests/test_pdf_diagnostics_0380.py tests/test_docx_preview_0380.py tests/test_docx_preview_api_0380.py tests/test_word_preview_binding_0380.py tests/test_pdf_attachment_inspection_0380.py --junitxml=windows-lifecycle-results.xml
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Guardado, importación, entrega, historial y cancelación
         run: |
           npm test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run test:editor-modules
+          npm run test:diagnostics-ui
+          npm run test:docx-preview-ui
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m pytest tests/test_progress_0170.py tests/test_workflows.py tests/test_workspace_0160.py tests/test_workbench_0180.py tests/test_release_0200.py tests/test_release_0202.py tests/test_release_0210.py tests/test_release_0211.py tests/test_launcher_0260.py tests/test_checkout_integrity_0260.py tests/test_workspace_paths_0290.py tests/test_browser_workspace_0290.py tests/test_project_catalog_0290.py tests/test_remediation_return_0290.py tests/test_backup_routine_0310.py tests/test_project_names_portable_0311.py tests/test_design_restore_metadata_0311.py tests/test_export_boundary_audit.py tests/test_storage_boundaries_round2.py tests/test_history_input_0312.py --junitxml=windows-results.xml
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
