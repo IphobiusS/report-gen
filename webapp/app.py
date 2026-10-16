@@ -110,7 +110,7 @@ def protect_local_api():
         request.max_content_length = 17 * 1024 * 1024
     if request.path.endswith('/visual') and request.method == 'POST':
         request.max_content_length = 17 * 1024 * 1024
-    if request.path == '/api/pdf-compare' and request.method == 'POST':
+    if request.path in ('/api/pdf-compare', '/api/pdf-compare/metadata') and request.method == 'POST':
         request.max_content_length = 33 * 1024 * 1024
     origin = request.headers.get("Origin")
     if origin:
@@ -127,7 +127,7 @@ def protect_local_api():
         token = session.get("csrf", "")
         if not token or not secrets.compare_digest(supplied.encode('utf-8'), token.encode('utf-8')):
             abort(403, backend_message('Sesión local caducada; vuelve a abrir la aplicación'))
-        if request.content_length and not request.path.endswith(("/image", "/attachments/upload", "/visual")) and request.path not in ("/api/projects/import", "/api/workspace/restore", "/api/pdf-compare") and not request.is_json:
+        if request.content_length and not request.path.endswith(("/image", "/attachments/upload", "/visual")) and request.path not in ("/api/projects/import", "/api/workspace/restore", "/api/pdf-compare", "/api/pdf-compare/metadata") and not request.is_json:
             abort(415, backend_message('Se requiere application/json'))
 
 
@@ -718,6 +718,8 @@ from visual_api import register as register_visual  # noqa: E402
 register_visual(sys.modules[__name__])
 from pdf_compare_api import register as register_pdf_compare  # noqa: E402
 register_pdf_compare(sys.modules[__name__])
+from pdf_comparison_reviews_api import register as register_pdf_comparison_reviews  # noqa: E402
+register_pdf_comparison_reviews(sys.modules[__name__])
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080

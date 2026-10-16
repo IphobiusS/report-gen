@@ -65,7 +65,7 @@ jobs:
         run: python -m pip install -e '.[dev]' -c requirements-audited.txt
       - name: Native process ownership and real export queue
         run: |
-          python -m pytest tests/test_export_job_lifecycle_0341.py tests/test_progress_0170.py tests/test_portuguese_exports_0350.py tests/test_language_0350_launchers.py tests/test_pdf_compare_0360.py tests/test_sarif_imports_0360.py --junitxml=macos-results.xml
+          python -m pytest tests/test_export_job_lifecycle_0341.py tests/test_progress_0170.py tests/test_portuguese_exports_0350.py tests/test_language_0350_launchers.py tests/test_pdf_compare_0360.py tests/test_sarif_imports_0360.py tests/test_pdf_pairing_0370.py tests/test_pdf_comparison_reviews_0370.py tests/test_sarif_imports_0370.py --junitxml=macos-results.xml
       - name: Preserve native evidence
         if: always()
         uses: actions/upload-artifact@v7.0.2

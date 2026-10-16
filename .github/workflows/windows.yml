@@ -37,7 +37,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Native export lifecycle and regression checks
         run: |
-          python -m pytest tests/test_export_job_lifecycle_0341.py tests/test_pdf_render_budget_0341.py tests/test_pdf_page_map_reuse_0341.py tests/test_word_header_spacing_0341.py tests/test_word_table_chapter_0341.py tests/test_portuguese_exports_0350.py tests/test_language_0350_launchers.py tests/test_pdf_compare_0360.py tests/test_sarif_imports_0360.py --junitxml=windows-lifecycle-results.xml
+          python -m pytest tests/test_export_job_lifecycle_0341.py tests/test_pdf_render_budget_0341.py tests/test_pdf_page_map_reuse_0341.py tests/test_word_header_spacing_0341.py tests/test_word_table_chapter_0341.py tests/test_portuguese_exports_0350.py tests/test_language_0350_launchers.py tests/test_pdf_compare_0360.py tests/test_sarif_imports_0360.py tests/test_pdf_pairing_0370.py tests/test_pdf_comparison_reviews_0370.py tests/test_sarif_imports_0370.py --junitxml=windows-lifecycle-results.xml
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Guardado, importación, entrega, historial y cancelación
         run: |

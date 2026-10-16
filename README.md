@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.36.0
+# report-gen 0.37.0
 
 <a id="qué-es"></a>
 
@@ -61,11 +61,19 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
-## Novedades de 0.36.0
+## Novedades de 0.37.0
+
+**Emparejar páginas PDF:** relaciona manualmente las páginas anteriores y posteriores cuando hay inserciones o cambios de orden. La vista muestra las correspondencias y las páginas sin equivalente; cada página debe quedar cubierta exactamente una vez.
+
+**Registrar la revisión:** guarda opcionalmente autor autodeclarado, decisión, nota, correspondencias y hashes como un registro JSON privado del proyecto. Solo se guarda al solicitarlo y queda excluido de la entrega por defecto. Permanece en su historial y respaldos, sin borrado automático. Los PDF, el HTML y las imágenes no se copian al registro; descarga el HTML aparte para conservar las imágenes de la comparación.
+
+**SARIF con extensiones:** se admiten reglas de componentes `tool.extensions` autocontenidos, con referencias coherentes por índice o GUID. El origen de cada componente se conserva y las observaciones siguen informativas, sin verificar.
+
+## Funciones incorporadas en 0.36.0
 
 **SARIF 2.1.0:** importa resultados desde **Importar resultados**, revisa su origen y selecciona qué incorporar. Se conservan como observaciones informativas sin verificar; el nivel del analizador no se convierte en CVSS.
 
-**Comparar PDF:** selecciona dos archivos desde el historial para ver sus páginas y las diferencias resaltadas. Descarga la comparación como HTML autónomo. La comparación es por posición de página; un cambio visual no demuestra por sí solo un cambio de significado.
+**Comparar PDF:** selecciona dos archivos desde el historial para ver sus páginas y las diferencias resaltadas. Descarga la comparación como HTML autónomo. La comparación predeterminada es por posición de página; un cambio visual no demuestra por sí solo un cambio de significado.
 
 ## Novedades de 0.35.0
 
@@ -120,7 +128,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.36.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.37.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

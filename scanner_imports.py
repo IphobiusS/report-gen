@@ -223,6 +223,7 @@ def nmap_apply(result, data, selected):
 # SARIF is a bounded, offline intake subset of OASIS SARIF 2.1.0. It does not
 # interpret scanner levels as report risk or fetch artifacts/property files.
 MAX_SARIF_RUNS = 50
+MAX_SARIF_EXTENSIONS = 100
 MAX_SARIF_REFERENCES = 10000
 MAX_SARIF_LOCATIONS = 100
 MAX_SARIF_TEXT = 16384
@@ -274,7 +275,7 @@ def _sarif_json(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
 
 
-def _sarif_message(message, rule, driver):
+def _sarif_message(message, rule, component):
     message = _sarif_object(message, 'message')
     for key in ('text', 'markdown', 'id'):
         if key in message:
@@ -282,7 +283,7 @@ def _sarif_message(message, rule, driver):
     template = message
     if not message.get('text') and not message.get('markdown') and message.get('id'):
         strings = _sarif_object(rule.get('messageStrings', {}), 'rule.messageStrings')
-        globals_ = _sarif_object(driver.get('globalMessageStrings', {}), 'driver.globalMessageStrings')
+        globals_ = _sarif_object(component.get('globalMessageStrings', {}), 'toolComponent.globalMessageStrings')
         template = _sarif_object(strings.get(message['id'], globals_.get(message['id'])), 'message.id')
     selected = 'text' if template.get('text') else 'markdown'
     value = _sarif_text(template.get(selected), 'message.' + selected, required=True)
@@ -318,25 +319,100 @@ def _sarif_message(message, rule, driver):
     return ''.join(pieces), selected
 
 
-def _sarif_rule(result, driver):
-    reference = _sarif_object(result.get('rule', {}), 'result.rule')
-    # Extensions need their own component/rule namespaces. Reject rather than
-    # accidentally resolve their indexes against the driver's rules.
-    if 'toolComponent' in reference:
-        raise ValueError(backend_message('SARIF: importa reglas del driver; las extensiones toolComponent no son compatibles.',
-            en='SARIF: import driver rules; toolComponent extensions are not supported.',
-            pt='SARIF: importe regras do driver; extensões toolComponent não são compatíveis.'))
-    rules = _sarif_list(driver.get('rules', []), 'driver.rules', MAX_SARIF_REFERENCES)
+def _sarif_guid(value, field):
+    guid = _sarif_text(value, field, required=True).lower()
+    if not re.fullmatch(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}', guid):
+        raise _sarif_invalid(field)
+    return guid
+
+
+def _sarif_rule_lookup(component):
+    rules = _sarif_list(component.get('rules', []), 'toolComponent.rules', MAX_SARIF_REFERENCES)
     identifiers, guids = {}, {}
     for index, candidate in enumerate(rules):
-        candidate = _sarif_object(candidate, 'driver.rules')
+        candidate = _sarif_object(candidate, 'toolComponent.rules')
         identifier = _sarif_text(candidate.get('id'), 'rule.id', required=True)
         identifiers.setdefault(identifier, []).append(index)
         if 'guid' in candidate:
-            guid = _sarif_text(candidate['guid'], 'rule.guid', required=True).lower()
-            if not re.fullmatch(r'[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}', guid):
-                raise _sarif_invalid('rule.guid')
+            guid = _sarif_guid(candidate['guid'], 'rule.guid')
             guids.setdefault(guid, []).append(index)
+    return rules, identifiers, guids
+
+
+def _sarif_components(tool):
+    """Prepare bounded component/rule lookups once per run, without I/O."""
+    tool = _sarif_object(tool, 'tool')
+    driver = _sarif_object(tool.get('driver'), 'tool.driver')
+    extensions = _sarif_list(tool.get('extensions', []), 'tool.extensions', MAX_SARIF_EXTENSIONS)
+    components, guids, extension_documents = [], {}, set()
+    rule_count = 0
+    for position, raw in enumerate([driver, *extensions]):
+        raw = _sarif_object(raw, 'toolComponent')
+        metadata = {key: _sarif_text(raw[key], 'toolComponent.' + key) for key in
+                    ('name', 'version', 'semanticVersion', 'guid', 'informationUri') if key in raw}
+        _sarif_text(metadata.get('name'), 'toolComponent.name', required=True)
+        if 'guid' in metadata:
+            guid = _sarif_guid(metadata['guid'], 'toolComponent.guid')
+            if guid in guids:
+                raise _sarif_invalid('toolComponent.guid (ambiguous)')
+            guids[guid] = position
+        rule_count += len(_sarif_list(raw.get('rules', []), 'toolComponent.rules', MAX_SARIF_REFERENCES))
+        if rule_count > MAX_SARIF_REFERENCES:
+            raise _sarif_limit('tool.rules (driver + extensions)', MAX_SARIF_REFERENCES)
+        component = dict(raw=raw, metadata=metadata, rules=_sarif_rule_lookup(raw),
+                         kind='extension' if position else 'driver', index=position - 1 if position else None)
+        if position:
+            document_hash = sha256(_sarif_json(raw)).hexdigest()
+            if document_hash in extension_documents:
+                raise _sarif_invalid('tool.extensions (duplicate)')
+            extension_documents.add(document_hash)
+            component['document_hash'] = document_hash
+        components.append(component)
+    for component in components[1:]:
+        metadata = component['metadata']
+        # Never use the extension array index as an observation identity. A
+        # GUID survives version/name changes. Without one, a component digest
+        # avoids merging different same-name plugins across separate runs;
+        # changed component metadata is conservatively a new observation.
+        if 'guid' in metadata:
+            identity = {'guid': metadata['guid'].lower()}
+        else:
+            identity = {'name': metadata['name'], 'component_sha256': component['document_hash']}
+        component['identity'] = identity
+    return components, guids
+
+
+def _sarif_component(result, lookup):
+    """OASIS 3.54: index/GUID select; name only corroborates the selection."""
+    components, guids = lookup
+    rule = _sarif_object(result.get('rule', {}), 'result.rule')
+    reference = _sarif_object(rule.get('toolComponent', {}), 'rule.toolComponent')
+    if set(reference) - {'index', 'guid', 'name', 'properties'}:
+        raise _sarif_invalid('rule.toolComponent')
+    index = reference.get('index', -1)
+    if type(index) is not int or index < -1 or index >= len(components) - 1:
+        raise _sarif_invalid('toolComponent.index')
+    guid = _sarif_guid(reference['guid'], 'toolComponent.guid') if 'guid' in reference else None
+    if index >= 0:
+        selected = components[index + 1]
+    elif guid is not None:
+        if guid not in guids:
+            raise _sarif_invalid('toolComponent.guid')
+        selected = components[guids[guid]]
+    else:
+        selected = components[0]
+    if guid is not None and selected['metadata'].get('guid', '').lower() != guid:
+        raise _sarif_invalid('toolComponent.guid / index')
+    if 'name' in reference and _sarif_text(reference['name'], 'toolComponent.name', required=True) != selected['metadata']['name']:
+        raise _sarif_invalid('toolComponent.name')
+    if 'properties' in reference:
+        _sarif_object(reference['properties'], 'toolComponent.properties')
+    return selected
+
+
+def _sarif_rule(result, lookup):
+    reference = _sarif_object(result.get('rule', {}), 'result.rule')
+    rules, identifiers, guids = lookup
     ids = [result[key] for key in ('ruleId',) if key in result]
     if 'id' in reference:
         ids.append(reference['id'])
@@ -501,9 +577,9 @@ def _sarif_repositories(run):
 def sarif_preview(raw, data, origin):
     """Keep scanner observations unverified, with exclusions visible in preview.
 
-    This intentionally accepts self-contained driver results, not arbitrary
-    SARIF interchange: external property fragments and extension rule references
-    are rejected explicitly. Other unsupported evidence (code flows, fixes,
+    This intentionally accepts self-contained driver and extension results, not
+    arbitrary SARIF interchange: external property fragments are rejected
+    explicitly. Other unsupported evidence (code flows, fixes,
     attachments) is counted in provenance but never executed or applied.
     """
     if len(raw.encode('utf-8')) > 4 * 1024 * 1024:
@@ -532,18 +608,17 @@ def sarif_preview(raw, data, origin):
     seen = set(project_seen)
     rows, output_bytes = [], 0
     for run_index, run in enumerate(runs):
-        driver = _sarif_object(_sarif_object(run.get('tool'), 'tool').get('driver'), 'tool.driver')
-        tool = {key: _sarif_text(driver[key], 'tool.driver.' + key) for key in
-                ('name', 'version', 'semanticVersion', 'guid', 'informationUri') if key in driver}
-        _sarif_text(tool.get('name'), 'tool.driver.name', required=True)
+        components = _sarif_components(run.get('tool'))
+        tool = components[0][0]['metadata']
         repositories = _sarif_repositories(run)
         for result_index, result in enumerate(run.get('results', [])):
             result = _sarif_object(result, 'result')
             encoded = _sarif_json(result)
             if len(encoded) > MAX_SARIF_RECORD_BYTES:
                 raise _sarif_limit('result.bytes', MAX_SARIF_RECORD_BYTES)
-            rule_id, rule, rule_index, descriptor_identity = _sarif_rule(result, driver)
-            message, message_format = _sarif_message(result.get('message'), rule, driver)
+            component = _sarif_component(result, components)
+            rule_id, rule, rule_index, descriptor_identity = _sarif_rule(result, component['rules'])
+            message, message_format = _sarif_message(result.get('message'), rule, component['raw'])
             locations = _sarif_locations(result, run)
             kind = result.get('kind', 'fail')
             if kind not in ('notApplicable', 'pass', 'fail', 'review', 'open', 'informational'):
@@ -593,8 +668,10 @@ def sarif_preview(raw, data, origin):
                 else:
                     affected.extend(item.get('fullyQualifiedName') or item.get('name') or item.get('decoratedName') for item in location['logical_locations'])
             title = tool['name'] + ' · ' + rule_id
+            if component['kind'] == 'extension':
+                title = tool['name'] + ' · ' + component['metadata']['name'] + ' · ' + rule_id
             if 'shortDescription' in rule:
-                short, _ = _sarif_message(rule['shortDescription'], {}, driver)
+                short, _ = _sarif_message(rule['shortDescription'], {}, component['raw'])
                 title += ' · ' + short
             # Identity includes exact context, not just a tool-supplied hash:
             # colliding fingerprints cannot collapse different observations.
@@ -604,10 +681,16 @@ def sarif_preview(raw, data, origin):
                                                 for item in repositories], key=lambda value: _sarif_json(value)),
                         'locations': [{key: value for key, value in location.items() if key != 'original'} for location in locations],
                         **fingerprints}
+            # Keep driver fingerprints byte-for-byte compatible with v0.36.0.
+            if component['kind'] == 'extension':
+                identity['extension'] = component['identity']
             key = sha256(_sarif_json(identity)).hexdigest()
             source = dict(origin, format='sarif', fingerprint=key, reviewed=False,
                           external_id=rule_id, confidence='scanner observation; technical review required',
                           tool=tool, run_index=run_index, result_index=result_index,
+                          tool_component=component['metadata'], tool_component_kind=component['kind'],
+                          tool_component_index=component['index'],
+                          tool_component_identity=component.get('identity', {}),
                           version_control_provenance=repositories,
                           rule_id=rule_id, rule_index=rule_index, rule_name=_sarif_text(rule.get('name', ''), 'rule.name'),
                           rule_descriptor_identity=descriptor_identity,

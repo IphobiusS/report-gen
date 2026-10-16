@@ -1,3 +1,19 @@
+# Cambios 0.37.0 (2026-10-16)
+
+- Emparejamiento manual de páginas PDF con cobertura completa y referencias
+  explícitas a las páginas originales, incluidas las añadidas y retiradas.
+  La inspección de geometría y hashes usa el mismo proceso aislado y sus límites.
+- Registro opcional de revisiones como anexos JSON privados del proyecto:
+  autor autodeclarado, decisión, nota, correspondencias y hashes, sin copiar
+  automáticamente los PDF, el HTML, las imágenes ni los nombres originales.
+  Los registros permanecen en historial y respaldos;
+  no se borran automáticamente ni se incluyen por defecto en las entregas.
+- Importación SARIF de reglas de extensiones autocontenidas, con selección
+  coherente por índice/GUID, catálogos separados y procedencia del componente.
+  Se conservan las huellas previas del driver y el estado sin verificar.
+- Interfaz, mensajes y guías en español, inglés y portugués. Pruebas ampliadas
+  de navegador y controles nativos Windows/macOS para las funciones nuevas.
+
 # Cambios 0.36.0 (2026-10-15)
 
 - Importación local de SARIF 2.1.0 con vista previa, selección, deduplicación

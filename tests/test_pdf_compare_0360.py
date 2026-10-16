@@ -352,7 +352,10 @@ def test_endpoint_read_only_private_download_and_strict_csp(client, tmp_path, mo
     assert list(projects.iterdir()) == []
     caps = client.get('/api/pdf-compare/capabilities').json
     assert caps['available'] and caps['max_pages_per_pdf'] == 80
-    assert caps['external_services'] is False and caps['server_retention'] is False
+    assert caps['external_services'] is False
+    # 0.37 replaces the ambiguous global flag with content/metadata policies.
+    assert 'server_retention' not in caps
+    assert caps['retention']['content_after_request'] == dict(pdf_bytes=False, html_bytes=False, raster_images=False)
 
 
 def test_endpoint_csrf_origin_content_type_and_duplicate_fields(client):

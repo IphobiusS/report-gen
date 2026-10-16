@@ -57,6 +57,10 @@ jobs:
         env:
           RG_PYTHON: python
         run: npm run test:review-tools
+      - name: Manual page pairing, saved review records and SARIF extensions
+        env:
+          RG_PYTHON: python
+        run: node tests/test_features_0370_browser.cjs --browser ${{ matrix.browser }} --output out/features-0370
       - name: Painted native select contrast in both interface themes
         if: matrix.browser == 'chromium'
         run: node tests/test_select_contrast_0345_browser.cjs --browser chromium --output out/select-contrast-chromium
@@ -77,5 +81,6 @@ jobs:
             out/restore-language-chromium/
             out/language-0350/
             out/features-0360/
+            out/features-0370/
             out/select-contrast-chromium/
             out/markdown-caption-chromium/

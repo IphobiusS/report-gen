@@ -126,6 +126,10 @@ jobs:
         run: node scripts/audit-browser-0210.cjs --browser webkit --output out/browser-webkit
       - name: WebKit concurrent tabs, storage faults and crash recovery
         run: node scripts/audit-browser-0211.cjs --browser webkit --output out/recovery-webkit
+      - name: WebKit manual PDF pairing, saved reviews and SARIF extensions
+        env:
+          RG_PYTHON: python
+        run: node tests/test_features_0370_browser.cjs --browser webkit --output out/features-0370
       - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
@@ -136,3 +140,4 @@ jobs:
             out/jobs-lifecycle-webkit/
             out/restore-language-webkit/
             out/select-contrast-webkit/
+            out/features-0370/

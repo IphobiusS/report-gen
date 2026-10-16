@@ -193,9 +193,10 @@ const ProgressUI = (() => {
   }
   function sarifOrigin(source){
     if(source?.format!=='sarif')return null;
-    const original={tool:source.tool,rule_id:source.rule_id,rule_name:source.rule_name,level:source.level,result_kind:source.result_kind,baseline_state:source.baseline_state,message:source.message,locations:source.locations,fingerprints:source.fingerprints,partialFingerprints:source.partialFingerprints,suppressions:source.suppressions,omitted_fields:source.omitted_fields};
+    const original={tool:source.tool,tool_component:source.tool_component,tool_component_kind:source.tool_component_kind,tool_component_index:source.tool_component_index,tool_component_identity:source.tool_component_identity,rule_id:source.rule_id,rule_name:source.rule_name,level:source.level,result_kind:source.result_kind,baseline_state:source.baseline_state,message:source.message,locations:source.locations,fingerprints:source.fingerprints,partialFingerprints:source.partialFingerprints,suppressions:source.suppressions,omitted_fields:source.omitted_fields};
     return h('details',{class:'import-origin sarif-origin'},h('summary',{},w('Origen SARIF conservado','Preserved SARIF provenance','Origem SARIF preservada')),
       h('p',{},w('Herramienta: ','Tool: ','Ferramenta: ')+(source.tool?.name||'—')+' / '+(source.tool?.semanticVersion||source.tool?.version||'—')),
+      source.tool_component_kind==='extension'?h('p',{'data-sarif-extension':''},w('Extensión de reglas: ','Rule extension: ','Extensão de regras: ')+(source.tool_component?.name||'—')+' / '+(source.tool_component?.semanticVersion||source.tool_component?.version||'—')):null,
       h('p',{},w('Regla: ','Rule: ','Regra: ')+(source.rule_id||'—')),
       h('p',{},w('Nivel original del analizador: ','Original analyzer level: ','Nível original do analisador: ')+(source.level||'—')),
       h('p',{class:'wf-hint'},w('Este nivel no confirma la severidad ni la existencia de una vulnerabilidad. Las rutas y las URL se muestran como texto; no se consultan.','This level does not confirm severity or the existence of a vulnerability. Paths and URLs are shown as text; they are not requested.','Este nível não confirma a severidade nem a existência de uma vulnerabilidade. Caminhos e URLs são exibidos como texto; não são acessados.')),
