@@ -1,5 +1,6 @@
 /* Real local backup controls: private synthetic directory and actual restoration. */
 'use strict';
+const {clickNavigationControl}=require('./browser-navigation.cjs');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
 const root=path.resolve(process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..')),out=path.resolve('out/backup-routine-0310');
 const {chromium}=require(process.env.REPORT_GEN_PLAYWRIGHT_MODULE||require.resolve('playwright',{paths:[root,process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES||root]}));
@@ -18,7 +19,7 @@ server.stderr.on('data',b=>fs.appendFileSync(out+'/server.log',b));let browser,t
   await context.route('**/*',route=>{const url=route.request().url();if(/^https?:/.test(url)&&!url.startsWith(base+'/')){results.externalRequests.push(url);return route.abort();}return route.continue();});
   page=await context.newPage();page.on('pageerror',error=>results.errors.push(String(error)));
   await page.goto(base);await page.waitForFunction(()=>typeof BackupRoutineUI!=='undefined'&&!document.getElementById('splash'));
-  await page.locator('#workspaceBackupBtn').click();await page.locator('[data-backup-routine] summary').click();
+  await clickNavigationControl(page,'#workspaceBackupBtn');await page.locator('[data-backup-routine] summary').click();
   await page.waitForFunction(()=>document.querySelector('[data-routine-enabled]')&&!document.querySelector('[data-routine-enabled]').disabled);
   check('Optional schedule starts off and requires distinct consent',!await page.locator('[data-routine-enabled]').isChecked()&&!await page.locator('[data-routine-ack]').isChecked()&&await page.locator('[data-routine-save]').isDisabled());
   check('Private, unencrypted and browser-draft limits are visible',(await page.locator('[data-backup-routine]').textContent()).includes('sin cifrado')&&(await page.locator('[data-backup-routine]').textContent()).includes('borradores pendientes'));
@@ -56,7 +57,7 @@ server.stderr.on('data',b=>fs.appendFileSync(out+'/server.log',b));let browser,t
   await page.locator('[data-routine-run]').scrollIntoViewIfNeeded();
   await page.screenshot({path:out+'/mobile-200.png',fullPage:true});
   await page.getByRole('button',{name:'Cerrar',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('.workspace-backup-dialog'));
-  await page.setViewportSize({width:1280,height:960});await page.evaluate(()=>setUiLang('en'));await page.locator('#workspaceBackupBtn').click();
+  await page.setViewportSize({width:1280,height:960});await page.evaluate(()=>setUiLang('en'));await clickNavigationControl(page,'#workspaceBackupBtn');
   await page.locator('[data-backup-routine] summary').click();await page.waitForFunction(()=>document.querySelector('[data-routine-run]')&&!document.querySelector('[data-routine-run]').disabled);
   check('English controls preserve available actions and renewed private consent',await page.getByRole('button',{name:'Create and check copy now',exact:true}).isEnabled()&&!await page.locator('[data-routine-ack]').isChecked());
   const savedStatus=await page.evaluate(async()=>{const response=await appFetch('/api/workspace/backup-routine');if(!response.ok)throw Error('Backup status unavailable');return response.json();});

@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen com Prometeo e Evaristo" width="300">
 </p>
 
-# report-gen 0.38.0
+# report-gen 0.39.0
 
 **Um editor local para transformar avaliações de segurança em relatórios claros.** Organize achados, vincule evidências, acompanhe a remediação e os retestes e produza **PDF, Word, Markdown com imagens e HTML portátil** a partir de uma revisão salva.
 

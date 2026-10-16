@@ -1,5 +1,6 @@
 /* Repeatable local Chromium benchmark. All projects and evidence are synthetic. */
 'use strict';
+const {clickNavigationControl}=require('../tests/browser-navigation.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
@@ -201,7 +202,7 @@ async function sample(size,round){
     }
     if(insightsRecords){
       const before=canonical(await page.evaluate(()=>S.data)),beforeETag=await page.evaluate(()=>projectStore.etag),beforeYaml=sha(fs.readFileSync(yaml));
-      await timed('openClaimsWorkspaceMs',async()=>{await page.locator('#insightsBtn').click();await page.locator('[data-insights-action="save-claim"]').waitFor();});
+      await timed('openClaimsWorkspaceMs',async()=>{await clickNavigationControl(page,'#insightsBtn');await page.locator('[data-insights-action="save-claim"]').waitFor();});
       check(size+'/'+round+' optional claim collection is bounded to thirty records',await page.locator('[data-insights-action="edit-claim"]').count()<=30&&await page.locator('[data-insights-action="open-finding"]').count()<=20);
       await timed('openRiskWorkspaceMs',async()=>{await page.locator('[data-insights-tab="risk"]').click();await page.locator('[data-insights-action="save-risk"]').waitFor();});
       check(size+'/'+round+' optional risk collection is bounded to thirty records',await page.locator('[data-insights-action="edit-risk"]').count()<=30);

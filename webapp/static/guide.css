@@ -1,5 +1,5 @@
 /* Guide components use the application's color tokens in both themes. */
-.layout.workspace-guide { grid-template-columns:224px minmax(0,1fr); }
+.layout.workspace-guide { grid-template-columns:240px minmax(0,1fr); }
 .layout.workspace-guide>.preview { display:none; }
 .guide-shell { max-width:1100px; margin:0 auto; overflow-wrap:anywhere; }
 .workspace-guide>.editor,#guideStepTitle { scroll-margin-top:16px; }

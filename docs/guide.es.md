@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.38.0
+# Guía de uso de report-gen 0.39.0
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Português (Brasil)](guide.pt.md) · [Cambios](../CHANGELOG.md)
 
@@ -166,11 +166,11 @@ En **LibreOffice 24.2.7.2 de los paquetes de Ubuntu**, la instalación del compl
 Para construir el OXT desde el código fuente descargado de report-gen, sin instalarlo:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.38.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.39.0.oxt
 ```
 
 1. En la instalación de LibreOffice elegida abre **Herramientas → Extensiones → Añadir**. Algunas versiones llaman al menú **Gestor de extensiones**.
-2. Selecciona `report-gen-libreoffice-0.38.0.oxt` e instálalo para tu usuario.
+2. Selecciona `report-gen-libreoffice-0.39.0.oxt` e instálalo para tu usuario.
 3. Cierra todas las ventanas de esa instalación de LibreOffice, vuelve a abrirla y abre una copia del DOCX recién exportado por report-gen.
 4. Comprueba sus URL, listas y tablas después de abrirlo, editarlo y guardarlo. Para retirarlo, desactívalo o elimínalo en el mismo gestor y reinicia LibreOffice.
 

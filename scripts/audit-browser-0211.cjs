@@ -1,3 +1,4 @@
+const {clickNavigationControl}=require('../tests/browser-navigation.cjs');
 /* Real browser recovery/retention acceptance. Only disposable synthetic projects. */
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),args=process.argv.slice(2),option=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
@@ -73,7 +74,7 @@ async function fault(mode){check('Inyección controlada '+(mode||'desactivada'),
  await page.locator('.annex-item .annex-include').check();await page.getByText('Se incluirá en el paquete',{exact:true}).waitFor();
  await page.getByRole('button',{name:'Retirar del inventario',exact:true}).click();await page.getByText('No has declarado anexos.',{exact:false}).waitFor();await page.locator('.annex-dialog').getByRole('button',{name:'Cerrar',exact:true}).click();
  // Explicit retention cleanup preserves current data and original copy semantics.
- await page.locator('#privacyBtn').click();await page.getByRole('dialog',{name:'Datos privados guardados'}).waitFor();await shot('04-datos-privados');
+ await clickNavigationControl(page,'#privacyBtn');await page.getByRole('dialog',{name:'Datos privados guardados'}).waitFor();await shot('04-datos-privados');
  check('Inventario muestra anexo retirado e historial',await page.locator('[data-privacy-category="unused_annexes"]').textContent().then(t=>t.includes('1 archivo')));
  await page.locator('[data-prune="unused_annexes"]').check();await page.locator('[data-prune="history"]').check();await page.getByRole('textbox',{name:'Identificador del proyecto para limpiar'}).fill('audit-0211');
  const oldData=(await api(page,'GET','/api/projects/audit-0211')).data;
@@ -91,12 +92,12 @@ async function fault(mode){check('Inyección controlada '+(mode||'desactivada'),
  await recovered.getByRole('button',{name:'Comparar y recuperar',exact:true}).first().click();await page.getByRole('button',{name:'Aplicar selección y guardar',exact:true}).click();await page.getByRole('dialog',{name:'Recuperar y resolver cambios'}).waitFor({state:'hidden'});await saved();
  check('Borrador del cierre abrupto recuperado y guardado',(await api(page,'GET','/api/projects/audit-0211')).data.findings[0].impact_md==='RECUPERADO_TRAS_CIERRE_ABRUPTO');
  // Real backup download, restored through the UI into a separate empty workspace.
- await page.locator('#workspaceBackupBtn').click();const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Descargar ZIP sin cifrado',exact:true}).click();const backup=await downloaded;const backupPath=path.join(out,'respaldo-sintetico.zip');await backup.saveAs(backupPath);
+ await clickNavigationControl(page,'#workspaceBackupBtn');const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Descargar ZIP sin cifrado',exact:true}).click();const backup=await downloaded;const backupPath=path.join(out,'respaldo-sintetico.zip');await backup.saveAs(backupPath);
  const destination=await start(workspace());const restoredContext=await browser.newContext({viewport:{width:1440,height:1050},acceptDownloads:true});const restored=await newPage(restoredContext);restored.on('pageerror',e=>errors.push(String(e)));await restored.goto(destination.url);
- await restored.locator('#workspaceBackupBtn').click();await restored.locator('[data-workspace-file="backup"]').setInputFiles(backupPath);await restored.getByRole('button',{name:'Restaurar espacio de trabajo',exact:true}).click();await ready(restored);
+ await clickNavigationControl(restored,'#workspaceBackupBtn');await restored.locator('[data-workspace-file="backup"]').setInputFiles(backupPath);await restored.getByRole('button',{name:'Restaurar espacio de trabajo',exact:true}).click();await ready(restored);
  const restoredData=(await api(restored,'GET','/api/projects/audit-0211')).data;
  check('Respaldo posterior a fallos restaurado en instalación vacía',restoredData.findings[0].impact_md==='RECUPERADO_TRAS_CIERRE_ABRUPTO'&&restoredData.findings[0].remediation_md==='Remediación independiente de pestaña B');
- await restored.locator('#privacyBtn').click();await restored.locator('.privacy-dialog').waitFor();await restored.setViewportSize({width:390,height:844});await shot('06-privacidad-movil',restored);
+ await clickNavigationControl(restored,'#privacyBtn');await restored.locator('.privacy-dialog').waitFor();await restored.setViewportSize({width:390,height:844});await shot('06-privacidad-movil',restored);
  check('Vista de privacidad móvil dentro de la pantalla',await restored.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1&&document.querySelector('.privacy-dialog').getBoundingClientRect().width<=innerWidth));
  check('Sin excepciones JavaScript',errors.length===0,errors);
 })().catch(async error=>{errors.push(String(error.stack||error));save();try{await page?.screenshot({path:path.join(out,'failure.png')});fs.writeFileSync(path.join(out,'failure-dom.html'),await page.content());}catch(_){}console.error(error);process.exitCode=1;}).finally(async()=>{

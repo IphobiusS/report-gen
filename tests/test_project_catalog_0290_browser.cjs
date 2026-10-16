@@ -1,5 +1,6 @@
 /* Real project organization, reversible archiving and reviewed diagnostic downloads. */
 'use strict';
+const {clickNavigationControl}=require('./browser-navigation.cjs');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
 const args=process.argv.slice(2),option=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
 const root=path.resolve(option('--tool',process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..'))),out=path.resolve(option('--output','out/project-catalog-0290'));
@@ -69,7 +70,7 @@ server.stderr.on('data',b=>fs.appendFileSync(out+'/server.log',b));let browser,t
   await page.evaluate(()=>setUiLang('en'));await page.waitForFunction(()=>document.querySelector('[data-project-catalog] h2')?.textContent==='Your projects');
   check('Language changes retain the same catalog records',await page.locator('[data-project-catalog]').getByLabel('Search projects',{exact:true}).count()===1);
   await page.setViewportSize({width:1366,height:1000});
-  await page.locator('#diagnosticsBtn').click();
+  await clickNavigationControl(page,'#diagnosticsBtn');
   await page.locator('[data-support-preview]').waitFor({timeout:60000});
   const downloadable=page.getByRole('button',{name:'Download reviewed diagnostics',exact:true});
   check('A support download waits for explicit preview review',await downloadable.isDisabled());

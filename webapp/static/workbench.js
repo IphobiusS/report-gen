@@ -59,7 +59,7 @@ const WorkbenchUI = (() => {
   const verification=[['','Sin registrar','Not recorded', "Não registrado"],['unverified','Sin verificar','Unverified', "Não verificado"],['confirmed','Confirmado','Confirmed', "Confirmado"],['not_reproduced','No reproducido','Not reproduced', "Não reproduzido"],['inconclusive','Inconcluso','Inconclusive', "Inconclusivo"]];
   const status=[['open','Abierto','Open','Aberto'],['in_progress','En corrección','In progress', "Em correção"],['reported_fixed','Corrección comunicada','Reported fixed', "Correção informada"],['verified_fixed','Corregido y verificado','Verified fixed', "Corrigido e verificado"],['accepted','Riesgo aceptado','Risk accepted', "Risco aceito"],['not_verified','No verificable','Not verifiable', "Não verificável"]];
   const kinds=[['note','Nota','Note', "Nota"],['command','Comando','Command', "Comando"],['http','Petición / respuesta HTTP','HTTP request / response', "Requisição / resposta HTTP"],['image','Captura de pantalla','Screenshot', "Captura de tela"]];
-  let renderedKey=null,previewStale=false,previewSnapshot=null,positionTimer,restoring=false,dialogTrigger=null,shortcutSaving=false;
+  let renderedKey=null,navigationKey=null,previewStale=false,previewSnapshot=null,positionTimer,restoring=false,dialogTrigger=null,shortcutSaving=false;
   let filters={status:'',asset:'',owner:'',verification:''};
   const findingTabs=new Map();
   function storageKey(key){
@@ -139,7 +139,7 @@ const WorkbenchUI = (() => {
   function update(){
     const pairs={densityBtn:[read('density','comfortable')==='compact'?'Densidad compacta':'Densidad cómoda',read('density','comfortable')==='compact'?'Compact density':'Comfortable density',read('density','comfortable')==='compact'?'Densidade compacta':'Densidade confortável'],
       focusBtn:[read('focus',false)?'Salir de concentración':'Concentración',read('focus',false)?'Exit focus mode':'Focus mode',read('focus',false)?'Sair do modo de concentração':'Modo de concentração'],
-      undoAction:['Deshacer acción','Undo action', "Desfazer ação"],captureBtn:['Captura rápida','Quick capture', "Captura rápida"],navFindings:['Hallazgos','Findings', "Achados"],navCaptures:['Bandeja de captura','Capture inbox', "Caixa de capturas"],aboutBtn:['Acerca de','About', "Sobre"],shortcutsBtn:['Atajos','Shortcuts', "Atalhos"],navWork:['Trabajo del informe','Report work', "Trabalho do relatório"],navReview:['Revisión y entrega','Review and delivery', "Revisão e entrega"],navTools:['Herramientas','Tools', "Ferramentas"]};
+      undoAction:['Deshacer acción','Undo action', "Desfazer ação"],captureBtn:['Captura rápida','Quick capture', "Captura rápida"],navFindings:['Hallazgos','Findings', "Achados"],navCaptures:['Bandeja de captura','Capture inbox', "Caixa de capturas"],aboutBtn:['Acerca de','About', "Sobre"],shortcutsBtn:['Atajos','Shortcuts', "Atalhos"],navProject:['Proyecto','Project', 'Projeto'],navWork:['Contenido','Content', 'Conteúdo'],navEvidence:['Evidencia y alcance','Evidence and scope', 'Evidências e escopo'],navReview:['Análisis y seguimiento','Analysis and follow-up', 'Análise e acompanhamento'],navDelivery:['Entrega','Delivery', 'Entrega'],navTools:['Herramientas','Tools', "Ferramentas"],navResearch:['Registro y cobertura','Capture and coverage', 'Captura e cobertura'],navFindingIndex:['Lista de hallazgos','Finding list','Lista de achados']};
     for(const [id,pair] of Object.entries(pairs)){const el=$('#'+id);if(el)el.textContent=w(...pair);}
     const density=$('#densityBtn');if(density){const compact=read('density','comfortable')==='compact',value=compact?w('Compacta','Compact', "Compacta"):w('Cómoda','Comfortable', "Confortável");density.title=w(...pairs.densityBtn);density.setAttribute('aria-label',density.title);density.replaceChildren(...(S.uiLang==='en'?[value,h('span',{class:'density-label'},' density')]:[h('span',{class:'density-label'},w('Densidad ','Density ','Densidade ')),value]));}
     $('#navFindings')?.toggleAttribute('disabled',!S.slug||projectBusyCount>0);$('#captureBtn')?.toggleAttribute('disabled',!S.slug||projectBusyCount>0);$('#navCaptures')?.toggleAttribute('disabled',!S.slug||projectBusyCount>0);
@@ -149,6 +149,32 @@ const WorkbenchUI = (() => {
     const input=$('#globalSearch');if(input){input.placeholder=w('Buscar o ejecutar una acción…','Search or run an action…', "Pesquisar ou executar uma ação…");input.setAttribute('aria-label',w('Buscar o ejecutar una acción','Search or run an action', "Pesquisar ou executar uma ação"));}
     const handle=$('#previewWidth');if(handle)handle.setAttribute('aria-label',w('Ancho de la vista previa','Preview width', "Largura da prévia"));
     const notes=$('#previewFreshness');if(notes)updatePreview();UndoUI.update();
+    updateNavigation();
+  }
+  function updateNavigation(reveal=false){
+    for(const [id,count] of [['workspaceSections',S.data?.report?.sections?.length||0],['workspaceFindings',S.data?.findings?.length||0]]){
+      const group=$('#'+id);if(group)group.querySelector('[data-sidebar-count]').textContent=String(count);
+    }
+    document.querySelectorAll('[data-workflow]').forEach(control=>control.setAttribute('aria-current',S.sel.type==='workflow'&&S.sel.idx===control.dataset.workflow?'page':'false'));
+    $('#navFindings')?.setAttribute('aria-current',S.sel.type==='findings'?'page':'false');
+    const sidebar=$('.sidebar'),primary={home:'navHome',report:'navReport',findings:'navFindings',capture:'navCaptures',insights:'insightsBtn'};
+    const selected=S.sel.type==='section'?$('#sectionList .active .finding-nav'):S.sel.type==='finding'?$('#findingList .active .finding-nav'):S.sel.type==='workflow'?$('[data-workflow="'+S.sel.idx+'"]'):$('#'+primary[S.sel.type]);
+    const key=JSON.stringify([S.slug,S.sel]),changed=key!==navigationKey;navigationKey=key;
+    if(selected&&sidebar?.contains(selected)){
+      for(let group=selected.parentElement;group&&group!==sidebar;group=group.parentElement)if(group.tagName==='DETAILS')group.open=true;
+      // Reveal only on navigation or explicit mobile reopening; background saves
+      // must not pull the user away from another part of a long index.
+      if(changed||reveal)requestAnimationFrame(()=>{
+        if(!selected.isConnected||navigationKey!==key)return;
+        for(const container of [selected.closest('.sidebar-index-body'),sidebar].filter(Boolean)){
+          const row=selected.getBoundingClientRect(),bounds=container.getBoundingClientRect();
+          if(!bounds.height)continue;
+          if(row.top<bounds.top)container.scrollTop-=bounds.top-row.top;
+          else if(row.bottom>bounds.bottom)container.scrollTop+=row.bottom-bounds.bottom;
+        }
+      });
+    }
+    document.querySelectorAll('[data-sidebar-group]').forEach(group=>group.classList.toggle('has-current',!!selected&&group.contains(selected)));
   }
   async function attention(box){
     const slug=S.slug,serial=projectStore.revision;
@@ -387,11 +413,25 @@ const WorkbenchUI = (() => {
     const board=b('',()=>select('findings'));board.id='navFindings';board.className='navitem';$('#navReport').after(board);
     const nav=b('',()=>select('capture'));nav.id='navCaptures';nav.className='navitem';$('#workflowNav').prepend(nav);
     const sidebar=$('.sidebar');
-    const work=h('section',{class:'navigation-group'},h('h2',{id:'navWork',class:'side-head'}));
-    [...sidebar.children].filter(x=>x.classList.contains('side-sec')&&x.id!=='workflowNav').forEach(x=>work.append(x));
-    [nav,...['evidence','assets','coverage'].map(k=>$('[data-workflow="'+k+'"]'))].forEach(x=>work.append(x));
-    const review=h('section',{class:'navigation-group'},h('h2',{id:'navReview',class:'side-head'}));['review','history','retest','retest_diff','retest_matrix','root_causes','remediation_tasks'].forEach(k=>review.append($('[data-workflow="'+k+'"]')));
-    const util=$('.workspace-utilities');util.querySelector('.side-head').id='navTools';util.querySelector('.side-head').removeAttribute('data-workspace-text');util.prepend($('[data-workflow="backup"]'));sidebar.prepend(work,review);$('#workflowNav').remove();
+    const group=(key,id,number)=>h('section',{class:'navigation-group','data-sidebar-group':key,'aria-labelledby':id},h('h2',{class:'side-head'},h('span',{class:'sidebar-group-number','aria-hidden':'true'},number),h('span',{id})));
+    const project=group('project','navProject','01'),content=group('content','navWork','02'),evidence=group('evidence','navEvidence','03'),delivery=group('delivery','navDelivery','05');
+    const projectSection=$('#navHome').parentElement;project.append($('#navHome'),$('#navReport'));projectSection.remove();content.append(board);
+    for(const [id,listId,label] of [['workspaceSections','sectionList',null],['workspaceFindings','findingList','navFindingIndex']]){
+      const old=$('#'+listId).parentElement,head=old.querySelector('.side-head');
+      const text=h('span',label?{id:label}:{'data-i18n':'sections_head'},head.textContent);
+      const details=h('details',{id,class:'sidebar-index workspace-secondary'},h('summary',{},text,h('span',{'data-sidebar-count':'',class:'sidebar-count'},'0')));
+      head.remove();const body=h('div',{class:'sidebar-index-body'});body.append(...old.childNodes);details.append(body);content.append(details);old.remove();
+    }
+    const research=h('details',{id:'workspaceResearch',class:'workspace-secondary'},h('summary',{},h('span',{id:'navResearch'})));
+    research.append(nav,...['assets','coverage'].map(key=>$('[data-workflow="'+key+'"]')));evidence.append($('[data-workflow="evidence"]'),research);
+    const review=h('details',{id:'workspaceFollowup',class:'navigation-group workspace-secondary','data-sidebar-group':'analysis','aria-labelledby':'navReview'},h('summary',{class:'side-head'},h('span',{class:'sidebar-group-number','aria-hidden':'true'},'04'),h('span',{id:'navReview'})));
+    ['root_causes','remediation_tasks','retest','retest_diff','retest_matrix','history'].forEach(key=>review.append($('[data-workflow="'+key+'"]')));
+    const oldUtilities=$('.workspace-utilities');oldUtilities.querySelector('.side-head').remove();
+    const utilities=h('details',{id:'workspaceTools',class:'workspace-utilities workspace-secondary'},h('summary',{},h('span',{id:'navTools'})));
+    utilities.append(...oldUtilities.childNodes);oldUtilities.remove();
+    if($('#updateAppBtn'))utilities.append($('#updateAppBtn'));
+    delivery.append($('[data-workflow="review"]'),$('[data-workflow="backup"]'),utilities);
+    sidebar.prepend(project,content,evidence,review,delivery);$('#workflowNav').remove();
     const fresh=h('span',{id:'previewFreshness',role:'status'});$('.preview-head').append(fresh);
     const range=h('input',{type:'range',id:'previewWidth',min:25,max:55,value:read('previewWidth',36)});range.addEventListener('input',()=>{document.documentElement.style.setProperty('--preview-width',range.value+'%');write('previewWidth',Number(range.value));});$('.preview-head').append(range);document.documentElement.style.setProperty('--preview-width',range.value+'%');
     window.addEventListener('resize',()=>{followPreview();ensureLivePreview();});
@@ -402,5 +442,5 @@ const WorkbenchUI = (() => {
     document.addEventListener('keydown',shortcut);
     update();
   }
-  return {bind,update,afterRender,position,resume,projectChanged,dirty,previewReady,hasLivePreview,followPreview,attention,recentFindings,findingNavigation,findingWorkspace,revealFindingPart,revealFindingField,renderedFindingUid,findingChips,filterRows,filterBar,search,capture,inbox,verification,labelOf,status};
+  return {bind,update,afterRender,revealNavigation:()=>updateNavigation(true),position,resume,projectChanged,dirty,previewReady,hasLivePreview,followPreview,attention,recentFindings,findingNavigation,findingWorkspace,revealFindingPart,revealFindingField,renderedFindingUid,findingChips,filterRows,filterBar,search,capture,inbox,verification,labelOf,status};
 })();

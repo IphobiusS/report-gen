@@ -1,0 +1,96 @@
+/* Navigation with the real application and Flask bridge. Visual acceptance is separate. */
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {JSDOM}=require('jsdom'),transport=require('./flask_transport.cjs')();
+const root=path.resolve(__dirname,'..'),checks=[];
+const check=(name,value)=>{assert.ok(value,name);checks.push(name);};
+async function until(predicate){for(let i=0;i<800;i++){if(predicate())return;await new Promise(resolve=>setTimeout(resolve,25));}throw Error('UI timeout: '+predicate);}
+let dom;
+(async()=>{
+  const html=fs.readFileSync(path.join(root,'webapp/static/index.html'),'utf8');
+  dom=new JSDOM(html,{url:'http://127.0.0.1/',runScripts:'outside-only',pretendToBeVisual:true});
+  const w=dom.window,doc=w.document;let mobile=false,pending=0;const errors=[];
+  w.addEventListener('error',event=>errors.push(event.message));
+  w.fetch=(...args)=>{pending++;return transport.fetch(...args).finally(()=>pending--);};w.confirm=()=>true;w.alert=()=>{};w.structuredClone=structuredClone;
+  // JSDOM does not supply CSS.escape; hex escapes are sufficient for selector tests.
+  w.CSS={escape:value=>Array.from(String(value),character=>'\\'+character.codePointAt(0).toString(16)+' ').join('')};
+  w.AbortController=AbortController;w.AbortSignal=AbortSignal;
+  w.matchMedia=()=>({get matches(){return mobile;},addEventListener(){}});
+  w.ResizeObserver=class{observe(){}disconnect(){}};w.HTMLElement.prototype.scrollIntoView=()=>{};
+  w.HTMLDialogElement.prototype.showModal=function(){this.open=true;this.querySelector('button')?.focus();};
+  w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
+  w.HTMLAnchorElement.prototype.click=function(){};w.URL.createObjectURL=()=> 'blob:sidebar-test';w.URL.revokeObjectURL=()=>{};
+  w.localStorage.setItem('rg.previewVisible','0');
+  const sources=[...html.matchAll(/<script src="\/static\/([^"/]+)"/g)].map(match=>fs.readFileSync(path.join(root,'webapp/static',match[1]),'utf8'));
+  w.eval(sources.join('\n')+'\nwindow.qa={S,projectStore,select,setUiLang,renderSidebar,renderMain,WorkbenchUI};');
+  const q=w.qa;await until(()=>doc.querySelector('.workspace-dashboard'));
+  check('Five task groups have a stable order and names',[...doc.querySelectorAll('#workspaceSidebar > [data-sidebar-group]')].map(group=>group.dataset.sidebarGroup).join(',')==='project,content,evidence,analysis,delivery');
+  check('Every top-level control belongs to its task group',[...doc.querySelector('#workspaceSidebar').children].every(group=>group.hasAttribute('data-sidebar-group')));
+  check('No duplicate IDs after composing navigation',new Set([...doc.querySelectorAll('[id]')].map(node=>node.id)).size===doc.querySelectorAll('[id]').length);
+  check('Report indices remain discoverable without an open project',doc.querySelector('#workspaceSections summary')&&doc.querySelector('#workspaceFindings summary')&&[...doc.querySelectorAll('[data-sidebar-count]')].every(node=>node.textContent==='0'));
+  check('Finding actions require an open project',['libBtn','exportFindingsBtn','importFindingsBtn'].every(id=>doc.querySelector('#'+id).disabled));
+  check('Indices and secondary groups begin collapsed',['workspaceSections','workspaceFindings','workspaceResearch','workspaceFollowup','workspaceTools'].every(id=>!doc.querySelector('#'+id).open));
+  check('Application update is a secondary tool',doc.querySelector('#updateAppBtn').closest('#workspaceTools'));
+  check('Primary review and backup stay directly reachable',['review','backup','evidence'].every(key=>!doc.querySelector('[data-workflow="'+key+'"]').closest('details')));
+  doc.querySelector('#demoBtn').click();await until(()=>q.S.slug&&!q.projectStore.loading&&!q.projectStore.dirty);
+  check('Finding actions become available after loading a project',['libBtn','exportFindingsBtn','importFindingsBtn'].every(id=>!doc.querySelector('#'+id).disabled));
+  // Add records in memory to exercise the editor's actual 50-row page boundary.
+  const template=structuredClone(q.S.data.findings[0]);
+  q.S.data.findings=Array.from({length:61},(_,index)=>({...structuredClone(template),uid:w.crypto.randomUUID(),id:'F'+(index+1),title:'Synthetic navigation record '+(index+1)}));
+  q.renderSidebar();q.renderMain();
+  const snapshot=()=>JSON.stringify({data:q.S.data,etag:q.projectStore.etag,revision:q.projectStore.revision,dirty:q.projectStore.dirty});
+  const before=snapshot();
+  check('Counters represent complete collections',doc.querySelector('#workspaceFindings [data-sidebar-count]').textContent==='61'&&doc.querySelector('#workspaceSections [data-sidebar-count]').textContent===String(q.S.data.report.sections.length));
+  check('Long finding list is still paginated at 50 records',doc.querySelectorAll('#findingList li').length===50&&doc.querySelector('[data-workspace-pagination="sidebar"]'));
+  const names={es:['Proyecto','Contenido','Evidencia y alcance','Análisis y seguimiento','Entrega'],en:['Project','Content','Evidence and scope','Analysis and follow-up','Delivery'],pt:['Projeto','Conteúdo','Evidências e escopo','Análise e acompanhamento','Entrega']};
+  for(const language of ['es','en','pt']){
+    q.setUiLang(language);
+    check(language+' localizes all five group labels',['navProject','navWork','navEvidence','navReview','navDelivery'].map(id=>doc.querySelector('#'+id).textContent).join('|')===names[language].join('|'));
+    q.select('finding',50);
+    check(language+' selecting the next page opens its disclosure and exact row',doc.querySelector('#workspaceFindings').open&&doc.querySelectorAll('#findingList li').length===11&&doc.querySelector('#findingList [aria-current="page"]').closest('li').dataset.findingUid===q.S.data.findings[50].uid);
+    check(language+' current content group is indicated',doc.querySelector('[data-sidebar-group="content"]').classList.contains('has-current'));
+    q.select('section',q.S.data.report.sections[0].key);
+    check(language+' selecting a section reveals its index',doc.querySelector('#workspaceSections').open&&doc.querySelector('#sectionList [aria-current="page"]'));
+    q.select('workflow','coverage');
+    check(language+' direct workflow navigation reveals capture and coverage',doc.querySelector('#workspaceResearch').open&&doc.querySelector('[data-workflow="coverage"]').getAttribute('aria-current')==='page');
+    q.select('workflow','root_causes');
+    check(language+' follow-up remains discoverable for direct navigation',doc.querySelector('#workspaceFollowup').open&&doc.querySelector('[data-sidebar-group="analysis"]').classList.contains('has-current'));
+    q.select('insights','claims');
+    check(language+' direct insights navigation reveals its tool',doc.querySelector('#workspaceTools').open);
+    await until(()=>!doc.querySelector('.insights-status'));
+    q.select('home');
+    check(language+' navigating and translating never edits the report',snapshot()===before);
+  }
+  q.select('findings');
+  check('Finding board has exactly one current route',doc.querySelector('#navFindings').getAttribute('aria-current')==='page'&&doc.querySelectorAll('#workspaceSidebar [aria-current="page"]').length===1);
+  // Deterministic geometry reproduces a row outside both nested scroll viewports.
+  q.select('finding',60);
+  const sidebar=doc.querySelector('#workspaceSidebar'),body=doc.querySelector('#workspaceFindings .sidebar-index-body'),current=doc.querySelector('#findingList [aria-current="page"]');
+  sidebar.scrollTop=0;body.scrollTop=0;sidebar.getBoundingClientRect=()=>({top:100,bottom:400,height:300});
+  body.getBoundingClientRect=()=>({top:500-sidebar.scrollTop,bottom:650-sidebar.scrollTop,height:150});
+  current.getBoundingClientRect=()=>({top:1000-body.scrollTop-sidebar.scrollTop,bottom:1044-body.scrollTop-sidebar.scrollTop,height:44});
+  const focused=doc.activeElement,editorScroll=doc.querySelector('#editor').scrollTop;
+  await new Promise(resolve=>w.requestAnimationFrame(resolve));
+  check('Direct navigation reveals a distant row in both scroll containers',current.getBoundingClientRect().bottom<=body.getBoundingClientRect().bottom&&current.getBoundingClientRect().bottom<=sidebar.getBoundingClientRect().bottom&&current.getBoundingClientRect().top>=sidebar.getBoundingClientRect().top);
+  check('Revealing sidebar selection preserves focus and editor scroll',doc.activeElement===focused&&doc.querySelector('#editor').scrollTop===editorScroll);
+  sidebar.scrollTop=20;body.scrollTop=20;q.WorkbenchUI.update();await new Promise(resolve=>w.requestAnimationFrame(resolve));
+  check('Background UI refresh does not reset a manually scrolled index',sidebar.scrollTop===20&&body.scrollTop===20);
+  delete sidebar.getBoundingClientRect;delete body.getBoundingClientRect;delete current.getBoundingClientRect;
+  mobile=true;doc.querySelector('#sidebarToggle').click();
+  check('Mobile navigation exposes matching expanded state',doc.querySelector('.layout').classList.contains('navigation-open')&&doc.querySelector('#sidebarToggle').getAttribute('aria-expanded')==='true');
+  doc.querySelector('#navReport').click();
+  check('Mobile route selection closes navigation and focuses content',!doc.querySelector('.layout').classList.contains('navigation-open')&&doc.querySelector('#sidebarToggle').getAttribute('aria-expanded')==='false'&&doc.activeElement.id==='editor');
+  doc.querySelector('#sidebarToggle').click();doc.querySelector('#navHome').focus();
+  doc.activeElement.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+  check('Escape closes mobile navigation and restores its trigger',!doc.querySelector('.layout').classList.contains('navigation-open')&&doc.activeElement.id==='sidebarToggle');
+  doc.querySelector('#sidebarToggle').click();doc.querySelector('#workspaceSections').open=true;
+  doc.querySelector('[data-section-move]').click();
+  check('Moving a section keeps its dialog focus and does not navigate away',doc.querySelector('dialog[open]')?.contains(doc.activeElement)&&doc.querySelector('.layout').classList.contains('navigation-open'));
+  doc.activeElement.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+  check('Sidebar Escape does not steal focus from an open dialog',doc.querySelector('dialog[open]')?.contains(doc.activeElement)&&doc.querySelector('.layout').classList.contains('navigation-open'));
+  doc.querySelector('dialog[open]').close();
+  check('Navigation, lists and cancelled move preserve exact data',snapshot()===before);
+  await until(()=>pending===0);await new Promise(resolve=>setImmediate(resolve));await until(()=>pending===0);
+  check('Application navigation raises no DOM errors',errors.length===0);
+  console.log(JSON.stringify({passed:checks.length,checks,scope:'DOM and real Flask bridge; browser layout and native keyboard acceptance are separate'},null,2));
+})().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>{dom?.window.close();transport.close();});

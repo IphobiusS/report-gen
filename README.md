@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.38.0
+# report-gen 0.39.0
 
 <a id="qué-es"></a>
 
@@ -142,7 +142,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.38.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.39.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

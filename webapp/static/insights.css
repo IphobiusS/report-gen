@@ -1,5 +1,5 @@
 /* Native, quiet review workspace. All colors inherit the user's theme. */
-.layout.workspace-insights{grid-template-columns:224px minmax(0,1fr)}
+.layout.workspace-insights{grid-template-columns:240px minmax(0,1fr)}
 .layout.workspace-insights>.preview{display:none}
 .insights-shell{max-width:1120px;margin:0 auto;min-width:0;overflow-wrap:anywhere;font-size:1rem}
 .insights-shell header{margin-bottom:24px}

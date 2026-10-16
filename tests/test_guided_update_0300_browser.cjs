@@ -1,5 +1,6 @@
 /* Real wizard with synthetic public-release responses: no actual update/network. */
 'use strict';
+const {clickNavigationControl,exposeNavigationControl}=require('./browser-navigation.cjs');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
 const {apiResponseHeaders}=require('./browser-api-headers.cjs');
 const root=path.resolve(process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..')),out=path.resolve('out/guided-update-0300');
@@ -19,7 +20,8 @@ server.stderr.on('data',b=>fs.appendFileSync(out+'/server.log',b));let browser,t
   page=await context.newPage();page.on('pageerror',error=>results.errors.push(String(error)));
   await page.goto(base);await page.waitForFunction(()=>typeof WorkflowUI!=='undefined'&&!document.getElementById('splash'));
   await page.waitForFunction(()=>typeof UpdateUI!=='undefined'&&document.querySelector('#updateAppBtn'));
-  check('Updater script, stylesheet and visible entry are integrated',await page.locator('#updateAppBtn').isVisible()&&await page.locator('link[href="/static/update.css"]').count()===1);
+  await exposeNavigationControl(page,'#updateAppBtn');
+  check('Updater script, stylesheet and reachable entry are integrated',await page.locator('#updateAppBtn').isVisible()&&await page.locator('link[href="/static/update.css"]').count()===1);
   const headers=await apiResponseHeaders(context,base);
   let checks=0,preparations=0,failCheck=true,failPrepare=true;const bodies=[];
   await page.route('**/api/update/check',async route=>{checks++;bodies.push(route.request().postDataJSON());
@@ -28,7 +30,7 @@ server.stderr.on('data',b=>fs.appendFileSync(out+'/server.log',b));let browser,t
   await page.route('**/api/update/prepare',async route=>{preparations++;bodies.push(route.request().postDataJSON());
     if(failPrepare){failPrepare=false;return route.fulfill({status:503,headers,contentType:'application/json',body:JSON.stringify({error:'Synthetic temporary disk error'})});}
     return route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify({version:'9.8.7',application:'/synthetic/updates/application',backup:'/synthetic/updates/very-long-private-directory-name-for-mobile-layout/workspace-backup.zip',backup_sha256:'b'.repeat(64),prepared_at:'2026-10-10T00:00:00Z',commands:["python3 '/synthetic/long prepared path/application/scripts/install.py' --workspace '/synthetic/private workspace' --lang es","'/synthetic/.local/bin/report-gen'"],rollback_command:"'/synthetic/old/.venv/bin/python' '/synthetic/old/start.py' --workspace '/synthetic/private workspace'",shell:'sh',migration:true})});});
-  await page.locator('#updateAppBtn').click();
+  await clickNavigationControl(page,'#updateAppBtn');
   check('Opening the wizard makes no update requests',checks===0&&preparations===0);
   check('Network permission is unchecked and check button disabled',!await page.locator('[data-update-network]').isChecked()&&await page.locator('[data-update-check]').isDisabled());
   await page.locator('[data-update-network]').check();await page.locator('[data-update-check]').click();
@@ -58,7 +60,7 @@ server.stderr.on('data',b=>fs.appendFileSync(out+'/server.log',b));let browser,t
   await page.waitForFunction(()=>!document.querySelector('.update-dialog'));
   check('After responsive resize, closing restores focus to visible navigation',await page.evaluate(()=>document.activeElement?.id==='sidebarToggle'));
   await page.setViewportSize({width:1280,height:960});
-  await page.evaluate(()=>setUiLang('en'));await page.locator('#updateAppBtn').click();
+  await page.evaluate(()=>setUiLang('en'));await clickNavigationControl(page,'#updateAppBtn');
   check('English wizard retains explicit consent and accessible name',await page.getByRole('dialog',{name:'Update report-gen',exact:true}).count()===1&&await page.getByRole('button',{name:'Check official version',exact:true}).isDisabled());
   await page.getByRole('button',{name:'Close',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('.update-dialog'));
   check('Desktop close restores focus to the initiating button',await page.evaluate(()=>document.activeElement?.id==='updateAppBtn'));

@@ -42,7 +42,7 @@ const WorkspaceUI = (() => {
     const privacy=$('#privacyBtn');if(privacy){privacy.textContent=w('Datos privados guardados','Stored private data', "Dados privados armazenados");privacy.disabled=!S.slug;}
     $('#designLibraryBtn').textContent=w('Biblioteca de informes','Report design library', "Biblioteca de modelos de relatório");
     const absent=!S.slug;
-    for(const id of ['downloadBtn','previewBtn','previewToggle','validateBtn','exportFormat','globalSearch','navReport','manageSections']) $('#'+id).disabled=absent||projectBusyCount>0;
+    for(const id of ['downloadBtn','previewBtn','previewToggle','validateBtn','exportFormat','globalSearch','navReport','manageSections','libBtn','exportFindingsBtn','importFindingsBtn']) $('#'+id).disabled=absent||projectBusyCount>0;
     document.querySelectorAll('[data-add],[data-workflow]').forEach(b=>{b.disabled=(absent&&b.dataset.workflow!=='library')||projectBusyCount>0;});
     if(typeof WorkbenchUI!=='undefined')WorkbenchUI.update();
     if(typeof StudioUI!=='undefined')StudioUI.update();
@@ -202,11 +202,12 @@ const WorkspaceUI = (() => {
     const backupButton=button(w('Respaldo integral','Workspace backup', "Backup do espaço de trabalho"),backup);backupButton.id='workspaceBackupBtn';
     const privacyButton=button(w('Datos privados guardados','Stored private data', "Dados privados armazenados"),()=>PrivacyUI.open());privacyButton.id='privacyBtn';
     tools.append($('#designLibraryBtn'),backupButton,privacyButton,$('#diagnosticsBtn'));$('.sidebar').append(tools);
-    $('#sidebarToggle').addEventListener('click',()=>{const open=$('.layout').classList.toggle('navigation-open');$('#sidebarToggle').setAttribute('aria-expanded',String(open));});
-    $('.sidebar').addEventListener('click',event=>{if(event.target.closest('.navitem,.findinglist li')&&window.matchMedia('(max-width:760px)').matches){$('.layout').classList.remove('navigation-open');$('#sidebarToggle').setAttribute('aria-expanded','false');$('#editor').focus({preventScroll:true});}});
+    $('#sidebarToggle').addEventListener('click',()=>{const open=$('.layout').classList.toggle('navigation-open');$('#sidebarToggle').setAttribute('aria-expanded',String(open));if(open&&typeof WorkbenchUI!=='undefined')WorkbenchUI.revealNavigation();});
+    $('.sidebar').addEventListener('click',event=>{if(event.target.closest('.navitem,.finding-nav')&&window.matchMedia('(max-width:760px)').matches){$('.layout').classList.remove('navigation-open');$('#sidebarToggle').setAttribute('aria-expanded','false');$('#editor').focus({preventScroll:true});}});
     document.querySelectorAll('.action-menu').forEach(menu=>menu.addEventListener('toggle',()=>{if(menu.open)document.querySelectorAll('.action-menu').forEach(other=>{if(other!==menu)other.open=false;});}));
     document.addEventListener('click',event=>{document.querySelectorAll('.action-menu[open]').forEach(menu=>{if(!menu.contains(event.target))menu.open=false;});});
     document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!document.querySelector('dialog[open],.modal.open'))document.querySelectorAll('.action-menu[open]').forEach(menu=>{menu.open=false;menu.querySelector('summary').focus();});});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&$('.layout').classList.contains('navigation-open')&&window.matchMedia('(max-width:760px)').matches&&!document.querySelector('dialog[open],.modal.open')){$('.layout').classList.remove('navigation-open');$('#sidebarToggle').setAttribute('aria-expanded','false');$('#sidebarToggle').focus();}});
   }
   return {bind,update,render,backup};
 })();

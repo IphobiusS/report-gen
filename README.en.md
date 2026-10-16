@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.38.0
+# report-gen 0.39.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -127,7 +127,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.38.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.39.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

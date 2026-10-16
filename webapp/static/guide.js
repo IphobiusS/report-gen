@@ -394,21 +394,7 @@ const GuideUI = (() => {
     const more = $('#studioMore .studio-more-body');
     // One stable menu entry remains reachable on mobile and in desktop focus mode.
     (more || utilities).append(b);
-    secondaryNavigation();
     update();
-  }
-  function secondaryNavigation() {
-    const groups = [
-      ['workspaceResearch', ['Registro y cobertura','Capture and coverage', "Captura e cobertura"], ['#navCaptures','[data-workflow="assets"]','[data-workflow="coverage"]']],
-      ['workspaceFollowup', ['Historial y seguimiento','History and follow-up', "Histórico e acompanhamento"], ['[data-workflow="history"]','[data-workflow="retest"]','[data-workflow="retest_diff"]','[data-workflow="retest_matrix"]','[data-workflow="root_causes"]','[data-workflow="remediation_tasks"]']]
-    ];
-    for (const [id, title, selectors] of groups) {
-      const controls = selectors.map(selector => $(selector)).filter(Boolean);
-      if (!controls.length || $('#'+id)) continue;
-      const details = h('details', {id, class:'workspace-secondary'}, h('summary', {}, w(...title)));
-      controls[0].before(details);
-      details.append(...controls);
-    }
   }
   function update() {
     document.querySelectorAll('[data-guide-action]').forEach(control => {
@@ -427,13 +413,6 @@ const GuideUI = (() => {
     }
     $('.layout')?.classList.toggle('workspace-guide', active);
     if (active && $('#workspaceContext')) $('#workspaceContext').textContent = w('Tutorial visual', 'Visual tutorial', "Tutorial visual");
-    for (const [id, pair] of [['workspaceResearch',['Registro y cobertura','Capture and coverage', "Captura e cobertura"]],['workspaceFollowup',['Historial y seguimiento','History and follow-up', "Histórico e acompanhamento"]]]) {
-      const details = $('#'+id);
-      if (details) details.querySelector('summary').textContent = w(...pair);
-    }
-    const selected = S.sel.type === 'workflow' ? $('[data-workflow="'+S.sel.idx+'"]') : S.sel.type === 'capture' ? $('#navCaptures') : null;
-    const group = selected?.closest('.workspace-secondary');
-    if (group) group.open = true;
   }
   return {render, bind, update, entry, nextAction};
 })();
