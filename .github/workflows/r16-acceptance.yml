@@ -169,9 +169,9 @@ jobs:
         run: python scripts/audit-meridiano-publication.py --exports "$MERIDIANO_OUTPUT/exports" --case "$MERIDIANO_OUTPUT/case" --output "$MERIDIANO_OUTPUT/publication-scan.json"
       - name: Exercise imports, audiences, PDF annex inspection and immutable DOCX preview
         run: python scripts/audit-meridiano-api.py --case "$MERIDIANO_OUTPUT/case/projects/es" --inputs "$MERIDIANO_OUTPUT/case/inputs" --pdf "$MERIDIANO_OUTPUT/exports/principal/es/outputs/informe.pdf" --output "$MERIDIANO_OUTPUT/api" --ui-bundle "$MERIDIANO_OUTPUT/meridiano-project.zip" --require-stable-native
-      - name: Traverse the new features and complete logistics project in Chromium
+      - name: Traverse the new features and inspect the native PDF viewer in headed Chromium
         if: ${{ !cancelled() }}
-        run: node scripts/audit-meridiano-browser.cjs --bundle "$MERIDIANO_OUTPUT/meridiano-project.zip" --project-dir "$MERIDIANO_OUTPUT/case/projects/es" --pdf "$MERIDIANO_OUTPUT/exports/principal/es/outputs/informe.pdf" --output "$MERIDIANO_OUTPUT/browser"
+        run: xvfb-run -a node scripts/audit-meridiano-browser.cjs --headed --bundle "$MERIDIANO_OUTPUT/meridiano-project.zip" --project-dir "$MERIDIANO_OUTPUT/case/projects/es" --pdf "$MERIDIANO_OUTPUT/exports/principal/es/outputs/informe.pdf" --output "$MERIDIANO_OUTPUT/browser"
       - name: Preserve exact reports, checks and native inspection
         if: always()
         uses: actions/upload-artifact@v7.0.2

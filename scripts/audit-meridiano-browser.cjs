@@ -6,6 +6,7 @@ const {spawn,execFileSync}=require('node:child_process'),{createHash}=require('n
 const root=path.resolve(__dirname,'..'),args=process.argv.slice(2),opt=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
 const out=path.resolve(opt('--output','out/meridiano-browser')),bundle=opt('--bundle'),projectDir=opt('--project-dir'),pdfInput=opt('--pdf');
 const slug=opt('--slug','meridiano-browser'),python=process.env.RG_PYTHON||'python3',engine=opt('--browser','chromium');
+const headed=args.includes('--headed');
 const playwright=require('playwright'),hash=value=>createHash('sha256').update(value).digest('hex');
 for(const [name,file] of [['--bundle',bundle],['--pdf',pdfInput]])assert.ok(file&&fs.statSync(file).isFile(),name+' is required');
 assert.ok(projectDir&&fs.statSync(path.join(projectDir,'engagement.yaml')).isFile(),'--project-dir is required');
@@ -14,7 +15,7 @@ const workspace=fs.mkdtempSync(path.join(os.tmpdir(),'report-gen-acceptance-0211
 fs.writeFileSync(path.join(workspace,'.test-only'),'synthetic acceptance workspace');
 const sourcePaths=['scripts/audit-meridiano-browser.cjs','webapp/static/app.js','webapp/static/transport.js','webapp/static/progress.js','webapp/static/diagnostics-ui.js','webapp/static/docx-preview.js','webapp/static/annexes.js','diagnostic_locations.py','finding_imports.py','scanner_imports.py','export_contract.py','export_semantics.py','docx_preview.py','pdf_attachment_inspection.py','attachments.py','export_jobs.py','webapp/docx_preview_api.py'];
 const sourceHashes=()=>Object.fromEntries(sourcePaths.map(name=>[name,hash(fs.readFileSync(path.join(root,name)))]));
-const results={schema:'report-gen-meridiano-browser/1',started:new Date().toISOString(),engine,checks:[],screens:[],downloads:[],coverage:[],pageErrors:[],apiErrors:[],expectedApiErrors:[],externalRequests:[],sourceStart:sourceHashes(),input:{bundle_sha256:hash(fs.readFileSync(bundle)),pdf_sha256:hash(fs.readFileSync(pdfInput))},limits:['Only report-gen generates reports and the derived native PDF.','The fixture is fictional; no external systems are contacted.','LibreOffice preview is not Microsoft Word acceptance.','Browser assertions and screenshots are not a human visual approval.','PDF privacy is bounded structural inspection, without OCR or an assertion that no secrets exist.']};
+const results={schema:'report-gen-meridiano-browser/1',started:new Date().toISOString(),engine,launch_mode:headed?'headed':'headless',checks:[],screens:[],downloads:[],coverage:[],pageErrors:[],consoleDiagnostics:[],nativeViewer:[],apiErrors:[],expectedApiErrors:[],externalRequests:[],sourceStart:sourceHashes(),input:{bundle_sha256:hash(fs.readFileSync(bundle)),pdf_sha256:hash(fs.readFileSync(pdfInput))},limits:['Only report-gen generates reports and the derived native PDF.','The fixture is fictional; no external systems are contacted.','LibreOffice preview is not Microsoft Word acceptance.','Browser assertions and screenshots are not a human visual approval.','PDF privacy is bounded structural inspection, without OCR or an assertion that no secrets exist.','Native PDF painting is checked only in explicitly headed runs; a blob URL alone does not establish painted pages.']};
 const save=()=>fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(results,null,2)+'\n');
 function check(name,passed,detail){results.checks.push({name,passed:!!passed,...(detail===undefined?{}:{detail})});save();assert.ok(passed,name+': '+JSON.stringify(detail));console.log('PASS '+name);}
 const clean=page=>page.waitForFunction(()=>typeof S!=='undefined'&&!projectStore.loading&&!projectBusyCount&&!projectStore.dirty&&!projectStore.saving&&!document.querySelector('#splash'),null,{timeout:60000});
@@ -27,6 +28,26 @@ async function closeDrawer(page){if(await page.locator('#exportDrawer').count())
 async function language(page,lang){await closeDrawer(page);await (await expose(page,'#langToggle')).selectOption(lang);if(await page.locator('#studioMore').evaluate(el=>el.open))await page.locator('#studioMore > summary').click();await clean(page);}
 async function screen(page,name){await page.evaluate(()=>document.fonts.ready);const file=path.join(out,name+'.png');await page.screenshot({path:file,fullPage:false});results.screens.push({name,path:file,sha256:hash(fs.readFileSync(file)),viewport:page.viewportSize()});save();}
 async function download(page,trigger,name,kind){const event=page.waitForEvent('download',{timeout:180000});await trigger();const item=await event,file=path.join(out,name);await item.saveAs(file);check(name+' downloads',await item.failure()===null&&fs.statSync(file).size>0);results.downloads.push({name,path:file,kind,size:fs.statSync(file).size,sha256:hash(fs.readFileSync(file))});save();return file;}
+async function nativeViewerProbe(lang,dialog){
+ const frame=dialog.locator('[data-docx-preview-frame]'),file=path.join(out,'native-docx-'+lang+'-frame.png');
+ const record={language:lang,mode:headed?'headed':'headless',navigator:await page.evaluate(()=>({pdfViewerEnabled:navigator.pdfViewerEnabled,plugins:[...navigator.plugins].map(p=>p.name)})),frames:[],paint_scope:headed?'visible_meridiano_cover_pixels':'not_checked_headless'};
+ if(headed){
+  await frame.scrollIntoViewIfNeeded();
+  // The exact generated cover has a large navy block. A blank iframe, grey
+  // viewer toolbar, CSP error page or PDF plug-in placeholder cannot satisfy
+  // this positive content test. No report is regenerated or edited here.
+  const inspect='import json,sys;from PIL import Image;im=Image.open(sys.argv[1]).convert("RGB");pixels=list(im.getdata());navy=sum(10<=r<50 and 15<=g<70 and 35<=b<110 and b>=g+12 and g>=r+4 for r,g,b in pixels);print(json.dumps({"width":im.width,"height":im.height,"navy_pixels":navy,"pixels":len(pixels),"navy_fraction":navy/len(pixels)}))';
+  const deadline=Date.now()+20000;let pixels;
+  do{await frame.screenshot({path:file});pixels=JSON.parse(execFileSync(python,['-c',inspect,file],{encoding:'utf8'}));if(pixels.navy_fraction>.05)break;await new Promise(resolve=>setTimeout(resolve,250));}while(Date.now()<deadline);
+  record.pixels=pixels;record.screenshot={file:path.basename(file),sha256:hash(fs.readFileSync(file))};
+ }
+ for(const browserFrame of page.frames()){
+  try{record.frames.push(await browserFrame.evaluate(()=>({url:location.href,contentType:document.contentType,readyState:document.readyState,pdfViewer:!!document.querySelector('pdf-viewer'),embeds:[...document.querySelectorAll('embed,object')].map(node=>({tag:node.tagName,type:node.getAttribute('type'),src:node.getAttribute('src'),data:node.getAttribute('data')})),csp:window.__reportGenCsp||[]})));}
+  catch(error){record.frames.push({url:browserFrame.url(),inspection_error:String(error)});}
+ }
+ results.nativeViewer.push(record);save();
+ if(headed)check(lang+' native PDF viewer paints the generated Meridiano cover',record.pixels.navy_fraction>.05,record);
+}
 async function workflow(page,name){await click(page,'[data-workflow="'+name+'"]');await page.locator('[data-workflow-view="'+name+'"]').waitFor();await clean(page);}
 const expectedFailures=[];
 function expectFailure(method,pathname,status){const entry={method,pathname,status,consumed:false};expectedFailures.push(entry);return entry;}
@@ -79,7 +100,8 @@ async function nativePreview(lang,exported){
  check(lang+' native receipt binds the exact DOCX, revision and PDF',receipt.source_docx_sha256===exported.sha256&&receipt.source_revision===exported.job.revision&&receipt.pdf_sha256===hash(fs.readFileSync(pdf)),receipt);
  check(lang+' native renderer is stable LibreOffice rather than a development build',/^LibreOffice\s+\d/.test(receipt.engine.version),receipt.engine.version);
  check(lang+' native preview explicitly excludes Microsoft Word acceptance',receipt.word_verified===false&&receipt.pages>0&&(await dialog.innerText()).includes('Microsoft Word'));
- check(lang+' preview iframe contains the locally generated PDF',await dialog.locator('[data-docx-preview-frame]').getAttribute('src').then(value=>value.startsWith('blob:')));
+ check(lang+' preview iframe references the locally generated PDF',await dialog.locator('[data-docx-preview-frame]').getAttribute('src').then(value=>value.startsWith('blob:')));
+ await screen(page,'native-docx-metadata-'+lang);await nativeViewerProbe(lang,dialog);
  await screen(page,'native-docx-'+lang);const removed=responseFor(page,'DELETE','/api/docx-preview/'+preview.id);await dialog.getByRole('button',{name:l.close,exact:true}).click();check(lang+' closing removes the temporary preview',(await removed).status()===200);await dialog.waitFor({state:'detached'});
  check(lang+' native preview preserves exact project and revision',await snapshot(page)===before);
  results.coverage.push({area:'Native DOCX preview '+lang,mode:'UI',details:'Real export job and local LibreOffice conversion; downloaded source/derivative hashes, saved revision, Word limitation and explicit temporary cleanup.'});
@@ -113,11 +135,12 @@ async function privacyPDF(lang,annex){
  server=spawn(python,[path.join(root,'scripts/browser-server-0211.py'),'--workspace',workspace],{cwd:root,env:process.env});server.stderr.on('data',part=>fs.appendFileSync(path.join(out,'server.log'),part));
  const base=await new Promise((resolve,reject)=>{let text='';timer=setTimeout(()=>reject(Error('Server startup timeout')),60000);server.stdout.on('data',part=>{text+=part;for(const line of text.split('\n'))try{const value=JSON.parse(line);if(value.url){clearTimeout(timer);resolve(value.url);}}catch{}});server.once('error',reject);server.once('exit',code=>reject(Error('Server exit '+code)));});
  const executable=opt('--executable',engine==='chromium'?(process.env.RG_CHROMIUM_EXECUTABLE||process.env.REPORT_GEN_CHROMIUM):undefined);
- browser=await playwright[engine].launch({headless:true,...(executable?{executablePath:executable}:{})});results.browser=browser.version();
+ browser=await playwright[engine].launch({headless:!headed,...(executable?{executablePath:executable}:{})});results.browser=browser.version();
  const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce',acceptDownloads:true});
  await context.route('**/*',route=>{const url=route.request().url();if(/^https?:/.test(url)&&!url.startsWith(base+'/')){results.externalRequests.push(url);return route.abort();}return route.continue();});
- await context.addInitScript(()=>{if(window!==window.top)return;localStorage.setItem('rg.uiLang','es');localStorage.setItem('rg.previewVisible','0');});
+ await context.addInitScript(()=>{window.__reportGenCsp=[];document.addEventListener('securitypolicyviolation',event=>window.__reportGenCsp.push({effectiveDirective:event.effectiveDirective,blockedURI:event.blockedURI,originalPolicy:event.originalPolicy}));if(window!==window.top)return;localStorage.setItem('rg.uiLang','es');localStorage.setItem('rg.previewVisible','0');});
  page=await context.newPage();page.on('pageerror',error=>{results.pageErrors.push(String(error));save();});
+ page.on('console',entry=>{if(['error','warning'].includes(entry.type())&&/content.security|refused|pdf|mime|plug.?in/i.test(entry.text())){results.consoleDiagnostics.push({type:entry.type(),text:entry.text().slice(0,2000)});save();}});
  page.on('response',response=>{const url=new URL(response.url());if(response.status()>=400&&url.pathname.startsWith('/api/')){const row={method:response.request().method(),pathname:url.pathname,status:response.status()},expected=expectedFailures.find(value=>!value.consumed&&value.method===row.method&&value.pathname===row.pathname&&value.status===row.status);if(expected){expected.consumed=true;results.expectedApiErrors.push(row);}else results.apiErrors.push(row);save();}});
  const response=await page.goto(base);await clean(page);check('Local editor exposes CSP',!!response.headers()['content-security-policy']);
  page.once('dialog',dialog=>dialog.accept(slug));const chooser=page.waitForEvent('filechooser');await click(page,'#importProjectBtn');await (await chooser).setFiles(bundle);await page.waitForFunction(value=>S.slug===value&&!projectStore.loading&&!projectBusyCount,slug,{timeout:60000});await clean(page);if(await page.locator('#studioMore').evaluate(el=>el.open))await page.locator('#studioMore > summary').click();
