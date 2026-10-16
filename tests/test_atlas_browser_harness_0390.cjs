@@ -8,6 +8,10 @@ const source=fs.readFileSync(path.join(__dirname,'../scripts/audit-atlas-browser
 const between=(start,end)=>{const first=source.indexOf(start),last=source.indexOf(end,first);assert.ok(first>=0&&last>first,'Actual harness function boundaries exist');return source.slice(first,last);};
 const functions=between('async function expose(page,selector)','async function closeDrawer(page)')+
   between('async function disclosure(id,open)','async function sidebarGeometry(');
+const recoverySource=fs.readFileSync(path.join(__dirname,'../scripts/audit-horizonte-recovery.cjs'),'utf8');
+const recoveryStart=recoverySource.indexOf('async function expose(page,selector)'),recoveryEnd=recoverySource.indexOf('async function closeMore(page)',recoveryStart);
+assert.ok(recoveryStart>=0&&recoveryEnd>recoveryStart,'Actual recovery harness navigation boundaries exist');
+const recoveryFunctions=recoverySource.slice(recoveryStart,recoveryEnd);
 const groups=['workspaceResearch','workspaceFollowup','workspaceTools'],checks=[];
 async function fixture(width,revealResearch=false){
  const dom=new JSDOM('<button id="sidebarToggle" aria-expanded="false">Navigation</button><aside id="workspaceSidebar">'+
@@ -37,11 +41,12 @@ async function fixture(width,revealResearch=false){
   const locator={first:()=>locator,evaluate:async fn=>fn(get()),getAttribute:async name=>get().getAttribute(name),isVisible:async()=>visible(doc.querySelector(selector)),click:async()=>{const node=get();assert.ok(visible(node),'Harness activates a visible control: '+selector);clicks.push(selector);node.click();}};return locator;
  }};
  const harness=vm.runInNewContext(functions+';({disclosure,expose,click});',{page,assert,exposeNavigationControl,clickNavigationControl});
- return{dom,doc,clicks,harness,page};
+ const recovery=vm.runInNewContext(recoveryFunctions+';({expose,click});',{assert,exposeNavigationControl,clickNavigationControl});
+ return{dom,doc,clicks,harness,recovery,page};
 }
 (async()=>{
  for(const width of [1440,390]){
-  const {dom,doc,clicks,harness,page}=await fixture(width);
+  const {dom,doc,clicks,harness,recovery,page}=await fixture(width);
   try{
    for(const id of groups){
     const node=doc.getElementById(id);node.open=false;clicks.length=0;
@@ -60,6 +65,7 @@ async function fixture(width,revealResearch=false){
    await harness.click(page,'#importFindingsBtn');assert.equal(doc.querySelector('#contextFindingsTab').getAttribute('aria-pressed'),'true');assert.equal(doc.querySelector('#contextIndexActions').open,true);checks.push(width+' finding action opens its collection and actual disclosure');
    await harness.click(page,'#workspaceSections');await harness.click(page,page.locator('#sectionList .finding-nav'));checks.push(width+' Locator caller explicitly opens its collection');
    doc.querySelector('#workspaceTools').open=false;clicks.length=0;await harness.click(page,'#workspaceToolsAction');assert.equal(clicks.filter(selector=>selector.includes('summary')).length,1);checks.push(width+' nested tool action opens its ancestor once');
+   assert.equal(doc.querySelector('#findingList li'),null,'Recovery starts without rendered finding rows');await recovery.click(page,'#findingList .finding-nav');assert.equal(doc.querySelector('#contextFindingsTab').getAttribute('aria-pressed'),'true');assert.equal(doc.querySelector('#contextIndex').hidden,false);checks.push(width+' actual recovery helper opens finding mode before resolving the first row');
   }finally{dom.window.close();}
  }
  const {dom,doc,clicks,harness}=await fixture(390,true);

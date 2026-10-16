@@ -2,6 +2,7 @@
  * Every project lives in a disposable test-only workspace; no report is generated here.
  */
 'use strict';
+const {exposeNavigationControl,clickNavigationControl}=require('../tests/browser-navigation.cjs');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
 const {spawn,execFileSync}=require('node:child_process'),{createHash}=require('node:crypto'),{isDeepStrictEqual}=require('node:util');
 const root=path.resolve(__dirname,'..'),args=process.argv.slice(2);
@@ -17,7 +18,7 @@ fs.mkdirSync(out,{recursive:true});
 const workspace=fs.mkdtempSync(path.join(os.tmpdir(),'report-gen-acceptance-0211-horizonte-recovery-'));
 fs.writeFileSync(path.join(workspace,'.test-only'),'synthetic acceptance workspace');
 const hash=buffer=>createHash('sha256').update(buffer).digest('hex');
-const sourcePaths=['scripts/audit-horizonte-recovery.cjs','scripts/browser-server-0211.py','storage.py','project_history.py','project_catalog.py','webapp/app.py','webapp/static/app.js','webapp/static/workspace.js','webapp/static/studio.js','webapp/static/drafts.js','webapp/static/save-manager.js'];
+const sourcePaths=['tests/browser-navigation.cjs','webapp/static/context-index.js','webapp/static/context-index.css','scripts/audit-horizonte-recovery.cjs','scripts/browser-server-0211.py','storage.py','project_history.py','project_catalog.py','webapp/app.py','webapp/static/app.js','webapp/static/workspace.js','webapp/static/studio.js','webapp/static/drafts.js','webapp/static/save-manager.js'];
 const sourceHashes=()=>Object.fromEntries(sourcePaths.map(name=>[name,hash(fs.readFileSync(path.join(root,name)))]));
 const results={schema:'report-gen-horizonte-recovery/1',complete:false,started:new Date().toISOString(),engine,
   input:{bundle:path.resolve(bundle),sha256:hash(fs.readFileSync(bundle))},sourceStart:sourceHashes(),
@@ -37,11 +38,8 @@ async function api(page,method,uri,body){return page.evaluate(async({method,uri,
   return {status:response.status,data:await response.json()};
 },{method,uri,body});}
 async function savedData(page){const value=await api(page,'GET','/api/projects/'+slug);assert.equal(value.status,200);return value.data;}
-async function expose(page,selector){const target=page.locator(selector).first();
-  const ancestors=await target.evaluate(el=>{let parent=el.parentElement?.closest('details'),ids=[];while(parent){if(!parent.open)ids.unshift(parent.id||null);parent=parent.parentElement?.closest('details');}return ids;});
-  for(const id of ancestors){assert.ok(id,'Disclosure ancestor has a stable ID');await page.locator('#'+id+' > summary').click();}return target;
-}
-async function click(page,selector){await(await expose(page,selector)).click();}
+async function expose(page,selector){return exposeNavigationControl(page,selector);}
+async function click(page,selector){await clickNavigationControl(page,selector);}
 async function closeMore(page){
   const menu=page.locator('#studioMore');
   if(await menu.getAttribute('open')!==null)await page.locator('#studioMore > summary').click();
@@ -52,7 +50,7 @@ async function screen(page,name){await page.evaluate(async()=>{await document.fo
   results.screens.push({name,path:file,sha256:hash(fs.readFileSync(file)),viewport:page.viewportSize()});save();
 }
 async function editImpact(page,value){
-  // Overview hides the findings sidebar; leave it using the visible report control.
+  // Open the report, then let the shared helper expose the contextual finding index.
   await click(page,'#navReport');await click(page,'#findingList .finding-nav');
   await page.locator('[data-field="impact_md"]').fill(value);
 }
