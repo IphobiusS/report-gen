@@ -1,6 +1,7 @@
 /* Browser geometry, saved facts and fit-width behavior. All input is synthetic. */
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
+const {clickNavigationControl}=require('./browser-navigation.cjs');
 const args=process.argv.slice(2),opt=(name,fallback)=>args.includes(name)?args[args.indexOf(name)+1]:fallback;
 const root=path.resolve(opt('--tool',process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..'))),out=path.resolve(opt('--output','out/ui-geometry-0250'));
 const {chromium}=require(process.env.REPORT_GEN_PLAYWRIGHT_MODULE||require.resolve('playwright',{paths:[root,process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES||root]}));
@@ -21,6 +22,13 @@ function validGeometry(g){const max=Math.max(1,...g.rows.map(row=>row.count));re
   return inside&&proportion&&row.track.height>=14&&row.value.width>0&&row.label.width>0&&row.valueText.x>=row.value.x-1&&row.valueText.right<=row.value.right+1;
 });}
 async function previewMetrics(){return page.evaluate(()=>{const f=$('#pdfPreview'),d=f.contentDocument,r=d.querySelector('.cover').getBoundingClientRect();return {mode:f.dataset.previewZoomMode,zoom:Number(f.dataset.previewZoom),frameWidth:f.clientWidth,docWidth:d.documentElement.clientWidth,scrollWidth:d.documentElement.scrollWidth,coverLeft:r.left,coverRight:r.right,coverWidth:r.width,title:d.title,selected:$('#previewZoom').value};});}
+async function showPreview(label){
+  // At these desktop widths the index and preview share space. Request the
+  // visible preview through its public control, including after project loads.
+  if(!await page.locator('.layout > .preview').isVisible())await clickNavigationControl(page,'#previewToggle');
+  if(await page.locator('#studioMore').evaluate(el=>el.open))await page.locator('#studioMore > summary').click();
+  check(label,await page.locator('.layout > .preview').isVisible()&&!await page.locator('#contextIndex').isVisible());
+}
 (async()=>{try{
   const base=await new Promise((resolve,reject)=>{let text='';timer=setTimeout(()=>reject(Error('Server timeout')),30000);server.stdout.on('data',data=>{text+=data;for(const line of text.split('\n'))try{const value=JSON.parse(line);if(value.url){clearTimeout(timer);resolve(value.url);}}catch{}});server.on('exit',code=>reject(Error('Server exited '+code)));});
   browser=await chromium.launch({headless:true,executablePath:process.env.REPORT_GEN_CHROMIUM||process.env.RG_CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox']});results.browser=browser.version();
@@ -71,7 +79,8 @@ async function previewMetrics(){return page.evaluate(()=>{const f=$('#pdfPreview
     await page.setViewportSize({width,height:1100});check('Readiness reflows at '+width,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1&&[...document.querySelectorAll('[data-readiness-check]')].every(row=>row.getBoundingClientRect().right<=innerWidth+1)));
   }
   await page.locator('[data-readiness-summary]').screenshot({path:path.join(out,'readiness-desktop.png')});
-  await page.evaluate(()=>{setUiLang('es');select('report',-1);setPreviewVisible(true);});
+  await page.evaluate(()=>{setUiLang('es');select('report',-1);});
+  await showPreview('The visible preview is restored before fit-width geometry checks');
   await page.waitForFunction(()=>WorkbenchUI.hasLivePreview()&&$('#pdfPreview').dataset.previewZoomMode==='fit');
   for(const theme of ['serio','corporativo','offsec','htb','ejecutivo','laboratorio']){
     await page.evaluate(async theme=>{S.data.meta.theme=theme;delete S.data.meta.design;scheduleSave();await doSave();refreshLivePreview();},theme);
@@ -87,7 +96,9 @@ async function previewMetrics(){return page.evaluate(()=>{const f=$('#pdfPreview
   await page.locator('#previewZoom').selectOption('125');await page.setViewportSize({width:1280,height:1100});
   check('Manual zoom survives resizing',Math.abs((await previewMetrics()).zoom-1.25)<.001);
   check('Changing zoom does not write or alter report data',zoomWrites===0&&await page.evaluate(before=>JSON.stringify(S.data)===before.data&&projectStore.etag===before.etag&&projectStore.revision===before.revision,beforeZoom));page.off('request',countZoomWrites);
-  await page.evaluate(async()=>{await loadProject('ui-other');select('report',-1);refreshLivePreview();});await page.waitForFunction(()=>WorkbenchUI.hasLivePreview());
+  await page.evaluate(async()=>{await loadProject('ui-other');select('report',-1);refreshLivePreview();});
+  await showPreview('The visible preview is restored after switching projects');
+  await page.waitForFunction(()=>WorkbenchUI.hasLivePreview());
   check('Manual zoom survives project changes and preview refreshes',(await previewMetrics()).selected==='125'&&Math.abs((await previewMetrics()).zoom-1.25)<.001);
   await page.locator('#previewZoom').selectOption('fit');await page.locator('#previewWidth').fill('55');
   await page.waitForFunction(()=>{const f=$('#pdfPreview'),d=f.contentDocument;return d.querySelector('.cover').getBoundingClientRect().right<=d.documentElement.clientWidth+1;});

@@ -42,12 +42,8 @@ const ContextIndexUI = (() => {
     if(S.sel.type==='finding'){const finding=S.data?.findings?.[S.sel.idx];return finding?{type:'finding',uid:finding.uid,id:finding.id}:null;}
     return null;
   }
-  function titleOf(section){
-    const schema=S.catBy?.[section.key]||{},lang=normalizeUiLanguage(S.data?.meta?.lang,'en');
-    return section.title||schema['title_'+lang]||schema.title_es||section.key;
-  }
   function rowsFor(mode){
-    if(mode==='sections')return (S.data?.report?.sections||[]).map((section,index)=>({identity:section.key,index,id:section.key,title:titleOf(section),section}));
+    if(mode==='sections')return (S.data?.report?.sections||[]).map((section,index)=>({identity:section.key,index,id:section.key,title:sectionTitle(section),section}));
     return (S.data?.findings||[]).map((finding,index)=>({identity:finding.uid,index,id:finding.id||'',title:finding.title||t('untitled'),finding}));
   }
   function matches(row,mode){
@@ -116,6 +112,11 @@ const ContextIndexUI = (() => {
     prefs.mode=current.type==='section'?'sections':'findings';prefs.open=true;
     const f=prefs[prefs.mode];f.query='';if(prefs.mode==='findings'){f.severity='';f.kind='';}
     const v=view();f.page=Math.max(0,Math.floor(v.selectedIndex/PAGE_SIZE));persist();render(undefined,{reveal:true});
+  }
+  function revealSelectedRow(){
+    if(!bound||$('#contextIndex').hidden)return;
+    const v=view();if(v.selectedIndex<0)return;
+    prefs[prefs.mode].page=Math.floor(v.selectedIndex/PAGE_SIZE);persist();render(undefined,{reveal:true});
   }
   function revealRow(){
     const panel=$('#contextIndex'),container=$('#contextIndexListScroll'),row=panel?.querySelector('ul:not([hidden]) .finding-nav[aria-current="page"]'),serial=renderSerial;
@@ -233,5 +234,5 @@ const ContextIndexUI = (() => {
     render();
   }
   function update(){if(bound){ensureScope();labels();applyVisibility();}}
-  return {bind,render,update,projectChanged,open,toggle,setMode,setFilters,setPage,setWidth,setSorting,revealSelection,state,normalizeQuery,obscuresPreview,togglePreview};
+  return {bind,render,update,projectChanged,open,toggle,setMode,setFilters,setPage,setWidth,setSorting,revealSelection,revealSelectedRow,state,normalizeQuery,obscuresPreview,togglePreview};
 })();

@@ -3,6 +3,7 @@
 - La navegación general conserva sus cinco grupos y separa los índices extensos en un panel contextual junto al editor. El panel puede plegarse y ajustar su ancho, con adaptación a pantallas pequeñas.
 - El índice permite buscar secciones y hallazgos por identificador o título y filtrar los hallazgos por severidad y tipo. Conserva las identidades estables, el contexto de selección y la paginación de colecciones extensas.
 - «Ordenar secciones» muestra los controles de reorganización únicamente durante esa tarea. Las acciones de creación e intercambio de hallazgos se reúnen en el panel contextual.
+- Los diálogos de ordenación muestran el título de la sección en el idioma del informe. Mover y deshacer conservan la selección visible y el foco; el panel móvil mantiene su pie dentro de sus límites.
 - Interfaz e instrucciones actualizadas en español, inglés y portugués de Brasil. Las preferencias de navegación se mantienen separadas del contenido del informe y del espacio de trabajo de otros proyectos.
 - La aceptación de Atlas conserva por separado la evidencia de navegación y ciclo de vida. Se elimina la exclusión demasiado amplia que omitía respaldos de prueba cuyos nombres comenzaban por `workspace-`; los espacios temporales mutables ya se crean fuera del directorio de evidencia.
 - [Protocolo de aceptación UX 0.40.0](docs/QA-CONTEXT-INDEX-0400.md). Los resultados y las capturas se acreditan por ejecución; este protocolo no sustituye esos recibos.

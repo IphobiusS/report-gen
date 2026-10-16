@@ -8,6 +8,7 @@ Este protocolo verifica la navegación con el caso ficticio Atlas. La fuente del
 - Buscar por identificador o título y cambiar filtros, idioma, ancho o visibilidad del panel no modifica el informe, su revisión guardada ni sus identidades.
 - La selección se conserva por UID o clave estable. Un filtro no transforma la posición de un resultado en su identidad dentro del proyecto.
 - El modo de ordenación hace explícita la edición del orden. Reutiliza el diálogo de movimiento y la recuperación de acciones del editor; cerrar el modo o cancelar el diálogo no reordena contenido.
+- El diálogo utiliza el título traducido o personalizado de la sección. Al mover la sección seleccionada y al deshacer, su fila permanece visible sin desplazamiento asistido por la prueba.
 - El estado del índice pertenece al espacio de trabajo y proyecto correspondientes. Los títulos y términos de búsqueda no se copian a claves globales compartidas por proyectos homónimos.
 - El control de ancho es accesible con teclado. Los títulos extensos y los identificadores siguen siendo reconocibles.
 - En móvil, la navegación y el índice no compiten simultáneamente por el espacio. Escape y la selección devuelven el foco a un control visible adecuado, sin interferir con diálogos abiertos.

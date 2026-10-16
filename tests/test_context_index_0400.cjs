@@ -60,6 +60,14 @@ const localLabels={es:{sections:'Secciones',findings:'Hallazgos'},en:{sections:'
   check('The contextual index is outside global navigation',!doc.querySelector('#workspaceSidebar').contains(doc.querySelector('#contextIndex'))&&!doc.querySelector('#workspaceSidebar').contains(doc.querySelector('#sectionList'))&&!doc.querySelector('#workspaceSidebar').contains(doc.querySelector('#findingList')));
   check('Moving indices creates no duplicate IDs',new Set([...doc.querySelectorAll('[id]')].map(node=>node.id)).size===doc.querySelectorAll('[id]').length);
   await createProject(env,'context-regression','Contextual navigation regression');
+  for(const [reportLanguage,interfaceLanguage,title] of [['es','pt','Declaración de confidencialidad'],['pt','en','Declaração de confidencialidade']]){
+    q.S.data.meta.lang=reportLanguage;q.setUiLang(interfaceLanguage);q.select('section','confidentiality');index.open('sections');index.setSorting(true);
+    const beforeDialog=frontend(q);doc.querySelector('[data-section-move="confidentiality"]').click();
+    check(reportLanguage+' move dialog uses the report-language catalogue title independently of interface language',doc.querySelector('dialog[open] h2').textContent.startsWith(title+' · '));
+    check(reportLanguage+' move dialog title matches the contextual row and editor heading',doc.querySelector('#sectionList [data-section-key="confidentiality"] .ftitle').textContent.endsWith(title)&&doc.querySelector('#editor h2').textContent===title);
+    doc.querySelector('dialog[open]').close();
+    check(reportLanguage+' inspecting the localized move dialog does not change source or revision',equal(frontend(q),beforeDialog));
+  }
   q.S.data.report.sections=Array.from({length:23},(_,i)=>({key:'custom-context-'+String(i+1).padStart(2,'0'),title:i===22?'Conclusión São Paulo':'Sección de tesorería '+String(i+1).padStart(2,'0'),body:'Original technical section '+(i+1)+'\n\n`preserve-this-content`',enabled:true}));
   q.S.data.findings=Array.from({length:63},(_,i)=>({uid:w.crypto.randomUUID(),id:'F'+String(i+1).padStart(2,'0'),mode:i%9===0?'machine':'vuln',title:({0:'Gestión de créditos Águila',49:'Límite cincuenta',50:'Controle de crédito São Paulo',60:'Límite sesenta y uno',62:'Último hallazgo Zafiro'})[i]||'Registro de prueba '+(i+1),severity:i===61?'':['critical','high','medium','low','info'][i%5],verification:'confirmed',status:'open',owner:'Preserved owner '+i,description_md:'Technical narrative '+i+'\n\n`code_value_'+i+'`',retests:[{uid:w.crypto.randomUUID(),tested_on:'2026-10-01',assessor:'Synthetic auditor',result:'open',notes_md:'Preserve retest '+i}]}));
   q.S.data.finding_sequence=63;q.scheduleSave();check('The real API saves the 63-record fixture',await q.doSave());await env.settle();
@@ -167,6 +175,7 @@ const localLabels={es:{sections:'Secciones',findings:'Hallazgos'},en:{sections:'
   const move=doc.querySelector('[data-section-move="custom-context-01"]');move.focus();move.click();
   const dialog=doc.querySelector('dialog[open]');
   check('A section move opens the existing dialog with input focus',dialog?.contains(doc.activeElement)&&doc.activeElement.hasAttribute('data-section-position')&&!hidden(doc.querySelector('#contextIndex')));
+  check('A custom section title is retained verbatim in the move dialog',dialog.querySelector('h2').textContent.startsWith('Sección de tesorería 01 · '));
   doc.activeElement.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
   check('Context Escape does not steal modal focus or close the parent panel',dialog.open&&dialog.contains(doc.activeElement)&&!hidden(doc.querySelector('#contextIndex')));
   dialog.close();
@@ -174,10 +183,11 @@ const localLabels={es:{sections:'Secciones',findings:'Hallazgos'},en:{sections:'
   env.setMobile(false);
   // Exercise a real persistence-changing operation and its existing Undo, not a mock.
   q.select('section','custom-context-01');index.open('sections');index.setSorting(true);
-  doc.querySelector('[data-section-move="custom-context-01"]').click();
+  doc.querySelector('[data-section-move="custom-context-01"]').focus();doc.activeElement.click();
   const beforeMove=await backend(env),beforeMoveRevision=q.projectStore.revision;
   const destination=doc.querySelector('[data-section-position]');destination.value='23';
   doc.querySelector('[data-section-move-apply]').click();
+  check('Moving the selected section returns focus to its stable move control',doc.activeElement.getAttribute('data-section-move')==='custom-context-01');
   const expectedMove=plain(beforeMove.data);expectedMove.report.sections.push(expectedMove.report.sections.shift());
   check('Moving a section preserves its key selection and every technical field',q.S.sel.key==='custom-context-01'&&equal(q.S.data,expectedMove)&&q.projectStore.dirty&&q.projectStore.revision>beforeMoveRevision);
   check('A real section reorder saves successfully',await q.doSave());await env.settle();
@@ -238,6 +248,31 @@ const localLabels={es:{sections:'Secciones',findings:'Hallazgos'},en:{sections:'
   const ownBefore=frontend(q);q.select('home');
   check('Inactive routes hide the index while retaining its preferred open state',hidden(doc.querySelector('#contextIndex'))&&index.state().open&&!index.state().visible);
   await env.settle();check('Returning to overview preserves the final saved source',equal(frontend(q),ownBefore)&&equal((await backend(env)).data,saved.data));
+  // Crossing a contextual page boundary must reveal the moved selected row and
+  // its Undo without clearing the active query or changing record identities.
+  await createProject(env,'context-reorder-pages','Contextual section page regression');
+  q.S.data.report.sections=Array.from({length:61},(_,i)=>({key:'page-section-'+String(i+1).padStart(2,'0'),title:'Stable section '+String(i+1).padStart(2,'0'),body:'Preserved body '+i,enabled:true}));
+  q.scheduleSave();check('The 61-section page-boundary fixture saves through the API',await q.doSave());await env.settle();
+  q.select('section','page-section-01');index.open('sections');index.setFilters({query:'Stable'});index.setSorting(true);
+  const pageBaseline=await backend(env),pageOrder=q.S.data.report.sections.map(section=>section.key);
+  doc.querySelector('[data-section-move="page-section-01"]').focus();doc.activeElement.click();doc.querySelector('[data-section-position]').value='61';doc.querySelector('[data-section-move-apply]').click();
+  const expectedPageMove=plain(pageBaseline.data);expectedPageMove.report.sections.push(expectedPageMove.report.sections.shift());
+  check('Selected section movement across 50 rows opens its destination page without clearing the query',index.state().page===1&&index.state().query==='Stable'&&index.state().selected.key==='page-section-01'&&index.state().selected.visible);
+  check('Page-crossing movement focuses the same section control in its new row',doc.activeElement.getAttribute('data-section-move')==='page-section-01'&&doc.activeElement.closest('li').querySelector('[aria-current="page"]'));
+  check('Page-crossing movement changes only the intended section order',equal(q.S.data,expectedPageMove));
+  check('Page-crossing movement persists successfully',await q.doSave());await env.settle();
+  check('Persisted page-crossing movement retains all original section content',equal((await backend(env)).data,expectedPageMove));
+  doc.querySelector('#undoNotice button').click();
+  check('Undo returns the selected section to its original visible page without clearing the query',index.state().page===0&&index.state().query==='Stable'&&index.state().selected.key==='page-section-01'&&index.state().selected.visible&&doc.activeElement.id==='editor');
+  check('Page-crossing Undo restores the exact original report',equal(q.S.data,pageBaseline.data)&&equal(q.S.data.report.sections.map(section=>section.key),pageOrder));
+  check('Page-crossing Undo persists successfully',await q.doSave());await env.settle();
+  q.select('section','page-section-20');index.setSorting(true);const scroll=doc.querySelector('#contextIndexListScroll');scroll.scrollTop=137;
+  doc.querySelector('[data-section-move="page-section-01"]').focus();doc.activeElement.click();doc.querySelector('[data-section-position]').value='61';doc.querySelector('[data-section-move-apply]').click();
+  check('Moving an unselected section preserves the editor selection, query, page and manual scroll',q.S.sel.key==='page-section-20'&&index.state().query==='Stable'&&index.state().page===0&&scroll.scrollTop===137);
+  doc.querySelector('#undoNotice button').click();
+  check('Undo of an unselected section preserves manual scroll and the selected editor',q.S.sel.key==='page-section-20'&&index.state().query==='Stable'&&index.state().page===0&&scroll.scrollTop===137&&equal(q.S.data,pageBaseline.data));
+  check('Unselected movement and Undo persist the unchanged source',await q.doSave());await env.settle();
+  check('The page-boundary regression ends with byte-equivalent report content',equal((await backend(env)).data,pageBaseline.data));
   for(const instance of worlds)await instance.settle();
   check('Both real workspace sessions complete without application DOM errors',worlds.every(instance=>instance.errors.length===0));
   console.log(JSON.stringify({status:'passed',passed:checks.length,checks,scope:'Production JavaScript, DOM events and real Flask persistence in two isolated workspaces; browser geometry, native key behavior and accessibility audit are separate gates'},null,2));

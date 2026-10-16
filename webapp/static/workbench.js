@@ -47,7 +47,9 @@ const UndoUI = (() => {
     const selected=S.sel.type==='finding'?S.data.findings[S.sel.idx]?.uid:null;
     ensureFindingIds();
     if(a.array===S.data.findings){const idx=S.data.findings.findIndex(f=>f.uid===(a.value?.uid||selected));S.sel={type:idx>=0?'finding':'report',idx};}
-    scheduleSave();renderSidebar();renderMain();update();document.querySelector('#editor').focus({preventScroll:true});
+    scheduleSave();renderSidebar();renderMain();update();
+    if(a.kind==='move'&&a.array===S.data.report?.sections&&S.sel.type==='section'&&S.sel.key===a.value?.key&&typeof ContextIndexUI!=='undefined')ContextIndexUI.revealSelectedRow();
+    document.querySelector('#editor').focus({preventScroll:true});
     toast(lostRootCause||lostAssets?(uiText("Hallazgo recuperado sin vínculos con activos o grupos eliminados. Se conservan evidencias y retests.","Finding restored without deleted asset or group links. Evidence and retests are retained.","Achado recuperado sem vínculos com ativos ou grupos excluídos. Evidências e retestes foram mantidos.")):(uiText("Acción deshecha. Se conservan las demás ediciones.","Action undone. Other edits are preserved.","Ação desfeita. As outras edições foram preservadas.")),'ok');
   }
   return {remove,move,undo,clear,update};

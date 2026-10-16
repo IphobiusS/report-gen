@@ -76,7 +76,13 @@ async function ready(){await page.waitForFunction(()=>typeof BulkUI!=='undefined
  await page.evaluate(()=>document.querySelector('[data-bulk-dialog]').scrollTop=0);await page.screenshot({path:out+'/bulk-mobile-200.png',fullPage:true});
  await context.route(base+'/__test__/axe.js',route=>route.fulfill({status:200,contentType:'application/javascript',body:fs.readFileSync(require.resolve('axe-core/axe.min.js',{paths:[root]}),'utf8')}));await page.addScriptTag({url:base+'/__test__/axe.js'});const axe=await page.evaluate(()=>axe.run(document.querySelector('[data-bulk-dialog]'),{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21aa']}}));results.axe={violations:axe.violations,incomplete:axe.incomplete.map(i=>({id:i.id,impact:i.impact,nodes:i.nodes.length}))};check('Bulk dialog has no automated WCAG violations; inconclusive checks are retained',axe.violations.length===0,results.axe);
  await page.keyboard.press('Escape');await page.setViewportSize({width:1366,height:1000});await page.reload();await ready();
- await page.evaluate(async()=>{S.data.report.sections.push({key:'findings',enabled:true});scheduleSave();await doSave();await loadProject('bulk');select('finding',0);setPreviewVisible(true);});await page.waitForFunction(()=>WorkbenchUI.hasLivePreview());
+ await page.evaluate(async()=>{S.data.report.sections.push({key:'findings',enabled:true});scheduleSave();await doSave();await loadProject('bulk');select('finding',0);});
+ // The saved open index hides preview at 1366 px; use the coordinated public
+ // control before testing live-preview revisions, rather than only its preference.
+ if(!await page.locator('.layout > .preview').isVisible())await clickNavigationControl(page,'#previewToggle');
+ if(await page.locator('#studioMore').evaluate(el=>el.open))await page.locator('#studioMore > summary').click();
+ check('The visible preview is restored before decision freshness checks',await page.locator('.layout > .preview').isVisible()&&!await page.locator('#contextIndex').isVisible());
+ await page.waitForFunction(()=>WorkbenchUI.hasLivePreview());
  // Observe the generation actually installed in the frame, not the controller's private counter.
  const zeroPreview=await page.evaluate(()=>({revision:projectStore.revision,generation:Number($('#pdfPreview').contentDocument.querySelector('meta[name="rg-preview-generation"]').content)}));
  check('The decision regression starts from a real current preview at revision zero',zeroPreview.revision===0);

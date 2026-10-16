@@ -804,10 +804,15 @@ async function adoptSavedProject(data, etag) {
   UndoUI.clear();WorkbenchUI.dirty();WorkflowUI.resetReview?.();ProgressUI.saveState('saved');
   return {draftCleanupFailed};
 }
+function sectionTitle(section) {
+  const schema=S.catBy?.[section.key]||{},lang=normalizeUiLanguage(S.data?.meta?.lang,'en');
+  return section.title||schema['title_'+lang]||schema.title_es||section.key;
+}
 function moveFindingDialog(identity, section=false) {
   const findings=(section?S.data?.report?.sections:S.data?.findings)||[], idKey=section?"key":"uid", index=findings.findIndex(f=>f[idKey]===identity);
   if(index<0)return;
   const previous=document.activeElement, slug=S.slug, titleId="finding-move-"+WorkflowUI.uid();
+  let movedSelectedSection=false;
   const dialog=h("dialog",{class:"experience-dialog","aria-labelledby":titleId}),body=h("div",{class:"experience-body"});
   const close=h("button",{type:"button",class:"btn",onclick:()=>dialog.close()},uiText("Cerrar", "Close", "Fechar"));
   const position=h("input",{type:"number",min:1,max:findings.length,value:index+1,"data-finding-position":section?null:"","data-section-position":section?"":null});
@@ -820,14 +825,15 @@ function moveFindingDialog(identity, section=false) {
       if(!position.value.trim()||!Number.isInteger(to)||to<1||to>findings.length||from<0){error.textContent=uiText("Elige una posición existente.", "Choose an existing position.", "Escolha uma posição existente.");position.focus();return;}
       if(from===to-1){dialog.close();return;}
       const selected=!section&&S.sel.type==="finding"?findings[S.sel.idx]?.uid:null;
+      movedSelectedSection=section&&S.sel.type==='section'&&S.sel.key===identity;
       UndoUI.move(findings,from,to-1);
       if(selected)S.sel.idx=findings.findIndex(f=>f.uid===selected);
       scheduleSave();renderSidebar();renderMain();
       if(!section&&S.sel.type==="findings"){findingPageState.board=Math.floor((to-1)/50);renderMain();}
       dialog.close();
     }},section?uiText("Mover sección","Move section","Mover seção"):uiText("Mover hallazgo","Move finding","Mover achado")));
-  dialog.append(h("div",{class:"experience-heading"},h("h2",{id:titleId},(section?(findings[index].title||findings[index].key):findings[index].id)+" · "+(uiText("Orden manual", "Manual order", "Ordem manual"))),close),body);
-  dialog.addEventListener("close",()=>{dialog.remove();const replacement=document.querySelector('['+(section?'data-section-move':'data-finding-move')+'="'+CSS.escape(identity)+'"]');(previous?.isConnected?previous:replacement||$("#editor")).focus({preventScroll:true});});
+  dialog.append(h("div",{class:"experience-heading"},h("h2",{id:titleId},(section?sectionTitle(findings[index]):findings[index].id)+" · "+(uiText("Orden manual", "Manual order", "Ordem manual"))),close),body);
+  dialog.addEventListener("close",()=>{dialog.remove();const revealMoved=movedSelectedSection&&S.slug===slug;if(revealMoved&&typeof ContextIndexUI!=='undefined')ContextIndexUI.revealSelectedRow();const replacement=document.querySelector('['+(section?'data-section-move':'data-finding-move')+'="'+CSS.escape(identity)+'"]');(revealMoved?replacement||$("#editor"):previous?.isConnected?previous:replacement||$("#editor")).focus({preventScroll:true});});
   document.body.append(dialog);dialog.showModal();position.focus();position.select();
 }
 function findingsDashboard() {
@@ -943,7 +949,7 @@ function sectionEditor(key) {
   const sec = S.data.report.sections.find(s => s.key === key) || {};
   const wrap = h("div", {});
   const isGeneric = !S.catBy[key];
-  wrap.append(h("h2", {}, sec.title || schema["title_" + lang] || schema.title_es || key));
+  wrap.append(h("h2", {}, sectionTitle({...sec,key})));
   const sp = schema.special;
   if (isGeneric) {  // seccion a medida (apendice nombrado, etc.): titulo editable + cuerpo markdown
     const c = h("div", { class: "card" });
