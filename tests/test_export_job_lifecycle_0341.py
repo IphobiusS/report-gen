@@ -54,7 +54,7 @@ class Witness:
         if status.exists():
             try:
                 return status.read_text().rsplit(')', 1)[1].split()[0] != 'Z'
-            except FileNotFoundError:
+            except (FileNotFoundError, ProcessLookupError):
                 return False
         if sys.platform != 'darwin':
             return True
@@ -75,6 +75,36 @@ class Witness:
                 os.kill(self.pid, signal.SIGKILL)
             except ProcessLookupError:
                 pass
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX process witness')
+@pytest.mark.parametrize('read_error,disappeared', [
+    pytest.param(FileNotFoundError(2, 'No such file'), True, id='proc-entry-removed'),
+    pytest.param(ProcessLookupError(3, 'No such process'), True, id='process-disappeared-during-read'),
+    pytest.param(PermissionError(13, 'Permission denied'), False, id='permission-error-propagates'),
+])
+def test_process_witness_proc_read_race(monkeypatch, read_error, disappeared):
+    witness = Witness(987654321)
+    status = Path('/proc') / str(witness.pid) / 'stat'
+    original_exists, original_read = Path.exists, Path.read_text
+    signals = []
+
+    def read_stat(path, *args, **kwargs):
+        if path == status:
+            raise read_error
+        return original_read(path, *args, **kwargs)
+
+    monkeypatch.setattr(os, 'kill', lambda pid, sig: signals.append((pid, sig)))
+    monkeypatch.setattr(Path, 'exists', lambda path: True if path == status else original_exists(path))
+    monkeypatch.setattr(Path, 'read_text', read_stat)
+    if disappeared:
+        assert witness.alive() is False
+        witness.close()
+        assert signals == [(witness.pid, 0), (witness.pid, 0)]
+    else:
+        with pytest.raises(PermissionError):
+            witness.alive()
+        assert signals == [(witness.pid, 0)]
 
 
 @pytest.fixture
