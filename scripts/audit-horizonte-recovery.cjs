@@ -42,6 +42,11 @@ async function expose(page,selector){const target=page.locator(selector).first()
   for(const id of ancestors){assert.ok(id,'Disclosure ancestor has a stable ID');await page.locator('#'+id+' > summary').click();}return target;
 }
 async function click(page,selector){await(await expose(page,selector)).click();}
+async function closeMore(page){
+  const menu=page.locator('#studioMore');
+  if(await menu.getAttribute('open')!==null)await page.locator('#studioMore > summary').click();
+  assert.equal(await menu.getAttribute('open'),null,'The visible More control closes its overlay');
+}
 async function screen(page,name){await page.evaluate(async()=>{await document.fonts.ready;window.scrollTo(0,0);});
   const file=path.join(out,name+'.png');await page.screenshot({path:file,fullPage:false});
   results.screens.push({name,path:file,sha256:hash(fs.readFileSync(file)),viewport:page.viewportSize()});save();
@@ -60,7 +65,7 @@ async function reloadBank(page){
 }
 async function importBundle(page){page.once('dialog',dialog=>dialog.accept(slug));const choice=page.waitForEvent('filechooser');
   await click(page,'#importProjectBtn');await(await choice).setFiles(bundle);
-  await page.waitForFunction(slug=>S.slug===slug&&!projectStore.loading&&!projectBusyCount,slug,{timeout:60000});await clean(page);
+  await page.waitForFunction(slug=>S.slug===slug&&!projectStore.loading&&!projectBusyCount,slug,{timeout:60000});await clean(page);await closeMore(page);
 }
 async function cardSlugs(page){return page.locator('[data-project-catalog] [data-project-slug]').evaluateAll(nodes=>nodes.map(node=>node.dataset.projectSlug));}
 async function catalog(page){
@@ -149,15 +154,20 @@ async function failedEdit(expected,previousBytes,label){
   check('Catalog navigation preserves every banking field',isDeepStrictEqual(await savedData(page),original));
 
   const retry=structuredClone(original);retry.findings[0].impact_md+='\n\nHORIZONTE-RECOVERY: edición sintética conservada tras ENOSPC y reintento.';
-  await fault('disk_full');await failedEdit(retry,originalBytes,'Retry cycle');await screen(page,'storage-enospc-recoverable');
-  await fault(null);await page.getByRole('button',{name:'Reintentar guardado',exact:true}).click();await clean(page);
+  await fault('disk_full');await failedEdit(retry,originalBytes,'Retry cycle');await closeMore(page);await screen(page,'storage-enospc-recoverable');
+  await fault(null);await closeMore(page);
+  check('Visible retry has an unobstructed pointer target after closing More',await page.getByRole('button',{name:'Reintentar guardado',exact:true}).evaluate(button=>{
+    const rect=button.getBoundingClientRect(),target=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);
+    return !button.disabled&&(target===button||button.contains(target));
+  }));
+  await page.getByRole('button',{name:'Reintentar guardado',exact:true}).click();await clean(page);
   check('Visible retry saves the full edited report without unrelated changes',isDeepStrictEqual(await savedData(page),retry)&&isDeepStrictEqual(await data(page),retry));
   const retryBytes=diskBytes();check('Successful retry advances the saved bytes',!retryBytes.equals(originalBytes));await screen(page,'storage-retry-saved');
 
   const recovered=structuredClone(retry);recovered.findings[0].impact_md+='\n\nHORIZONTE-RECOVERY: edición sintética recuperada tras recargar el navegador.';
   await fault('disk_full');await failedEdit(recovered,retryBytes,'Reload recovery cycle');
   const downloading=page.waitForEvent('download');await click(page,'#draftExportBtn');const download=await downloading;
-  const draftPath=path.join(out,'horizonte-private-recovery.report-gen-draft.json');await download.saveAs(draftPath);
+  const draftPath=path.join(out,'horizonte-private-recovery.report-gen-draft.json');await download.saveAs(draftPath);await closeMore(page);
   const draft=JSON.parse(fs.readFileSync(draftPath,'utf8'));
   check('Native emergency draft download contains every unsaved field and its exact saved base',await download.failure()===null&&draft.format==='report-gen-draft'&&draft.version===1&&draft.slug===slug&&isDeepStrictEqual(draft.data,recovered)&&isDeepStrictEqual(draft.base,retry));
   results.downloads.push({name:path.basename(draftPath),private:true,size:fs.statSync(draftPath).size,sha256:hash(fs.readFileSync(draftPath))});save();

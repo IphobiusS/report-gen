@@ -315,8 +315,8 @@ fs.writeFileSync(path.join(workspace, '.test-only'), 'synthetic acceptance works
       {number: 2, issue: 'other', note: 'Control funcional automatizado: navegación a página 2 y regreso comprobados. Este registro no acredita revisión visual humana ni revisión de todas las páginas.'},
     ];
     for (const observation of observations) {
-      await visual.getByLabel('Página', {exact: true}).selectOption(String(observation.number));
-      await visual.getByLabel('Problema observado', {exact: true}).selectOption(observation.issue);
+      await visual.locator('select[data-insights-field="number"]').selectOption(String(observation.number));
+      await visual.locator('select[data-insights-field="issue"]').selectOption(observation.issue);
       await visual.getByLabel('Descripción del problema', {exact: true}).fill(observation.note);
       await visual.locator('[data-insights-action="add-visual-issue"]').click();
     }
@@ -324,7 +324,7 @@ fs.writeFileSync(path.join(workspace, '.test-only'), 'synthetic acceptance works
       await visual.locator('[data-insights-action="remove-visual-issue"]').count() === observations.length);
     const note = 'Ejercicio funcional automatizado y ficticio del visor propio. Se usa la opción de observaciones para probar su registro; no se afirma un defecto visual ni se concede aceptación visual manual. Identidad y método no verificados. PDF aportado desde una exportación de report-gen; su asociación a esta revisión no prueba su procedencia. No es aprobación humana.';
     await visual.getByLabel('Autor (declaración local)', {exact: true}).fill(author);
-    await visual.getByLabel('Decisión', {exact: true}).selectOption('issues');
+    await visual.locator('select[data-insights-field="decision"]').selectOption('issues');
     await visual.getByLabel('Nota general', {exact: true}).fill(note);
     await screen(page, '07-native-pdf-functional-observations', visual.locator('[data-insights-action="record-visual-review"]'));
     const reviewResponse = page.waitForResponse(r => r.request().method() === 'POST' &&
