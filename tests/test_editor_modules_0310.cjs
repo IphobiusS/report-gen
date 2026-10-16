@@ -23,14 +23,20 @@ function projectSearch(language, data){
 
 function searchActivation(){
   const dom=new JSDOM('<div class="search-wrap"><input id="globalSearch"><div id="searchResults"></div></div><button id="elsewhere">Elsewhere</button>',{runScripts:'outside-only',url:'http://localhost/'});
-  const w=dom.window,app=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8'),workbench=fs.readFileSync(path.join(root,'webapp/static/workbench.js'),'utf8');
+  const read=name=>fs.readFileSync(path.join(root,'webapp/static',name),'utf8').replace(/\r\n/g,'\n');
+  const w=dom.window,app=read('app.js'),workbench=read('workbench.js');
+  const between=(source,start,end)=>{
+    const first=source.indexOf(start);assert.ok(first>=0,'Missing search fixture start: '+start);
+    const last=source.indexOf(end,first+start.length);assert.ok(last>first,'Missing search fixture end: '+end);
+    return source.slice(first,last);
+  };
   // Run the real input debounce, search renderer and keyboard handlers together.
   // A deterministic clock keeps input and Enter in the same event-loop turn.
   let now=0,next=0;const timers=new Map();
   w.setTimeout=(fn,delay=0)=>{const id=++next;timers.set(id,{fn,at:now+delay});return id;};
   w.clearTimeout=id=>timers.delete(id);
   const advance=ms=>{const end=now+ms;for(;;){const pending=[...timers].filter(([,timer])=>timer.at<=end).sort((a,b)=>a[1].at-b[1].at)[0];if(!pending)break;timers.delete(pending[0]);now=pending[1].at;pending[1].fn();}now=end;};
-  w.eval(app.slice(0,app.indexOf('// ---- shared transport'))+`
+  w.eval(between(app,'// ---- helpers','// ---- shared transport')+`
     const S={slug:'search-fixture',uiLang:'en',catBy:{},sel:{type:'report',idx:-1},data:{meta:{},report:{sections:[]},findings:Array.from({length:62},(_,i)=>({uid:'stable-'+(i+1),id:'F'+(i+1),title:'Synthetic finding '+(i+1)}))}};
     const projectStore={revision:7,etag:'saved-revision',dirty:false};
     const t=key=>key,scopedResourceURL=value=>value;
@@ -38,10 +44,10 @@ function searchActivation(){
     function addFinding(){created++;}
     function select(type,idx){S.sel={type,idx};}
     function toast(message){throw Error(message);}
-  `+workbench+'\n'+app.slice(app.indexOf('function searchTargets()'),app.indexOf('function select(type, val)'))+'\n'+
-    app.slice(app.indexOf('  {\n    const si = $("#globalSearch")'),app.indexOf('  $("#previewBtn").addEventListener'))+'\n'+
-    `(()=>{const search=WorkbenchUI.search;`+workbench.slice(workbench.indexOf("    $('#globalSearch').addEventListener('focus'"),workbench.indexOf("    document.addEventListener('keydown',shortcut);"))+`})();\n`+
-    app.slice(app.indexOf('  document.addEventListener("keydown", e => {\n    const mod'),app.indexOf('  $("#downloadBtn").addEventListener'))+`
+  `+workbench+'\n'+between(app,'function searchTargets()','function select(type, val)')+'\n'+
+    between(app,'  {\n    const si = $("#globalSearch")','  $("#previewBtn").addEventListener')+'\n'+
+    `(()=>{const search=WorkbenchUI.search;`+between(workbench,"    $('#globalSearch').addEventListener('focus'","    document.addEventListener('keydown',shortcut);")+`})();\n`+
+    between(app,'  document.addEventListener("keydown", e => {\n    const mod','  $("#downloadBtn").addEventListener')+`
     window.searchState={S,projectStore,created:()=>created};
   `);
   const input=w.document.querySelector('#globalSearch'),box=w.document.querySelector('#searchResults');
