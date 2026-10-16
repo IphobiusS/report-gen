@@ -1,0 +1,65 @@
+name: Atlas C5 evidence byte bridge
+
+on:
+  push:
+    branches: [audit/atlas-evidence-0400-c5]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: atlas-evidence-0400-c5
+  cancel-in-progress: false
+
+jobs:
+  transport:
+    if: github.repository == 'IphobiusS/report-gen' && github.ref == 'refs/heads/audit/atlas-evidence-0400-c5'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Read only the reviewed helper script
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          sparse-checkout: scripts/split-atlas-artifact.py
+          sparse-checkout-cone-mode: false
+      - name: Verify exact successful C5 source and split its ZIP bytes
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          python3 scripts/split-atlas-artifact.py
+          --output "$RUNNER_TEMP/atlas-evidence-bridge"
+      - name: Preserve original ZIP bytes part 1 of 3
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: atlas-c5-evidence-part-01
+          path: ${{ runner.temp }}/atlas-evidence-bridge/atlas-review.zip.part01
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+      - name: Preserve original ZIP bytes part 2 of 3
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: atlas-c5-evidence-part-02
+          path: ${{ runner.temp }}/atlas-evidence-bridge/atlas-review.zip.part02
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+      - name: Preserve original ZIP bytes part 3 of 3
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: atlas-c5-evidence-part-03
+          path: ${{ runner.temp }}/atlas-evidence-bridge/atlas-review.zip.part03
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+      - name: Preserve source provenance and reconstruction manifest
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: atlas-c5-evidence-manifest
+          path: ${{ runner.temp }}/atlas-evidence-bridge/manifest.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
