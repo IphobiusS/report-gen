@@ -254,7 +254,7 @@ fs.writeFileSync(path.join(workspace, '.test-only'), 'synthetic acceptance works
     await page.reload(); await clean(page);
     check('Reordered sections persist across a real reload', isDeepStrictEqual(await savedState(page), moved));
     await click(page, '#navReport');
-    await screen(page, '04-banking-sections-reordered', page.locator('[data-section-move="' + key + '"]'));
+    await screen(page, '04-banking-sections-reordered', await expose(page, '[data-section-move="' + key + '"]'));
     await moveSection(page, key, originalPosition);
     await page.reload(); await clean(page);
     check('Restoring the original section order restores the entire original banking project',
