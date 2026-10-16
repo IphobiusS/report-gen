@@ -36,6 +36,7 @@ MAX_KEY_BYTES = 16 * 1024
 CHUNK = 64 * 1024
 DOMAIN = b'report-gen-delivery-signature-v1\x00'
 FORMAT = 'report-gen-delivery-signature'
+DELIVERY_GUIDES = frozenset({'LEEME.txt', 'README.txt', 'LEIAME.txt'})
 HASH = re.compile(r'[a-f0-9]{64}\Z')
 VERSION = re.compile(r'\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?\Z')
 RESERVED = {'CON', 'PRN', 'AUX', 'NUL', *(f'COM{i}' for i in range(1, 10)),
@@ -259,11 +260,11 @@ def _manifest(blob, names):
                 en='Invalid delivery audience plan'))
     extras = names - set(data['files'])
     if (not set(data['files']) <= names
-            or extras not in ({'verificacion.json', 'LEEME.txt'}, {'verificacion.json', 'README.txt'})):
+            or extras not in ({'verificacion.json', guide} for guide in DELIVERY_GUIDES)):
         raise ValueError(backend_message('El ZIP no coincide con los archivos del manifiesto y su guía',
             en='ZIP members do not match the manifest files and its guide'))
     for name, record in data['files'].items():
-        if (not _safe_member(name) or name in {'verificacion.json', 'LEEME.txt', 'README.txt'}
+        if (not _safe_member(name) or name in {'verificacion.json', *DELIVERY_GUIDES}
                 or not isinstance(record, dict) or set(record) != {'bytes', 'sha256', 'checks'}
                 or not isinstance(record.get('checks'), dict)
                 or not _record({k: v for k, v in record.items() if k != 'checks'}, MAX_EXPANDED)):

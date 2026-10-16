@@ -1,6 +1,7 @@
 # Protocolo de aceptación Atlas — report-gen 0.39.0
 
-Estado de este documento: **protocolo preparado; aceptación integral pendiente**.
+Este documento define el **protocolo reproducible de aceptación**. El resultado
+de cada ejecución consta en sus recibos y en el trabajo Atlas de GitHub Actions.
 Los comandos describen cómo obtener evidencia. Su presencia, el número de
 combinaciones previsto o una prueba aislada aprobada no acreditan la generación
 completa. El cierre debe registrar commit, hashes, motores, resultados y páginas
@@ -207,18 +208,18 @@ capturas y aserciones del navegador tampoco sustituyen la revisión visual de
 los documentos completos. Registra por separado qué páginas se revisaron,
 con qué motor y si se usaron hojas de contacto o ampliaciones.
 
-## Criterios de cierre y estado
+## Criterios de cierre
 
-| Control | Evidencia requerida | Estado en este protocolo |
-| --- | --- | --- |
-| Fuente trilingüe | Catálogos, auditoría de localización y manifiesto del builder | Pendiente de cierre |
-| Informes principales | Matriz, inspecciones por formato y hashes originales | Pendiente de cierre |
-| Muestras de catálogo | Matriz y cobertura sin combinaciones pendientes | Pendiente de cierre |
-| Inspección de publicación | Recibo con alcance y marcadores efectivamente inspeccionados | Pendiente de cierre |
-| API ES/EN/PT | Tres resultados completos, fases y controles negativos clasificados | Pendiente de cierre |
-| Navegador | Recibo, errores revisados, capturas y descargas reales | Pendiente de cierre |
-| Composición y lectura | Revisión visual documentada y páginas observadas | Pendiente de cierre |
-| CI y publicación | Controles del commit exacto y artefactos verificados | Pendiente de cierre |
+| Control | Evidencia requerida para aprobar una ejecución |
+| --- | --- |
+| Fuente trilingüe | Catálogos, auditoría de localización y manifiesto del builder |
+| Informes principales | Matriz, inspecciones por formato y hashes originales |
+| Muestras de catálogo | Matriz y cobertura sin combinaciones pendientes |
+| Inspección de publicación | Recibo con alcance y marcadores efectivamente inspeccionados |
+| API ES/EN/PT | Tres resultados completos, fases y controles negativos clasificados |
+| Navegador | Recibo, errores revisados, capturas y descargas reales |
+| Composición y lectura | Revisión visual documentada y páginas observadas |
+| CI y publicación | Controles del commit exacto y artefactos verificados |
 
 Añade los resultados finales sin borrar los intentos fallidos. No sumes suites
 solapadas, muestras como informes completos ni vistas derivadas como formatos

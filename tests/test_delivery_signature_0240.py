@@ -24,7 +24,7 @@ from error_messages import language_scope
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def archive(path, files=None, *, changes=None, extra=(), compression=zipfile.ZIP_DEFLATED):
+def archive(path, files=None, *, changes=None, extra=(), guide='README.txt', compression=zipfile.ZIP_DEFLATED):
     files = {'informe.html': b'<html><main>synthetic report</main></html>'} if files is None else files
     manifest = {'format': 'report-gen-delivery', 'version': 1, 'tool_version': '0.24.0',
                 'label': 'Synthetic integrity fixture', 'created': '2026-10-09T00:00:00+00:00',
@@ -37,7 +37,7 @@ def archive(path, files=None, *, changes=None, extra=(), compression=zipfile.ZIP
         for name, blob in files.items():
             package.writestr(name, blob)
         package.writestr('verificacion.json', json.dumps(manifest).encode())
-        package.writestr('README.txt', 'Synthetic QA fixture; no real finding or author identity.')
+        package.writestr(guide, 'Synthetic QA fixture; no real finding or author identity.')
         for name, blob in extra:
             package.writestr(name, blob)
     return path
@@ -327,13 +327,14 @@ def test_actual_cli_keygen_sign_verify_and_invalid_exit_codes(tmp_path, language
     assert private.read_text() not in result.stderr and str(private) not in result.stderr
 
 
-def test_current_delivery_build_can_be_signed_without_changing_delivery_code(tmp_path):
+@pytest.mark.parametrize('language,guide', [('es', 'LEEME.txt'), ('en', 'README.txt'), ('pt', 'LEIAME.txt')])
+def test_current_delivery_build_can_be_signed_without_changing_delivery_code(tmp_path, language, guide):
     import delivery
     import workflows
     from wizard import dump_yaml
     project = tmp_path / 'report'; project.mkdir()
     document = workflows.normalize({'meta': {'report_title': 'Synthetic signing integration', 'theme': 'serio',
-                                  'lang': 'en', 'assessor': 'QA'}, 'findings': []})
+                                  'lang': language, 'assessor': 'QA'}, 'findings': []})
     dump_yaml(document, project / 'engagement.yaml')
     captured = delivery.capture(project, tmp_path / 'snapshot')
     identity = sha256((project / 'engagement.yaml').read_bytes()).hexdigest()
@@ -345,7 +346,27 @@ def test_current_delivery_build_can_be_signed_without_changing_delivery_code(tmp
     assert signing.verify_delivery(source, sidecar, public)['files_checked'] == 1
     assert source.read_bytes() == blob
     with zipfile.ZipFile(BytesIO(blob)) as package:
-        assert set(package.namelist()) == {'markdown.zip', 'verificacion.json', 'README.txt'}
+        assert set(package.namelist()) == {'markdown.zip', 'verificacion.json', guide}
+
+
+@pytest.mark.parametrize('guide', ['LEEME.txt', 'README.txt', 'LEIAME.txt'])
+@pytest.mark.parametrize('case', ['multiple-guides', 'undeclared-file', 'declared-guide'])
+def test_delivery_guide_allowlist_stays_exact(tmp_path, guide, case):
+    other_guide = next(name for name in ('LEEME.txt', 'README.txt', 'LEIAME.txt') if name != guide)
+    files = {'informe.html': b'<html><main>synthetic report</main></html>'}
+    extra = ()
+    if case == 'multiple-guides':
+        extra = ((other_guide, b'Unexpected second guide'),)
+    elif case == 'undeclared-file':
+        extra = (('arbitrary.txt', b'Undeclared extra file'),)
+    else:
+        # Keep one allowed guide outside the manifest, so this specifically
+        # checks that another reserved guide cannot masquerade as a report.
+        files[guide] = b'A guide declared as report content'
+        guide = other_guide
+    source = archive(tmp_path / 'delivery.zip', files, guide=guide, extra=extra)
+    with pytest.raises(ValueError):
+        signing.inspect_delivery(source)
 
 
 def test_archive_limits_match_existing_backup_contract():

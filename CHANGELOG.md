@@ -1,5 +1,10 @@
 # Cambios 0.39.0 (2026-10-16)
 
+- Corregida la firma de entregas en portugués: el verificador reconoce la guía
+  `LEIAME.txt` que genera report-gen. Sigue exigiendo exactamente una guía
+  ES/EN/PT y rechaza guías declaradas como informes, guías duplicadas y archivos
+  no incluidos en el manifiesto. La firma continúa vinculada a los bytes
+  exactos del ZIP y del manifiesto.
 - Navegación lateral organizada en cinco grupos: Proyecto, Contenido,
   Evidencia y alcance, Análisis y seguimiento y Entrega. Filas coherentes,
   separadores discretos, etiquetas ES/EN/PT y acentos numerados sobrios.

@@ -235,6 +235,20 @@ jobs:
           retention-days: 14
       - name: Generate twelve extensive reports and inspect native DOCX in every language
         run: python scripts/audit-atlas-exports.py --projects "$ATLAS_OUTPUT/case/projects" --output "$ATLAS_OUTPUT/exports" --mode principal --native-executable /usr/bin/libreoffice --require-stable
+      - name: Preserve principal reports and native pages for visual review
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: atlas-principal-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/atlas/case/
+            ${{ runner.temp }}/atlas/runtime/
+            ${{ runner.temp }}/atlas/exports/principal/
+            ${{ runner.temp }}/atlas/exports/native/
+            ${{ runner.temp }}/atlas/exports/matrix-principal.json
+            !${{ runner.temp }}/atlas/exports/**/snapshot/**
+          if-no-files-found: error
+          retention-days: 14
       - name: Generate all additional report styles, profile and variant samples in every language
         if: ${{ !cancelled() }}
         run: python scripts/audit-atlas-exports.py --projects "$ATLAS_OUTPUT/case/projects" --output "$ATLAS_OUTPUT/exports" --mode styles
