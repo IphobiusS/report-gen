@@ -26,33 +26,58 @@ async function expose(page,selector){const target=page.locator(selector).first()
 async function click(page,selector){await (await expose(page,selector)).click();}
 async function closeDrawer(page){if(await page.locator('#exportDrawer').count())await page.locator('#exportDrawer .experience-heading button').click();}
 async function language(page,lang){await closeDrawer(page);await (await expose(page,'#langToggle')).selectOption(lang);if(await page.locator('#studioMore').evaluate(el=>el.open))await page.locator('#studioMore > summary').click();await clean(page);}
-async function screen(page,name){await page.evaluate(()=>document.fonts.ready);const file=path.join(out,name+'.png');await page.screenshot({path:file,fullPage:false});results.screens.push({name,path:file,sha256:hash(fs.readFileSync(file)),viewport:page.viewportSize()});save();}
+async function screen(page,name){await boundedDiagnostic(page.evaluate(()=>document.fonts.ready),5000,'Screenshot fonts');const file=path.join(out,name+'.png');await page.screenshot({path:file,fullPage:false,timeout:10000});results.screens.push({name,path:file,sha256:hash(fs.readFileSync(file)),viewport:page.viewportSize()});save();}
 async function download(page,trigger,name,kind){const event=page.waitForEvent('download',{timeout:180000});await trigger();const item=await event,file=path.join(out,name);await item.saveAs(file);check(name+' downloads',await item.failure()===null&&fs.statSync(file).size>0);results.downloads.push({name,path:file,kind,size:fs.statSync(file).size,sha256:hash(fs.readFileSync(file))});save();return file;}
+async function boundedDiagnostic(promise,milliseconds,label){
+ let timeout;
+ try{return await Promise.race([promise,new Promise((_,reject)=>{timeout=setTimeout(()=>reject(Error(label+' diagnostic unavailable after '+milliseconds+' ms')),milliseconds);})]);}
+ finally{clearTimeout(timeout);}
+}
 async function nativeViewerProbe(lang,dialog){
  const frame=dialog.locator('[data-docx-preview-frame]'),file=path.join(out,'native-docx-'+lang+'-frame.png');
- const record={language:lang,mode:headed?'headed':'headless',navigator:await page.evaluate(()=>({pdfViewerEnabled:navigator.pdfViewerEnabled,plugins:[...navigator.plugins].map(p=>p.name)})),frames:[],paint_scope:headed?'visible_meridiano_cover_pixels':'not_checked_headless'};
+ const record={language:lang,mode:headed?'headed':'headless',frames:[],paint_scope:headed?'visible_meridiano_cover_pixels':'not_checked_headless',diagnostic_timeout_ms:2000,frame_limit:8};
+ results.nativeViewer.push(record);save();
+ try{record.navigator=await boundedDiagnostic(page.evaluate(()=>({pdfViewerEnabled:navigator.pdfViewerEnabled,plugins:[...navigator.plugins].map(p=>p.name)})),2000,'PDF navigator');}
+ catch(error){record.navigator={status:'unavailable_diagnostic',error:String(error)};}save();
+ const browserFrames=page.frames();record.frames_total=browserFrames.length;save();
+ for(const browserFrame of browserFrames.slice(0,record.frame_limit)){
+  try{record.frames.push(await boundedDiagnostic(browserFrame.evaluate(()=>({url:location.href,contentType:document.contentType,readyState:document.readyState,pdfViewer:!!document.querySelector('pdf-viewer'),embeds:[...document.querySelectorAll('embed,object')].map(node=>({tag:node.tagName,type:node.getAttribute('type'),src:node.getAttribute('src'),data:node.getAttribute('data')})),csp:window.__reportGenCsp||[]})),2000,'PDF frame'));}
+  catch(error){record.frames.push({url:browserFrame.url(),status:'unavailable_diagnostic',inspection_error:String(error)});}save();
+ }
+ // Collect bounded frame/CSP diagnostics before touching the PDF compositor.
+ await screen(page,'native-docx-metadata-'+lang);
  if(headed){
-  await frame.scrollIntoViewIfNeeded();
   // The exact generated cover has a large navy block. A blank iframe, grey
   // viewer toolbar, CSP error page or PDF plug-in placeholder cannot satisfy
   // this positive content test. No report is regenerated or edited here.
   const inspect='import json,sys;from PIL import Image;im=Image.open(sys.argv[1]).convert("RGB");pixels=list(im.getdata());navy=sum(10<=r<50 and 15<=g<70 and 35<=b<110 and b>=g+12 and g>=r+4 for r,g,b in pixels);print(json.dumps({"width":im.width,"height":im.height,"navy_pixels":navy,"pixels":len(pixels),"navy_fraction":navy/len(pixels)}))';
-  const deadline=Date.now()+20000;let pixels;
-  do{await frame.screenshot({path:file});pixels=JSON.parse(execFileSync(python,['-c',inspect,file],{encoding:'utf8'}));if(pixels.navy_fraction>.05)break;await new Promise(resolve=>setTimeout(resolve,250));}while(Date.now()<deadline);
-  record.pixels=pixels;record.screenshot={file:path.basename(file),sha256:hash(fs.readFileSync(file))};
+  const deadline=Date.now()+20000,remaining=()=>Math.max(1,Math.min(5000,deadline-Date.now()));
+  try{
+   await frame.scrollIntoViewIfNeeded({timeout:remaining()});
+   while(Date.now()<deadline){
+    await frame.screenshot({path:file,timeout:remaining()});
+    if(Date.now()>=deadline)throw Error('PDF paint deadline exceeded before pixel inspection');
+    record.pixels=JSON.parse(execFileSync(python,['-c',inspect,file],{encoding:'utf8',timeout:remaining()}));
+    record.screenshot={file:path.basename(file),sha256:hash(fs.readFileSync(file))};save();
+    if(record.pixels.navy_fraction>.05)break;
+    await new Promise(resolve=>setTimeout(resolve,Math.min(250,Math.max(0,deadline-Date.now()))));
+   }
+  }catch(error){record.paint_error=String(error);}save();
  }
- for(const browserFrame of page.frames()){
-  try{record.frames.push(await browserFrame.evaluate(()=>({url:location.href,contentType:document.contentType,readyState:document.readyState,pdfViewer:!!document.querySelector('pdf-viewer'),embeds:[...document.querySelectorAll('embed,object')].map(node=>({tag:node.tagName,type:node.getAttribute('type'),src:node.getAttribute('src'),data:node.getAttribute('data')})),csp:window.__reportGenCsp||[]})));}
-  catch(error){record.frames.push({url:browserFrame.url(),inspection_error:String(error)});}
- }
- results.nativeViewer.push(record);save();
- if(headed)check(lang+' native PDF viewer paints the generated Meridiano cover',record.pixels.navy_fraction>.05,record);
+ if(headed)check(lang+' native PDF viewer paints the generated Meridiano cover',!record.paint_error&&record.pixels?.navy_fraction>.05,record);
 }
 async function workflow(page,name){await click(page,'[data-workflow="'+name+'"]');await page.locator('[data-workflow-view="'+name+'"]').waitFor();await clean(page);}
 const expectedFailures=[];
 function expectFailure(method,pathname,status){const entry={method,pathname,status,consumed:false};expectedFailures.push(entry);return entry;}
 function responseFor(page,method,pathname){return page.waitForResponse(response=>response.request().method()===method&&new URL(response.url()).pathname===pathname,{timeout:240000});}
-let server,browser,page,timer;
+let server,browser,page,timer,forcedExit;
+const processBudgetMs=10*60*1000;
+results.process_budget_ms=processBudgetMs;
+const processDeadline=setTimeout(()=>{
+ results.passed=false;results.failure='Meridiano browser process exceeded '+processBudgetMs+' ms';results.finished=new Date().toISOString();save();console.error(results.failure);
+ process.exitCode=1;server?.kill('SIGTERM');browser?.close().catch(()=>{});
+ forcedExit=setTimeout(()=>process.exit(1),5000);
+},processBudgetMs);
 
 async function diagnostics(lang){
  const before=await snapshot(page),text='title,severity,description_md\nFirst,low,Valid\n\nSecond,UNKNOWN,"Line one\nline two"\n',l=labels[lang];
@@ -101,7 +126,7 @@ async function nativePreview(lang,exported){
  check(lang+' native renderer is stable LibreOffice rather than a development build',/^LibreOffice\s+\d/.test(receipt.engine.version),receipt.engine.version);
  check(lang+' native preview explicitly excludes Microsoft Word acceptance',receipt.word_verified===false&&receipt.pages>0&&(await dialog.innerText()).includes('Microsoft Word'));
  check(lang+' preview iframe references the locally generated PDF',await dialog.locator('[data-docx-preview-frame]').getAttribute('src').then(value=>value.startsWith('blob:')));
- await screen(page,'native-docx-metadata-'+lang);await nativeViewerProbe(lang,dialog);
+ await nativeViewerProbe(lang,dialog);
  await screen(page,'native-docx-'+lang);const removed=responseFor(page,'DELETE','/api/docx-preview/'+preview.id);await dialog.getByRole('button',{name:l.close,exact:true}).click();check(lang+' closing removes the temporary preview',(await removed).status()===200);await dialog.waitFor({state:'detached'});
  check(lang+' native preview preserves exact project and revision',await snapshot(page)===before);
  results.coverage.push({area:'Native DOCX preview '+lang,mode:'UI',details:'Real export job and local LibreOffice conversion; downloaded source/derivative hashes, saved revision, Word limitation and explicit temporary cleanup.'});
@@ -158,6 +183,6 @@ async function privacyPDF(lang,annex){
  const annex=await uploadPDF();for(const lang of ['es','en','pt']){await language(page,lang);await privacyPDF(lang,annex);await click(page,'#navHome');await screen(page,'dashboard-'+lang);}
  results.sourceEnd=sourceHashes();check('Application source remains unchanged during browser acceptance',isDeepStrictEqual(results.sourceStart,results.sourceEnd));check('No JavaScript application errors',results.pageErrors.length===0,results.pageErrors);check('Only the three deliberately invalid import responses failed',results.expectedApiErrors.length===3&&expectedFailures.every(value=>value.consumed)&&results.apiErrors.length===0,{expected:results.expectedApiErrors,unexpected:results.apiErrors});check('No external network requests',results.externalRequests.length===0,results.externalRequests);
  results.passed=true;results.finished=new Date().toISOString();save();console.log('PASS '+results.checks.length+' Meridiano browser checks');
- }catch(error){results.passed=false;results.failure=String(error.stack||error);save();if(page&&!page.isClosed())await page.screenshot({path:path.join(out,'failure.png')}).catch(()=>{});console.error(error);process.exitCode=1;}
- finally{clearTimeout(timer);await browser?.close();server?.kill('SIGTERM');fs.rmSync(workspace,{recursive:true,force:true});}
+ }catch(error){results.passed=false;results.failure=String(error.stack||error);save();if(page&&!page.isClosed())await page.screenshot({path:path.join(out,'failure.png'),timeout:5000}).catch(()=>{});console.error(error);process.exitCode=1;}
+ finally{clearTimeout(timer);server?.kill('SIGTERM');let closeFailed=false;try{if(browser)await boundedDiagnostic(browser.close(),5000,'Browser shutdown');}catch(error){closeFailed=true;results.cleanup_error=String(error);results.passed=false;save();process.exitCode=1;}fs.rmSync(workspace,{recursive:true,force:true});clearTimeout(processDeadline);if(forcedExit||closeFailed)process.exit(1);}
 })();
