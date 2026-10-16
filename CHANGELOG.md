@@ -9,6 +9,9 @@
 - El registro del visor PDF identifica la revisión como autodeclarada y aclara
   que no verifica identidad ni método; ya no atribuye automáticamente una
   revisión humana. Se conservan el autor, la decisión y el hash exacto del PDF.
+- Corregido el guardado de importaciones Burp con referencias HTML: los
+  destinos HTTP/HTTPS se extraen como texto nativo y se conservan al recargar
+  el proyecto, sin alterar los hallazgos previos ni su estado de revisión.
 - Nuevo caso bancario ficticio reproducible Banco Horizonte Austral y recorridos
   de aceptación de exportaciones, interfaz y ciclo de vida del proyecto.
   La matriz distingue lo ejecutado de las dependencias externas pendientes.

@@ -179,7 +179,9 @@ class Journey:
             'burp': '<issues><issue><serialNumber>HZ-BURP-1</serialNumber><name>Observación sintética Burp</name>'
                     '<severity>Information</severity><confidence>Tentative</confidence><host>https://burp.horizonte.test</host>'
                     '<path>/synthetic</path><issueDetail>Entrada ficticia, no confirma una vulnerabilidad.</issueDetail>'
-                    '<remediationDetail>Revisar manualmente.</remediationDetail><requestresponse><request>'
+                    '<remediationDetail>Revisar manualmente.</remediationDetail>'
+                    '<references><![CDATA[<a href="https://docs.horizonte.example/import/burp">Referencia</a>]]></references>'
+                    '<requestresponse><request>'
                     'GET /synthetic HTTP/1.1</request></requestresponse></issue></issues>',
             'nuclei': json.dumps(nuclei),
             'nmap': '<nmaprun scanner="nmap" version="synthetic"><host><status state="up"/>'
@@ -208,6 +210,11 @@ class Journey:
                     finding = applied['data']['findings'][-1]
                     self.check(kind + ' remains unverified and awaiting review',
                                finding['verification'] == 'unverified' and finding['import_source']['reviewed'] is False)
+                    if kind == 'burp':
+                        references = ['https://docs.horizonte.example/import/burp']
+                        self.check('Burp HTML reference survives actual import and saved project reload',
+                                   finding['references'] == references
+                                   and self.load()['findings'][-1]['references'] == references)
                 else:
                     self.check('Nmap only adds inventory, never findings', applied['data']['findings'] == before['findings'])
             self.write('banco-horizonte-intake-project.zip', self.project_call('GET', '/bundle').data)

@@ -26,6 +26,12 @@ BURP = '''<?xml version="1.0"?><!DOCTYPE issues [<!ELEMENT issues (issue*)>]>
 <issueDetail><![CDATA[<p>First paragraph</p><p>&lt;svg onload=alert(1)&gt;</p>]]></issueDetail>
 <requestresponse><request base64="true">R0VUIC8gSFRUUC8xLjENCg0K</request><response>HTTP/1.1 200 OK</response></requestresponse>
 </issue></issues>'''
+BURP_WITH_REFERENCES = BURP.replace('</issueDetail>', '''</issueDetail>
+<references><![CDATA[<a href="https://docs.horizonte.example/import/burp?control=A&amp;lang=es#cierre">Referencia</a>
+<a href="http://docs.horizonte.example/segunda">Otra referencia</a>
+<a href="javascript:alert(1)">No importar</a><a href="/relative">No importar</a>]]></references>''')
+BURP_REFERENCES = ['https://docs.horizonte.example/import/burp?control=A&lang=es#cierre',
+                   'http://docs.horizonte.example/segunda']
 
 
 def minimal():
@@ -102,6 +108,44 @@ def test_burp_dtd_http_and_html_payload():
     assert f['walkthrough'][0]['command'] == 'GET / HTTP/1.1\r\n\r\n'
     assert 'svg onload' in f['description_md'] and '<svg' not in f['description_md']
     assert '\n' in f['description_md']
+
+
+def test_burp_reference_attributes_are_plain_text_with_exact_http_destinations():
+    finding = intake.preview(dict(format='burp', text=BURP_WITH_REFERENCES), minimal())['rows'][0]['finding']
+    assert finding['references'] == BURP_REFERENCES
+    assert all(type(reference) is str for reference in finding['references'])
+
+
+@pytest.mark.parametrize('csv_first', [False, True])
+def test_burp_references_preview_then_apply_persists_without_changing_prior_findings(client, csv_first):
+    c, directory, _ = client
+    tag = c.get('/api/projects/test').headers['ETag']
+    if csv_first:
+        imported = c.post('/api/projects/test/intake/apply', json=dict(format='csv', text=CSV, selected=[0]),
+                          headers={'If-Match': tag})
+        assert imported.status_code == 200
+        tag = imported.headers['ETag']
+    before = c.get('/api/projects/test').json
+    before_bytes = (directory / 'engagement.yaml').read_bytes()
+    body = dict(format='burp', text=BURP_WITH_REFERENCES, selected=[0])
+    preview = c.post('/api/projects/test/intake/preview', json=body, headers={'If-Match': tag})
+    assert preview.status_code == 200 and not preview.json['rows'][0]['errors']
+    assert preview.json['rows'][0]['finding']['references'] == BURP_REFERENCES
+    assert preview.headers['ETag'] == tag and (directory / 'engagement.yaml').read_bytes() == before_bytes
+    applied = c.post('/api/projects/test/intake/apply', json=body, headers={'If-Match': tag})
+    assert applied.status_code == 200 and applied.json['imported'] == 1
+    after = applied.json['data']
+    assert after['findings'][:-1] == before['findings']
+    assert {key: value for key, value in after.items() if key not in ('findings', 'finding_sequence')} == {
+        key: value for key, value in before.items() if key not in ('findings', 'finding_sequence')}
+    assert after['finding_sequence'] == before['finding_sequence'] + 1
+    added = after['findings'][-1]
+    assert added['references'] == BURP_REFERENCES
+    assert added['status'] == 'open' and added['verification'] == 'unverified'
+    assert added['import_source']['format'] == 'burp' and added['import_source']['reviewed'] is False
+    saved = c.get('/api/projects/test')
+    assert saved.status_code == 200 and saved.json == after and saved.headers['ETag'] == applied.headers['ETag'] != tag
+    assert (directory / 'engagement.yaml').read_bytes() != before_bytes
 
 
 @pytest.mark.parametrize('raw', [

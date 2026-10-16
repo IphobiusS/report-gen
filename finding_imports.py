@@ -75,7 +75,9 @@ def _burp(raw):
         references = text('references')
         if references:
             tree = html.fragment_fromstring(references, create_parent='div')
-            item['references'] = [link for link in tree.xpath('.//a/@href') if link.startswith(('https://', 'http://'))]
+            # XPath smart strings retain XML nodes and are not safe-YAML scalars.
+            item['references'] = [link for link in tree.xpath('.//a/@href', smart_strings=False)
+                                  if link.startswith(('https://', 'http://'))]
         for exchange in issue.findall('requestresponse'):
             for name in ('request', 'response'):
                 node = exchange.find(name)

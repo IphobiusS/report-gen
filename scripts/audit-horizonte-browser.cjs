@@ -80,7 +80,7 @@ let server,browser,page,timer;
  browser=await playwright[engine].launch({headless:true,...(executable?{executablePath:executable}:{})});results.browser=browser.version();
  const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce',acceptDownloads:true});
  await context.route('**/*',route=>{const url=route.request().url();if(/^https?:/.test(url)&&!url.startsWith(base+'/')){results.externalRequests.push(url);return route.abort();}return route.continue();});
- await context.addInitScript(()=>{localStorage.setItem('rg.uiLang','es');localStorage.setItem('rg.previewVisible','0');});
+ await context.addInitScript(()=>{if(window!==window.top)return;localStorage.setItem('rg.uiLang','es');localStorage.setItem('rg.previewVisible','0');});
  page=await context.newPage();page.on('pageerror',error=>{results.pageErrors.push(String(error));save();});page.on('response',r=>{if(r.status()>=400&&r.url().includes('/api/')){results.apiErrors.push({method:r.request().method(),url:r.url().replace(base,''),status:r.status()});save();}});
  const response=await page.goto(base);await clean(page);check('Real local editor carries CSP',!!response.headers()['content-security-policy']);
  await importBundle(page,slug);const baseline=await data(page);results.baseline={findings:baseline.findings.length,assets:baseline.assets?.length,evidence:baseline.evidence?.length,coverage:baseline.coverage?.length,root_causes:baseline.root_cause_groups?.length,sections:baseline.report.sections.length};
