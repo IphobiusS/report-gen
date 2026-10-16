@@ -62,6 +62,8 @@ jobs:
     env:
       RG_PYTHON: python
     steps:
+      - name: Keep acceptance data outside the installation
+        run: echo "HORIZONTE_OUTPUT=$RUNNER_TEMP/horizonte" >> "$GITHUB_ENV"
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7.0.0
         with:
@@ -81,46 +83,51 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npx playwright install --with-deps chromium
       - name: Compose fictional project inputs without generating report documents
-        run: python scripts/build-horizonte-case.py --output out/horizonte/case
+        run: python scripts/build-horizonte-case.py --output "$HORIZONTE_OUTPUT/case"
       - name: Generate twelve reports only with report-gen and inspect DOCX with stable LibreOffice
-        run: python scripts/audit-horizonte-exports.py --projects out/horizonte/case/projects --output out/horizonte/exports --mode principal --native-executable /usr/bin/libreoffice --require-stable
+        run: python scripts/audit-horizonte-exports.py --projects "$HORIZONTE_OUTPUT/case/projects" --output "$HORIZONTE_OUTPUT/exports" --mode principal --native-executable /usr/bin/libreoffice --require-stable
       - name: Exercise evidence, import, remediation, audiences, signatures and recovery
-        run: python scripts/audit-horizonte-lifecycle.py --case out/horizonte/case/projects/es --output out/horizonte/lifecycle --ui-bundle out/horizonte/horizonte-ui-input.zip --pdf out/horizonte/exports/principal/es/outputs/informe.pdf
+        run: python scripts/audit-horizonte-lifecycle.py --case "$HORIZONTE_OUTPUT/case/projects/es" --output "$HORIZONTE_OUTPUT/lifecycle" --ui-bundle "$HORIZONTE_OUTPUT/horizonte-ui-input.zip" --pdf "$HORIZONTE_OUTPUT/exports/principal/es/outputs/informe.pdf"
       - name: Verify mandatory PDF annexes, pending severity and group removal
-        run: python scripts/audit-horizonte-supplement.py --case out/horizonte/case/projects/es --pdf out/horizonte/exports/principal/es/outputs/informe.pdf --output out/horizonte/supplement
+        if: ${{ !cancelled() }}
+        run: python scripts/audit-horizonte-supplement.py --case "$HORIZONTE_OUTPUT/case/projects/es" --pdf "$HORIZONTE_OUTPUT/exports/principal/es/outputs/informe.pdf" --output "$HORIZONTE_OUTPUT/supplement"
       - name: Traverse the real editor, tutorial and banking project in Chromium
+        if: ${{ !cancelled() }}
         run: |
           node scripts/audit-horizonte-browser.cjs \
-            --bundle out/horizonte/horizonte-ui-input.zip \
-            --project-dir out/horizonte/case/projects/es \
-            --input-dir out/horizonte/case/inputs \
-            --before-pdf out/horizonte/lifecycle/audiences/executive.pdf \
-            --after-pdf out/horizonte/lifecycle/audiences/public.pdf \
-            --slug horizonte-es --allow-export --output out/horizonte/browser
+            --bundle "$HORIZONTE_OUTPUT/horizonte-ui-input.zip" \
+            --project-dir "$HORIZONTE_OUTPUT/case/projects/es" \
+            --input-dir "$HORIZONTE_OUTPUT/case/inputs" \
+            --before-pdf "$HORIZONTE_OUTPUT/lifecycle/audiences/executive.pdf" \
+            --after-pdf "$HORIZONTE_OUTPUT/lifecycle/audiences/public.pdf" \
+            --slug horizonte-es --allow-export --output "$HORIZONTE_OUTPUT/browser"
       - name: Create from gallery, reorder report sections and record a declared visual observation
-        run: node scripts/audit-horizonte-authoring.cjs --bundle out/horizonte/horizonte-ui-input.zip --project-dir out/horizonte/case/projects/es --pdf out/horizonte/exports/principal/es/outputs/informe.pdf --slug horizonte-authoring --output out/horizonte/authoring
+        if: ${{ !cancelled() }}
+        run: node scripts/audit-horizonte-authoring.cjs --bundle "$HORIZONTE_OUTPUT/horizonte-ui-input.zip" --project-dir "$HORIZONTE_OUTPUT/case/projects/es" --pdf "$HORIZONTE_OUTPUT/exports/principal/es/outputs/informe.pdf" --slug horizonte-authoring --output "$HORIZONTE_OUTPUT/authoring"
       - name: Exercise catalog filters, failed saves, retries and private draft recovery
-        run: node scripts/audit-horizonte-recovery.cjs --bundle out/horizonte/horizonte-ui-input.zip --project-dir out/horizonte/case/projects/es --slug horizonte-recovery --output out/horizonte/recovery
+        if: ${{ !cancelled() }}
+        run: node scripts/audit-horizonte-recovery.cjs --bundle "$HORIZONTE_OUTPUT/horizonte-ui-input.zip" --project-dir "$HORIZONTE_OUTPUT/case/projects/es" --slug horizonte-recovery --output "$HORIZONTE_OUTPUT/recovery"
       - name: Query official updates with explicit network consent and preserve source bytes
-        run: python scripts/audit-horizonte-updater.py --case out/horizonte/case/projects/es --output out/horizonte/updater --allow-network
+        if: ${{ !cancelled() }}
+        run: python scripts/audit-horizonte-updater.py --case "$HORIZONTE_OUTPUT/case/projects/es" --output "$HORIZONTE_OUTPUT/updater" --allow-network
       - name: Preserve exact inputs, reports, acceptance receipts and real screenshots
         if: always()
         uses: actions/upload-artifact@v7.0.2
         with:
           name: horizonte-${{ github.sha }}
           path: |
-            out/horizonte/case/
-            out/horizonte/exports/
-            out/horizonte/lifecycle/results.json
-            out/horizonte/lifecycle/audiences/
-            out/horizonte/lifecycle/diagnostics-sanitized.json
-            out/horizonte/supplement/results.json
-            out/horizonte/supplement/scope.json
-            out/horizonte/supplement/pending-severity-delivery-manifest.json
-            out/horizonte/horizonte-ui-input.zip
-            out/horizonte/browser/
-            out/horizonte/authoring/
-            out/horizonte/recovery/
-            out/horizonte/updater/results.json
+            ${{ runner.temp }}/horizonte/case/
+            ${{ runner.temp }}/horizonte/exports/
+            ${{ runner.temp }}/horizonte/lifecycle/results.json
+            ${{ runner.temp }}/horizonte/lifecycle/audiences/
+            ${{ runner.temp }}/horizonte/lifecycle/diagnostics-sanitized.json
+            ${{ runner.temp }}/horizonte/supplement/results.json
+            ${{ runner.temp }}/horizonte/supplement/scope.json
+            ${{ runner.temp }}/horizonte/supplement/pending-severity-delivery-manifest.json
+            ${{ runner.temp }}/horizonte/horizonte-ui-input.zip
+            ${{ runner.temp }}/horizonte/browser/
+            ${{ runner.temp }}/horizonte/authoring/
+            ${{ runner.temp }}/horizonte/recovery/
+            ${{ runner.temp }}/horizonte/updater/results.json
           if-no-files-found: error
           retention-days: 14
