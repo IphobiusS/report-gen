@@ -48,7 +48,7 @@ async function exportOne(fmt,dest){
  await selectFinding('F01');page.once('dialog',d=>d.accept());await page.getByRole('button',{name:'Eliminar hallazgo',exact:true}).click();await saved();
  check('Borrar F01 conserva F10 y máquinas',await page.evaluate(ids=>S.data.findings.find(f=>f.id==='F10').uid===ids.F10&&S.data.findings.find(f=>f.id==='M01').uid===ids.M01,identities));
  // Reorder via real drag/drop in the manual dashboard.
- await page.getByRole('button',{name:'Hallazgos',exact:true}).click();await page.getByRole('button',{name:'Manual',exact:true}).click();
+ await page.locator('#workspaceSidebar').getByRole('button',{name:'Hallazgos',exact:true}).click();await page.getByRole('button',{name:'Manual',exact:true}).click();
  const rows=page.locator('.dash-row');await rows.nth(0).locator('.drag').dragTo(rows.nth(2));await saved();
  check('Reordenar conserva IDs y UUIDs',await page.evaluate(ids=>S.data.findings.every(f=>ids[f.id]===f.uid),identities));
  await selectFinding('F02');await page.getByRole('button',{name:'Duplicar',exact:true}).click();await saved();
@@ -60,7 +60,7 @@ async function exportOne(fmt,dest){
  check('Destino eliminado bloquea exportación',blocked.status===422&&blocked.text.includes('sin destino'),blocked);
  await page.locator('#undoNotice').getByRole('button',{name:'Deshacer acción',exact:true}).click();await saved();check('Deshacer restaura la identidad original',await page.evaluate(ids=>S.data.findings.find(f=>f.id==='F10').uid===ids.F10,identities));
  // Fresh import guarantees the published long report has no mutation-test edits.
- slug='ladera-final';await importProject();await page.getByRole('button',{name:'Hallazgos',exact:true}).click();await shot('02-hallazgos');
+ slug='ladera-final';await importProject();await page.locator('#workspaceSidebar').getByRole('button',{name:'Hallazgos',exact:true}).click();await shot('02-hallazgos');
  for(const fmt of ['html','md','docx','pdf'])await exportOne(fmt,'informe.'+(fmt==='md'?'zip':fmt));
  await page.locator('[data-studio-nav="deliver"]').click();await page.getByRole('button',{name:'Elegir formatos',exact:true}).click();for(const fmt of ['html','md','docx','pdf'])await page.locator('[data-delivery-format="'+fmt+'"]').check();if(await page.locator('[data-delivery="ack"]').count())await page.locator('[data-delivery="ack"]').check();
  const sub=page.waitForResponse(r=>r.url().endsWith('/'+slug+'/jobs')&&r.request().method()==='POST');await page.getByRole('button',{name:'Generar paquete',exact:true}).click();const j=await(await sub).json();const job=await waitJob(j.id);check('Entrega conjunta',job.stage==='done',job);const dl=page.waitForEvent('download');await page.locator('[data-job="'+job.id+'"]').getByRole('button',{name:'Descargar',exact:true}).click();await(await dl).saveAs(path.join(out,'entrega-completa.zip'));

@@ -46,7 +46,7 @@ const GuideUI = (() => {
   function screenshot(spec) {
     const language = normalizeUiLanguage(S.uiLang);
     const source = '/static/tutorial/' + spec.key + '-' + language + '.webp';
-    const dimensions = {gallery:[1320,1016], metadata:[1200,948], finding:[1200,948], evidence:[1200,948], privacy:[1000,972], delivery:[780,972], backup:[1136,203]};
+    const dimensions = {gallery:[1320,1016], metadata:[920,948], finding:[920,948], evidence:[1200,948], privacy:[1000,972], delivery:[780,972], backup:[1136,203]};
     const [width,height] = dimensions[spec.key];
     const image = h('img', {src:source, width, height, loading:'lazy', decoding:'async', alt:w(...spec.title) + '. ' + w(...spec.caption)});
     const view = h('button', {type:'button', class:'tutorial-screenshot-button', 'data-tutorial-image':spec.key,

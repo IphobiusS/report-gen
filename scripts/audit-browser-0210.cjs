@@ -28,7 +28,7 @@ async function api(method,uri,body){return page.evaluate(async ({method,uri,body
  await page.getByRole('button',{name:'Probar demo Nimbus',exact:true}).click();await ready();
  check('Demo real crea doce hallazgos',await page.evaluate(()=>S.data.findings.length===12));
  await screenshot('01-inicio-nimbus');
- await page.getByRole('button',{name:'Hallazgos',exact:true}).click();
+ await page.locator('#workspaceSidebar').getByRole('button',{name:'Hallazgos',exact:true}).click();
  await screenshot('02-hallazgos');
  check('Sin desbordamiento horizontal en escritorio',await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
  await more();await page.locator('#newProjectBtn').click();await page.locator('dialog[data-design-mode=create] .experience-actions .primary').click();
@@ -133,7 +133,7 @@ async function api(method,uri,body){return page.evaluate(async ({method,uri,body
    await page.locator('#searchResults .search-item').first().click();
  }
  await screenshot('09-editor-maquina');
- await page.getByRole('button',{name:'Hallazgos',exact:true}).click();
+ await page.locator('#workspaceSidebar').getByRole('button',{name:'Hallazgos',exact:true}).click();
  await page.locator('.dash-pill.sev-pending').click();
  check('Tablero separa valoración pendiente de máquinas',await page.locator('.dash-row').count()===1&&await page.locator('.dash-row').innerText().then(t=>t.includes('Valoración pendiente')));
  await screenshot('10-valoracion-pendiente');
@@ -148,7 +148,7 @@ async function api(method,uri,body){return page.evaluate(async ({method,uri,body
  });check('Carga de 500 entradas guardada por API',populated===200);
  await page.reload();await ready();const loadStarted=Date.now();await page.locator('#projectSelect').selectOption('stress-ui');
  await page.waitForFunction(()=>S.slug==='stress-ui'&&!projectStore.loading&&projectBusyCount===0);
- await page.getByRole('button',{name:'Hallazgos',exact:true}).click();await page.locator('.dash-row').last().waitFor();
+ await page.locator('#workspaceSidebar').getByRole('button',{name:'Hallazgos',exact:true}).click();await page.locator('.dash-row').last().waitFor();
  const firstPageCount=await page.locator('.dash-row').count(),sourceCount=await page.evaluate(()=>S.data.findings.length);
  const boardPages=page.locator('[data-workspace-pagination="board"] select');await boardPages.selectOption('9');
  const lastPageCount=await page.locator('.dash-row').count(),lastReachable=await page.locator('.dash-row').last().innerText().then(text=>text.includes('Caso sintético 500'));

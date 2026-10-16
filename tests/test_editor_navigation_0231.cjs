@@ -5,6 +5,7 @@
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
 const args=process.argv.slice(2),option=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
 const root=path.resolve(option('--tool',process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..'))),out=path.resolve(option('--output','out/editor-navigation-0231'));
+const {clickNavigationControl}=require(path.join(root,'tests/browser-navigation.cjs'));
 const {chromium}=require(process.env.REPORT_GEN_PLAYWRIGHT_MODULE||require.resolve('playwright',{paths:[root,process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES||root]}));
 fs.mkdirSync(out,{recursive:true});const workspace=fs.mkdtempSync(path.join(os.tmpdir(),'report-gen-acceptance-0211-navigation-'));fs.writeFileSync(path.join(workspace,'.test-only'),'synthetic acceptance workspace');
 const results={checks:[],pageErrors:[],externalRequests:[]},save=()=>fs.writeFileSync(out+'/results.json',JSON.stringify(results,null,2));
@@ -47,6 +48,10 @@ const server=spawn(process.env.RG_PYTHON||'python',[root+'/scripts/browser-serve
  await page.evaluate(()=>{S.dashFilter='high';S.dashSort='sev';select('findings');});await page.locator('.finding-row-open').first().click();const filterStart=await page.evaluate(()=>S.sel.idx);await page.locator('[data-finding-step="1"]').click();check('A filtered sorted board still navigates the explicitly labelled complete project order',await page.evaluate(start=>S.sel.idx===start+1&&$('[data-finding-position-label]').textContent.includes('orden del proyecto'),filterStart));
  const reorder=await page.evaluate(()=>{select('finding',2);const current=S.data.findings[2];S.data.findings.splice(8,0,S.data.findings.splice(2,1)[0]);return {current:current.uid,next:S.data.findings[9].uid};});await page.locator('[data-finding-step="1"]').click();check('Navigation resolves the live source UID after an intervening reorder',await page.evaluate(expected=>S.data.findings[S.sel.idx].uid===expected.next,reorder));
  // Delayed response must follow the selection at load time, not its initial selection.
+ // Opening the contextual index at this width hides the preview by design.
+ // Restore it through the same visible control a user would use.
+ await clickNavigationControl(page,'#previewToggle');if(await page.locator('#studioMore').evaluate(el=>el.open))await page.locator('#studioMore > summary').click();
+ check('Show preview restores the visible pane before testing delayed responses',await page.locator('.layout > .preview').isVisible()&&!await page.locator('#contextIndex').isVisible());
  let release,received=false;const pending=new Promise(resolve=>release=resolve),routePattern=base+'/api/projects/navigation-fixture/preview';
  await context.route(routePattern,async route=>{received=true;await pending;await route.continue();});await page.evaluate(()=>{window.previousPreviewDocument=$('#pdfPreview').contentDocument;refreshLivePreview();});for(let n=0;!received&&n<100;n++)await page.waitForTimeout(20);assert.ok(received,'Delayed preview received');await page.evaluate(()=>select('finding',15));release();await page.waitForFunction(()=>$('#pdfPreview').contentDocument!==window.previousPreviewDocument&&$('#pdfPreview').contentDocument?.querySelector('[data-rg-preview-current]')?.id===S.data.findings[15].id);await context.unroute(routePattern);check('Late preview replacement follows the current finding rather than the request-time selection',(await aligned()).id===await page.evaluate(()=>S.data.findings[15].id));
  // Freeze only the autosave timer so an older response can be observed before

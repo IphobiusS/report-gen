@@ -94,8 +94,9 @@
   overflow-wrap:anywhere;
 }
 .context-index-list-scroll {
-  flex:1 1 88px;
-  min-height:88px;
+  flex:1 1 90px;
+  /* Two borders sit outside the 88px minimum usable scroll area. */
+  min-height:90px;
   min-width:0;
   overflow:auto;
   overscroll-behavior:contain;
@@ -249,7 +250,8 @@
   .layout.context-index-open { display:block; overflow:visible; }
   .layout.context-index-open>.context-index {
     height:min(72dvh,620px);
-    min-height:520px;
+    /* Keep controls, pagination and the list inside a short stacked panel. */
+    min-height:540px;
     width:100%;
     border-right:0;
     border-bottom:1px solid var(--line);
