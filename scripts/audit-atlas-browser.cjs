@@ -188,7 +188,13 @@ async function setTheme(theme){
  if(await page.locator('#studioMore').evaluate(el=>el.open))await page.locator('#studioMore > summary').click();
  check(theme+' theme is selected through the visible control',await page.locator('html').getAttribute('data-theme')===theme);
 }
-async function disclosure(id,open){const node=page.locator('#'+id);if(await node.evaluate(el=>el.open)!==open)await click(page,'#'+id+' > summary');}
+async function disclosure(id,open){
+ await sidebarVisible();const node=page.locator('#'+id);
+ // A summary is already the visible disclosure control. Passing it through
+ // expose() would open its own details and then immediately toggle it closed.
+ if(await node.evaluate(el=>el.open)!==open)await page.locator('#'+id+' > summary').click();
+ assert.equal(await node.evaluate(el=>el.open),open,id+' reaches the requested disclosure state');
+}
 async function sidebarGeometry(lang,width,theme,state){
  const geometry=await page.evaluate(()=>{
   const sidebar=document.querySelector('#workspaceSidebar'),bounds=sidebar.getBoundingClientRect(),visible=el=>el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden';
@@ -198,8 +204,7 @@ async function sidebarGeometry(lang,width,theme,state){
  });
  check(lang+' '+width+' '+theme+' '+state+' sidebar stays inside viewport without horizontal overflow',geometry.root<=width+1&&geometry.sidebarScroll<=geometry.sidebarClient+1,geometry);
  check(lang+' '+width+' '+theme+' '+state+' visible sidebar controls have labels and are not clipped',geometry.controls.every(control=>control.name&&control.width>0&&!control.clippedX),geometry.controls);
- const primary=geometry.controls.filter(control=>!['SELECT'].includes(control.id));
- check(lang+' '+width+' '+theme+' '+state+' sidebar touch and keyboard controls retain minimum height',primary.every(control=>control.height>=(width<=760?44:39)),primary);
+ check(lang+' '+width+' '+theme+' '+state+' sidebar touch and keyboard controls retain minimum height',geometry.controls.every(control=>control.height>=(width<=760?44:39)),geometry.controls);
  const contrast=await page.evaluate(()=>{
   const rgb=value=>(value.match(/[\d.]+/g)||[]).map(Number),luminance=values=>values.slice(0,3).map(x=>x/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4).reduce((sum,x,i)=>sum+x*[.2126,.7152,.0722][i],0);
   return [...document.querySelectorAll('#workspaceSidebar .navitem,#workspaceSidebar summary')].filter(el=>el.getClientRects().length).map(el=>{let bg;for(let parent=el;parent;parent=parent.parentElement){const color=rgb(getComputedStyle(parent).backgroundColor);if(color.length===3||color[3]===1){bg=color;break;}}if(!bg)bg=[255,255,255];const fg=luminance(rgb(getComputedStyle(el).color)),back=luminance(bg);return{name:el.textContent.trim(),ratio:(Math.max(fg,back)+.05)/(Math.min(fg,back)+.05)};});
