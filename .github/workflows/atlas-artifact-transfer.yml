@@ -1,0 +1,172 @@
+name: Transfer verified Atlas artifact
+on:
+  push:
+    branches: [codex/atlas-artifact-transfer-289fe]
+permissions:
+  actions: read
+  contents: read
+jobs:
+  transfer:
+    if: github.repository == 'IphobiusS/report-gen'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Validate source and transfer original ZIP bytes in bounded parts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import sys
+          from pathlib import Path
+          from urllib.error import HTTPError, URLError
+          from urllib.parse import urlsplit
+          from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+          REPOSITORY = "IphobiusS/report-gen"
+          REVISION = "289fe25fa4655f96b79998338a961a546f2ba26d"
+          RUN_ID = 38945663366
+          ARTIFACT_ID = 12068647114
+          EXPECTED_NAME = "atlas-" + REVISION
+          EXPECTED_SIZE = 707408025
+          EXPECTED_SHA256 = "2f775f8a041b3c1a7a9e8c15e42adf3fdd5ea5feeaea724b2e8da932a780f567"
+          PART_LIMIT = 384 * 1024 * 1024
+          ROOT = Path(os.environ["RUNNER_TEMP"]) / "atlas-transfer"
+          ROOT.mkdir(parents=True, exist_ok=False)
+
+          class TransferError(ValueError):
+              pass
+
+          def require(condition, message):
+              if not condition:
+                  raise TransferError(message)
+
+          class SafeRedirect(HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  target = urlsplit(newurl)
+                  require(target.scheme == "https", "Non-HTTPS artifact redirect refused")
+                  result = super().redirect_request(req, fp, code, msg, headers, newurl)
+                  if target.netloc != urlsplit(req.full_url).netloc:
+                      result.remove_header("Authorization")
+                  return result
+
+          opener = build_opener(SafeRedirect())
+          headers = {
+              "Authorization": "Bearer " + os.environ["GH_TOKEN"],
+              "X-GitHub-Api-Version": "2026-03-10",
+              "Accept": "application/vnd.github+json",
+              "User-Agent": "report-gen-verified-artifact-transfer",
+          }
+
+          def request(path):
+              require(path.startswith("/repos/" + REPOSITORY + "/"), "Unexpected API repository")
+              return opener.open(Request("https://api.github.com" + path, headers=headers), timeout=90)
+
+          def get_json(path):
+              with request(path) as response:
+                  return json.load(response)
+
+          def transfer():
+              require(os.environ.get("GITHUB_REPOSITORY") == REPOSITORY, "Unexpected execution repository")
+              run = get_json(f"/repos/{REPOSITORY}/actions/runs/{RUN_ID}")
+              require(run.get("id") == RUN_ID, "Unexpected run ID")
+              require(run.get("head_sha") == REVISION and run.get("head_branch") == "main", "Unexpected source revision")
+              require(run.get("event") == "push", "Source run must be main push")
+              require(run.get("status") == "completed" and run.get("conclusion") == "success", "Source run is not successful")
+              require(run.get("repository", {}).get("full_name") == REPOSITORY, "Unexpected source repository")
+              meta = get_json(f"/repos/{REPOSITORY}/actions/artifacts/{ARTIFACT_ID}")
+              require(meta.get("id") == ARTIFACT_ID and meta.get("name") == EXPECTED_NAME, "Unexpected artifact identity")
+              require(meta.get("size_in_bytes") == EXPECTED_SIZE and meta.get("digest") == "sha256:" + EXPECTED_SHA256, "Unexpected artifact size or digest")
+              require(meta.get("expired") is False, "Source artifact is expired")
+              source_run = meta.get("workflow_run", {})
+              require(source_run.get("id") == RUN_ID and source_run.get("head_sha") == REVISION and source_run.get("head_branch") == "main", "Artifact source does not match successful main run")
+              total = 0
+              digest = hashlib.sha256()
+              parts = []
+              with request(f"/repos/{REPOSITORY}/actions/artifacts/{ARTIFACT_ID}/zip") as response:
+                  if response.headers.get("Content-Length"):
+                      require(int(response.headers["Content-Length"]) == EXPECTED_SIZE, "Download Content-Length mismatch")
+                  for index in (1, 2):
+                      target = ROOT / f"atlas-original.zip.part{index:02d}"
+                      part_digest = hashlib.sha256()
+                      part_size = 0
+                      with target.open("xb") as output:
+                          while part_size < PART_LIMIT:
+                              block = response.read(min(4 * 1024 * 1024, PART_LIMIT - part_size))
+                              if not block:
+                                  break
+                              total += len(block)
+                              require(total <= EXPECTED_SIZE, "Download exceeds source size")
+                              output.write(block)
+                              part_size += len(block)
+                              digest.update(block)
+                              part_digest.update(block)
+                      require(part_size > 0, "Unexpected empty transfer part")
+                      parts.append({"name": target.name, "bytes": part_size, "sha256": part_digest.hexdigest()})
+                  require(response.read(1) == b"", "Unexpected data after second part")
+              require(total == EXPECTED_SIZE and digest.hexdigest() == EXPECTED_SHA256, "Downloaded original ZIP integrity mismatch")
+              manifest = {
+                  "schema": "report-gen-atlas-exact-artifact-transfer/1",
+                  "repository": REPOSITORY,
+                  "source_revision": REVISION,
+                  "source_branch": "main",
+                  "source_run_id": RUN_ID,
+                  "source_run_conclusion": "success",
+                  "source_artifact_id": ARTIFACT_ID,
+                  "source_artifact_name": EXPECTED_NAME,
+                  "source_bytes": total,
+                  "source_sha256": digest.hexdigest(),
+                  "part_limit_bytes": PART_LIMIT,
+                  "parts": parts,
+                  "transfer_workflow_revision": os.environ["GITHUB_SHA"],
+                  "transfer_run_id": int(os.environ["GITHUB_RUN_ID"]),
+                  "operation": "Original artifact ZIP bytes split sequentially; no document generation, re-export, extraction or modification.",
+              }
+              target = ROOT / "transfer-manifest.json"
+              target.write_text(json.dumps(manifest, indent=2) + "\n")
+              print("Verified original artifact:", ARTIFACT_ID, total, digest.hexdigest())
+              for part in parts:
+                  print("Verified part:", part["name"], part["bytes"], part["sha256"])
+              print("Manifest SHA256:", hashlib.sha256(target.read_bytes()).hexdigest())
+
+          try:
+              transfer()
+          except HTTPError as exc:
+              print(f"Artifact transfer failed with HTTP {exc.code}", file=sys.stderr)
+              sys.exit(1)
+          except URLError:
+              print("Artifact transfer failed at the HTTPS transport layer", file=sys.stderr)
+              sys.exit(1)
+          except Exception as exc:
+              print("Artifact transfer failed:", type(exc).__name__, file=sys.stderr)
+              if isinstance(exc, TransferError):
+                  print(str(exc), file=sys.stderr)
+              sys.exit(1)
+          PY
+      - name: Preserve first original byte range
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: atlas-original-289fe-part01
+          path: ${{ runner.temp }}/atlas-transfer/atlas-original.zip.part01
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve second original byte range
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: atlas-original-289fe-part02
+          path: ${{ runner.temp }}/atlas-transfer/atlas-original.zip.part02
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve exact-source transfer manifest
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: atlas-original-289fe-transfer-manifest
+          path: ${{ runner.temp }}/atlas-transfer/transfer-manifest.json
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 14
+
