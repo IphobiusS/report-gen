@@ -90,7 +90,8 @@ def test_real_pdf_api_queue_retains_location_after_two_child_boundaries(oversize
         queue.close()
 
 
-@pytest.mark.parametrize('payload', [b'invalid-json', b'null', b'{}', b'[]' + b' ' * (512 * 1024)])
+@pytest.mark.parametrize('payload', [b'invalid-json', b'null', b'{}', b'[]' + b' ' * (512 * 1024)],
+                         ids=['invalid-json', 'null', 'wrong-shape', 'oversized'])
 def test_damaged_or_oversized_private_sidecar_preserves_original_error(tmp_path, monkeypatch, payload):
     source = tmp_path / 'engagement.yaml'
     dump_yaml({'meta': {'report_title': 'Synthetic fallback'}, 'findings': []}, source)
