@@ -438,27 +438,39 @@ class Journey:
             self.visual(first)
 
     def signed_delivery(self, source):
-        private = self.workspace / 'acceptance-private.pem'
         public = self.out / 'audiences/acceptance-public.pem'
         signature = self.out / 'audiences/public-delivery.signature.json'
-        delivery_signature.generate_keypair(private, public)
-        delivery_signature.sign_delivery(source, private, signature)
-        for path in (public, signature):
-            self.artifacts.append(dict(name=path.relative_to(self.out).as_posix(), bytes=path.stat().st_size,
-                                       sha256=digest(path)))
-        verified = delivery_signature.verify_delivery(source, signature, public)
-        self.check('Real Ed25519 signature verifies exact emitted ZIP and manifest', verified['verified'])
-        self.write_json('audiences/signature-verification.json', verified)
-        tampered = self.workspace / 'tampered.zip'
-        tampered.write_bytes(source.read_bytes() + b'altered')
-        rejected = False
-        try:
-            delivery_signature.verify_delivery(tampered, signature, public)
-        except ValueError:
-            rejected = True
-        self.check('Detached signature rejects an appended archive suffix', rejected)
-        self.check('Private signing key never enters public deliverables', private.parent == self.workspace and private.stat().st_mode & 0o077 == 0)
-        private.unlink()
+        # CI writes receipts inside the checkout. Signing keys must instead live
+        # outside both report-gen and all project/output trees, even on failure.
+        with tempfile.TemporaryDirectory(prefix='report-gen-horizonte-signing-') as directory:
+            private = Path(directory).resolve() / 'acceptance-private.pem'
+            self.check('Private signing key location is outside checkout, project workspace and outputs',
+                       not any(private.is_relative_to(base.resolve()) for base in (ROOT, self.workspace, self.out))
+                       and not any((parent / 'engagement.yaml').exists() for parent in private.parents))
+            delivery_signature.generate_keypair(private, public)
+            delivery_signature.sign_delivery(source, private, signature)
+            for path in (public, signature):
+                self.artifacts.append(dict(name=path.relative_to(self.out).as_posix(), bytes=path.stat().st_size,
+                                           sha256=digest(path)))
+            verified = delivery_signature.verify_delivery(source, signature, public)
+            self.check('Real Ed25519 signature verifies exact emitted ZIP and manifest', verified['verified'])
+            self.write_json('audiences/signature-verification.json', verified)
+            tampered = self.workspace / 'tampered.zip'
+            tampered.write_bytes(source.read_bytes() + b'altered')
+            rejected = False
+            try:
+                delivery_signature.verify_delivery(tampered, signature, public)
+            except ValueError:
+                rejected = True
+            self.check('Detached signature rejects an appended archive suffix', rejected)
+            private_bytes = private.read_bytes()
+            with zipfile.ZipFile(source) as package:
+                absent = all(private_bytes not in package.read(entry)
+                             and 'PRIVATE KEY' not in entry.filename for entry in package.infolist())
+            self.check('Private signing key is mode 0600 and never enters public deliverables',
+                       private.stat().st_mode & 0o777 == 0o600 and absent
+                       and all(private_bytes not in path.read_bytes() for path in (public, signature)))
+        self.check('Temporary signing key is deleted after verification', not private.exists() and not Path(directory).exists())
 
     def visual(self, path):
         response = self.project_call('POST', '/visual', data={'file': (BytesIO(path.read_bytes()), path.name)})

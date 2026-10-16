@@ -90,6 +90,38 @@ def test_manual_record_exact_hash_session_private_and_clear(client):
     assert c.get(route).status_code == 404
 
 
+@pytest.mark.parametrize('author', ['Agente automatizado — aceptación Horizonte', 'Synthetic reviewer'])
+@pytest.mark.parametrize('decision', ['accepted', 'issues'])
+def test_self_declared_review_does_not_certify_human_review(client, author, decision):
+    c, directory = client
+    before = (directory / 'engagement.yaml').read_bytes()
+    value = upload(client).json
+    route = '/api/visual/' + value['id']
+    selected = body(value)
+    selected.update(author=author, decision=decision,
+                    note='Automated functional exercise; no human approval or visual defect asserted.')
+    if decision == 'issues':
+        selected['pages'] = [{'number': 1, 'issue': 'other', 'note': selected['note']}]
+    response = c.post(route + '/review', json=selected)
+    assert response.status_code == 200
+    record = response.json
+    assert record['author'] == author and record['decision'] == decision
+    assert record['pdf_sha256'] == value['pdf_sha256'] and record['revision'] == value['revision']
+    assert record['author_identity'] == 'local_self_declaration'
+    assert record['original_word_verified'] is False
+    assert record['automated_layout_verification'] is False
+    assert record['statement'] == (
+        'Self-declared review record for this exact PDF; reviewer identity and review method are unverified. '
+        'Not a pentest or publication authorization.')
+    metadata = c.get(route).json
+    assert metadata['review'] == record and metadata['manually_verified'] is False
+    downloaded = c.get(route + '/review/download')
+    assert downloaded.status_code == 200 and downloaded.mimetype == 'application/json'
+    assert json.loads(downloaded.data) == record
+    assert 'Human review of this exact PDF' not in downloaded.get_data(as_text=True)
+    assert (directory / 'engagement.yaml').read_bytes() == before
+
+
 @pytest.mark.parametrize('change', [
     {'pdf_sha256': '0' * 64}, {'revision': 'old'}, {'author': ''}, {'author': True},
     {'decision': 'automated_verified'}, {'pages': 'all'}, {'pages': [{'number': True, 'issue': 'other', 'note': 'x'}]},

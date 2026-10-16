@@ -170,7 +170,8 @@ class Store:
         value = dict(body, created=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                      author_identity='local_self_declaration', origin=record['origin'],
                      original_word_verified=False, automated_layout_verification=False,
-                     statement='Human review of this exact PDF; not a pentest or publication authorization.')
+                     statement='Self-declared review record for this exact PDF; reviewer identity and review method are unverified. '
+                               'Not a pentest or publication authorization.')
         with self.lock:
             record['review'] = value
         return value

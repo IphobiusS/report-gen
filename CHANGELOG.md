@@ -6,6 +6,9 @@
   Los saltos de maquetación no forman parte de las etiquetas de los enlaces;
   el contrato normaliza únicamente los límites visuales de figura en celdas,
   manteniendo la detección de texto, imágenes y enlaces eliminados o alterados.
+- El registro del visor PDF identifica la revisión como autodeclarada y aclara
+  que no verifica identidad ni método; ya no atribuye automáticamente una
+  revisión humana. Se conservan el autor, la decisión y el hash exacto del PDF.
 - Nuevo caso bancario ficticio reproducible Banco Horizonte Austral y recorridos
   de aceptación de exportaciones, interfaz y ciclo de vida del proyecto.
   La matriz distingue lo ejecutado de las dependencias externas pendientes.

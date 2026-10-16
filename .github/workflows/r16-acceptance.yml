@@ -82,7 +82,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Compose fictional project inputs without generating report documents
         run: python scripts/build-horizonte-case.py --output out/horizonte/case
-      - name: Generate twelve reports only with report-gen and inspect native Word rendering
+      - name: Generate twelve reports only with report-gen and inspect DOCX with stable LibreOffice
         run: python scripts/audit-horizonte-exports.py --projects out/horizonte/case/projects --output out/horizonte/exports --mode principal --native-executable /usr/bin/libreoffice --require-stable
       - name: Exercise evidence, import, remediation, audiences, signatures and recovery
         run: python scripts/audit-horizonte-lifecycle.py --case out/horizonte/case/projects/es --output out/horizonte/lifecycle --ui-bundle out/horizonte/horizonte-ui-input.zip --pdf out/horizonte/exports/principal/es/outputs/informe.pdf
@@ -97,6 +97,12 @@ jobs:
             --before-pdf out/horizonte/lifecycle/audiences/executive.pdf \
             --after-pdf out/horizonte/lifecycle/audiences/public.pdf \
             --slug horizonte-es --allow-export --output out/horizonte/browser
+      - name: Create from gallery, reorder report sections and record a declared visual observation
+        run: node scripts/audit-horizonte-authoring.cjs --bundle out/horizonte/horizonte-ui-input.zip --project-dir out/horizonte/case/projects/es --pdf out/horizonte/exports/principal/es/outputs/informe.pdf --slug horizonte-authoring --output out/horizonte/authoring
+      - name: Exercise catalog filters, failed saves, retries and private draft recovery
+        run: node scripts/audit-horizonte-recovery.cjs --bundle out/horizonte/horizonte-ui-input.zip --project-dir out/horizonte/case/projects/es --slug horizonte-recovery --output out/horizonte/recovery
+      - name: Query official updates with explicit network consent and preserve source bytes
+        run: python scripts/audit-horizonte-updater.py --case out/horizonte/case/projects/es --output out/horizonte/updater --allow-network
       - name: Preserve exact inputs, reports, acceptance receipts and real screenshots
         if: always()
         uses: actions/upload-artifact@v7.0.2
@@ -113,5 +119,8 @@ jobs:
             out/horizonte/supplement/pending-severity-delivery-manifest.json
             out/horizonte/horizonte-ui-input.zip
             out/horizonte/browser/
+            out/horizonte/authoring/
+            out/horizonte/recovery/
+            out/horizonte/updater/results.json
           if-no-files-found: error
           retention-days: 14

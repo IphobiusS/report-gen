@@ -105,7 +105,7 @@
       "exercise": [
         "Recorrer interfaz y tutorial en los tres idiomas.",
         "Cambiar idioma de interfaz sin modificar idioma ni prosa del informe.",
-        "Exportar informes ES/EN/PT con contenido redactado para cada idioma."
+        "Exportar informes ES/EN/PT y verificar etiquetas localizadas; la prosa española del caso se conserva y esta limitación se declara."
       ],
       "expected_evidence": [
         "Capturas reales de los tres recorridos.",
