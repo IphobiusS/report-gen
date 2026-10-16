@@ -38,7 +38,7 @@ This protocol has not been executed as part of the release. Recruit five volunte
 
 ### Preparación / Setup
 
-Genera los materiales ficticios y el registro vacío con `python scripts/prepare-external-acceptance.py --output out/external-acceptance`. Incluye cuatro DOCX (Nimbus, laboratorio de calidad, severidades pendientes y tabla larga) y quince filas vacías para P1–P5. El manifiesto conserva `word_native: not_run` y `human_sessions: not_run`: preparar el material no ejecuta estas comprobaciones. Conserva los registros de participantes fuera de Git. Para Word, ejecuta `scripts/verify-microsoft-word.ps1` con `-InputDirectory out/external-acceptance/word-input` y una carpeta de salida vacía; después inspecciona sus PDF.
+Genera los materiales ficticios y el registro vacío con `python scripts/prepare-external-acceptance.py --output out/external-acceptance`. Incluye seis DOCX (Nimbus, laboratorio de calidad, severidades pendientes, tabla larga y dos casos de URLs y numeración en español e inglés) y quince filas vacías para P1–P5. El manifiesto conserva `word_native: not_run` y `human_sessions: not_run`: preparar el material no ejecuta estas comprobaciones. Conserva los registros de participantes fuera de Git. Para Word, ejecuta `scripts/verify-microsoft-word.ps1` con `-InputDirectory out/external-acceptance/word-input` y una carpeta de salida vacía; después inspecciona sus PDF.
 
 Run the preparation command above to create four synthetic DOCX inputs and a blank fifteen-row session record. Its manifest explicitly records native Word and human sessions as not run. Keep participant observations outside Git. The Word workflow uses the same corpus; its output still requires visual inspection.
 

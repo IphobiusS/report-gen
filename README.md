@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.37.0
+# report-gen 0.37.1
 
 <a id="qué-es"></a>
 
@@ -60,6 +60,10 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Word | Documento editable `.docx`, con campos propios para el índice. |
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
+
+## Correcciones de 0.37.1
+
+Las imágenes enlazadas dentro de tablas Markdown conservan sus destinos y leyendas al exportar a Word, también con fragmentos de URL y texto alrededor. La verificación de enlaces permanece activa. El caso ficticio Banco Horizonte Austral amplía la aceptación de contenidos y flujos; consulta su matriz de cobertura en `qa/horizonte/`.
 
 ## Novedades de 0.37.0
 

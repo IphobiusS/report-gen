@@ -1,0 +1,900 @@
+{
+  "schema": "report-gen-coverage-plan/1",
+  "case": "Banco Horizonte — escenario sintético",
+  "planned_version": "0.37.1",
+  "purpose": "Plan de ejecución; no es un recibo de aceptación ni un resultado de pruebas.",
+  "generator_requirement": "Todos los informes/derivados PDF, DOCX, Markdown y HTML se generan únicamente mediante report-gen; herramientas externas sólo pueden inspeccionar/renderizar resultados y preparar entradas sintéticas.",
+  "result_policy": {
+    "initial_status": "not_run",
+    "allowed_statuses": [
+      "not_run",
+      "passed",
+      "failed",
+      "blocked_dependency"
+    ],
+    "pass_requires": "Evidencia de la acción real, salida y alcance; registrar combinaciones y omisiones.",
+    "exclusions": "No inferir Word, Safari nativo, interacción humana o inferencia Ollama a partir de motores alternativos, mocks o materiales preparados."
+  },
+  "api_session": {
+    "bootstrap": "GET /api/session",
+    "headers": [
+      "X-CSRF-Token",
+      "X-Report-Gen-Workspace",
+      "X-UI-Language"
+    ],
+    "revision": "If-Match con el ETag actual de proyecto o biblioteca; adoptar ETag tras cada mutación.",
+    "private_data": "Proyectos, respaldos, originales, historial y claves de prueba se conservan separados de entregas al cliente."
+  },
+  "dependency_observations": {
+    "recorded_date_utc": "2026-10-16",
+    "python_environment": "report-gen-env",
+    "tesseract": {
+      "available": true,
+      "version": "5.3.4",
+      "languages": [
+        "eng",
+        "osd"
+      ],
+      "probe": "tesseract --version; tesseract --list-langs",
+      "inference": "privacy_ocr usa el ejecutable directamente; no requiere pytesseract."
+    },
+    "python_modules": {
+      "cryptography": true,
+      "fitz": true,
+      "playwright": true
+    },
+    "ollama": {
+      "binary_in_path": false,
+      "endpoint": "http://127.0.0.1:11434/api/tags",
+      "probe": "GET local sin proxies, timeout 2 segundos",
+      "observed_result": "Connection refused",
+      "inference_executed": false
+    },
+    "microsoft_word": {
+      "availability": "not_established",
+      "required_environment": "Windows y Microsoft Word de escritorio con licencia"
+    },
+    "native_safari": {
+      "availability": "not_established",
+      "required_environment": "macOS con Safari nativo"
+    }
+  },
+  "families": [
+    {
+      "id": "HZ-01",
+      "key": "project_gallery",
+      "title": "Proyecto, galería y metadatos",
+      "status": "not_run",
+      "implementation_paths": [
+        "webapp/app.py",
+        "webapp/design_api.py"
+      ],
+      "expected_actions": [
+        "GET /api/design-library",
+        "POST /api/design-library/projects",
+        "GET /api/projects/<slug>",
+        "PUT /api/projects/<slug>"
+      ],
+      "exercise": [
+        "Crear el banco ficticio mediante una plantilla empresarial.",
+        "Guardar título extenso, cliente, fechas, contactos, alcance y branding."
+      ],
+      "expected_evidence": [
+        "Proyecto guardado con UID estables y ETag.",
+        "Portada y metadatos de los cuatro formatos coherentes."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-02",
+      "key": "languages_tutorial",
+      "title": "Idiomas y tutorial",
+      "status": "not_run",
+      "implementation_paths": [
+        "languages.py",
+        "webapp/static/guide.js",
+        "docs/guide.es.md",
+        "docs/guide.en.md",
+        "docs/guide.pt.md"
+      ],
+      "expected_actions": [
+        "Interfaz: cambiar idioma ES/EN/PT",
+        "Tutorial visual: seis pasos, ampliar, cerrar, reanudar y reiniciar"
+      ],
+      "exercise": [
+        "Recorrer interfaz y tutorial en los tres idiomas.",
+        "Cambiar idioma de interfaz sin modificar idioma ni prosa del informe.",
+        "Exportar informes ES/EN/PT con contenido redactado para cada idioma."
+      ],
+      "expected_evidence": [
+        "Capturas reales de los tres recorridos.",
+        "Hashes de contenido que prueben que cambiar la interfaz no lo traduce."
+      ],
+      "limits_or_dependencies": [
+        "El idioma del informe no traduce automáticamente la prosa del autor."
+      ],
+      "evidence": []
+    },
+    {
+      "id": "HZ-03",
+      "key": "sections",
+      "title": "Secciones y estructura",
+      "status": "not_run",
+      "implementation_paths": [
+        "designs/report_sections.yaml",
+        "sections.py"
+      ],
+      "expected_actions": [
+        "GET /api/sections/catalog",
+        "GET /api/presets",
+        "PUT /api/projects/<slug>"
+      ],
+      "exercise": [
+        "Activar y poblar las trece secciones generales.",
+        "Añadir sección propia y estructura empresarial.",
+        "Reordenar secciones y verificar enlaces internos."
+      ],
+      "expected_evidence": [
+        "Orden, títulos y contenido íntegros en los cuatro formatos."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-04",
+      "key": "assets_coverage",
+      "title": "Activos y cobertura",
+      "status": "not_run",
+      "implementation_paths": [
+        "workflows.py",
+        "engine.py"
+      ],
+      "expected_actions": [
+        "PUT /api/projects/<slug>",
+        "GET /api/projects/<slug>/review"
+      ],
+      "exercise": [
+        "Registrar activos, cobertura completa, parcial y no realizada.",
+        "Relacionar hallazgos mediante UID y activar rg_assets/rg_coverage."
+      ],
+      "expected_evidence": [
+        "Inventario y cobertura exportados con límites del escenario ficticio."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-05",
+      "key": "vulnerability_findings",
+      "title": "Hallazgos y clasificación",
+      "status": "not_run",
+      "implementation_paths": [
+        "validate.py",
+        "cvss/v31.py",
+        "cvss/v40.py"
+      ],
+      "expected_actions": [
+        "POST /api/cvss",
+        "GET /api/cwe",
+        "GET /api/owasp/web",
+        "GET /api/owasp/llm",
+        "PUT /api/projects/<slug>"
+      ],
+      "exercise": [
+        "Redactar hallazgos distintos con estado, verificación, responsables, fechas y criterios de cierre.",
+        "Ejercitar CVSS 3.1/4.0, severidad informativa y pendiente."
+      ],
+      "expected_evidence": [
+        "Vectores y puntuaciones coherentes; clasificación técnica separada del riesgo empresarial."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-06",
+      "key": "machine_findings",
+      "title": "Fichas de máquina y fases",
+      "status": "not_run",
+      "implementation_paths": [
+        "exporters/machine_graph.py",
+        "engine.py"
+      ],
+      "expected_actions": [
+        "PUT /api/projects/<slug>"
+      ],
+      "exercise": [
+        "Crear fichas mode=machine con host, puertos, resumen, fases, pasos y prueba ficticia."
+      ],
+      "expected_evidence": [
+        "Gráficos de fases y contenido de máquinas en las exportaciones."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-07",
+      "key": "complex_markup",
+      "title": "Contenido complejo y paginación",
+      "status": "not_run",
+      "implementation_paths": [
+        "safe_markup.py",
+        "exporters/richtext.py",
+        "exporters/docx.py",
+        "exporters/pdf.py"
+      ],
+      "expected_actions": [
+        "POST /api/md",
+        "POST /api/validate",
+        "POST /api/projects/<slug>/preview"
+      ],
+      "exercise": [
+        "Incluir tablas extensas/alineadas, listas y citas anidadas, código, URLs largas, enlaces internos y leyendas multilínea.",
+        "Inspeccionar regiones de hallazgos, ordinales, tablas, saltos y referencias reales."
+      ],
+      "expected_evidence": [
+        "Verificación de contenido por formato y páginas renderizadas revisadas."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-08",
+      "key": "appearance_templates",
+      "title": "Diseños y plantillas personales",
+      "status": "not_run",
+      "implementation_paths": [
+        "report_designs.py",
+        "design_library.py",
+        "webapp/design_api.py"
+      ],
+      "expected_actions": [
+        "GET /api/design-library",
+        "POST /api/design-library/preview",
+        "POST /api/projects/<slug>/design",
+        "POST /api/design-library/personal",
+        "PUT /api/design-library/personal/<id>",
+        "DELETE /api/design-library/personal/<id>"
+      ],
+      "exercise": [
+        "Ejercitar los seis temas generales y las seis composiciones.",
+        "Consultar las 60 variantes de los 30 perfiles especializados.",
+        "Crear, modificar, aplicar y retirar una plantilla de prueba."
+      ],
+      "expected_evidence": [
+        "Matriz exacta de variantes/idiomas/formatos realmente exportados.",
+        "Apariencia conserva contenido; proyectos mantienen copia de plantilla."
+      ],
+      "limits_or_dependencies": [
+        "Registrar cada combinación efectivamente exportada; muestras por composición no equivalen a exportar todas las variantes."
+      ],
+      "evidence": []
+    },
+    {
+      "id": "HZ-09",
+      "key": "capture_inbox",
+      "title": "Captura rápida privada",
+      "status": "not_run",
+      "implementation_paths": [
+        "capture_inbox.py",
+        "webapp/workbench_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/captures",
+        "POST /api/projects/<slug>/captures/<uid>/link"
+      ],
+      "exercise": [
+        "Crear note/command/http/image.",
+        "Vincular explícitamente capturas y conservar una sin incorporar."
+      ],
+      "expected_evidence": [
+        "Captura privada excluida de entrega; incorporadas presentes una sola vez."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-10",
+      "key": "evidence",
+      "title": "Evidencias y originales",
+      "status": "not_run",
+      "implementation_paths": [
+        "evidence.py",
+        "webapp/workflow_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/image",
+        "POST /api/projects/<slug>/evidence",
+        "GET /api/projects/<slug>/evidence",
+        "GET /api/projects/<slug>/evidence/<uid>/original"
+      ],
+      "exercise": [
+        "Subir y registrar imágenes distintas; asociar algunas a varios hallazgos.",
+        "Superar veinte evidencias para recorrer la paginación."
+      ],
+      "expected_evidence": [
+        "Conteos, hashes, asociaciones, títulos y leyendas comprobados."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-11",
+      "key": "image_edits",
+      "title": "Censura y anotación",
+      "status": "not_run",
+      "implementation_paths": [
+        "evidence.py",
+        "webapp/workflow_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/evidence/<uid>/edit"
+      ],
+      "exercise": [
+        "Aplicar redact, box, text y arrow con coordenadas válidas.",
+        "Comprobar referencias actualizadas y original privado intacto."
+      ],
+      "expected_evidence": [
+        "Derivado publicado y original separados; censura no revocada por anotación superpuesta."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-12",
+      "key": "publication_privacy",
+      "title": "Inspector y privacidad",
+      "status": "not_run",
+      "implementation_paths": [
+        "publication.py",
+        "private_data.py",
+        "webapp/publication_api.py",
+        "webapp/privacy_api.py"
+      ],
+      "expected_actions": [
+        "GET /api/projects/<slug>/publication",
+        "GET /api/projects/<slug>/publication/image",
+        "GET /api/projects/<slug>/privacy",
+        "POST /api/projects/<slug>/privacy/prune"
+      ],
+      "exercise": [
+        "Revisar sustituciones literales, texto y imágenes publicados.",
+        "Comprobar exclusión de historial, originales y notas privadas.",
+        "Probar poda únicamente en copia desechable del caso."
+      ],
+      "expected_evidence": [
+        "Inventario privado y búsqueda negativa de marcadores privados en todas las entregas."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-13",
+      "key": "ocr",
+      "title": "OCR opcional local",
+      "status": "not_run",
+      "implementation_paths": [
+        "privacy_ocr.py",
+        "webapp/privacy_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/privacy/ocr"
+      ],
+      "exercise": [
+        "Analizar una imagen publicada sintética y registrar estado/alcance del motor real."
+      ],
+      "expected_evidence": [
+        "Motor y versión, hash imagen, categorías sin texto sensible reconocido."
+      ],
+      "limits_or_dependencies": [
+        "Tesseract opcional; máximo 12 MiB/12 millones de píxeles; reconocimiento eng; ausencia de alertas no acredita ausencia de datos sensibles."
+      ],
+      "evidence": []
+    },
+    {
+      "id": "HZ-14",
+      "key": "attachments",
+      "title": "Anexos declarados y revisados",
+      "status": "not_run",
+      "implementation_paths": [
+        "attachments.py",
+        "webapp/attachments_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/attachments/declare",
+        "POST /api/projects/<slug>/attachments/upload",
+        "GET /api/projects/<slug>/attachments",
+        "GET /api/projects/<slug>/attachments/scan"
+      ],
+      "exercise": [
+        "Declarar obligatorio y comprobar bloqueo hasta subir, revisar e incluir.",
+        "Ejercitar anexos TXT, CSV, JSON y PDF ficticios, más uno privado excluido."
+      ],
+      "expected_evidence": [
+        "Archivos incluidos y hashes correctos; privado excluido; errores no eludidos."
+      ],
+      "limits_or_dependencies": [
+        "100 anexos y 64 MiB por proyecto; detección textual limitada, sin OCR de PDF."
+      ],
+      "evidence": []
+    },
+    {
+      "id": "HZ-15",
+      "key": "scanner_imports",
+      "title": "Cinco importadores y procedencia",
+      "status": "not_run",
+      "implementation_paths": [
+        "finding_imports.py",
+        "scanner_imports.py",
+        "webapp/progress_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/intake/preview",
+        "POST /api/projects/<slug>/intake/apply"
+      ],
+      "exercise": [
+        "Importar CSV con mapeo, Burp XML, Nuclei JSONL, Nmap XML y SARIF driver/extensions.",
+        "Verificar deduplicación, selección, archivo fuente y revisión explícita."
+      ],
+      "expected_evidence": [
+        "Origen íntegro; importado no pasa a verificado automáticamente; exclusiones SARIF explicadas."
+      ],
+      "limits_or_dependencies": [
+        "4 MiB UTF-8 y 500 resultados; SARIF 50 runs, 100 extensiones/run y 10.000 reglas agregadas/run; no se descargan referencias externas."
+      ],
+      "evidence": []
+    },
+    {
+      "id": "HZ-16",
+      "key": "finding_library",
+      "title": "Biblioteca de hallazgos",
+      "status": "not_run",
+      "implementation_paths": [
+        "finding_library.py",
+        "webapp/workflow_api.py"
+      ],
+      "expected_actions": [
+        "GET /api/library",
+        "POST /api/library",
+        "PUT /api/library/<uid>",
+        "DELETE /api/library/<uid>",
+        "POST /api/library/sanitize",
+        "POST /api/library/<uid>/instantiate",
+        "POST /api/library/import"
+      ],
+      "exercise": [
+        "Crear, editar, instanciar, sanear, importar y eliminar sólo entradas sintéticas."
+      ],
+      "expected_evidence": [
+        "Campos privados saneados y cambios protegidos por revisión de biblioteca."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-17",
+      "key": "bulk_edit",
+      "title": "Edición por lotes",
+      "status": "not_run",
+      "implementation_paths": [
+        "webapp/bulk_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/bulk-edit/preview",
+        "POST /api/projects/<slug>/bulk-edit/apply"
+      ],
+      "exercise": [
+        "Asignar responsable, plazo y grupo de causa raíz después de revisar.",
+        "Probar rechazo de propuesta obsoleta."
+      ],
+      "expected_evidence": [
+        "Cambios previstos exactos, UID estables e historial recuperable."
+      ],
+      "limits_or_dependencies": [
+        "Hasta 500 hallazgos por operación; no modifica verificación técnica."
+      ],
+      "evidence": []
+    },
+    {
+      "id": "HZ-18",
+      "key": "root_causes",
+      "title": "Causas raíz y acciones",
+      "status": "not_run",
+      "implementation_paths": [
+        "root_cause.py",
+        "workflows.py"
+      ],
+      "expected_actions": [
+        "PUT /api/projects/<slug>"
+      ],
+      "exercise": [
+        "Agrupar hallazgos y activar rg_root_causes.",
+        "Combinar acción común y acción individual prioritaria; retirar un grupo en copia."
+      ],
+      "expected_evidence": [
+        "Hallazgos conservados; acciones resueltas y selección parcial coherentes."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-19",
+      "key": "retest",
+      "title": "Correcciones y retest",
+      "status": "not_run",
+      "implementation_paths": [
+        "retest_compare.py",
+        "retest_summary.py",
+        "webapp/retest_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/retest",
+        "GET /api/projects/<slug>/retest-diff",
+        "GET /api/projects/<slug>/retest-diff/visual",
+        "GET /api/projects/<slug>/retest-matrix"
+      ],
+      "exercise": [
+        "Registrar fixed, open, partial y not_verified como estados del guion ficticio.",
+        "Comparar con entrega marcada y examinar matriz."
+      ],
+      "expected_evidence": [
+        "Historial de retest, evidencias y estado derivados coherentes; no afirmar prueba real del banco."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-20",
+      "key": "remediation_tasks",
+      "title": "Tareas de remediación",
+      "status": "not_run",
+      "implementation_paths": [
+        "remediation_tasks.py",
+        "webapp/remediation_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/remediation-tasks/preview",
+        "POST /api/projects/<slug>/remediation-tasks/export"
+      ],
+      "exercise": [
+        "Previsualizar campos y descargar CSV y fichas HTML.",
+        "Incluir texto sintético que ejercite neutralización de fórmula."
+      ],
+      "expected_evidence": [
+        "Vista previa vinculada a descarga y contenido inerte en CSV/HTML."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-21",
+      "key": "remediation_return",
+      "title": "Retorno, recepción y revocación",
+      "status": "not_run",
+      "implementation_paths": [
+        "remediation_return.py",
+        "webapp/remediation_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/remediation-tasks/return-template",
+        "POST /api/projects/<slug>/remediation-tasks/return-preview",
+        "POST /api/projects/<slug>/remediation-tasks/return-receive",
+        "POST /api/projects/<slug>/remediation-tasks/return-apply",
+        "POST /api/projects/<slug>/remediation-tasks/return-revoke"
+      ],
+      "exercise": [
+        "Emitir plantilla; modificar sólo owner/due_date/reported_remediation.",
+        "Registrar recepción, aplicar selección y revocar otro lote."
+      ],
+      "expected_evidence": [
+        "Lote/hashes/eventos conservados; retorno no convierte corrección comunicada en retest verificado."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-22",
+      "key": "owner_delivery",
+      "title": "Entrega por responsable",
+      "status": "not_run",
+      "implementation_paths": [
+        "remediation_return.py",
+        "webapp/remediation_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/remediation-tasks/delivery-preview",
+        "POST /api/projects/<slug>/remediation-tasks/delivery-export"
+      ],
+      "exercise": [
+        "Emitir fichas y CSV para al menos dos responsables sintéticos."
+      ],
+      "expected_evidence": [
+        "Carpetas separadas, manifiesto, hashes y registro local; sin envío externo."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-23",
+      "key": "insights_review",
+      "title": "Afirmaciones, riesgo y revisión",
+      "status": "not_run",
+      "implementation_paths": [
+        "insights.py",
+        "webapp/insights_api.py"
+      ],
+      "expected_actions": [
+        "GET /api/projects/<slug>/insights",
+        "GET /api/projects/<slug>/insights/editorial",
+        "POST /api/projects/<slug>/insights"
+      ],
+      "exercise": [
+        "Registrar observed/inference/hypothesis, contexto de negocio y prioridades justificadas.",
+        "Añadir/resolver comentarios; aprobar; editar y comprobar obsolescencia."
+      ],
+      "expected_evidence": [
+        "Prosa y evidencias vinculadas; decisiones privadas separadas de validación técnica."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-24",
+      "key": "audiences",
+      "title": "Tres destinatarios",
+      "status": "not_run",
+      "implementation_paths": [
+        "audience.py",
+        "webapp/audience_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/audiences/preview",
+        "POST /api/projects/<slug>/audiences/export"
+      ],
+      "exercise": [
+        "Generar técnica parcial, ejecutiva y pública.",
+        "Pública con texto aprobado, alias y consentimiento declarado para simulación."
+      ],
+      "expected_evidence": [
+        "Plan de inclusión exacto, campos privados excluidos y referencias internas válidas."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-25",
+      "key": "exports_queue",
+      "title": "Exportaciones y cola",
+      "status": "not_run",
+      "implementation_paths": [
+        "export.py",
+        "delivery.py",
+        "export_jobs.py",
+        "webapp/progress_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/export/<fmt>",
+        "POST /api/projects/<slug>/delivery",
+        "POST /api/projects/<slug>/jobs",
+        "GET /api/jobs/<key>/verification",
+        "GET /api/jobs/<key>/download",
+        "POST /api/jobs/<key>/cancel"
+      ],
+      "exercise": [
+        "Generar PDF/DOCX/Markdown ZIP/HTML y paquete conjunto desde revisión guardada.",
+        "Cancelar una exportación desechable y verificar que editar no altera revisión ya en cola."
+      ],
+      "expected_evidence": [
+        "Contrato de contenido, hashes, tamaños y fuentes intactas por entrega."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-26",
+      "key": "visual_review",
+      "title": "Vista y registro de revisión PDF",
+      "status": "not_run",
+      "implementation_paths": [
+        "visual_review.py",
+        "webapp/visual_api.py"
+      ],
+      "expected_actions": [
+        "GET /api/jobs/<key>/visual",
+        "POST /api/projects/<slug>/visual",
+        "GET /api/visual/<key>/page/<number>",
+        "POST /api/visual/<key>/review",
+        "GET /api/visual/<key>/review/download",
+        "DELETE /api/visual/<key>"
+      ],
+      "exercise": [
+        "Inspeccionar páginas reales; registrar observaciones y descargar registro.",
+        "Distinguir revisión por agente de revisión humana; no atribuir un humano inexistente."
+      ],
+      "expected_evidence": [
+        "PDF, revisión y hash exactos; autor/tipo de observación declarados honestamente."
+      ],
+      "limits_or_dependencies": [
+        "16 MiB/500 páginas; recibos temporales de 30 minutos; no acredita Word ni revisión humana por generar miniaturas."
+      ],
+      "evidence": []
+    },
+    {
+      "id": "HZ-27",
+      "key": "pdf_comparison",
+      "title": "Comparación PDF y registro privado",
+      "status": "not_run",
+      "implementation_paths": [
+        "pdf_compare.py",
+        "pdf_comparison_reviews.py",
+        "webapp/pdf_compare_api.py",
+        "webapp/pdf_comparison_reviews_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/pdf-compare/metadata",
+        "POST /api/pdf-compare",
+        "GET /api/pdf-compare/receipts/<key>",
+        "POST /api/projects/<slug>/pdf-comparisons",
+        "GET /api/projects/<slug>/pdf-comparisons/<uid>"
+      ],
+      "exercise": [
+        "Comparar posicionalmente y mediante mapa manual con inserciones/reordenamiento/eliminación.",
+        "Usar derivados técnicos de report-gen si el informe supera ochenta páginas.",
+        "Guardar JSON privado y HTML aparte; comprobar exclusión por defecto."
+      ],
+      "expected_evidence": [
+        "Cobertura única de cada página, hashes, conteos y persistencia en respaldo/historial."
+      ],
+      "limits_or_dependencies": [
+        "16 MiB y 80 páginas/PDF, 160 parejas, 45 segundos, 32 MiB de HTML; una diferencia visual no acredita cambio semántico."
+      ],
+      "evidence": []
+    },
+    {
+      "id": "HZ-28",
+      "key": "history_recovery",
+      "title": "Versiones y respaldo de proyecto",
+      "status": "not_run",
+      "implementation_paths": [
+        "project_history.py",
+        "report_compare.py",
+        "webapp/workflow_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/projects/<slug>/history",
+        "GET /api/projects/<slug>/history/<sid>/compare",
+        "GET /api/projects/<slug>/history/<sid>/visual",
+        "POST /api/projects/<slug>/history/<sid>/restore",
+        "GET /api/projects/<slug>/bundle",
+        "POST /api/projects/import"
+      ],
+      "exercise": [
+        "Marcar entrega y comparar revisión posterior.",
+        "Exportar/importar respaldo privado y restaurar una versión en copia desechable."
+      ],
+      "expected_evidence": [
+        "Fuente original conservada, blobs íntegros y estado restaurado reproducible."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-29",
+      "key": "workspace_backups",
+      "title": "Respaldo integral, cifrado y rutina",
+      "status": "not_run",
+      "implementation_paths": [
+        "workspace_backup.py",
+        "private_backup.py",
+        "backup_routine.py"
+      ],
+      "expected_actions": [
+        "POST /api/workspace/backup",
+        "POST /api/workspace/backup/encrypted",
+        "POST /api/workspace/restore",
+        "PUT /api/workspace/backup-routine",
+        "POST /api/workspace/backup-routine/run",
+        "POST /api/workspace/backup-routine/verify",
+        "POST /api/workspace/backup-routine/disable"
+      ],
+      "exercise": [
+        "Restaurar ZIP y rgbackup en espacios vacíos; rechazar contraseña incorrecta.",
+        "Configurar carpeta externa de prueba, crear/verificar, probar retención y desactivar."
+      ],
+      "expected_evidence": [
+        "Comparación de bytes restaurados; no mezclar espacios ni entregar contraseñas/claves como cliente."
+      ],
+      "limits_or_dependencies": [
+        "Cifrado requiere cryptography; rutina actúa sólo con servidor abierto; probar en espacio/carpeta de prueba."
+      ],
+      "evidence": []
+    },
+    {
+      "id": "HZ-30",
+      "key": "organization_drafts",
+      "title": "Organización, navegación y borradores",
+      "status": "not_run",
+      "implementation_paths": [
+        "project_catalog.py",
+        "webapp/dashboard_api.py",
+        "webapp/static"
+      ],
+      "expected_actions": [
+        "GET /api/projects",
+        "POST /api/projects/<slug>/management",
+        "POST /api/projects/<slug>/draft-check",
+        "Interfaz: filtros, búsqueda, mover, vistas, recuperación y guardar"
+      ],
+      "exercise": [
+        "Fecha prevista, archivar/reactivar, filtros/ordenación y páginas de hallazgos.",
+        "Recuperar borrador y probar fallo/reintento de guardado en copia."
+      ],
+      "expected_evidence": [
+        "Identidad de proyecto/espacio conservada y sin pérdida de ediciones."
+      ],
+      "limits_or_dependencies": [],
+      "evidence": []
+    },
+    {
+      "id": "HZ-31",
+      "key": "diagnostics_update",
+      "title": "Diagnóstico y actualizador",
+      "status": "not_run",
+      "implementation_paths": [
+        "support_report.py",
+        "launcher_upgrade.py",
+        "webapp/experience_api.py",
+        "webapp/update_api.py"
+      ],
+      "expected_actions": [
+        "POST /api/diagnostics",
+        "POST /api/diagnostics/download",
+        "POST /api/update/check",
+        "POST /api/update/prepare"
+      ],
+      "exercise": [
+        "Generar diagnóstico sintético y descargar únicamente proyección revisada.",
+        "Probar consulta/preparación de actualización en instalación aislada, sin sustituir proceso activo."
+      ],
+      "expected_evidence": [
+        "JSON compartible sin datos de proyecto/rutas/usuarios; estado de actualización real o dependencia documentada."
+      ],
+      "limits_or_dependencies": [
+        "Consulta/preparación de actualización requiere acceso al origen remoto y una versión apta; no inventar publicación posterior."
+      ],
+      "evidence": []
+    },
+    {
+      "id": "HZ-32",
+      "key": "signing_assistant",
+      "title": "Firma opcional y asistente local",
+      "status": "not_run",
+      "implementation_paths": [
+        "delivery_signature.py",
+        "editorial_assistant.py",
+        "webapp/assistant_api.py"
+      ],
+      "expected_actions": [
+        "python -m delivery_signature keygen|sign|verify|fingerprint",
+        "GET /api/assistant/capabilities",
+        "POST /api/assistant/models",
+        "POST /api/projects/<slug>/assistant",
+        "POST /api/projects/<slug>/assistant/apply",
+        "POST /api/projects/<slug>/assistant/discard"
+      ],
+      "exercise": [
+        "Firmar/verificar entrega con clave inequívocamente de prueba, privada fuera de proyecto/repo/entrega.",
+        "Consultar modelo local real; si no existe, comprobar error y declarar inferencia no ejecutada."
+      ],
+      "expected_evidence": [
+        "Firma valida bytes con pública fijada; no autentica persona.",
+        "No presentar respuesta simulada como inferencia de Ollama real."
+      ],
+      "limits_or_dependencies": [
+        "Firma requiere cryptography y clave privada POSIX; no compartir privada.",
+        "Ollama en 127.0.0.1:11434 y modelo local real; no instalar modelos durante esta auditoría."
+      ],
+      "evidence": []
+    }
+  ]
+}

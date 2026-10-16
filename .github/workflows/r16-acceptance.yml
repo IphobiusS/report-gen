@@ -54,3 +54,64 @@ jobs:
             out/estuario-r16-native/
           if-no-files-found: error
           retention-days: 14
+
+  horizonte:
+    name: Horizonte banking case and complete project lifecycle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      RG_PYTHON: python
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-audited.txt
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install real document and OCR engines
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-writer tesseract-ocr tesseract-ocr-eng fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto-core fonts-noto-cjk libpango-1.0-0 libpangocairo-1.0-0
+          fc-cache -f
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Compose fictional project inputs without generating report documents
+        run: python scripts/build-horizonte-case.py --output out/horizonte/case
+      - name: Generate twelve reports only with report-gen and inspect native Word rendering
+        run: python scripts/audit-horizonte-exports.py --projects out/horizonte/case/projects --output out/horizonte/exports --mode principal --native-executable /usr/bin/libreoffice --require-stable
+      - name: Exercise evidence, import, remediation, audiences, signatures and recovery
+        run: python scripts/audit-horizonte-lifecycle.py --case out/horizonte/case/projects/es --output out/horizonte/lifecycle --ui-bundle out/horizonte/horizonte-ui-input.zip --pdf out/horizonte/exports/principal/es/outputs/informe.pdf
+      - name: Verify mandatory PDF annexes, pending severity and group removal
+        run: python scripts/audit-horizonte-supplement.py --case out/horizonte/case/projects/es --pdf out/horizonte/exports/principal/es/outputs/informe.pdf --output out/horizonte/supplement
+      - name: Traverse the real editor, tutorial and banking project in Chromium
+        run: |
+          node scripts/audit-horizonte-browser.cjs \
+            --bundle out/horizonte/horizonte-ui-input.zip \
+            --project-dir out/horizonte/case/projects/es \
+            --input-dir out/horizonte/case/inputs \
+            --before-pdf out/horizonte/lifecycle/audiences/executive.pdf \
+            --after-pdf out/horizonte/lifecycle/audiences/public.pdf \
+            --slug horizonte-es --allow-export --output out/horizonte/browser
+      - name: Preserve exact inputs, reports, acceptance receipts and real screenshots
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: horizonte-${{ github.sha }}
+          path: |
+            out/horizonte/case/
+            out/horizonte/exports/
+            out/horizonte/lifecycle/results.json
+            out/horizonte/lifecycle/audiences/
+            out/horizonte/lifecycle/diagnostics-sanitized.json
+            out/horizonte/supplement/results.json
+            out/horizonte/supplement/scope.json
+            out/horizonte/supplement/pending-severity-delivery-manifest.json
+            out/horizonte/horizonte-ui-input.zip
+            out/horizonte/browser/
+          if-no-files-found: error
+          retention-days: 14

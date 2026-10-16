@@ -70,11 +70,12 @@ def _code(node, markdown=False):
 
 def _dom_paragraph_nodes(root):
     # A linked figure's caption belongs to its hyperlink/paragraph, including
-    # inline walkthroughs without a p wrapper. Its exact caption is independently
-    # bound to the image and destination by the semantic checks.
+    # inline walkthroughs without a p wrapper. A cell's captions belong to its
+    # exact table text, not separate Word paragraphs. Every caption is also
+    # independently bound to the image and destination by the semantic checks.
     return [n for n in root.xpath('.//p|.//figcaption')
             if not n.xpath('ancestor::pre')
-            and not (n.tag == 'figcaption' and n.xpath('ancestor::p|ancestor::a'))]
+            and not (n.tag == 'figcaption' and n.xpath('ancestor::p|ancestor::a|ancestor::td|ancestor::th'))]
 
 
 def _paragraph_text(node):
@@ -102,9 +103,11 @@ def _dom_units(root, markdown=False):
     # Actual paragraph order is used below, with block boundaries retained as spaces.
     text = normal(root.text_content())
     codes = [_code(n, markdown) for n in root.xpath('.//pre')]
-    rows = [[normal(cell.text_content()) for cell in row if cell.tag in ('td', 'th')]
+    # Figures remain blocks inside cells too. Use those source boundaries when
+    # comparing Word's layout breaks, retaining every caption and word in order.
+    rows = [[normal(_paragraph_text(cell)) for cell in row if cell.tag in ('td', 'th')]
             for row in root.xpath('.//tr')]
-    tables = [[[normal(cell.text_content()) for cell in row if cell.tag in ('td', 'th')]
+    tables = [[[normal(_paragraph_text(cell)) for cell in row if cell.tag in ('td', 'th')]
                for row in table.xpath('./tr|./thead/tr|./tbody/tr|./tfoot/tr')]
               for table in root.xpath('.//table')]
     return dict(text=text, paragraphs=paragraphs, codes=codes, table_rows=rows, tables=tables,
@@ -208,7 +211,7 @@ def from_tree(tree, image_digests=None, docx_image_digests=None):
         rows = []; tables = []
         for table in root.xpath('.//table'):
             if has_class(table, 'meta') or has_class(table, 'hostbox'): continue
-            table_rows = [[normal(cell.text_content()) for cell in row if cell.tag in ('th', 'td')]
+            table_rows = [[normal(_paragraph_text(cell)) for cell in row if cell.tag in ('th', 'td')]
                           for row in table.xpath('./tr|./thead/tr|./tbody/tr|./tfoot/tr')]
             rows += table_rows; tables.append(table_rows)
         lists = []

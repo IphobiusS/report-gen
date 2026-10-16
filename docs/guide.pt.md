@@ -1,4 +1,4 @@
-# Guia do usuário do report-gen 0.35.0
+# Guia do usuário do report-gen 0.37.1
 
 [Boas-vindas](../README.pt.md) · [Español](guide.es.md) · [English](guide.en.md) · [Histórico de alterações](../CHANGELOG.md)
 
@@ -151,7 +151,7 @@ O provedor UNO deve pertencer à mesma instalação do LibreOffice. A `.venv` do
 Crie a OXT sem instalá-la:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.35.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.37.1.oxt
 ```
 
 1. No LibreOffice escolhido, abra **Ferramentas → Extensões → Adicionar**; algumas versões usam **Gerenciador de extensões**.

@@ -205,19 +205,65 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
             tag = child.tag
             if tag == "br": linebreak()
             elif tag == "img": picture(child, paragraph, parent)
+            elif tag == "figure":
+                # Cells retain block figures inside one Word paragraph. Their
+                # captions must stay separated from any following prose or
+                # figure even when the authored Markdown has no spaces.
+                inline(child, paragraph, bold, italic, code, parent=parent)
+                linebreak()
             elif tag == "a" and child.get("href"):
-                link = OxmlElement("w:hyperlink")
                 href = child.get('href')
-                if href.startswith('#'):
-                    from urllib.parse import unquote
-                    from .navigation import reference_name
-                    link.set(qn('w:anchor'), reference_name(unquote(href[1:])))
+                def linked_contents(contents, link_bold=bold, link_italic=italic, link_code=code):
+                    link = OxmlElement("w:hyperlink")
+                    if href.startswith('#'):
+                        from urllib.parse import unquote
+                        from .navigation import reference_name
+                        link.set(qn('w:anchor'), reference_name(unquote(href[1:])))
+                    else:
+                        link.set(qn("r:id"), paragraph.part.relate_to(href, RT.HYPERLINK, is_external=True))
+                    paragraph._p.append(link)
+                    inline(contents, paragraph, link_bold, link_italic, link_code, parent=link)
+                    if not href.startswith('#') and '#' in href:
+                        _separate_hyperlink_runs(link)
+                if child.xpath('.//figure'):
+                    # A table cell keeps the drawing and caption in one
+                    # paragraph. Link their authored text fragments separately:
+                    # layout breaks must not become part of the link label, and
+                    # the drawing carries its own clickable destination.
+                    parts = list(paragraph_parts(child, preserve_whitespace=True))
+                    for index, part in enumerate(parts):
+                        if part.tag != 'figure':
+                            if part.text_content().strip():
+                                linked_contents(part)
+                            continue
+                        caption = part.find('figcaption')
+                        for img in part.findall('img'):
+                            picture(img, paragraph, caption=caption.text_content() if caption is not None else None,
+                                    href=href)
+                        if caption is not None:
+                            linebreak()
+                            caption = deepcopy(caption)
+                            # A literal separator between adjacent figures is
+                            # part of the preceding link label. Keep it even
+                            # though ordinary paragraph splitting discards an
+                            # otherwise empty whitespace-only fragment.
+                            if index + 1 < len(parts):
+                                following = parts[index + 1]
+                                if following.tag != 'figure' and not following.text_content().strip():
+                                    separator = following.text_content()
+                                    if len(caption):
+                                        caption[-1].tail = (caption[-1].tail or '') + separator
+                                    else:
+                                        caption.text = (caption.text or '') + separator
+                            wrappers = figure_wrappers.get(part, ())
+                            linked_contents(caption,
+                                bold or any(n.tag in {'b', 'strong'} for n in wrappers),
+                                italic or any(n.tag in {'i', 'em'} for n in wrappers),
+                                code or any(n.tag == 'code' for n in wrappers))
+                            if any(p.tag == 'figure' or p.text_content().strip() for p in parts[index + 1:]):
+                                linebreak()
                 else:
-                    link.set(qn("r:id"), paragraph.part.relate_to(href, RT.HYPERLINK, is_external=True))
-                paragraph._p.append(link)
-                inline(child, paragraph, bold, italic, code, parent=link)
-                if not href.startswith('#') and '#' in href:
-                    _separate_hyperlink_runs(link)
+                    linked_contents(child)
             elif tag == "figcaption":
                 linebreak()
                 inline(child, paragraph, bold, italic, code, parent=parent)
@@ -227,7 +273,7 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
 
     figure_wrappers = {}
 
-    def paragraph_parts(node, wrappers=()):
+    def paragraph_parts(node, wrappers=(), preserve_whitespace=False):
         # The shared Markdown tree promotes images to block figures even
         # inside links/emphasis in sentences and list paragraphs. Split at any
         # inline depth, retaining formatting on either side and on the caption.
@@ -235,16 +281,16 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
         fragment.text = node.text
         for child in node:
             if child.tag == 'figure':
-                if fragment.text_content().strip() or len(fragment):
+                if (fragment.text_content() if preserve_whitespace else fragment.text_content().strip()) or len(fragment):
                     yield fragment
                 figure_wrappers[child] = wrappers
                 yield child
                 fragment = html.Element(node.tag, dict(node.attrib))
                 fragment.text = child.tail
             elif child.xpath('.//figure'):
-                for part in paragraph_parts(child, wrappers + (child,)):
+                for part in paragraph_parts(child, wrappers + (child,), preserve_whitespace):
                     if part.tag == 'figure':
-                        if fragment.text_content().strip() or len(fragment):
+                        if (fragment.text_content() if preserve_whitespace else fragment.text_content().strip()) or len(fragment):
                             yield fragment
                         yield part
                         fragment = html.Element(node.tag, dict(node.attrib))
@@ -256,7 +302,7 @@ def write_markdown(document, text, root, code_block, keep_tables=True, retest=Fa
                     fragment.text = (fragment.text or '') + (child.tail or '')
             else:
                 fragment.append(deepcopy(child))
-        if fragment.text_content().strip() or len(fragment):
+        if (fragment.text_content() if preserve_whitespace else fragment.text_content().strip()) or len(fragment):
             yield fragment
 
     def block(node, depth=0, list_paragraph=None, list_offset=0):

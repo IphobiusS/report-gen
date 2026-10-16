@@ -1,3 +1,16 @@
+# Cambios 0.37.1 (2026-10-16)
+
+- Corregidas las imágenes enlazadas dentro de celdas de tablas Word: se conservan
+  los destinos de imagen y leyenda, los fragmentos de URL y el texto circundante,
+  también con varias figuras consecutivas.
+  Los saltos de maquetación no forman parte de las etiquetas de los enlaces;
+  el contrato normaliza únicamente los límites visuales de figura en celdas,
+  manteniendo la detección de texto, imágenes y enlaces eliminados o alterados.
+- Nuevo caso bancario ficticio reproducible Banco Horizonte Austral y recorridos
+  de aceptación de exportaciones, interfaz y ciclo de vida del proyecto.
+  La matriz distingue lo ejecutado de las dependencias externas pendientes.
+- Guías actualizadas y corregido el número de documentos del kit Word opcional.
+
 # Cambios 0.37.0 (2026-10-16)
 
 - Emparejamiento manual de páginas PDF con cobertura completa y referencias

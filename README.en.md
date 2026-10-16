@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.37.0
+# report-gen 0.37.1
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -50,6 +50,10 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Word | An editable `.docx` with its own table-of-contents fields. |
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
+
+## Fixes in 0.37.1
+
+Linked images inside Markdown tables preserve their destinations and captions in Word, including URL fragments and surrounding text. Link verification remains enabled. The fictional Banco Horizonte Austral case extends content and workflow acceptance; see its coverage matrix in `qa/horizonte/`.
 
 ## New in 0.37.0
 

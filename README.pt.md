@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen com Prometeo e Evaristo" width="300">
 </p>
 
-# report-gen 0.37.0
+# report-gen 0.37.1
 
 **Um editor local para transformar avaliações de segurança em relatórios claros.** Organize achados, vincule evidências, acompanhe a remediação e os retestes e produza **PDF, Word, Markdown com imagens e HTML portátil** a partir de uma revisão salva.
 
@@ -36,6 +36,10 @@ O português é a variante **Brasil**. A chave interna é `pt`; os argumentos de
 5. Abra os arquivos gerados antes de compartilhar e mantenha um backup privado do projeto editável.
 
 O **tutorial visual** permanece no menu. Seus seis passos têm instruções e capturas reais em espanhol, inglês e português, com ampliação e progresso local. A apresentação inicial pode ser ignorada. Consultar o tutorial não modifica o relatório; ele também funciona quando o navegador não consegue salvar seu progresso.
+
+## Correções da 0.37.1
+
+Imagens com links em tabelas Markdown preservam destinos e legendas no Word, incluindo fragmentos de URL e texto ao redor. A verificação de links permanece ativa. O caso fictício Banco Horizonte Austral amplia a aceitação de conteúdos e fluxos; consulte a matriz de cobertura em `qa/horizonte/`.
 
 ## Novidades da 0.37.0
 
