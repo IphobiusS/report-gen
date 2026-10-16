@@ -37,6 +37,14 @@ O português é a variante **Brasil**. A chave interna é `pt`; os argumentos de
 
 O **tutorial visual** permanece no menu. Seus seis passos têm instruções e capturas reais em espanhol, inglês e português, com ampliação e progresso local. A apresentação inicial pode ser ignorada. Consultar o tutorial não modifica o relatório; ele também funciona quando o navegador não consegue salvar seu progresso.
 
+## Novidades da 0.39.0
+
+A barra lateral organiza o trabalho em cinco grupos: **Projeto**, **Conteúdo**, **Evidências e escopo**, **Análise e acompanhamento** e **Entrega**. As linhas mantêm tamanho e espaçamento consistentes. Os índices expansíveis de seções e achados mostram suas quantidades e preservam a paginação dos projetos extensos.
+
+Ao navegar para um item, seu grupo é aberto e a seleção fica visível. Esse ajuste da barra lateral preserva o foco e não rola o editor. Você pode recolher o grupo atual; as atualizações em segundo plano respeitam essa escolha. **Entrega → Ferramentas** reúne bibliotecas, backup integral, privacidade, diagnóstico e atualização do aplicativo. No celular, **Navegação** abre a barra e **Escape** a fecha, devolvendo o foco ao botão.
+
+O novo caso fictício **Atlas Servicios Financieros** prepara uma avaliação ampla com conteúdo redigido em espanhol, inglês e português do Brasil. Seu [protocolo de aceitação](docs/QA-ATLAS-0390.md) distingue relatórios completos, amostras de modelos, percursos de API e verificações visuais. Os resultados são comprovados por execução; saídas pendentes não são consideradas aprovadas. [Percurso da barra lateral](docs/guide.pt.md#navegação-lateral-na-0390).
+
 ## Novidades da 0.38.0
 
 **Erros com localização:** importações mostram o registro, campo e linha disponíveis; exportações com falha identificam o achado, tabela, linha, célula ou evidência quando o contrato pode localizá-los com segurança. Caso contrário, o erro geral é preservado. Esses detalhes privados ficam fora dos manifestos de entrega.

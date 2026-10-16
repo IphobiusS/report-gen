@@ -160,11 +160,11 @@ const WorkbenchUI = (() => {
     const sidebar=$('.sidebar'),primary={home:'navHome',report:'navReport',findings:'navFindings',capture:'navCaptures',insights:'insightsBtn'};
     const selected=S.sel.type==='section'?$('#sectionList .active .finding-nav'):S.sel.type==='finding'?$('#findingList .active .finding-nav'):S.sel.type==='workflow'?$('[data-workflow="'+S.sel.idx+'"]'):$('#'+primary[S.sel.type]);
     const key=JSON.stringify([S.slug,S.sel]),changed=key!==navigationKey;navigationKey=key;
-    if(selected&&sidebar?.contains(selected)){
+    if(selected&&sidebar?.contains(selected)&&(changed||reveal)){
       for(let group=selected.parentElement;group&&group!==sidebar;group=group.parentElement)if(group.tagName==='DETAILS')group.open=true;
       // Reveal only on navigation or explicit mobile reopening; background saves
       // must not pull the user away from another part of a long index.
-      if(changed||reveal)requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
         if(!selected.isConnected||navigationKey!==key)return;
         for(const container of [selected.closest('.sidebar-index-body'),sidebar].filter(Boolean)){
           const row=selected.getBoundingClientRect(),bounds=container.getBoundingClientRect();

@@ -68,6 +68,26 @@ Abra **Tutorial visual** no menu **Mais**, em desktop ou celular. A primeira vis
 
 O CVSS descreve severidade técnica; sozinho, não representa risco de negócio. As seções **Postura de risco e impacto no negócio** e **Recomendações estratégicas** permitem documentar contexto, prioridades e apetite ao risco acordados com a organização. Ative-as em **Gerenciar seções**. O modelo não calcula nem aprova suas conclusões.
 
+## Navegação lateral na 0.39.0
+
+A barra lateral acompanha a sequência de trabalho. Seus cinco grupos usam linhas consistentes, separadores discretos e uma indicação do grupo que contém a seleção atual.
+
+| Grupo | Conteúdo |
+| --- | --- |
+| **01 Projeto** | Visão geral e dados gerais do relatório. |
+| **02 Conteúdo** | Quadro de achados e índices expansíveis de seções e achados. |
+| **03 Evidências e escopo** | Evidências; **Captura e cobertura** abre a caixa de capturas, ativos e cobertura. |
+| **04 Análise e acompanhamento** | Causas raiz, tarefas de correção, correções e retestes, alterações desde a entrega, matriz de retestes e versões. |
+| **05 Entrega** | Revisão de entrega, backup do projeto e **Ferramentas**. |
+
+Os contadores dos índices mostram o total do projeto. A lista de achados mantém páginas de 50 registros. Em projetos extensos, o índice tem rolagem própria para que as outras ferramentas continuem acessíveis. Abrir um achado ou uma seção por outro caminho expande seu índice e revela a linha selecionada nos dois contêineres de rolagem. Esse ajuste não move o foco nem rola o editor; a navegação para o conteúdo mantém seu comportamento habitual.
+
+As setas indicam grupos expansíveis. Use clique, **Enter** ou **Espaço** para abri-los ou fechá-los. Atualizações em segundo plano preservam o fechamento voluntário e a rolagem manual; escolher outro destino ou reabrir a navegação móvel revela a seleção novamente. Os índices permanecem disponíveis na visão geral e no quadro de achados. Ações que exigem um projeto são habilitadas ao abrir um.
+
+**Entrega → Ferramentas** reúne **Biblioteca de modelos de relatório**, **Backup do espaço de trabalho**, **Dados privados armazenados**, **Verificar instalação**, **Atualizar report-gen** e, no desktop, **Evidências e decisões**. No celular, esta última permanece em **Mais**; **Tutorial visual** também fica em **Mais**. O backup do projeto conserva seu acesso direto, separado do backup integral.
+
+No celular, abra **Navegação**. Escolher um destino fecha a barra e leva o foco ao conteúdo; **Escape** fecha a barra e devolve o foco ao botão. Um diálogo aberto conserva seu foco, inclusive o diálogo **Mover** seções. A hierarquia está disponível em espanhol, inglês e português do Brasil, nos temas claro e escuro. Alterar o idioma da interface não reescreve o relatório.
+
 ## Modelos e idiomas
 
 A biblioteca recomenda **Sóbrio** como ponto de partida geral. Compare capa, resumo e conteúdo técnico da mesma amostra. Existem seis modelos gerais, 26 perfis de certificação e prática, quatro estruturas empresariais e modelos pessoais. Filtre por finalidade ou fornecedor, busque pelo nome e compare as variantes **Marca** e **Sóbria**.
@@ -100,7 +120,7 @@ O controle **Mover** permite reordenar pelo teclado. Filtros, vistas salvas, pos
 
 ## Diagnósticos compartilháveis
 
-**Verificar instalação** gera arquivos PDF e DOCX sintéticos temporários e testa gravação no diretório de dados, sem exportar projetos reais. Um mecanismo indisponível aparece separadamente como falha.
+Abra **Entrega → Ferramentas → Verificar instalação**. A verificação gera arquivos PDF e DOCX sintéticos temporários e testa gravação no diretório de dados, sem exportar projetos reais. Um mecanismo indisponível aparece separadamente como falha.
 
 Na área de diagnóstico compartilhável, revise o JSON, confirme a leitura dos campos e baixe o arquivo revisado. Ele contém versão do report-gen, sistema operacional genérico, versão do Python e estados de exportação sintética e gravação. Exclui projetos, clientes, usuários, caminhos, hostname, variáveis de ambiente e detalhes de exceções. Nada é enviado automaticamente. Alterar a prévia invalida o download; execute o diagnóstico novamente.
 
@@ -185,7 +205,7 @@ A fila encerra os processos de cada trabalho antes de limpar arquivos. Windows u
 
 ## Atualizações guiadas
 
-Abra **Atualizar report-gen**. Não há consultas de rede em segundo plano nem atualizações automáticas.
+Abra **Entrega → Ferramentas → Atualizar report-gen**. Não há consultas de rede em segundo plano nem atualizações automáticas.
 
 1. Autorize consultar e baixar do GitHub e verifique a versão oficial. Somente `IphobiusS/report-gen` é consultado; relatórios, caminhos locais e credenciais não são enviados.
 2. Revise versão, tamanho, SHA-256 e Release. Confirme separadamente a preparação do pacote e de um backup privado sem criptografia. Alterações pendentes no projeto aberto são salvas primeiro.

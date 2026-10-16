@@ -61,6 +61,14 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
+## Novedades de 0.39.0
+
+La barra izquierda organiza el trabajo en cinco grupos: **Proyecto**, **Contenido**, **Evidencia y alcance**, **Análisis y seguimiento** y **Entrega**. Las filas mantienen un tamaño y espaciado coherentes; los índices desplegables de secciones y hallazgos muestran sus cantidades y conservan la paginación de proyectos extensos.
+
+Al navegar a un elemento, se abre su grupo y se muestra la selección. Ese ajuste de visibilidad de la barra conserva el foco y no desplaza el editor. Puedes plegar el grupo actual: los refrescos de fondo respetan esa decisión. **Entrega → Herramientas** reúne bibliotecas, respaldo integral, privacidad, diagnóstico y actualización. En móvil, **Navegación** abre la barra y **Escape** la cierra devolviendo el foco al botón.
+
+El nuevo caso ficticio **Atlas Servicios Financieros** prepara una prueba amplia con contenido redactado en español, inglés y portugués de Brasil. Su [protocolo de aceptación](docs/QA-ATLAS-0390.md) distingue informes completos, muestras de estilos, recorridos API y comprobaciones visuales; los resultados se acreditan por ejecución, sin dar por aprobadas salidas todavía pendientes. [Recorrido de la barra lateral](docs/guide.es.md#navegación-lateral-en-0390).
+
 ## Novedades de 0.38.0
 
 **Errores con ubicación:** las importaciones muestran el registro, campo y línea disponibles; las exportaciones fallidas identifican el hallazgo, tabla, fila, celda o evidencia cuando el contrato puede localizarlos con certeza. Si no puede, conserva el error general. Estos detalles privados no se copian a los manifiestos de entrega.

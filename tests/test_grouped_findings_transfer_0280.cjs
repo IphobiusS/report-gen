@@ -1,5 +1,6 @@
 /* Standalone findings remain portable without importing another project's groups. */
 'use strict';
+const {clickNavigationControl}=require('./browser-navigation.cjs');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
 const args=process.argv.slice(2),option=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
 const root=path.resolve(option('--tool',process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..'))),out=path.resolve(option('--output','out/grouped-findings-transfer-0280'));
@@ -28,10 +29,10 @@ server.stderr.on('data',b=>fs.appendFileSync(out+'/server.log',b));let browser,t
   });
   let downloads=0;page.on('download',()=>downloads++);
   let notice='';page.once('dialog',dialog=>{notice=dialog.message();return dialog.dismiss();});
-  await page.locator('#exportFindingsBtn').click();
+  await clickNavigationControl(page,'#exportFindingsBtn');
   check('Grouped JSON export describes missing context and can be cancelled',notice.includes('acciones comunes')&&notice.includes('respaldo completo')&&downloads===0&&await page.evaluate(before=>JSON.stringify(S.data)===before,baseline.json));
   page.once('dialog',dialog=>dialog.accept());
-  const pending=page.waitForEvent('download');await page.locator('#exportFindingsBtn').click();const download=await pending;
+  const pending=page.waitForEvent('download');await clickNavigationControl(page,'#exportFindingsBtn');const download=await pending;
   assert.equal(await download.failure(),null);
   const file=path.join(out,'synthetic-findings.json');await download.saveAs(file);
   const exported=JSON.parse(fs.readFileSync(file,'utf8'));

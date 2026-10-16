@@ -130,13 +130,13 @@ async function sample(size,round){
       check(size+'/'+round+' search navigation reveals the selected tail on its sidebar page',await page.locator('#findingList [data-finding-uid="'+uid(1,size)+'"] .finding-nav').getAttribute('aria-current')==='page');
       await page.locator('[data-workspace-pagination="sidebar"] select').selectOption('0');
       check(size+'/'+round+' paging sidebar keeps the current finding unchanged',await page.evaluate(size=>S.data.findings[S.sel.idx].id==='F'+size,size));
-      await page.locator('#findingList [data-finding-uid="'+uid(1,1)+'"] button').click();
+      await clickNavigationControl(page,'#findingList [data-finding-uid="'+uid(1,1)+'"] button');
       check(size+'/'+round+' first sidebar page opens the original first UID',await page.evaluate(expected=>S.data.findings[S.sel.idx].uid===expected,uid(1,1)));
       await page.locator('#globalSearch').fill('needle-tail-'+size);
       await page.locator('#searchResults button').filter({hasText:'needle-tail-'+size}).first().click();
     }
     if(legacyRecords){
-      await page.locator('#findingList li button').first().click();
+      await clickNavigationControl(page,page.locator('#findingList li button').first());
       check(size+'/'+round+' legacy machine navigation does not attach optional defaults',canonical(await page.evaluate(()=>S.data))===canonical(initialData));
       await page.locator('#globalSearch').fill('needle-tail-'+size);
       await page.locator('#searchResults button').filter({hasText:'needle-tail-'+size}).first().click();

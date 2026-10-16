@@ -181,3 +181,93 @@ jobs:
             ${{ runner.temp }}/meridiano/
           if-no-files-found: error
           retention-days: 14
+
+  atlas:
+    name: Atlas extensive trilingual case and 0.39 navigation acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      RG_PYTHON: python
+      REPORT_GEN_LIBREOFFICE: /usr/bin/libreoffice
+      REPORT_GEN_REQUIRE_MULTISCRIPT_FONTS: '1'
+    steps:
+      - name: Keep acceptance data outside the installation
+        run: echo "ATLAS_OUTPUT=$RUNNER_TEMP/atlas" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-audited.txt
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install stable document renderer, OCR and multilingual fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-writer tesseract-ocr tesseract-ocr-eng tesseract-ocr-spa tesseract-ocr-por fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto-core fonts-noto-cjk libpango-1.0-0 libpangocairo-1.0-0 xvfb
+          fc-cache -f
+          libreoffice --version
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Record native runtime and exact checkout
+        run: |
+          mkdir -p "$ATLAS_OUTPUT/runtime"
+          git rev-parse HEAD > "$ATLAS_OUTPUT/runtime/checkout.txt"
+          libreoffice --version > "$ATLAS_OUTPUT/runtime/libreoffice-version.txt"
+          fc-list : family file | sort > "$ATLAS_OUTPUT/runtime/fonts.txt"
+          python -m pip freeze > "$ATLAS_OUTPUT/runtime/python-packages.txt"
+          dpkg-query -W 'libreoffice*' 'fonts-noto*' 'tesseract*' > "$ATLAS_OUTPUT/runtime/system-packages.txt"
+      - name: Compose fully localized fictional source inputs without generating documents
+        run: python scripts/build-atlas-case.py --output "$ATLAS_OUTPUT/case"
+      - name: Capture the current tutorial illustrations in every supported language
+        if: ${{ !cancelled() }}
+        run: node scripts/capture-tutorial.cjs --output "$ATLAS_OUTPUT/tutorial-captures"
+      - name: Preserve current tutorial illustrations before the extensive export matrix
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: tutorial-atlas-${{ github.sha }}
+          path: ${{ runner.temp }}/atlas/tutorial-captures/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Generate twelve extensive reports and inspect native DOCX in every language
+        run: python scripts/audit-atlas-exports.py --projects "$ATLAS_OUTPUT/case/projects" --output "$ATLAS_OUTPUT/exports" --mode principal --native-executable /usr/bin/libreoffice --require-stable
+      - name: Generate all additional report styles, profile and variant samples in every language
+        if: ${{ !cancelled() }}
+        run: python scripts/audit-atlas-exports.py --projects "$ATLAS_OUTPUT/case/projects" --output "$ATLAS_OUTPUT/exports" --mode styles
+      - name: Check decoded publication outputs against the declared synthetic privacy controls
+        if: ${{ !cancelled() }}
+        run: python scripts/audit-atlas-publication.py --exports "$ATLAS_OUTPUT/exports" --case "$ATLAS_OUTPUT/case/projects" --output "$ATLAS_OUTPUT/publication-scan.json"
+      - name: Exercise complete isolated project lifecycle for Spanish
+        if: ${{ !cancelled() }}
+        run: python scripts/audit-atlas-api.py --case "$ATLAS_OUTPUT/case/projects/es" --inputs "$ATLAS_OUTPUT/case/inputs" --pdf "$ATLAS_OUTPUT/exports/principal/es/outputs/informe.pdf" --output "$ATLAS_OUTPUT/api/es" --ui-bundle "$ATLAS_OUTPUT/ui/atlas-es.zip" --require-stable-native
+      - name: Exercise complete isolated project lifecycle for English
+        if: ${{ !cancelled() }}
+        run: python scripts/audit-atlas-api.py --case "$ATLAS_OUTPUT/case/projects/en" --inputs "$ATLAS_OUTPUT/case/inputs" --pdf "$ATLAS_OUTPUT/exports/principal/en/outputs/informe.pdf" --output "$ATLAS_OUTPUT/api/en" --ui-bundle "$ATLAS_OUTPUT/ui/atlas-en.zip" --require-stable-native
+      - name: Exercise complete isolated project lifecycle for Portuguese
+        if: ${{ !cancelled() }}
+        run: python scripts/audit-atlas-api.py --case "$ATLAS_OUTPUT/case/projects/pt" --inputs "$ATLAS_OUTPUT/case/inputs" --pdf "$ATLAS_OUTPUT/exports/principal/pt/outputs/informe.pdf" --output "$ATLAS_OUTPUT/api/pt" --ui-bundle "$ATLAS_OUTPUT/ui/atlas-pt.zip" --require-stable-native
+      - name: Traverse localized projects, sidebar and tutorial in real headed Chromium
+        if: ${{ !cancelled() }}
+        run: |
+          xvfb-run -a node scripts/audit-atlas-browser.cjs --headed \
+            --bundles "$ATLAS_OUTPUT/ui" --projects "$ATLAS_OUTPUT/case/projects" \
+            --pdf "$ATLAS_OUTPUT/exports/principal/es/outputs/informe.pdf" \
+            --compare-pdf "$ATLAS_OUTPUT/exports/samples/general/es/serio/outputs/informe.pdf" \
+            --compare-other-pdf "$ATLAS_OUTPUT/exports/samples/general/en/serio/outputs/informe.pdf" \
+            --output "$ATLAS_OUTPUT/browser"
+      - name: Preserve original inputs, outputs, receipts and real screenshots without repeated snapshots
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: atlas-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/atlas/
+            !${{ runner.temp }}/atlas/exports/variant-sources/**
+            !${{ runner.temp }}/atlas/exports/**/snapshot/**
+            !${{ runner.temp }}/atlas/api/**/workspace-*/**
+          if-no-files-found: error
+          retention-days: 14

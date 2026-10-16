@@ -1,0 +1,1464 @@
+{
+  "case": "ATLAS-SERVICIOS-FINANCIEROS-2026",
+  "meta": {
+    "report_title": "Grupo Atlas Serviços Financeiros — avaliação integral fictícia",
+    "report_subtitle": "Canais, pagamentos, identidade, dados e continuidade / 60 achados e 7 cadernos",
+    "client": "Grupo Atlas Serviços Financeiros [FICTÍCIO]",
+    "assessor": "Equipe documental fictícia Atlas",
+    "assessor_title": "Simulação integral / report-gen",
+    "wordmark": "GRUPO ATLAS",
+    "byline": "SERVIÇOS FINANCEIROS FICTÍCIOS",
+    "confidential_text": "FICTÍCIO / DADOS SINTÉTICOS",
+    "client_contact": "Patrocínio tecnológico [fictício]",
+    "client_contact_title": "Coordenação do cenário",
+    "operations_contact": "Responsável por operações [fictício]",
+    "operations_contact_title": "Contratos de pagamentos e continuidade",
+    "assessor_contact": "Revisão documental [fictícia]",
+    "assessor_contact_title": "Controle de alcance e fidelidade"
+  },
+  "assets": [
+    {
+      "name": "Banco de pessoas físicas",
+      "host": "personas.atlas.example",
+      "ip": "192.0.2.10",
+      "kind": "web",
+      "owner": "Canais digitais"
+    },
+    {
+      "name": "Banco de empresas",
+      "host": "empresas.atlas.example",
+      "ip": "192.0.2.11",
+      "kind": "web",
+      "owner": "Banco corporativo"
+    },
+    {
+      "name": "Gateway de pagamentos",
+      "host": "pagos.atlas.example",
+      "ip": "192.0.2.12",
+      "kind": "api",
+      "owner": "Operações de pagamentos"
+    },
+    {
+      "name": "Motor de transferências",
+      "host": "transferencias.atlas.example",
+      "ip": "192.0.2.13",
+      "kind": "service",
+      "owner": "Tesouraria"
+    },
+    {
+      "name": "Cadastro de beneficiários",
+      "host": "beneficiarios.atlas.example",
+      "ip": "192.0.2.14",
+      "kind": "api",
+      "owner": "Operações de clientes"
+    },
+    {
+      "name": "Autenticação central",
+      "host": "identidad.atlas.example",
+      "ip": "192.0.2.15",
+      "kind": "identity",
+      "owner": "Identidade e acesso"
+    },
+    {
+      "name": "Aplicativo móvel",
+      "host": "movil.atlas.example",
+      "ip": "192.0.2.16",
+      "kind": "mobile",
+      "owner": "Canais digitais"
+    },
+    {
+      "name": "Recuperação de conta",
+      "host": "recuperacion-cuenta.atlas.example",
+      "ip": "192.0.2.17",
+      "kind": "web",
+      "owner": "Atendimento ao cliente"
+    },
+    {
+      "name": "Autorização de crédito",
+      "host": "creditos.atlas.example",
+      "ip": "192.0.2.18",
+      "kind": "service",
+      "owner": "Risco de crédito"
+    },
+    {
+      "name": "Custódia documental",
+      "host": "documentos.atlas.example",
+      "ip": "192.0.2.19",
+      "kind": "cloud",
+      "owner": "Governança de dados"
+    },
+    {
+      "name": "Gestão de consentimentos",
+      "host": "consentimientos.atlas.example",
+      "ip": "198.51.100.10",
+      "kind": "api",
+      "owner": "Privacidade"
+    },
+    {
+      "name": "Interface de finanças abertas",
+      "host": "open-finance.atlas.example",
+      "ip": "198.51.100.11",
+      "kind": "api",
+      "owner": "Integrações"
+    },
+    {
+      "name": "Livro contábil",
+      "host": "libro.atlas.example",
+      "ip": "198.51.100.12",
+      "kind": "service",
+      "owner": "Contabilidade"
+    },
+    {
+      "name": "Conciliação de múltiplas moedas",
+      "host": "conciliacion.atlas.example",
+      "ip": "198.51.100.13",
+      "kind": "service",
+      "owner": "Contabilidade"
+    },
+    {
+      "name": "Compensação de cartões",
+      "host": "tarjetas.atlas.example",
+      "ip": "198.51.100.14",
+      "kind": "service",
+      "owner": "Meios de pagamento"
+    },
+    {
+      "name": "Reembolsos comerciais",
+      "host": "reembolsos.atlas.example",
+      "ip": "198.51.100.15",
+      "kind": "api",
+      "owner": "Atendimento comercial"
+    },
+    {
+      "name": "Administração de privilégios",
+      "host": "privilegios.atlas.example",
+      "ip": "198.51.100.16",
+      "kind": "identity",
+      "owner": "Segurança de plataforma"
+    },
+    {
+      "name": "Diretório corporativo",
+      "host": "directorio.atlas.example",
+      "ip": "198.51.100.17",
+      "kind": "directory",
+      "owner": "Plataforma"
+    },
+    {
+      "name": "Servidor de acesso intermediário",
+      "host": "salto.atlas.example",
+      "ip": "198.51.100.18",
+      "kind": "host",
+      "owner": "Operações de plataforma"
+    },
+    {
+      "name": "Assinatura de entregáveis",
+      "host": "firmas.atlas.example",
+      "ip": "198.51.100.19",
+      "kind": "service",
+      "owner": "Engenharia de software"
+    },
+    {
+      "name": "Orquestrador de continuidade",
+      "host": "continuidad.atlas.example",
+      "ip": "203.0.113.10",
+      "kind": "host",
+      "owner": "Continuidade tecnológica"
+    },
+    {
+      "name": "Catálogo de cópias de segurança",
+      "host": "copias.atlas.example",
+      "ip": "203.0.113.11",
+      "kind": "cloud",
+      "owner": "Continuidade tecnológica"
+    },
+    {
+      "name": "Lago de dados",
+      "host": "analitica.atlas.example",
+      "ip": "203.0.113.12",
+      "kind": "cloud",
+      "owner": "Análise de dados"
+    },
+    {
+      "name": "Monitoramento antifraude",
+      "host": "fraude.atlas.example",
+      "ip": "203.0.113.13",
+      "kind": "service",
+      "owner": "Prevenção a fraudes"
+    },
+    {
+      "name": "Plataforma de eventos",
+      "host": "eventos.atlas.example",
+      "ip": "203.0.113.14",
+      "kind": "logging",
+      "owner": "Detecção e resposta"
+    },
+    {
+      "name": "Central de atendimento",
+      "host": "soporte.atlas.example",
+      "ip": "203.0.113.15",
+      "kind": "web",
+      "owner": "Atendimento ao cliente"
+    },
+    {
+      "name": "Portal de terceiros",
+      "host": "terceros.atlas.example",
+      "ip": "203.0.113.16",
+      "kind": "third-party",
+      "owner": "Gestão de fornecedores"
+    },
+    {
+      "name": "Retenção e exclusão",
+      "host": "retencion.atlas.example",
+      "ip": "203.0.113.17",
+      "kind": "service",
+      "owner": "Governança de dados"
+    }
+  ],
+  "root_groups": [
+    {
+      "name": "Autorização por recurso e segregação de funções",
+      "cause": "A política é aplicada ao canal ou perfil, mas omite o recurso resolvido, a organização ou a identidade que aprovou seu conteúdo.",
+      "action": "Centralizar a autorização por sujeito, operação, objeto e contexto; conservar testes de isolamento e de separação de identidades.",
+      "allowed": "Uma identidade da organização A consulta ou modifica seu próprio dossiê com a versão vigente.",
+      "rejected": "A mesma identidade tenta atuar sobre um dossiê B ou aprovar uma decisão que ela própria originou; o estado não deve mudar.",
+      "recovery": "Repetir a decisão após alterar o recurso ou a política; uma aprovação anterior não deve habilitar conteúdo novo."
+    },
+    {
+      "name": "Ciclo de vida de autenticação e sessões",
+      "cause": "Credenciais, desafios, dispositivos e sessões não compartilham uma política de revogação e uma identidade de operação.",
+      "action": "Vincular cada desafio à intenção, ao sujeito e à validade; invalidar os derivados de forma verificável.",
+      "allowed": "Uma sessão vigente realiza a operação exata para a qual o desafio foi concedido.",
+      "rejected": "Um desafio vencido, consumido ou criado para outra operação deve ser rejeitado com uma resposta uniforme.",
+      "recovery": "Revogar a sessão e repetir as leituras e ações a partir de todos os seus derivados antes de aceitar o encerramento."
+    },
+    {
+      "name": "Consistência do dinheiro e das transições",
+      "cause": "A identidade da mensagem, a versão da taxa de câmbio ou uma aprovação isolada substitui a obrigação comercial e suas invariantes.",
+      "action": "Modelar estados, moedas e versões explicitamente; garantir idempotência e compensação sem ocultar resultados parciais.",
+      "allowed": "Uma obrigação autorizada produz um lançamento com moeda, valor e versão de negócio coerentes.",
+      "rejected": "Uma mensagem duplicada ou uma transição incompatível deve conservar o resultado anterior sem um segundo efeito.",
+      "recovery": "Interromper o modelo entre o registro e a confirmação; recuperar a obrigação e demonstrar um único resultado explicável."
+    },
+    {
+      "name": "Documentos, consentimento e finalidade",
+      "cause": "O conteúdo derivado mantém acesso ou é reutilizado depois que o consentimento, a finalidade ou a classificação mudam.",
+      "action": "Relacionar versões, finalidades, destinatários e revogações em cada consumidor do documento.",
+      "allowed": "Um destinatário autorizado acessa somente o conjunto de atributos e versões permitido por sua finalidade.",
+      "rejected": "A retirada da permissão deve bloquear links, downloads, caches e derivados do mesmo dossiê.",
+      "recovery": "Aplicar uma revogação ou alteração de classificação e verificar a convergência de todos os consumidores."
+    },
+    {
+      "name": "Cadeia de suprimentos e alterações aprovadas",
+      "cause": "A revisão é associada a um nome ou execução de pipeline, sem garantir a identidade dos bytes, das dependências e da configuração implantada.",
+      "action": "Assinar e verificar manifestos de artefatos, limitar a promoção e conservar uma reversão que respeite as restrições atuais.",
+      "allowed": "O artefato aprovado corresponde ao seu manifesto e é promovido por uma identidade com função limitada.",
+      "rejected": "Um conteúdo diferente sob o mesmo nome ou uma configuração não aprovada deve impedir toda a promoção.",
+      "recovery": "Reverter no modelo sem reativar segredos, permissões ou dependências retirados depois da versão anterior."
+    },
+    {
+      "name": "Privilégio efetivo e identidade administrativa",
+      "cause": "Permissões herdadas, credenciais de serviço e canais auxiliares ampliam o alcance efetivo dos perfis de observação ou suporte.",
+      "action": "Avaliar a permissão efetiva, separar os planos e eliminar autoridade transitiva desnecessária com testes de impacto.",
+      "allowed": "Uma identidade de consulta obtém somente as informações e operações descritas em sua função.",
+      "rejected": "A mesma identidade não pode modificar grupos, elevar privilégios nem recuperar uma credencial de administração.",
+      "recovery": "Renovar grupos e tokens após retirar uma delegação; verificar se a nova política alcança as sessões existentes."
+    },
+    {
+      "name": "Continuidade com política e testes de integridade",
+      "cause": "O serviço é considerado recuperado quando os bytes reaparecem, sem reconciliar revogações, sequências ou dependências de segurança.",
+      "action": "Recuperar conteúdo, estado e restrições como uma unidade; condicionar a reabertura a verificações documentadas.",
+      "allowed": "Uma cópia íntegra e autorizada restaura uma revisão conhecida em um ambiente isolado.",
+      "rejected": "Uma cópia com manifesto incompleto, estado antigo ou controles ausentes deve impedir a reabertura.",
+      "recovery": "Reconciliar alterações posteriores à cópia e demonstrar que o retorno ao serviço não reintroduz acessos retirados."
+    },
+    {
+      "name": "Dados analíticos e decisões automatizadas",
+      "cause": "Os consumidores reinterpretam unidades, tempos, identidades ou limites da origem e apresentam resultados que não preservam essa incerteza.",
+      "action": "Versionar contratos de dados e modelos; mostrar a procedência e os limites antes de automatizar uma decisão.",
+      "allowed": "Um lote com esquema, unidades, data e procedência válidos produz uma saída rastreável à sua revisão.",
+      "rejected": "Uma coluna ausente, unidade incompatível ou versão desconhecida deve gerar uma saída explicitamente incompleta.",
+      "recovery": "Reprocessar um lote corrigido sem duplicar registros nem apagar a explicação das decisões anteriores."
+    },
+    {
+      "name": "Registro de auditoria e evidência verificável",
+      "cause": "O acompanhamento perde a correlação, a revisão ou a fonte temporal e confunde a comunicação de encerramento com evidência de um resultado.",
+      "action": "Conservar identificadores estáveis, tempo com procedência e evidência vinculada a critérios concretos.",
+      "allowed": "Um evento explica quem decidiu, sobre qual revisão e com qual resultado, sem conter dados desnecessários.",
+      "rejected": "Uma evidência sem versão ou uma nota sem data não deve substituir o último resultado verificável.",
+      "recovery": "Reconstruir uma sequência entre serviços e comparar revisão, correlação e limite antes de declarar um encerramento."
+    },
+    {
+      "name": "Terceiros, retenção e limites de confiança",
+      "cause": "As integrações ou os processos de retirada mantêm caminhos alternativos que não respeitam o contrato vigente do fornecedor ou do dado.",
+      "action": "Inventariar consumidores e derivados; aplicar limites homogêneos e verificar a retirada completa do acesso lógico.",
+      "allowed": "Um terceiro vigente usa somente a função e os dados definidos por seu mandato atual.",
+      "rejected": "Um fornecedor retirado ou um derivado fora do prazo não pode continuar consultando nem modificando recursos.",
+      "recovery": "Simular o fim do contrato e a recuperação; verificar revogações em filas, cópias, índices e tarefas pendentes."
+    }
+  ],
+  "findings": [
+    {
+      "title": "Lote de transferências aceita uma ordem de outra organização",
+      "asset": 1,
+      "severity": "critical",
+      "cwe": "CWE-862",
+      "group": 0,
+      "condition": "O canal corporativo verifica se o operador pode preparar lotes, mas incorpora ordens por identificador global. No conjunto inventado, uma ordem do contrato B é adicionada ao lote A sem revalidar a propriedade nem a moeda. A tela de detalhes aplica o filtro organizacional.",
+      "consequence": "A composição de um lote poderia divulgar ou modificar uma ordem alheia e misturar decisões de pagamento de dois contratos. O cenário não transfere dinheiro.",
+      "correction": "Resolver cada ordem dentro do contrato do servidor e autorizá-la antes de reservar saldo; rejeitar o lote inteiro quando um recurso não cumprir a precondição.",
+      "scenario": "Duas empresas fictícias possuem três ordens cada. O operador A prepara um lote válido de duas ordens e um segundo lote misto com uma referência de B; comparam-se o conjunto afetado e a reserva simbólica."
+    },
+    {
+      "title": "Aprovação permanece válida após a substituição do beneficiário",
+      "asset": 4,
+      "severity": "high",
+      "cwe": "CWE-841",
+      "group": 0,
+      "condition": "A segunda assinatura fica vinculada ao identificador da solicitação, mesmo quando o beneficiário é modificado depois. O serviço conserva a marca de aprovação porque o valor permanece igual. A revisão anterior não contém o novo destino nem sua versão.",
+      "consequence": "Uma autorização sobre um conteúdo diferente poderia ser apresentada como aprovação vigente de uma transferência. Não há números de contas reais.",
+      "correction": "Vincular a aprovação à revisão imutável de beneficiário, valor e moeda; invalidá-la diante de qualquer alteração relevante e exigir uma nova identidade autorizadora.",
+      "scenario": "São preparados dois destinatários fictícios com o mesmo valor. A aprovação corresponde a DESTINO-A; a solicitação muda para DESTINO-B e deve voltar ao estado pendente."
+    },
+    {
+      "title": "Exportação de saldos omite os poderes de representação",
+      "asset": 1,
+      "severity": "high",
+      "cwe": "CWE-863",
+      "group": 0,
+      "condition": "A consulta individual resolve os poderes vigentes por conta. A exportação agrupa todas as contas da empresa com base apenas no vínculo organizacional. Uma conta para a qual o operador não possui poderes aparece no CSV de exemplo.",
+      "consequence": "O lote sintético revela uma relação e um saldo que o mesmo sujeito não pode consultar individualmente. O alcance não é extrapolado para outras exportações.",
+      "correction": "Compartilhar o predicado de autorização entre consulta, agregação e exportação; resolver os poderes por conta e data da decisão.",
+      "scenario": "Uma empresa tem contas operacional, de reserva e de garantias. O operador dispõe de poderes sobre as duas primeiras; o controle compara as linhas do lote com as consultas individuais."
+    },
+    {
+      "title": "Supervisor pode aprovar a própria exceção por um canal alternativo",
+      "asset": 8,
+      "severity": "high",
+      "cwe": "CWE-269",
+      "group": 0,
+      "condition": "A interface principal impede aprovar a própria solicitação, mas uma fila auxiliar compara identificadores de sessão, e não o sujeito estável. A mesma pessoa fictícia abre outra sessão e é representada como uma aprovação independente.",
+      "consequence": "A aparente segregação de funções não garante uma segunda decisão independente. O modelo não demonstra fraude real nem atribui intenção a pessoas.",
+      "correction": "Aplicar a incompatibilidade por identidade estável e função; avaliar contas delegadas, substituições e sessões distintas sob a mesma política.",
+      "scenario": "O solicitante S usa duas sessões sintéticas. Uma identidade T pode revisar o dossiê, enquanto S deve ser rejeitado nos dois canais, mesmo que mude de sessão."
+    },
+    {
+      "title": "Empréstimo compartilhado revela documentos de um cotitular retirado",
+      "asset": 0,
+      "severity": "medium",
+      "cwe": "CWE-639",
+      "group": 0,
+      "condition": "Um dossiê conserva a referência documental de um cotitular anterior. A alteração da titularidade atualiza a tela de participantes, mas a aba de anexos resolve o arquivo por uma permissão herdada do dossiê original.",
+      "consequence": "Uma relação anterior manteria acesso documental fora do contrato vigente. As identidades, os documentos e os vínculos do exemplo são inventados.",
+      "correction": "Avaliar direitos por documento, participante e validade; retirar referências e permissões derivadas ao alterar a titularidade.",
+      "scenario": "O dossiê passa de A+B para A+C. A matriz mantém um documento próprio de A, retira o de B e permite a C apenas os documentos habilitados pela nova relação."
+    },
+    {
+      "title": "Perfil de consulta modifica limites por meio de uma ação composta",
+      "asset": 2,
+      "severity": "medium",
+      "cwe": "CWE-250",
+      "group": 0,
+      "condition": "A política permite ler a configuração de pagamentos, e o mesmo endpoint aceita uma ação de atualização no corpo. O controle é expresso por rota e método, mas não pela operação composta selecionada depois do roteamento.",
+      "consequence": "O modelo permite alterar um limite operacional a partir de um perfil destinado à observação. Não foram modificados limites de clientes.",
+      "correction": "Autorizar a ação resolvida e separar operações de leitura e alteração; validar permissões depois de interpretar o comando de negócio.",
+      "scenario": "Uma solicitação inerte de leitura conserva o limite fictício. Uma segunda entrada com ação de atualização deve ser rejeitada, mesmo usando a mesma rota e a mesma identidade."
+    },
+    {
+      "title": "Revogação de sessão não alcança credenciais móveis derivadas",
+      "asset": 5,
+      "severity": "high",
+      "cwe": "CWE-613",
+      "group": 1,
+      "condition": "O encerramento da sessão invalida o token de acesso, mas uma credencial de renovação móvel mantém seu estado ativo em outro registro. O modelo permite obter uma nova sessão após a retirada administrativa do dispositivo.",
+      "consequence": "A revogação poderia não retirar todas as capacidades derivadas e prolongar o acesso de um dispositivo excluído. Não foram gerados tokens utilizáveis.",
+      "correction": "Vincular sessões e renovações a uma família revogável; verificar o estado atual ao renovar e eliminar condições de corrida entre renovação e retirada.",
+      "scenario": "São criados uma família A, um token curto e uma renovação longa com valores identificados como sintéticos. Após revogar a família, ambos os caminhos devem ser rejeitados sem criar nenhuma sessão nova."
+    },
+    {
+      "title": "Desafio de confirmação reutilizável para uma segunda operação",
+      "asset": 5,
+      "severity": "high",
+      "cwe": "CWE-294",
+      "group": 1,
+      "condition": "O desafio de confirmação é marcado como validado durante uma janela, sem ser associado à intenção concreta. Duas transferências inventadas em moedas distintas apresentam o mesmo desafio, e a segunda herda a decisão da primeira.",
+      "consequence": "Uma prova de posse poderia autorizar uma operação diferente daquela exibida ao usuário. O documento não inclui códigos de um fornecedor real.",
+      "correction": "Vincular o desafio ao hash do conteúdo relevante, ao sujeito e à operação; consumi-lo atomicamente e rejeitar qualquer reutilização.",
+      "scenario": "A intenção A e a intenção B compartilham o sujeito, mas alteram moeda e destinatário. Somente A corresponde à representação confirmada; B deve exigir um desafio independente."
+    },
+    {
+      "title": "Alteração de senha conserva sessões de suporte delegadas",
+      "asset": 7,
+      "severity": "high",
+      "cwe": "CWE-613",
+      "group": 1,
+      "condition": "A recuperação revoga sessões interativas, mas exclui sessões delegadas criadas pelo suporte. O registro modelado não distingue um mandato de suporte vigente de uma cópia da permissão anterior à alteração da senha.",
+      "consequence": "Um acesso delegado poderia sobreviver a uma recuperação destinada a retirar acessos suspeitos. Não foram acessadas sessões de terceiros.",
+      "correction": "Definir a revogação explícita de delegações e credenciais derivadas durante a recuperação; manter apenas exceções justificadas e visíveis.",
+      "scenario": "Comparam-se uma sessão própria, uma delegação temporária vigente e uma delegação do período anterior. A mudança de controle da conta exige reavaliar as três."
+    },
+    {
+      "title": "Limite de recuperação é calculado apenas por navegador",
+      "asset": 7,
+      "severity": "medium",
+      "cwe": "CWE-307",
+      "group": 1,
+      "condition": "O contador local pertence ao identificador do navegador, e não à conta, ao desafio e à intenção. Várias entradas fabricadas alteram esse identificador e permanecem abaixo do máximo local, embora compartilhem a mesma conta de exemplo.",
+      "consequence": "A política poderia admitir mais tentativas do que o previsto e dificultar a operação legítima. Não foram enviados e-mails nem SMS.",
+      "correction": "Combinar limites por conta, operação e contexto com respostas uniformes; projetar uma recuperação legítima sem permitir reinicializações triviais do orçamento de tentativas.",
+      "scenario": "São modeladas cinco tentativas com três identificadores de navegador sobre um desafio. O contador da operação deve crescer de forma coerente sem depender da etiqueta do cliente."
+    },
+    {
+      "title": "Cache móvel conserva comprovantes após a mudança de perfil",
+      "asset": 6,
+      "severity": "medium",
+      "cwe": "CWE-922",
+      "group": 1,
+      "condition": "O cache é indexado por dispositivo e data, embora um mesmo terminal possa alternar perfis. O encerramento da sessão limpa a tela principal, mas a visualização sem conexão conserva um comprovante do perfil anterior.",
+      "consequence": "A troca de usuário poderia exibir um documento alheio armazenado localmente. Todas as imagens e referências do caso foram criadas para o exercício.",
+      "correction": "Separar o armazenamento por identidade e criptografá-lo com chaves revogáveis; retirar o conteúdo ao encerrar ou trocar o perfil e verificar a reinicialização e o modo sem conexão.",
+      "scenario": "Os perfis A e B compartilham o terminal fictício T. A guarda um comprovante, encerra a sessão e B entra sem rede; o documento de A deve permanecer inacessível."
+    },
+    {
+      "title": "Mensagem de recuperação distingue uma conta inexistente",
+      "asset": 7,
+      "severity": "low",
+      "cwe": "CWE-204",
+      "group": 1,
+      "condition": "Duas respostas preparadas exibem textos distintos para um alias cadastrado e outro inexistente. O canal também apresenta um código interno diferente. Não se mede o tempo nem se realiza enumeração de usuários.",
+      "consequence": "A diferença fornece um sinal limitado de existência; por si só, não demonstra acesso à conta nem aos seus atributos.",
+      "correction": "Uniformizar a saída e o caminho de ajuda, conservar os detalhes em registros restritos e revisar também os códigos consumidos pelo aplicativo móvel.",
+      "scenario": "São comparados exatamente dois aliases sintéticos conhecidos pelo autor. O teste de contrato exige a mesma estrutura pública, sem afirmar uma equivalência temporal que não foi medida."
+    },
+    {
+      "title": "Nova tentativa de pagamento cria outra obrigação ao alterar a mensagem",
+      "asset": 3,
+      "severity": "critical",
+      "cwe": "CWE-362",
+      "group": 2,
+      "condition": "O motor evita duplicar o identificador de transporte, mas aceita outro identificador para a mesma obrigação. Após a perda de uma confirmação, o aplicativo reenvia os mesmos dados de negócio com uma nova mensagem, e o exemplo produz dois lançamentos simbólicos.",
+      "consequence": "Uma única intenção poderia ser registrada duas vezes e exigir compensação manual. Os valores são unidades inventadas sem conexão bancária.",
+      "correction": "Definir idempotência por obrigação e transição; reservar e confirmar em uma fronteira atômica e devolver o resultado anterior diante de novas tentativas equivalentes.",
+      "scenario": "A obrigação O-001 de 125 unidades gera a mensagem M1. A confirmação se perde, e M2 conserva obrigação e valor; o livro esperado contém um único efeito líquido."
+    },
+    {
+      "title": "Compensação usa uma taxa de câmbio diferente da autorização",
+      "asset": 13,
+      "severity": "high",
+      "cwe": "CWE-682",
+      "group": 2,
+      "condition": "A autorização guarda o valor de origem, enquanto a compensação recalcula a conversão com a cotação mais recente. A mudança de versão entre as etapas não fica registrada como ajuste nem exige uma decisão de negócio.",
+      "consequence": "O modelo pode produzir diferenças que parecem arredondamentos, mas correspondem a outra cotação. Ele não representa preços reais de mercado.",
+      "correction": "Vincular a operação a uma versão da taxa de câmbio e às regras de arredondamento; modelar os ajustes como transições separadas e autorizadas.",
+      "scenario": "Uma operação sintética converte a moeda X para Y com a cotação V1. Antes da compensação surge V2; o controle exige conservar V1 ou registrar explicitamente uma nova autorização."
+    },
+    {
+      "title": "Reembolso parcial não desconta reservas simultâneas",
+      "asset": 15,
+      "severity": "high",
+      "cwe": "CWE-367",
+      "group": 2,
+      "condition": "Duas solicitações de reembolso consultam o mesmo saldo disponível antes de reservá-lo. Cada uma cabe separadamente no valor original, mas juntas o ultrapassam. A validação ocorre fora da atualização do acumulado.",
+      "consequence": "A condição de corrida fictícia poderia devolver mais do que o valor autorizado e tornar a conciliação impossível sem correções posteriores.",
+      "correction": "Reservar e aplicar reembolsos mediante uma condição atômica sobre o saldo restante; manter chaves de idempotência e liberar reservas com rastreabilidade.",
+      "scenario": "A compra simbólica vale 100 unidades. Duas solicitações concorrentes de 70 e 50 devem produzir uma aceitação e uma rejeição, ou seguir uma política parcial explícita e documentada."
+    },
+    {
+      "title": "Cancelamento tardio deixa a reserva de fundos sem liberação",
+      "asset": 2,
+      "severity": "medium",
+      "cwe": "CWE-404",
+      "group": 2,
+      "condition": "O estado da solicitação muda para cancelado, mas a liberação é enviada como evento sem confirmação durável. Se o consumidor não processar esse evento, a reserva continua reduzindo o saldo disponível, embora não exista uma ordem ativa.",
+      "consequence": "A inconsistência poderia imobilizar saldo fictício e gerar reclamações. Ela não demonstra perda de dinheiro nem falha de um sistema real.",
+      "correction": "Manter uma transição reconciliável entre cancelamento e reserva; permitir novas tentativas idempotentes e alertar sobre estados incompatíveis.",
+      "scenario": "O modelo é interrompido após o cancelamento e antes da liberação. Ao retomar, a conciliação deve detectar a reserva órfã e resolvê-la uma única vez."
+    },
+    {
+      "title": "Arredondamento por linha difere do total da liquidação",
+      "asset": 12,
+      "severity": "medium",
+      "cwe": "CWE-1339",
+      "group": 2,
+      "condition": "As linhas usam arredondamento para centavos, e o total usa precisão estendida antes de arredondar. Um pequeno conjunto de valores fracionários gera uma diferença que não é atribuída a uma conta nem explicada ao consumidor.",
+      "consequence": "O resultado dificulta a conciliação e a atribuição de diferenças, mesmo quando cada cálculo parece razoável isoladamente.",
+      "correction": "Documentar precisão, momento e regra de arredondamento; conservar o valor original, o resultado e o ajuste explícito com testes de limites.",
+      "scenario": "São modeladas três linhas de 0,005 unidades, e a soma das linhas é comparada ao total arredondado. O contrato deve definir de maneira única qual valor é publicado e por quê."
+    },
+    {
+      "title": "Ordem fora do prazo é processada com o calendário errado",
+      "asset": 14,
+      "severity": "medium",
+      "cwe": "CWE-20",
+      "group": 2,
+      "condition": "O corte operacional interpreta a data local sem fuso, e o consumidor a converte a partir de UTC. Na mudança de dia, uma ordem fabricada entra em lotes diferentes conforme o componente que a avalia. Os calendários pertencem ao roteiro.",
+      "consequence": "Uma operação poderia ser classificada em outro dia operacional e alterar as expectativas de conciliação. Não se interpreta uma obrigação regulatória real.",
+      "correction": "Expressar fuso, calendário, instante de corte e versão da regra; guardar o resultado da decisão com sua procedência.",
+      "scenario": "Uma ordem é posicionada de cada lado de um corte fictício. Produtor e consumidor devem resolver o mesmo lote com a mesma regra, mesmo quando o instante é representado em outro fuso."
+    },
+    {
+      "title": "Consentimento retirado permanece ativo em tarefas adiadas",
+      "asset": 11,
+      "severity": "high",
+      "cwe": "CWE-284",
+      "group": 3,
+      "condition": "A API consulta o consentimento ao criar o trabalho, mas o consumidor o executa horas depois sem reavaliar sua validade. O roteiro retira a permissão entre as duas etapas, e a tarefa mantém uma cópia do estado inicialmente autorizado.",
+      "consequence": "Uma extração poderia ocorrer após a retirada da finalidade que a habilitou. Não foram consultados dados financeiros reais.",
+      "correction": "Versionar o consentimento e reavaliar as condições exigíveis no consumo; definir explicitamente quais trabalhos aceitos devem ser cancelados.",
+      "scenario": "O trabalho J1 nasce com a permissão V3. Antes do consumo, é registrada a V4 revogada; a saída deve refletir o cancelamento ou uma exceção previamente definida e visível."
+    },
+    {
+      "title": "Documento reclassificado mantém um link duradouro de download",
+      "asset": 9,
+      "severity": "high",
+      "cwe": "CWE-863",
+      "group": 3,
+      "condition": "O arquivo muda de compartilhável para restrito, mas o link emitido anteriormente verifica apenas sua própria data de expiração. A classificação vigente não faz parte da autorização de download.",
+      "consequence": "O destinatário poderia continuar recuperando uma versão que já não deve ser distribuída. O link do exemplo aponta para um domínio reservado.",
+      "correction": "Avaliar a permissão e a classificação atuais antes de servir cada versão; limitar a validade e permitir a revogação individual do vínculo.",
+      "scenario": "Um link é emitido para V1, e o dossiê é reclassificado antes da expiração. A leitura posterior deve ser rejeitada e conservar um motivo de auditoria sem publicar o arquivo."
+    },
+    {
+      "title": "Finanças abertas entrega atributos fora da finalidade",
+      "asset": 11,
+      "severity": "high",
+      "cwe": "CWE-200",
+      "group": 3,
+      "condition": "A seleção de campos é definida por produto, e não pela finalidade do consentimento. Uma permissão de consulta de saldo incorpora, no exemplo, etiquetas internas e contatos que o cliente não autorizou para essa finalidade.",
+      "consequence": "A resposta sintética contém mais atributos do que o necessário. Ela não demonstra um vazamento real nem descumprimento de uma norma específica.",
+      "correction": "Definir esquemas mínimos por finalidade e versão; verificar tanto a presença dos campos exigidos quanto a ausência dos não autorizados.",
+      "scenario": "São comparadas duas finalidades: agregação de saldo e conciliação de movimentações. Cada saída tem um conjunto explícito de atributos; adicionar um campo desconhecido deve causar uma falha visível."
+    },
+    {
+      "title": "Miniaturas e mecanismo de busca sobrevivem à retirada documental",
+      "asset": 27,
+      "severity": "medium",
+      "cwe": "CWE-459",
+      "group": 3,
+      "condition": "O processo retira o arquivo principal, mas não sua miniatura nem o fragmento do índice de busca. Os derivados continuam respondendo sob uma política antiga porque não compartilham a referência de ciclo de vida.",
+      "consequence": "O modelo prolonga a disponibilidade de parte do documento após sua retirada lógica. Ele não afirma a exclusão física irrecuperável.",
+      "correction": "Inventariar as derivações e propagar a retirada de acesso e a exclusão; verificar cada consumidor e manter exceções justificadas.",
+      "scenario": "O documento D tem original, miniatura, texto indexado e cópia temporária. A matriz exige resultados para cada derivado, em vez de aceitar a exclusão do original como encerramento completo."
+    },
+    {
+      "title": "Assinatura documental não muda após a substituição de um anexo",
+      "asset": 9,
+      "severity": "medium",
+      "cwe": "CWE-345",
+      "group": 3,
+      "condition": "A marca de aceitação é associada ao ID do dossiê. Ao substituir um anexo por outro com o mesmo nome, a interface conserva a marca, embora os bytes e seu hash sejam diferentes.",
+      "consequence": "Um leitor poderia atribuir aceitação ao novo conteúdo sem a revisão correspondente. Não é utilizada uma assinatura eletrônica real.",
+      "correction": "Vincular a aceitação ao manifesto dos componentes e seus hashes; invalidá-la ao substituir qualquer anexo relevante e mostrar a revisão aceita.",
+      "scenario": "O dossiê inclui o anexo A1 aprovado. A2 usa o mesmo nome e conteúdo diferente; a aceitação deve ficar pendente e conservar evidência da revisão anterior."
+    },
+    {
+      "title": "Metadados de imagem expõem uma nota interna sintética",
+      "asset": 9,
+      "severity": "low",
+      "cwe": "CWE-200",
+      "group": 3,
+      "condition": "Uma imagem exportada conserva um campo descritivo criado durante a edição. A imagem visível não o mostra, mas o contrato de publicação exige retirar esse marcador. O literal do ensaio é inventado e deliberadamente reconhecível.",
+      "consequence": "Distribuir o original pode revelar uma nota que não pertence ao entregável. Não são incluídas localização real nem informações pessoais.",
+      "correction": "Separar o original privado do derivado publicável; verificar metadados e referências de cada exportação com marcadores de controle conhecidos.",
+      "scenario": "A imagem contém um marcador privado em Description e conteúdo visual público. O relatório deve usar o derivado saneado, enquanto o projeto editável conserva o original para rastreabilidade."
+    },
+    {
+      "title": "Promoção de artefato aprova o nome sem verificar seus bytes",
+      "asset": 19,
+      "severity": "critical",
+      "cwe": "CWE-494",
+      "group": 4,
+      "condition": "A autorização de implantação identifica um arquivo por nome e etiqueta. Dois pacotes inertes diferentes compartilham esses campos. O processo não compara o hash aprovado com os bytes consumidos pela promoção final.",
+      "consequence": "Uma alteração não revisada poderia ser apresentada como a versão aprovada. O exercício não baixa nem executa pacotes de software.",
+      "correction": "Verificar manifesto, hash, assinatura e dependências antes de promover; impedir uma promoção parcial diante de qualquer diferença e registrar o resultado.",
+      "scenario": "São preparados manifestos A e B com o mesmo nome de versão e hashes diferentes. Somente o conteúdo que corresponde ao manifesto aprovado deve poder avançar."
+    },
+    {
+      "title": "Pipeline de revisão conserva permissões de publicação",
+      "asset": 19,
+      "severity": "high",
+      "cwe": "CWE-269",
+      "group": 4,
+      "condition": "Uma tarefa destinada a validar alterações também dispõe de permissão para publicar artefatos. A identidade efetiva é compartilhada com a tarefa de entrega e não é reduzida conforme o tipo de evento ou a confiança na fonte.",
+      "consequence": "Uma fronteira de revisão poderia alcançar funções de publicação de que não necessita. Não foi executado código não confiável nem usada uma credencial real.",
+      "correction": "Separar identidades e permissões por etapa; conceder publicação somente à entrega verificada e conferir as permissões efetivas em cada tipo de evento.",
+      "scenario": "O modelo compara revisão, compilação e publicação. A primeira precisa apenas de leitura e resultados; uma solicitação de escrita nessa etapa deve ser rejeitada pela política."
+    },
+    {
+      "title": "Configuração posterior à assinatura altera o destino do serviço",
+      "asset": 19,
+      "severity": "high",
+      "cwe": "CWE-347",
+      "group": 4,
+      "condition": "O binário tem um manifesto aprovado, mas o arquivo de configuração é inserido depois e não é coberto pela mesma revisão. O destino de integração do exemplo muda sem invalidar a aceitação do conjunto.",
+      "consequence": "A identidade do executável não garante a identidade do sistema implantado nem de seus destinos. Nenhum deles é acessado.",
+      "correction": "Incluir a configuração relevante e a política de segredos no manifesto da entrega; verificar o conjunto após sua composição e antes da ativação.",
+      "scenario": "Uma configuração C1 autorizada aponta para o destino reservado A. C2 muda para o destino reservado B; ambas usam o mesmo binário, mas somente o conjunto aprovado pode ser aceito."
+    },
+    {
+      "title": "Reversão reinstala uma dependência retirada",
+      "asset": 19,
+      "severity": "medium",
+      "cwe": "CWE-1104",
+      "group": 4,
+      "condition": "A reversão seleciona a última versão estável sem reconciliar o catálogo de componentes retirados. Uma dependência já excluída por decisão interna reaparece no pacote anterior, embora o motivo continue vigente.",
+      "consequence": "O retorno operacional pode reintroduzir uma exceção vencida e perder o contexto do risco. Não se afirma uma vulnerabilidade específica de um componente real.",
+      "correction": "Aplicar as restrições atuais também aos pacotes de reversão; preparar versões de retorno compatíveis e conservar exceções com vencimento.",
+      "scenario": "A versão V2 retira o componente fictício X. Ao voltar para V1, o controle exige detectar X e bloquear a operação ou usar um pacote de retorno previamente revisado."
+    },
+    {
+      "title": "Registro de compilação mistura a procedência de duas execuções",
+      "asset": 19,
+      "severity": "medium",
+      "cwe": "CWE-706",
+      "group": 4,
+      "condition": "O manifesto usa o ID da execução atual, mas um cache fornece um artefato de outra revisão. A evidência combina um identificador recente com bytes antigos e não conserva o vínculo de origem do componente reutilizado.",
+      "consequence": "A rastreabilidade aparente pode atribuir verificações a um conteúdo que não participou delas. Não se questiona uma compilação real.",
+      "correction": "Registrar a procedência por componente e verificar as revisões das entradas, do cache e dos resultados; distinguir reconstrução de reutilização verificada.",
+      "scenario": "A execução B reutiliza um resultado de A. O manifesto deve conservar ambas as identidades e demonstrar que o conteúdo reutilizado corresponde às entradas autorizadas."
+    },
+    {
+      "title": "Inventário distingue componentes ativos de material de exemplo",
+      "asset": 19,
+      "severity": "info",
+      "cwe": "CWE-1104",
+      "group": 4,
+      "condition": "O catálogo sintético identifica dependências ativas, ferramentas de teste e arquivos de demonstração com responsáveis distintos. A observação positiva testa pontuação zero e evita tratar todo arquivo do repositório como código executado.",
+      "consequence": "Não é atribuído impacto de segurança. A existência de uma dependência ou de um exemplo não demonstra, por si só, exposição.",
+      "correction": "Manter finalidade, localização, responsável e data de revisão; retirar elementos somente quando a busca por consumidores confirmar que não são necessários.",
+      "scenario": "O catálogo contém o componente ativo A, a ferramenta de teste T e o exemplo E. Cada um tem um consumidor distinto e uma decisão de conservação justificável."
+    },
+    {
+      "title": "Herança de diretório concede controle de um grupo privilegiado",
+      "asset": 17,
+      "severity": "critical",
+      "cwe": "CWE-269",
+      "group": 5,
+      "condition": "Uma conta de inventário herda permissão de modificação sobre uma unidade que contém grupos administrativos. A revisão considera a ACL direta, mas não a delegação transitiva nem o proprietário do objeto.",
+      "consequence": "O perfil de menor confiança poderia modificar uma fronteira administrativa dentro do modelo. Nenhum diretório foi contatado, e nenhuma credencial foi capturada.",
+      "correction": "Avaliar permissões efetivas e herança, separar objetos por função e verificar a leitura permitida junto com as modificações rejeitadas.",
+      "scenario": "A árvore fictícia contém Inventário, Operação e Administração. A conta de leitura consulta atributos de computadores, mas não pode alterar membros nem proprietários de grupos."
+    },
+    {
+      "title": "Credencial de serviço permite uso interativo no servidor de acesso intermediário",
+      "asset": 18,
+      "severity": "high",
+      "cwe": "CWE-250",
+      "group": 5,
+      "condition": "Uma identidade destinada a uma tarefa agendada conserva um método de acesso interativo. A revisão do serviço enumera suas permissões de aplicativo, mas omite os direitos de logon no servidor de acesso intermediário.",
+      "consequence": "O alcance de uma credencial de serviço seria maior do que o da operação para a qual foi concedida. Não existem senhas nem sessões reais.",
+      "correction": "Restringir os tipos de logon, separar credenciais de tarefas e de administração e verificar permissões efetivas por host e canal.",
+      "scenario": "A identidade S executa uma tarefa declarada no modelo. O mesmo sujeito deve ser rejeitado ao solicitar uma sessão interativa ou uma função administrativa alheia à tarefa."
+    },
+    {
+      "title": "Sessão privilegiada não termina quando sua autorização temporária expira",
+      "asset": 16,
+      "severity": "high",
+      "cwe": "CWE-613",
+      "group": 5,
+      "condition": "A permissão temporária é retirada do catálogo no horário previsto, mas uma sessão já aberta mantém suas capacidades até o encerramento manual. O sistema não comunica a expiração ao consumidor da decisão inicial.",
+      "consequence": "A janela efetiva de administração pode ultrapassar o prazo aprovado. Não foi mantido acesso a nenhuma plataforma.",
+      "correction": "Vincular a sessão à concessão e reavaliar a validade em ações sensíveis; encerrar ou reduzir as capacidades quando a autorização expirar.",
+      "scenario": "A concessão G vence em um instante fixo do roteiro. Uma ação anterior é permitida, e a mesma ação posterior deve ser rejeitada, mesmo que o identificador da sessão não mude."
+    },
+    {
+      "title": "Perfil de cópia de segurança pode recuperar segredos de administração",
+      "asset": 21,
+      "severity": "high",
+      "cwe": "CWE-522",
+      "group": 5,
+      "condition": "A função de cópia de segurança precisa copiar um conjunto criptografado, mas a identidade do operador também dispõe da chave de descriptografia e de um caminho de exportação. A separação entre custódia de bytes e uso do segredo não existe no modelo.",
+      "consequence": "Uma função operacional poderia alcançar segredos que não precisa conhecer. Todos os valores do caso são marcadores inutilizáveis.",
+      "correction": "Separar cópia, restauração e descriptografia por meio de identidades distintas; limitar a exportação e registrar autorizações sobre uma versão concreta.",
+      "scenario": "O operador O pode copiar o contêiner C, enquanto somente o processo autorizado R pode restaurá-lo em um destino permitido. O não deve ter capacidade de obter seu conteúdo."
+    },
+    {
+      "title": "Alteração de grupo não atualiza a sessão de suporte",
+      "asset": 16,
+      "severity": "medium",
+      "cwe": "CWE-863",
+      "group": 5,
+      "condition": "A sessão carrega uma lista de grupos no início e não verifica sua revisão posteriormente. Ao retirar um perfil, as novas sessões são restringidas corretamente, mas as antigas continuam apresentando uma autorização obsoleta.",
+      "consequence": "A retirada de uma permissão pode permanecer incompleta durante a vida da sessão. O exemplo não estima uma duração real de exposição.",
+      "correction": "Versionar a autorização e definir a invalidação de sessões ou a reavaliação por ação; verificar as diferenças entre sessões novas e existentes.",
+      "scenario": "O grupo Suporte-Estendido é retirado do sujeito A. A sessão S1 anterior e a S2 posterior devem convergir para as mesmas permissões efetivas antes de se declarar a retirada concluída."
+    },
+    {
+      "title": "Inventário publica nomes internos em erros de autorização",
+      "asset": 18,
+      "severity": "low",
+      "cwe": "CWE-209",
+      "group": 5,
+      "condition": "Uma resposta de rejeição contém nomes de grupos e caminhos internos inventados. O texto é apresentado a um usuário sem função operacional, embora ele não precise desse detalhe para corrigir a solicitação.",
+      "consequence": "A mensagem reduz a incerteza sobre a estrutura do modelo, sem demonstrar uma cadeia explorável nem acesso adicional.",
+      "correction": "Devolver um identificador de incidente e manter os detalhes técnicos em registros restritos; revisar respostas bem-sucedidas, rejeições e falhas internas.",
+      "scenario": "A solicitação rejeitada produz um código público estável e uma correlação. Os detalhes da ACL são conservados apenas no registro de diagnóstico do cenário."
+    },
+    {
+      "title": "Reabertura restaura permissões revogadas após a cópia",
+      "asset": 20,
+      "severity": "high",
+      "cwe": "CWE-863",
+      "group": 6,
+      "condition": "A cópia contém permissões válidas em sua data. Durante a recuperação, essas permissões são restauradas sem aplicar um registro posterior de revogações, e o serviço é considerado pronto quando os arquivos voltam a ficar disponíveis.",
+      "consequence": "A reabertura poderia reativar um acesso retirado pelo negócio. A disponibilidade dos bytes não demonstra a recuperação da política.",
+      "correction": "Reconciliar revogações e mudanças de classificação antes da reabertura; incluir casos de acesso permitido e rejeitado no critério de recuperação.",
+      "scenario": "A cópia C1 precede a retirada do fornecedor P. Na restauração, P deve continuar sem acesso, mesmo que apareça nas ACLs históricas do conteúdo."
+    },
+    {
+      "title": "Cópia parcial é aceita sem verificar todos os objetos do manifesto",
+      "asset": 21,
+      "severity": "high",
+      "cwe": "CWE-354",
+      "group": 6,
+      "condition": "O trabalho é marcado como bem-sucedido porque o índice principal foi restaurado. Alguns objetos exigidos estão ausentes, e outros pertencem a uma revisão anterior, mas o inventário completo não é comparado aos hashes do manifesto.",
+      "consequence": "A recuperação aparente poderia deixar dossiês incompletos ou combinar revisões incompatíveis. O modelo não perdeu dados reais.",
+      "correction": "Verificar a totalidade, o tamanho e o hash de cada membro exigido; separar recuperação parcial de aceitação e bloquear consumidores incompatíveis.",
+      "scenario": "O manifesto enumera três objetos. A cópia de ensaio omite um e altera outro; o resultado esperado detalha ambas as diferenças e mantém a reabertura bloqueada."
+    },
+    {
+      "title": "Fila restaurada volta a processar pagamentos já compensados",
+      "asset": 20,
+      "severity": "high",
+      "cwe": "CWE-837",
+      "group": 6,
+      "condition": "A fila provém de uma cópia anterior ao livro contábil recuperado. Ao retomar, inclui intenções cujo efeito já existe no livro, e o consumidor confia que a mensagem pendente representa trabalho novo.",
+      "consequence": "A recuperação poderia duplicar efeitos de negócio, mesmo que os dois componentes estejam individualmente íntegros.",
+      "correction": "Reconciliar posições da fila com obrigações duráveis; reutilizar a idempotência de negócio e registrar mensagens descartadas por resultado anterior.",
+      "scenario": "O livro contém a obrigação O como concluída, e a fila contém sua mensagem original. A reabertura deve reconhecer O, preservar seu lançamento e não produzir um segundo efeito."
+    },
+    {
+      "title": "Comutação inicia dois gravadores sem uma autoridade comum",
+      "asset": 20,
+      "severity": "high",
+      "cwe": "CWE-362",
+      "group": 6,
+      "condition": "O nó alternativo é ativado quando deixa de observar o primário. O primário continua disponível para parte do modelo, e ambos aceitam alterações sem um token de autoridade que ordene as escritas.",
+      "consequence": "Duas linhas de estado poderiam divergir e exigir reconciliação de decisões incompatíveis. Nenhum serviço real foi interrompido.",
+      "correction": "Usar uma autoridade de escrita com versão e isolamento de gravadores antigos; rejeitar operações emitidas com concessões antigas e demonstrar convergência antes da reabertura.",
+      "scenario": "Dois gravadores A e B compartilham o mesmo conjunto simbólico. A nova concessão a B invalida a anterior de A, mesmo quando A não recebe o aviso imediatamente."
+    },
+    {
+      "title": "Catálogo de cópias omite o resultado do teste de restauração",
+      "asset": 21,
+      "severity": "medium",
+      "cwe": "CWE-778",
+      "group": 6,
+      "condition": "O catálogo mostra data, tamanho e sucesso da cópia, mas não informa se uma restauração isolada conseguiu cumprir os critérios de reabertura. A tela apresenta disponibilidade de backup como recuperação comprovada.",
+      "consequence": "A decisão operacional poderia se basear em uma evidência mais limitada do que sua etiqueta sugere.",
+      "correction": "Separar criação, integridade, restauração e aceitação; mostrar resultado, alcance, data e limitações de cada etapa.",
+      "scenario": "Uma cópia válida sem teste de restauração conserva o estado não verificado. Outra com restauração parcial mostra componentes pendentes e não é apresentada como pronta para reabertura."
+    },
+    {
+      "title": "Manual de continuidade conserva uma referência de versão incompleta",
+      "asset": 20,
+      "severity": "low",
+      "cwe": "CWE-223",
+      "group": 6,
+      "condition": "A referência a um procedimento perde seu parâmetro de versão ao ser copiada para uma tabela. O texto continua legível, mas o destino já não identifica a mesma revisão aprovada no roteiro.",
+      "consequence": "Um operador poderia consultar instruções de outra versão e dificultar a repetição do procedimento. A observação não afirma um defeito do report-gen.",
+      "correction": "Separar a etiqueta visível do destino estruturado; verificar a igualdade exata de parâmetros, fragmentos e caracteres internacionais.",
+      "scenario": "É conservada uma URL extensa com parâmetros codificados e fragmento Unicode. A tabela, a referência do achado e o link narrativo devem manter o mesmo destino completo."
+    },
+    {
+      "title": "Análise de dados combina clientes homônimos por uma chave não exclusiva",
+      "asset": 22,
+      "severity": "medium",
+      "cwe": "CWE-20",
+      "group": 7,
+      "condition": "O lote usa uma etiqueta visível como identidade global. Dois clientes inventados compartilham o nome comercial, e o consumidor agrega suas movimentações sem incluir contrato nem identificador de origem. A coluna de procedência existe, mas não participa da junção.",
+      "consequence": "A agregação poderia atribuir movimentações e decisões ao dossiê errado. Não foram processados nomes nem transações reais.",
+      "correction": "Definir chaves compostas estáveis e rejeitar junções ambíguas; conservar valores originais e a procedência de cada linha.",
+      "scenario": "Os contratos A e B usam a etiqueta Comércio Central. A junção deve manter dois sujeitos distintos e sinalizar qualquer referência sem contrato, em vez de escolher um arbitrariamente."
+    },
+    {
+      "title": "Modelo antifraude aplica uma versão diferente da aprovada",
+      "asset": 23,
+      "severity": "high",
+      "cwe": "CWE-706",
+      "group": 7,
+      "condition": "A decisão conserva uma etiqueta de modelo, enquanto o serviço carrega a versão mais recente sob esse nome. O conjunto de parâmetros muda sem que o registro da decisão identifique seus bytes ou o limite efetivo.",
+      "consequence": "A explicação de um alerta poderia se referir a um modelo diferente daquele que o produziu. O caso não mede precisão nem discrimina pessoas reais.",
+      "correction": "Registrar versão imutável, parâmetros e limite por decisão; promover modelos por meio de uma revisão vinculada ao seu conteúdo.",
+      "scenario": "A decisão D1 é calculada com o modelo M1, e D2, com M2. A reprodução documental deve mostrar os dois contratos e evitar que a etiqueta comum oculte suas diferenças."
+    },
+    {
+      "title": "Dados tardios substituem o estado vigente de uma decisão",
+      "asset": 23,
+      "severity": "medium",
+      "cwe": "CWE-682",
+      "group": 7,
+      "condition": "O consumidor ordena atualizações por chegada, e não por versão de origem. Um lote atrasado sobrescreve atributos mais recentes do dossiê, embora conserve um tempo anterior em uma coluna não consultada.",
+      "consequence": "O estado apresentado poderia descrever um momento diferente daquele usado para decidir e gerar revisões inconsistentes.",
+      "correction": "Distinguir tempo de evento, recepção e sequência; conservar o histórico e definir o tratamento explícito de lotes atrasados ou duplicados.",
+      "scenario": "O dossiê recebe a versão 5 e depois a 4. A versão 4 é conservada como evento tardio, mas não substitui silenciosamente o estado vigente 5."
+    },
+    {
+      "title": "Conversão de unidades altera o limite de um alerta",
+      "asset": 23,
+      "severity": "medium",
+      "cwe": "CWE-1284",
+      "group": 7,
+      "condition": "Um produtor expressa valores em unidades menores, e outro, em unidades inteiras. O esquema aceita ambos como números, e o consumidor aplica o mesmo limite sem verificar moeda, escala ou versão do contrato.",
+      "consequence": "O modelo pode emitir ou suprimir alertas devido a uma conversão implícita incorreta. Não se atribui eficácia real a um sistema antifraude.",
+      "correction": "Tipar moeda e escala, normalizar explicitamente e rejeitar entradas sem unidade; registrar os valores original e normalizado.",
+      "scenario": "Uma entrada de 10000 centésimos e outra de 100 unidades representam o mesmo valor. A decisão deve ser equivalente somente após uma conversão declarada e verificável."
+    },
+    {
+      "title": "Campo ausente é interpretado como zero no indicador executivo",
+      "asset": 22,
+      "severity": "medium",
+      "cwe": "CWE-754",
+      "group": 7,
+      "condition": "Um lote incompleto não contém um contador exigido. O painel substitui a ausência por zero e mostra o período como completo. O roteiro distingue zero observado de dado não recebido, mas essa diferença se perde na apresentação.",
+      "consequence": "A leitura executiva poderia interpretar a ausência de informações como ausência de eventos e priorizar incorretamente.",
+      "correction": "Modelar o estado de completude por indicador; propagar o estado desconhecido e explicar os denominadores antes de calcular percentuais ou tendências.",
+      "scenario": "O período A contém zero eventos verificados, e B não dispõe de fonte. O relatório deve mostrar zero para A e informações incompletas para B, sem unir as duas categorias."
+    },
+    {
+      "title": "Métricas de qualidade explicitam o denominador e as amostras excluídas",
+      "asset": 22,
+      "severity": "info",
+      "cwe": "CWE-682",
+      "group": 7,
+      "condition": "A ficha de qualidade declara as quantidades recebida, aceita, rejeitada e pendente, além da regra do denominador. Ela é incluída como observação de gestão para verificar tabelas e estados sem afirmar uma vulnerabilidade.",
+      "consequence": "Não é atribuído impacto técnico. Um indicador com alcance visível não demonstra qualidade universal nem validade de outras métricas.",
+      "correction": "Manter a definição junto ao valor, conservar as causas de exclusão e versionar qualquer alteração de denominador.",
+      "scenario": "Um lote de 120 registros contém 100 aceitos, 12 rejeitados e 8 pendentes. As proporções devem identificar se usam os recebidos ou os avaliados como base."
+    },
+    {
+      "title": "Correlação se perde ao atravessar a fila de conciliação",
+      "asset": 24,
+      "severity": "medium",
+      "cwe": "CWE-778",
+      "group": 8,
+      "condition": "O produtor registra uma obrigação estável, mas o consumidor substitui essa correlação por um ID temporário de execução. Os eventos existem e, ainda assim, não permitem distinguir uma nova tentativa de uma intenção independente sem inferências.",
+      "consequence": "A reconstrução do modelo poderia unir decisões distintas ou contar novas tentativas como novas operações. Não se afirma a perda de registros.",
+      "correction": "Preservar a correlação de negócio e adicionar identificadores de trecho; registrar transição e resultado sem copiar corpos sensíveis completos.",
+      "scenario": "A obrigação O atravessa recepção, fila e lançamento com duas novas tentativas. Cada trecho conserva O e seu próprio identificador, permitindo explicar a sequência sem ambiguidade."
+    },
+    {
+      "title": "Ocultação de dados no suporte não alcança campos aninhados",
+      "asset": 25,
+      "severity": "medium",
+      "cwe": "CWE-532",
+      "group": 8,
+      "condition": "A regra retira um marcador do nível superior, mas uma cópia aninhada permanece na mensagem de erro. O suporte exporta ambos os campos, e o derivado público inclui o literal criado para testar o isolamento.",
+      "consequence": "O registro poderia publicar conteúdo desnecessário dentro do cenário. O marcador não é uma credencial nem um dado pessoal.",
+      "correction": "Definir campos permitidos e sanear antes de persistir e exportar; verificar objetos aninhados, erros e visualizações derivadas.",
+      "scenario": "O mesmo marcador sintético aparece em uma chave simples e em uma lista de detalhes. A publicação deve retirá-lo de ambos os locais e manter uma correlação não sensível."
+    },
+    {
+      "title": "Evidência de encerramento corresponde a uma revisão anterior",
+      "asset": 24,
+      "severity": "medium",
+      "cwe": "CWE-223",
+      "group": 8,
+      "condition": "A imagem é vinculada ao ID do achado, mas não à revisão do comportamento. Depois de alterar a configuração, o encerramento conserva a captura anterior e a apresenta junto ao novo estado sem aviso.",
+      "consequence": "A evidência pode aparentar uma verificação que não corresponde ao conteúdo revisado. A presença de uma imagem não basta para demonstrar a correção.",
+      "correction": "Vincular evidência, hash, revisão, data e critério; marcá-la como histórica quando uma precondição relevante mudar.",
+      "scenario": "A evidência E1 corresponde à revisão 2, e o achado já está na revisão 3. O encerramento exige uma nova verificação ou uma limitação explícita, sem reutilizar E1 como prova atual."
+    },
+    {
+      "title": "Defasagem temporal inverte autorização e execução no registro",
+      "asset": 24,
+      "severity": "medium",
+      "cwe": "CWE-778",
+      "group": 8,
+      "condition": "Dois componentes do roteiro usam relógios de parede com uma defasagem conhecida. A visualização ordena os registros por esse tempo e posiciona a execução antes da autorização, embora a sequência causal seja distinta e esteja disponível em outro campo.",
+      "consequence": "A leitura pode dificultar a explicação de uma decisão. Uma data visualmente precisa não comprova sincronização nem ordem causal.",
+      "correction": "Guardar fonte temporal, desvio e sequência lógica; distinguir tempo de evento, recepção e apresentação ao reconstruir operações.",
+      "scenario": "A autorização tem sequência 10, e a execução, 11, mas seus relógios diferem. O resultado conserva ambos os tempos e usa a sequência declarada para explicar a relação."
+    },
+    {
+      "title": "Aceitação comunicada é mostrada como correção verificada",
+      "asset": 25,
+      "severity": "low",
+      "cwe": "CWE-840",
+      "group": 8,
+      "condition": "O fluxo transforma o texto resolvido de uma comunicação em estado encerrado. Ele não exige data de repetição, critério ou resultado, e uma aceitação de risco acaba usando a mesma etiqueta de uma correção comprovada.",
+      "consequence": "O acompanhamento poderia confundir decisões de negócio com evidência técnica e ocultar trabalho pendente.",
+      "correction": "Separar comunicação, aceitação, correção informada e verificação; exigir evidências e limites para cada transição de encerramento.",
+      "scenario": "Três registros representam alteração comunicada, risco aceito e repetição satisfatória. Devem manter estados distintos e não ser reduzidos automaticamente a uma única categoria de resolvido."
+    },
+    {
+      "title": "Acompanhamento conserva um resultado parcial e uma nota sem data",
+      "asset": 24,
+      "severity": "info",
+      "cwe": "CWE-703",
+      "group": 8,
+      "condition": "O registro de exemplo mantém um reteste parcial datado e uma nota posterior sem data. A ordem de apresentação não transforma a nota no resultado mais recente nem elimina a limitação do reteste.",
+      "consequence": "Não é atribuído impacto técnico. A observação verifica que o acompanhamento pode expressar incerteza sem apresentá-la como aprovação.",
+      "correction": "Manter os registros originais e selecionar o estado por regras explícitas de data e resultado; não inferir encerramento a partir de uma nota narrativa.",
+      "scenario": "O reteste R1 verifica duas de três condições; N1 adiciona contexto sem data. O estado continua parcial até existir um resultado datado que cubra a condição restante."
+    },
+    {
+      "title": "Fornecedor retirado conserva mensagens autorizadas na fila",
+      "asset": 26,
+      "severity": "high",
+      "cwe": "CWE-613",
+      "group": 9,
+      "condition": "A recepção valida um mandato vigente e guarda a mensagem. Depois, o fornecedor é retirado, mas um trabalhador processa a cópia da autorização sem consultar o estado atual nem o contrato das operações pendentes.",
+      "consequence": "O modelo permitiria alterações após a retirada do acesso do terceiro. A semântica das mensagens já aceitas exige uma decisão explícita de negócio.",
+      "correction": "Versionar mandatos e definir quais operações podem concluir seu ciclo; reavaliar a validade e cancelar de forma idempotente aquelas que já não estejam autorizadas.",
+      "scenario": "O fornecedor P emite J1 antes da retirada e J2 depois. J2 é rejeitada imediatamente; J1 é resolvida conforme uma regra documentada que não depende de uma cópia implícita da permissão."
+    },
+    {
+      "title": "Conta de fornecedor altera o destino de liquidação sem duplo controle",
+      "asset": 26,
+      "severity": "high",
+      "cwe": "CWE-841",
+      "group": 9,
+      "condition": "A conta do fornecedor pode modificar o destino e confirmar a alteração em uma segunda tela. Ambos os canais resolvem o mesmo sujeito, e uma revisão anterior permanece válida, embora o dado tenha mudado.",
+      "consequence": "A separação aparente de telas não garante uma revisão independente de um dado de alto impacto. Não existem contas bancárias reais.",
+      "correction": "Exigir outra identidade autorizada e vincular a aprovação à versão exata; invalidar as confirmações quando qualquer campo relevante mudar.",
+      "scenario": "A identidade P solicita a troca de DESTINO-A por DESTINO-B. P não pode confirmar essa mesma alteração, e a revisão T deve indicar explicitamente o destino B."
+    },
+    {
+      "title": "Entrega a terceiro inclui uma coluna retirada do contrato",
+      "asset": 26,
+      "severity": "medium",
+      "cwe": "CWE-200",
+      "group": 9,
+      "condition": "O esquema de exportação evolui e mantém uma coluna antiga que o novo mandato já não permite. O consumidor aceita colunas adicionais e não detecta que o conjunto excede a finalidade vigente.",
+      "consequence": "O lote sintético distribui um atributo desnecessário. O teste não usa dados reais nem interpreta uma obrigação jurídica.",
+      "correction": "Definir um esquema permitido por contrato e versão; validar a ausência de colunas retiradas e registrar mudanças de finalidade.",
+      "scenario": "A versão 1 permite as colunas A, B e C. A versão 2 permite apenas A e B; um lote com C deve ser rejeitado ou saneado mediante uma decisão explícita antes da distribuição."
+    },
+    {
+      "title": "Retenção elimina o índice sem retirar objetos temporários",
+      "asset": 27,
+      "severity": "medium",
+      "cwe": "CWE-459",
+      "group": 9,
+      "condition": "O processo apaga a entrada principal do catálogo, mas uma tarefa temporária conserva cópias com outra convenção de nomes. O encerramento conta as linhas excluídas e não consulta esses objetos nem suas permissões.",
+      "consequence": "O conteúdo do cenário pode continuar disponível por uma derivação que ficou fora do inventário.",
+      "correction": "Relacionar as cópias temporárias à sua origem e política; verificar a retirada lógica em todos os armazenamentos e explicar os limites da exclusão física.",
+      "scenario": "O objeto D tem uma cópia principal, uma cópia temporária de exportação e um fragmento de busca. O controle registra o resultado por derivado e deixa pendente qualquer consumidor não verificado."
+    },
+    {
+      "title": "Origem de testes permanece permitida no portal de terceiros",
+      "asset": 26,
+      "severity": "low",
+      "cwe": "CWE-942",
+      "group": 9,
+      "condition": "A configuração estável herda uma origem de laboratório, e as respostas de erro usam uma lista diferente da usada nas respostas bem-sucedidas. Todas as URLs do documento são reservadas e não foram consultadas.",
+      "consequence": "A política estende uma confiança desnecessária dentro do modelo. O impacto depende dos métodos, das credenciais e do conteúdo efetivamente exposto.",
+      "correction": "Derivar a política por ambiente e centralizar sua aplicação; verificar origem permitida, rejeitada e nula em respostas bem-sucedidas e de erro.",
+      "scenario": "A lista autorizada contém somente a origem estável do caso. Uma origem de laboratório deve ser rejeitada de maneira coerente na página inicial, na API e nos erros."
+    },
+    {
+      "title": "Prazo de retenção não identifica o calendário nem o momento inicial",
+      "asset": 27,
+      "severity": "low",
+      "cwe": "CWE-20",
+      "group": 9,
+      "condition": "A etiqueta trinta dias omite se a contagem começa na criação, no encerramento ou na publicação e se usa dias corridos ou úteis. Dois consumidores produzem datas diferentes para o mesmo dossiê.",
+      "consequence": "A ambiguidade gera decisões de retenção inconsistentes. O exemplo não estabelece prazos legais nem interpreta regulamentação financeira.",
+      "correction": "Expressar evento inicial, fuso, calendário, duração e data resultante; versionar a regra e revisar exceções com responsáveis definidos.",
+      "scenario": "O dossiê é criado, encerrado e entregue em três datas distintas. O contrato seleciona uma delas como origem, e cada consumidor deve obter a mesma data final."
+    }
+  ],
+  "sections": [
+    {
+      "key": "confidentiality",
+      "body": "CASO FICTÍCIO: organização, pessoas, ativos, quantidades e resultados inventados; não foram realizados testes contra sistemas reais.\n\nO Grupo Atlas Serviços Financeiros representa um grupo bancário inventado com canais pessoais e corporativos, pagamentos, documentos, análise de dados e continuidade. Não corresponde a uma instituição existente. Os domínios .example e as redes de documentação não são destinos de teste. Não foram consultadas pessoas, contas, saldos, cartões nem dossiês reais.\n\nOs dados permitem examinar a composição documental de um relatório longo: relações entre recursos, tabelas extensas, evidências com proporções distintas, referências, retestes e decisões de publicação. As observações de segurança pertencem ao roteiro. A aceitação do gerador é conservada em uma auditoria separada e não é apresentada como um resultado do banco fictício.\n\nUma imagem denominada evidência é uma representação sintética. Os comandos são registros inertes de intenção, e não instruções executadas. Os estados de remediação e as aprovações também são inventados. Este documento não certifica conformidade regulatória, nível de maturidade nem ausência universal de vulnerabilidades."
+    },
+    {
+      "key": "document_control",
+      "version_history": [
+        {
+          "version": "0.1",
+          "date": "2026-10-14",
+          "author": "Equipe fictícia Atlas",
+          "notes": "Contratos de negócio, ativos e dependências."
+        },
+        {
+          "version": "0.2",
+          "date": "2026-10-15",
+          "author": "Equipe fictícia Atlas",
+          "notes": "Achados e cenários de recuperação."
+        },
+        {
+          "version": "1.0",
+          "date": "2026-10-16",
+          "author": "Equipe fictícia Atlas",
+          "notes": "Caso amplo, idiomas completos e critérios de fidelidade."
+        }
+      ],
+      "distribution": "Exemplo reutilizável identificado como fictício. As variantes em espanhol, inglês e português incluem conteúdo autoral traduzido; os identificadores, domínios, vetores e literais técnicos permanecem estáveis."
+    },
+    {
+      "key": "contacts"
+    },
+    {
+      "key": "executive_summary",
+      "summary": "O grupo Atlas representa um ecossistema financeiro inventado composto por **28 ativos, 60 achados, 7 cadernos de análise, 84 imagens de evidência, 180 contratos de aceitação e 10 grupos de causa raiz**. Os cadernos não são contados como vulnerabilidades. A avaliação descreve condições e decisões que devem poder ser acompanhadas desde a direção até a equipe responsável. Não foram realizadas operações bancárias.\n\nO risco do cenário se concentra em três relações: quem pode decidir sobre um recurso, qual revisão exata foi autorizada e como a intenção de negócio é conservada ao longo de novas tentativas ou da recuperação. Uma validação de canal não basta para autorizar cada linha de um lote. A aprovação de uma solicitação não cobre um destinatário substituído posteriormente. Uma nova mensagem também não representa necessariamente uma nova obrigação.\n\nOs mecanismos de identidade têm consumidores distintos. A retirada de uma sessão deve alcançar renovações, delegações e permissões temporárias; a revogação de um consentimento deve alcançar trabalhos adiados. Essas relações exigem contratos explícitos porque uma exclusão local pode coexistir com uma autorização antiga em outra fila, cache ou cópia.\n\nA continuidade é analisada como recuperação de conteúdo, estado e restrições. Restaurar objetos sem suas revisões ou reabrir uma fila sem reconciliar o livro pode produzir um sistema disponível, porém incoerente. Por isso, a aceitação exige controles de integridade, autoridade de escrita e revogações posteriores à cópia.\n\nAs decisões analíticas exigem procedência e limites. Um valor ausente não equivale a zero; uma etiqueta de modelo não identifica seus parâmetros; uma data de relógio de parede não demonstra ordem causal. O relatório mantém essas distinções para evitar conclusões mais amplas do que a evidência do roteiro.\n\nA proposta de governança organiza as ações por dependência. Primeiro, são definidos contratos de autorização e negócio; depois, o mesmo significado é aplicado a produtores e consumidores; por fim, verificam-se recuperação, acompanhamento e publicação. Os prazos do plano são hipóteses de coordenação, não compromissos de uma empresa real."
+    },
+    {
+      "key": "risk_posture",
+      "posture": "A postura é descrita por invariantes verificáveis, sem somar pontuações nem convertê-las em uma probabilidade de perda. As faixas CVSS correspondem a hipóteses do cenário, e as observações informativas não representam vulnerabilidades.\n\n| Dimensão | Fronteira de confiança | Critério de aceitação |\n| --- | --- | --- |\n| Confidencialidade | Sujeito, finalidade e recurso | Acesso mínimo por versão e validade |\n| Integridade | Obrigação, moeda e estado | Uma intenção produz um resultado coerente |\n| Continuidade | Cópia, fila e autoridade | Reabertura com conteúdo e política reconciliados |\n| Rastreabilidade | Evento, revisão e evidência | Decisão explicável sem inferências ocultas |\n\nUma exceção exige responsável, motivo e vencimento. Um estado aceito não elimina o achado nem comprova uma correção; uma correção informada também não substitui um reteste. Os bloqueios e resultados parciais permanecem visíveis na cobertura."
+    },
+    {
+      "key": "strategic_recommendations",
+      "recommendations": "1. Resolver e autorizar cada recurso dentro de seu contrato organizacional.\n2. Vincular as aprovações a conteúdo imutável e a uma identidade independente.\n3. Preservar a obrigação e a versão ao longo de pagamentos, novas tentativas e compensações.\n4. Reconciliar revogações e restrições antes de recuperar um serviço.\n5. Versionar esquemas, modelos e denominadores de decisões analíticas.\n6. Associar evidências e retestes a critérios concretos de encerramento.\n7. Separar originais privados, projeto editável e derivados publicáveis.\n\nCada recomendação exige um teste positivo, um negativo e um de recuperação. A mera ausência de erros visíveis não demonstra que todos os estados ou consumidores compartilhem a mesma política."
+    },
+    {
+      "key": "scope",
+      "objectives": "Modelar a interação entre canais, identidade, pagamentos, contabilidade, documentos, terceiros, análise de dados e continuidade. O inventário inclui vinte e oito ativos com responsáveis fictícios e relações explícitas com achados e cobertura.\n\nA unidade de análise é uma decisão sobre um recurso em uma revisão determinada. O alcance documental não equivale à exploração de todos os endpoints nem à cobertura universal do sistema. Os sete cadernos desenvolvem dependências e fases de revisão sem afirmar acesso inicial ou exploração.",
+      "assumptions": "São usados somente dados criados para este exercício. Excluem-se rede, credenciais, informações pessoais, transações, engenharia social, testes físicos e disponibilidade de serviços reais. As portas, respostas e registros são literais inertes. As referências não foram consultadas."
+    },
+    {
+      "key": "methodology",
+      "approach": "Cada hipótese documenta condição, consequência, correção, cenário de entrada e três caminhos de aceitação. Os identificadores permanecem estáveis entre idiomas, e os textos narrativos são traduzidos integralmente. O registro distingue descrição, resultado fictício e limitação.",
+      "standards": "CWE é usado como classificação orientativa, e CVSS, como representação de hipóteses. Este documento não interpreta nem comprova conformidade com ISO, NIST, PCI DSS, legislação bancária ou outra norma.",
+      "information_gathering": "Inventário criado do zero, sem OSINT nem consulta externa. As entradas CSV, Burp XML, Nuclei JSONL, Nmap XML e SARIF são fabricadas para exercitar importadores reais.",
+      "enumeration": "São descritos ativos, perfis e dependências do modelo. Um endereço de documentação ou uma porta inventada não comprova um serviço descoberto.",
+      "exploitation": "Os registros de intenção são texto inerte. Não há cargas operacionais, sessões, segredos utilizáveis nem execução contra os destinos descritos.",
+      "post_exploitation": "As cadeias de impacto são relações conceituais entre decisões de projeto. Não foram realizados elevação, persistência, extração nem movimento lateral.",
+      "cleanup": "As únicas alterações são arquivos do projeto e saídas produzidas pelo report-gen. As verificações do gerador permanecem separadas do cenário, e os servidores locais devem ser encerrados ao concluir a aceitação."
+    },
+    {
+      "key": "findings_summary"
+    },
+    {
+      "key": "findings"
+    },
+    {
+      "key": "attack_narrative",
+      "narrative": "### Cadeia A: recurso, aprovação e obrigação\n\n[F01](#F01), [F02](#F02) e [F13](#F13) vinculam isolamento organizacional, conteúdo aprovado e idempotência. O roteiro mostra três barreiras distintas: selecionar uma ordem autorizada, aprovar sua revisão e garantir um único efeito de negócio. A relação não demonstra que todas as condições sejam simultaneamente alcançáveis.\n\n### Cadeia B: sessão, consentimento e documento\n\n[F07](#F07), [F19](#F19) e [F20](#F20) distinguem validade de identidade, finalidade e objeto. Revogar uma dessas dimensões não garante que seus consumidores tenham atualizado as outras. A correção exige uma semântica compartilhada e testes sobre caminhos adiados.\n\n### Cadeia C: entrega, privilégio e recuperação\n\n[F25](#F25), [F31](#F31), [F37](#F37) e [F40](#F40) relacionam conteúdo aprovado, autoridade administrativa e reabertura. A integridade de uma cópia não garante que suas permissões continuem vigentes nem que exista um único gravador. Cada fronteira mantém seu próprio critério.\n\n### Cadeia D: dado, decisão e evidência\n\n[F44](#F44), [F47](#F47), [F49](#F49) e [F51](#F51) separam identidade de modelo, completude, correlação e revisão de evidência. Uma saída legível pode continuar ambígua se perder alguma dimensão. Nenhuma cadeia foi executada contra uma infraestrutura real."
+    },
+    {
+      "key": "remediation_plan",
+      "overview": "O plano parte de dez causas raiz e evita resolver sintomas com regras isoladas em cada canal. As equipes fictícias coordenam os contratos antes de alterar consumidores e preservam uma reversão compatível com as restrições atuais.\n\n| Etapa | Responsável fictício | Dependência | Saída esperada |\n| --- | --- | --- | --- |\n| Definição | Arquitetura e identidade | Objeto e sujeito estáveis | Contrato explícito de autorização |\n| Transações | Pagamentos e contabilidade | Obrigação e versão | Estados e idempotência coerentes |\n| Consumo | Canais e terceiros | Validade e finalidade | Mesma política em cada consumidor |\n| Recuperação | Continuidade e plataforma | Manifesto e revogações | Reabertura verificável |\n| Acompanhamento | Revisão independente | Evidência e critério | Resultado datado com limites |",
+      "short_term": "Em sete dias fictícios, reduzir a autoridade desnecessária nas quatro hipóteses críticas, definir contratos de revogação e conter as transições de maior impacto. Acordar quem pode aceitar uma exceção e de qual evidência precisa.",
+      "medium_term": "Em trinta dias fictícios, harmonizar consumidores de pagamentos, consentimento, documentos e sessões. Incorporar casos negativos e de recuperação às revisões de alterações; verificar a correlação e os denominadores dos indicadores.",
+      "long_term": "Em noventa dias fictícios, ensaiar a recuperação integrada e o fim de contrato de terceiros em um ambiente autorizado. Revisar dependências, cópias e derivados com evidência de alcance, evitando confundir volume de tarefas com eficácia."
+    },
+    {
+      "key": "appendix",
+      "host_service_discovery": "| Rede documental | Ativos | Natureza |\n| --- | --- | --- |\n| 192.0.2.0/24 | 10 | Canais, identidade e documentos inventados |\n| 198.51.100.0/24 | 10 | Operações, dados e plataforma inventados |\n| 203.0.113.0/24 | 8 | Continuidade, análise de dados e terceiros inventados |",
+      "exploited_hosts": "Nenhum. Os sete cadernos são modelos documentais, não provas de comprometimento.",
+      "compromised_users": "Nenhum. Não há credenciais, contas pessoais nem identidades reais.",
+      "changes_cleanup": "Não foram alteradas operações nem sistemas reais. Foram apenas compostas entradas e gerados arquivos do projeto fictício.",
+      "tools_used": "**Relatórios:** exclusivamente exportadores registrados e entrega nativa do report-gen.\n\n**Entradas:** construtor reprodutível de YAML, PNGs sintéticos e importações inertes.\n\n**Inspeção:** validadores e revisão de saídas; motores externos apenas inspecionam ou representam documentos já gerados.",
+      "glossary": "| Termo | Uso no cenário |\n| --- | --- |\n| Obrigação | Intenção de negócio independente da mensagem de transporte |\n| Mandato | Permissão com sujeito, finalidade, alcance e validade |\n| Revisão | Identidade do conteúdo ou da política usados para decidir |\n| Derivação | Objeto produzido a partir de uma origem e sujeito ao seu ciclo de vida |\n| Reabertura | Decisão de ativar um serviço com restrições reconciliadas |\n| Reteste | Acompanhamento fictício com data, resultado e limitação |"
+    },
+    {
+      "key": "atlas-governance",
+      "title": "Governança de decisões e responsabilidades",
+      "body": "A responsabilidade do cenário é distribuída por decisão, não apenas por aplicativo. Canais apresenta a intenção; identidade comprova sujeito e validade; pagamentos transforma uma obrigação; contabilidade conserva seu efeito; continuidade determina se o conjunto pode ser reaberto. Cada transferência exige um contrato e um responsável capaz de explicar seu limite.\n\nOs conflitos entre continuidade e revogação são resolvidos antes de um incidente. Se uma cópia anterior conserva um acesso retirado, a decisão de reabrir não pode se basear apenas na disponibilidade. Ela deve incorporar uma reconciliação e uma exceção explícita quando o procedimento não puder ser concluído.\n\nA aceitação de risco pertence a uma função diferente da verificação técnica. Ela pode conservar um risco aberto com motivo e vencimento, mas não transforma, por si só, um resultado parcial em correção. O registro deve permitir distinguir essas decisões quando um resumo executivo é exportado."
+    },
+    {
+      "key": "atlas-payments",
+      "title": "Contrato de pagamentos e conciliação de múltiplas moedas",
+      "body": "Uma intenção de pagamento contém obrigação, sujeito, beneficiário, moeda, valor e revisão. O identificador da mensagem permite rastrear um transporte, mas não identifica necessariamente uma nova intenção. Filas e aplicativos móveis podem reenviar sem criar outro direito de cobrança.\n\nO modelo separa autorização, reserva, execução, compensação e devolução. Cada transição admite novas tentativas com uma resposta estável. Se a confirmação se perde, o consumidor recupera o resultado durável antes de decidir se precisa repetir. Uma compensação não apaga o histórico da decisão original: adiciona uma transição vinculada e explicável.\n\nEm operações entre moedas, a taxa de câmbio é uma entrada versionada. Uma nova cotação não altera silenciosamente uma intenção já aceita. O arredondamento conserva precisão, regra e ajuste, e as tabelas de conciliação mostram as diferenças com sua origem, em vez de acumulá-las sob uma categoria genérica."
+    },
+    {
+      "key": "atlas-identity",
+      "title": "Identidade, delegação e revogação",
+      "body": "A identidade de uma pessoa ou serviço não coincide com sua sessão, navegador ou dispositivo. O cenário usa essa distinção para impedir que duas sessões do mesmo sujeito simulem independência em uma aprovação. Os perfis temporários também conservam uma concessão com finalidade e vencimento.\n\nA revogação afeta famílias de acesso: sessões curtas, renovações, delegações, credenciais de serviço e consumidores adiados. Cada componente precisa demonstrar o que significa retirar um acesso e quando aplica a decisão. Uma resposta bem-sucedida do catálogo central não comprova que todos os consumidores convergiram.\n\nO suporte deve poder ajudar sem adquirir autoridade invisível. Os mandatos delegados indicam quem os criou, quais operações permitem e como terminam. A mudança de controle de uma conta exige reavaliar esses mandatos, especialmente quando a recuperação é iniciada para retirar acessos suspeitos."
+    },
+    {
+      "key": "atlas-data",
+      "title": "Finalidade, retenção e publicação de dados",
+      "body": "O documento principal, suas miniaturas, os fragmentos de busca e as exportações temporárias pertencem ao mesmo ciclo de vida, mesmo que estejam em sistemas diferentes. A política deve identificar consumidores e resultados por derivação. Apagar uma linha do catálogo não demonstra que todo o conteúdo deixou de ser servido.\n\nUma finalidade autorizada define o conjunto mínimo de atributos. A evolução do esquema não concede automaticamente permissão para novas colunas. O processo de publicação compara campos permitidos, exigidos e proibidos e mantém as exceções visíveis quando um consumidor ainda não consegue aplicar a nova regra.\n\nO projeto editável pode conservar originais, notas privadas e marcadores de controle. A entrega pública usa derivados com decisões explícitas. A inspeção estrutural de um PDF é uma ajuda parcial e não substitui a revisão de imagens, conteúdo digitalizado nem interpretações semânticas que exigem uma pessoa."
+    },
+    {
+      "key": "atlas-continuity",
+      "title": "Cenário integrado de recuperação",
+      "body": "O ensaio conceitual começa com uma cópia C1, um livro posterior e uma fila que contém mensagens já concluídas. Depois de C1, um fornecedor é retirado e uma classificação documental é alterada. Esses fatos exigem reconciliar tanto o estado de negócio quanto as restrições de acesso.\n\nA recuperação primeiro verifica membros, tamanhos e hashes do manifesto. Depois, confirma dependências e autoridade de escrita. Somente então reconcilia obrigações e revogações. Se um componente exigido estiver ausente, a saída declara recuperação parcial e conserva a reabertura bloqueada para o fluxo afetado.\n\nA aceitação compara casos autorizados e rejeitados. Um usuário vigente deve recuperar seu serviço; o fornecedor retirado deve continuar sem acesso; uma obrigação concluída não deve ser executada novamente. Essas condições são registradas por revisão, de forma que uma alteração posterior possa invalidar a evidência sem apagar seu histórico."
+    },
+    {
+      "key": "atlas-analytics",
+      "title": "Qualidade dos dados e explicação de decisões",
+      "body": "Os dados analíticos conservam origem, esquema, unidades, tempos e completude. Um número sem moeda ou escala pode ser sintaticamente válido e semanticamente incorreto. Um dado ausente deve continuar como desconhecido ao chegar ao indicador executivo, em vez de se transformar em um zero tranquilizador.\n\nOs modelos e limites são identificados por versões imutáveis. A explicação de um alerta deve se referir aos parâmetros usados naquela decisão, não aos parâmetros atuais sob uma etiqueta reutilizada. A reprodução documental conserva ambas as revisões e seus limites.\n\nOs denominadores são mostrados junto ao indicador. Registros recebidos, avaliados, rejeitados e pendentes atendem a finalidades distintas; combiná-los sem explicação produz percentuais difíceis de comparar. O cenário não estima precisão, viés nem desempenho econômico de um modelo real."
+    },
+    {
+      "key": "atlas-evidence",
+      "title": "Contrato de evidência e retestes",
+      "body": "Uma evidência fornece informações sobre uma condição concreta e uma revisão determinada. Sua presença não demonstra, por si só, execução, abrangência nem correção. O caso usa imagens sintéticas para testar composição, legendas, relações e exportações; cada uma declara isso de forma visível.\n\nOs retestes distinguem corrigido, aberto, parcial e não verificado. Notas sem data não substituem resultados datados, e uma comunicação de alteração não se transforma automaticamente em verificação. Os registros mantêm avaliador, condição, resultado e limitação para que o leitor possa determinar o que ficou de fora.\n\nAs tabelas incluem resultados permitidos, rejeitados e de recuperação. O teste negativo deve verificar a ausência de efeito, não apenas a presença de uma mensagem de erro. A recuperação deve explicar se conserva um único resultado e se aplica as restrições vigentes no momento da reabertura."
+    },
+    {
+      "key": "atlas-contracts",
+      "title": "Anexo A — Cento e oitenta contratos de aceitação",
+      "body": "As linhas a seguir relacionam cada achado a três caminhos de controle. São contratos narrativos inventados, e não cento e oitenta testes executados. Permitem verificar cabeçalhos repetidos, continuidade das tabelas, vínculos internos e estados de cobertura.\n\n{CONTRACT_TABLE}"
+    },
+    {
+      "key": "atlas-literals",
+      "title": "Anexo B — Literais, caracteres e referências extensas",
+      "body": "Os literais técnicos são conservados entre idiomas para verificar a fidelidade. O destino não foi consultado.\n\n[Referência versionada]({LONG_URL})\n\n<{LONG_URL}>\n\n{LITERAL_TABLE}\n\n```text\nATLAS_LITERAL_SENTINEL\nGET /v1/obligations/ATLAS-001?preview=true HTTP/1.1\nHost: transferencias.atlas.example\nX-Synthetic-Only: true\nX-Correlation: ATLAS-0123456789abcdef0123456789abcdef0123456789abcdef\n```\n\n1. Resolver sujeito, obrigação e revisão.\n    1. Conservar a decisão permitida.\n    2. Conservar a rejeição sem efeito.\n2. Explicar recuperação e limitações.\n\n> Uma representação documental não equivale a um teste executado.\n>\n> - Español: ejemplo ficticio.\n> - English: fictional example.\n> - Português: exemplo fictício."
+    },
+    {
+      "key": "atlas-annexes",
+      "title": "Anexo C — Entrega, anexos e exclusões",
+      "body": "Os anexos incluídos permanecem como arquivos independentes dentro da entrega. Não se afirma que o PDF principal incorpore seus bytes. O projeto editável também conserva conteúdo privado, originais e controles sintéticos de publicação.\n\n{ANNEX_TABLE}\n\nA revisão dos anexos é registrada por hash e versão. Alterar um arquivo com o mesmo nome invalida a decisão anterior. A inspeção de PDF é estrutural, tem limites e não inclui OCR; um resultado parcial continua sendo parcial, mesmo que não encontre um marcador conhecido.\n\nAs versões em espanhol, inglês e português conservam IDs e relações idênticos. A prosa, as legendas de evidência, as imagens sintéticas e os anexos são localizados integralmente. Os nomes técnicos de ferramentas, caminhos, vetores e literais de interoperabilidade mantêm sua forma original."
+    }
+  ],
+  "strings": {
+    "warning": "CASO FICTÍCIO: organização, pessoas, ativos, quantidades e resultados inventados; não foram realizados testes contra sistemas reais.",
+    "simulated": "[SIMULADO]",
+    "fictional_role": "[função fictícia]",
+    "fictional": "FICTÍCIO",
+    "description_limit": "**Limite:** observação sobre um modelo documental local inventado. Não representa um resultado obtido em uma auditoria real.",
+    "closure": "Conservar precondições, revisão, sujeito e evidência dos três caminhos do contrato. O encerramento exige um resultado datado com alcance explícito; uma comunicação, um arquivo anexo ou um estado aceito não substituem a verificação.",
+    "walkthrough_scenario": "Preparação e sequência do cenário",
+    "walkthrough_contract": "Matriz de decisões e recuperação",
+    "contract_headers": [
+      "Caminho",
+      "Condição de aceitação",
+      "Evidência exigida"
+    ],
+    "allowed": "Permitida",
+    "rejected": "Rejeitada",
+    "recovery": "Recuperação",
+    "allowed_evidence": "Identidade, recurso, revisão e resultado correspondente ao próprio dossiê.",
+    "rejected_evidence": "Motivo da rejeição e ausência de alterações no recurso alheio ou inválido.",
+    "recovery_evidence": "Um único efeito de negócio, estado final explicado e restrições vigentes.",
+    "walkthrough_record": "Registro inerte de intenção e estado",
+    "image_table_headers": [
+      "Padrão documental",
+      "Representação sintética"
+    ],
+    "image_pattern_external": "Figura vinculada a uma referência externa",
+    "image_pattern_pair": "Duas figuras com destino compartilhado",
+    "image_pattern_adjacent": "Prosa e figura com destino interno",
+    "image_pattern_portrait": "Figura vertical e visualização horizontal adjacentes",
+    "image_alt_prefix": "Atlas evidência",
+    "image_before": "Antes",
+    "image_after": "Depois",
+    "image_tables_1": "Tabela de evidências vinculadas",
+    "image_tables_2": "Tabela de continuidade documental",
+    "redaction_intro": "Marcador deliberado para verificar a ocultação de dados:",
+    "redaction_replacement": "[OCULTADO: MARCADOR SINTÉTICO]",
+    "long_reference": "Referência integral de continuidade e conciliação",
+    "reported_remediation": "Comunicação ou aceitação inventada para o cenário. Não equivale a uma correção técnica verificada nem a uma aprovação empresarial real.",
+    "retest_assessor": "Revisor fictício Atlas",
+    "retest_notes": "**RESULTADO INVENTADO:** repetição documental das condições do roteiro. O resultado não comprova a segurança de um sistema real.",
+    "retest_headers": [
+      "Condição",
+      "Interpretação"
+    ],
+    "retest_allowed": "Sequência permitida descrita no modelo",
+    "retest_rejected": "Rejeição ou limitação conservadas",
+    "retest_scope": "Sem validação de um serviço real",
+    "retest_undated_assessor": "Nota herdada fictícia",
+    "retest_undated_notes": "Nota sem data; não substitui o último resultado datado nem demonstra um encerramento.",
+    "machine_title_suffix": "caderno fictício",
+    "machine_os": "Sistema de laboratório inventado",
+    "machine_ports": "443/tcp, 8443/tcp [INVENTADOS]",
+    "machine_summary_limit": "Cinco fases de análise documental; não houve acesso inicial, elevação, persistência nem tráfego de rede.",
+    "proof_notes": "Valor inventado; não é uma prova de comprometimento nem uma flag capturada.",
+    "asset_note": "Ativo fictício não contatado.",
+    "evidence_title": "modelo documental",
+    "evidence_caption": "representação sintética; não é uma captura de uma empresa nem um teste executado.",
+    "coverage_allowed": "Caso permitido",
+    "coverage_rejected": "Caso rejeitado",
+    "coverage_recovery": "Nova tentativa ou recuperação",
+    "coverage_notes": "ESTADO SIMULADO: contrato do roteiro, não um teste executado contra um sistema.",
+    "root_note": "Hipótese fictícia.",
+    "limitations": "Toda a prosa, títulos, legendas, anotações e anexos de cada variante são redigidos em seu idioma. Os identificadores técnicos e os literais de interoperabilidade são conservados. Os resultados do report-gen são registrados fora da ficção; não são atribuídos ao banco inventado.",
+    "private_title": "Nota privada de controle",
+    "private_raw": "Nota privada sintética não destinada à publicação.",
+    "private_note": "Não promover automaticamente a achados.",
+    "private_unlinked": "Controle sintético excluído da publicação.",
+    "image_model": "MODELO SINTÉTICO",
+    "image_asset": "Ativo",
+    "image_record": "Dossiê",
+    "image_decision": "Decisão",
+    "image_classification": "Classificação",
+    "image_execution": "Execução",
+    "image_decision_value": "Permissão + versão + intenção de negócio",
+    "image_classification_suffix": "hipótese fictícia",
+    "image_execution_value": "SEM REDE / SEM CARGAS / SEM PAGAMENTOS REAIS",
+    "image_footer": "NÃO É CAPTURA REAL",
+    "image_organization": "organização A",
+    "cover_labels": [
+      "CANAIS",
+      "PAGAMENTOS",
+      "IDENTIDADE",
+      "CONTINUIDADE"
+    ],
+    "cover_summary": "28 ATIVOS / 60 ACHADOS / 7 CADERNOS / DADOS SINTÉTICOS",
+    "annex_names": [
+      "inventario-ativos.csv",
+      "contratos-de-aceitacao.csv",
+      "manifesto-do-caso.json",
+      "criterios-de-entrega.md",
+      "notas-internas.txt",
+      "regras-de-retencao.csv",
+      "dependencias-e-reabertura.md"
+    ],
+    "annex_asset_headers": [
+      "nome",
+      "destino",
+      "ipv4",
+      "tipo",
+      "responsavel_ficticio"
+    ],
+    "annex_control_headers": [
+      "controle",
+      "achado",
+      "caso",
+      "natureza"
+    ],
+    "annex_simulated": "SIMULADO",
+    "annex_acceptance": "# Contrato fictício Atlas\n\nConservar 60 achados, 7 cadernos, 28 ativos, 84 evidências, 180 contratos e 10 causas raiz.\n\nManter o idioma completo de cada variante, os destinos exatos, a relação entre evidências e os limites dos retestes. Excluir notas privadas, originais e marcadores de publicação. O projeto editável e a entrega pública têm finalidades diferentes.\n",
+    "annex_private": "Anexo sintético excluído.",
+    "annex_retention_headers": [
+      "classe",
+      "origem_do_prazo",
+      "regra_ficticia",
+      "consumidores"
+    ],
+    "annex_retention_rows": [
+      [
+        "Dossiê",
+        "Encerramento autorizado",
+        "Regra operacional inventada de 30 dias",
+        "Original, miniatura, índice"
+      ],
+      [
+        "Exportação temporária",
+        "Fim do trabalho",
+        "Retirada ao encerrar a finalidade",
+        "Arquivo e cache"
+      ],
+      [
+        "Evidência de revisão",
+        "Aceitação da entrega",
+        "Conservar alcance e revisão do resultado",
+        "Projeto e manifesto"
+      ]
+    ],
+    "annex_dependencies": "# Dependências e reabertura fictícias\n\n1. Identidade define sujeito e validade.\n2. Pagamentos conserva obrigação, moeda e versão.\n3. Livro e fila são reconciliados antes da reabertura.\n4. Documentos aplica revogações a todos os derivados.\n5. Uma recuperação parcial mantém os bloqueios visíveis.\n\nNenhuma tarefa deste documento foi executada contra uma infraestrutura real.\n",
+    "contract_table_headers": [
+      "Controle",
+      "Achado",
+      "Contrato",
+      "Limite"
+    ],
+    "contract_limit": "Contrato inventado; não é um teste executado",
+    "literal_table_headers": [
+      "Identificador",
+      "Literal",
+      "Contrato"
+    ],
+    "literal_contract_url": "Conservar o destino exato",
+    "literal_contract_unicode": "Conservar o texto Unicode",
+    "literal_contract_escapes": "Entidades e escapes legíveis",
+    "annex_table_headers": [
+      "Arquivo",
+      "Decisão",
+      "Conteúdo"
+    ],
+    "annex_included": "Incluído",
+    "annex_excluded": "Privado, excluído",
+    "annex_descriptions": [
+      "28 ativos sintéticos",
+      "180 contratos fictícios",
+      "Contagens e limites do caso",
+      "Fidelidade e publicação",
+      "Marcador sintético de isolamento",
+      "Regras inventadas por classe de dado",
+      "Dependências de recuperação e restrições"
+    ],
+    "image_detail_title": "SEQUÊNCIA DE CONTROLE",
+    "image_detail_rows": [
+      "Precondição: sujeito e recurso identificados",
+      "Decisão: revisão vigente e finalidade declarada",
+      "Resultado: permitido, rejeitado ou parcial",
+      "Recuperação: intenção única e política reconciliada"
+    ],
+    "severity_labels": {
+      "critical": "Crítico",
+      "high": "Alto",
+      "medium": "Médio",
+      "low": "Baixo",
+      "info": "Informativo"
+    }
+  },
+  "machine_specs": [
+    {
+      "asset": 3,
+      "summary": "O motor de transferências conecta intenção, reserva, lançamento e confirmação. O caderno avalia a coerência documental dessas fronteiras sem executar pagamentos.",
+      "phases": [
+        {
+          "name": "Inventário de obrigações e mensagens",
+          "narrative": "A obrigação O-001 existe independentemente das mensagens M1 e M2. O inventário identifica produtor, fila, consumidor, livro e consulta de estado. Cada componente declara qual revisão conserva e qual resultado pode reconstruir após uma reinicialização. O ID de transporte serve para rastrear uma entrega, não para decidir se o negócio deve repetir seu efeito."
+        },
+        {
+          "name": "Autorização e conteúdo aprovado",
+          "narrative": "A autorização contém sujeito, beneficiário, moeda, valor e versão. O caso próprio permitido e o caso alheio rejeitado são documentados antes de reservar saldo. Uma alteração do beneficiário invalida a aprovação anterior, mesmo que o valor não mude. O consumidor não deve confiar em uma etiqueta de aprovação sem verificar a revisão à qual ela corresponde."
+        },
+        {
+          "name": "Interrupção e nova tentativa",
+          "narrative": "O modelo é interrompido após o lançamento e antes da confirmação. Ao chegar outra mensagem, o trabalhador consulta a obrigação durável e devolve o resultado existente. Conserva-se evidência de que a segunda chegada não cria outro lançamento. Se houver um estado intermediário, sua resolução deve ser explícita, e não uma repetição cega do comando original."
+        },
+        {
+          "name": "Conciliação e compensação",
+          "narrative": "A revisão compara reserva, lançamento e confirmação por obrigação, moeda e versão. Uma devolução é outra transição vinculada, com sua própria idempotência e limite acumulado. O caderno separa correção de dados, compensação de um efeito e cancelamento antes da execução. Essas operações não compartilham automaticamente o mesmo critério de autorização."
+        },
+        {
+          "name": "Encerramento e restrições",
+          "narrative": "A aceitação conserva uma operação permitida, uma rejeitada e uma recuperada. O resultado fictício documenta um único efeito e qualquer condição pendente. Não são apresentados tempos de processamento nem garantias financeiras reais. Uma captura do estado não basta para encerrar o caso se algum consumidor ainda precisar ser reconciliado."
+        }
+      ]
+    },
+    {
+      "asset": 5,
+      "summary": "A identidade central representa sessões, renovações e desafios. O caderno distingue a pessoa ou o serviço de seus dispositivos e credenciais derivadas.",
+      "phases": [
+        {
+          "name": "Inventário da família de acesso",
+          "narrative": "São enumerados sessão curta, renovação, dispositivo, mandato delegado e desafio de operação. Todos remetem a um sujeito estável, mas têm validades e finalidades distintas. O inventário registra qual componente pode emitir um derivado e qual conserva autoridade para revogá-lo. Não são utilizados segredos nem tokens válidos."
+        },
+        {
+          "name": "Vinculação da intenção",
+          "narrative": "O desafio descreve uma intenção exata, e não uma aprovação genérica durante vários minutos. Alterar moeda, destinatário ou valor exige uma nova decisão. São documentadas uma confirmação correspondente e outra com conteúdo diferente, além do consumo repetido do mesmo desafio. Os resultados esperados não dependem do nome visível do dispositivo."
+        },
+        {
+          "name": "Revogação e consumidores",
+          "narrative": "O modelo revoga a família de acesso enquanto existe uma renovação pendente. A aceitação exige a rejeição da sessão, da renovação e de qualquer delegação retirada pela política de recuperação. Um consumidor que conserva uma permissão obsoleta é declarado pendente, mesmo que o catálogo central já mostre a retirada."
+        },
+        {
+          "name": "Recuperação da conta",
+          "narrative": "A recuperação altera quem controla a conta e exige reavaliar as sessões de suporte. O caderno conserva um caminho legítimo de ajuda sem permitir que a troca de navegador reinicie o orçamento de tentativas. As mensagens públicas são uniformes, e os detalhes técnicos permanecem em um registro restrito do cenário."
+        },
+        {
+          "name": "Encerramento e evidência de alcance",
+          "narrative": "O registro final identifica quais derivados foram verificados e quais não puderam ser verificados. A ausência de um token em uma tela não demonstra revogação completa. Cada resultado é vinculado a data, revisão de política e condição de aceitação; as notas de suporte mantêm um estado diferente de uma verificação técnica."
+        }
+      ]
+    },
+    {
+      "asset": 9,
+      "summary": "A custódia documental relaciona original, versão, aceitação, miniatura e download. A análise se concentra na propagação de políticas a cada derivado.",
+      "phases": [
+        {
+          "name": "Inventário de objetos e derivações",
+          "narrative": "O documento D1 gera miniatura, fragmento de busca, exportação temporária e anexo entregável. Cada derivado conserva referência à origem, revisão e classificação. O caderno exige inventariar os consumidores antes de afirmar uma retirada completa, pois suas convenções de nomes podem diferir das do arquivo principal."
+        },
+        {
+          "name": "Finalidade e acesso por versão",
+          "narrative": "O destinatário recebe somente as versões permitidas por seu mandato. Uma reclassificação ou retirada do participante altera a autorização de download, mesmo que o vínculo não tenha expirado. A aceitação compara o próprio documento autorizado com outro cuja permissão foi retirada; o destino reservado nunca é consultado."
+        },
+        {
+          "name": "Aceitação de conteúdo imutável",
+          "narrative": "O dossiê aprovado contém um manifesto de componentes. Substituir um anexo por bytes diferentes com o mesmo nome modifica a revisão e exige uma nova aceitação. A assinatura do modelo é uma relação documental, não uma assinatura eletrônica real nem uma prova de identidade de uma pessoa."
+        },
+        {
+          "name": "Retirada e retenção",
+          "narrative": "A retirada se propaga ao original, à miniatura, ao índice e à cópia temporária. O caderno distingue retirada lógica de acesso, remoção de uma referência e exclusão física. Uma limitação de verificação permanece visível e não é substituída pelo número de linhas excluídas do catálogo principal."
+        },
+        {
+          "name": "Publicação e limites",
+          "narrative": "A entrega usa derivados revisados, enquanto o projeto editável pode conservar o original privado. Os marcadores conhecidos ajudam a detectar vazamentos específicos, mas sua ausência não prova privacidade universal. Imagens digitalizadas, contexto semântico e conteúdo fora do alcance exigem revisão adicional explícita."
+        }
+      ]
+    },
+    {
+      "asset": 19,
+      "summary": "A cadeia de entrega representa artefatos, configuração e promoção. O caderno usa pacotes inertes e não compila nem executa software do banco fictício.",
+      "phases": [
+        {
+          "name": "Inventário de entradas aprovadas",
+          "narrative": "O manifesto identifica fonte, dependências, configuração e artefato por revisão e hash. A procedência não se reduz ao nome de uma execução de pipeline. Quando um resultado anterior é reutilizado, o registro mantém essa relação e explica por que ele continua válido para as entradas atuais."
+        },
+        {
+          "name": "Separação de revisão e publicação",
+          "narrative": "A etapa de revisão tem apenas permissões para ler entradas e publicar resultados de validação. A promoção usa outra identidade limitada a um artefato aprovado. O caderno compara as permissões efetivas das duas etapas e registra a rejeição de uma escrita que não pertence à função de revisão."
+        },
+        {
+          "name": "Identidade do conjunto entregue",
+          "narrative": "O binário aprovado não cobre automaticamente uma configuração adicionada depois. A aceitação compara o conjunto final com o manifesto, incluindo destinos e políticas relevantes. Dois arquivos com o mesmo nome e conteúdo diferente devem produzir uma diferença explícita que bloqueie uma promoção parcial."
+        },
+        {
+          "name": "Reversão com restrições atuais",
+          "narrative": "A versão anterior pode conter uma dependência ou permissão já retirada. Antes de usá-la como retorno, aplicam-se as restrições atuais e prepara-se um pacote compatível. A reversão é tratada como uma nova entrega com sua própria revisão, sem pressupor que estabilidade no passado significa aceitação hoje."
+        },
+        {
+          "name": "Encerramento e prova de procedência",
+          "narrative": "A evidência vincula o resultado de cada controle ao hash que seria promovido. Não se afirma a reprodutibilidade de um sistema real nem a ausência universal de código morto. Os componentes de teste e exemplos são conservados quando têm consumidores demonstrados; são retirados apenas os elementos cuja falta de uso pode ser justificada."
+        }
+      ]
+    },
+    {
+      "asset": 17,
+      "summary": "O diretório corporativo modela grupos, herança e delegações. Não inclui nomes reais de domínios, credenciais nem acesso a serviços de identidade.",
+      "phases": [
+        {
+          "name": "Inventário de autoridade efetiva",
+          "narrative": "São enumeradas permissões diretas, herdadas e transitivas sobre objetos e grupos. Um perfil de inventário pode ler atributos sem adquirir a capacidade de alterar membros ou proprietários. A matriz registra quem delegou cada direito e qual fronteira administrativa ele efetivamente alcança."
+        },
+        {
+          "name": "Segregação de funções administrativas",
+          "narrative": "O modelo distingue conta de serviço, operador de backup e administrador interativo. Compartilhar uma credencial entre funções amplia seu alcance e dificulta a atribuição de decisões. O caderno conserva casos de leitura, tarefa declarada e rejeição de sessão interativa para cada identidade pertinente."
+        },
+        {
+          "name": "Retirada de grupos e sessões",
+          "narrative": "Alterar o catálogo de grupos não modifica necessariamente as sessões existentes. O roteiro retira uma delegação e compara uma sessão anterior com outra nova. Ambas devem convergir para as permissões vigentes, ou o resultado deve declarar explicitamente o consumidor que ainda não aplicou a política."
+        },
+        {
+          "name": "Recuperação de estrutura e permissões",
+          "narrative": "Uma cópia do diretório pode preceder a retirada de um grupo ou de seu proprietário. A recuperação incorpora um registro de alterações posteriores e verifica tanto o acesso permitido quanto as modificações rejeitadas. O conteúdo restaurado não é aceito apenas porque sua estrutura pode ser lida."
+        },
+        {
+          "name": "Encerramento com limitações",
+          "narrative": "O resultado documenta os objetos, as operações e as revisões considerados. Uma verificação de grupo não é extrapolada para todo o diretório. As exceções temporárias conservam responsável e vencimento; as permissões de suporte são revisadas sem transformar uma necessidade de observação em administração permanente."
+        }
+      ]
+    },
+    {
+      "asset": 20,
+      "summary": "O orquestrador de continuidade coordena cópias, livro, filas e autoridade de escrita. As fases descrevem um ensaio conceitual isolado.",
+      "phases": [
+        {
+          "name": "Inventário de dependências da reabertura",
+          "narrative": "A cópia C1 inclui objetos e políticas de uma data específica. O catálogo relaciona manifesto, livro, fila, identidade e configuração. Cada dependência declara se pode ser recuperada de forma independente e qual revisão exige para aceitar operações. Os componentes ausentes permanecem como bloqueios visíveis."
+        },
+        {
+          "name": "Integridade e completude",
+          "narrative": "O ensaio compara nomes, tamanhos e hashes de todos os membros exigidos. Um índice restaurado não prova que seus objetos existam nem que pertençam à mesma revisão. São documentadas uma cópia completa, outra com um membro ausente e outra com conteúdo substituído sob o mesmo nome."
+        },
+        {
+          "name": "Reconciliação de estado e revogações",
+          "narrative": "Antes da reabertura, as obrigações concluídas são comparadas às mensagens pendentes. Também são aplicadas as revogações e reclassificações posteriores à cópia. O roteiro exige que um fornecedor retirado continue sem acesso e que uma obrigação já compensada não produza um novo efeito."
+        },
+        {
+          "name": "Autoridade de escrita e comutação",
+          "narrative": "O nó alternativo recebe uma concessão de escrita versionada que invalida a anterior. O antigo primário deve rejeitar alterações com sua concessão expirada, mesmo que não observe imediatamente a ativação do substituto. A aceitação avalia a autoridade efetiva, e não apenas a disponibilidade dos dois processos."
+        },
+        {
+          "name": "Decisão de reabertura",
+          "narrative": "A reabertura enumera critérios cumpridos, parciais e bloqueados. O responsável fictício pode limitar o serviço a um fluxo verificado, mas essa decisão não transforma o restante em recuperado. A evidência conserva revisão, data e alcance e diferencia uma cópia criada de uma restauração aceita."
+        }
+      ]
+    },
+    {
+      "asset": 23,
+      "summary": "O monitoramento antifraude representa dados, modelos e decisões explicáveis. Não avalia pessoas nem mede precisão comercial ou viés de um modelo real.",
+      "phases": [
+        {
+          "name": "Inventário de dados e contratos",
+          "narrative": "Cada entrada conserva origem, unidade, moeda, esquema e sequência. O caderno inclui um lote completo, outro com campo ausente e outro com uma escala diferente. A aceitação não se limita à validade do arquivo: exige que o consumidor entenda o significado dos seus números."
+        },
+        {
+          "name": "Identidade do modelo e limite",
+          "narrative": "A decisão conserva a versão imutável do modelo, os parâmetros e o limite. Uma etiqueta reutilizável não basta para reconstruir o resultado. O modelo M1 e seu sucessor M2 mantêm registros separados, de forma que uma revisão posterior não atribua a M1 o comportamento de parâmetros publicados depois."
+        },
+        {
+          "name": "Dados tardios e reprocessamento",
+          "narrative": "Uma versão atrasada é conservada como evento tardio e não substitui silenciosamente o estado vigente. O reprocessamento distingue a correção de uma entrada da repetição da mesma entrada. O resultado deve mostrar quais decisões foram revisadas e evitar duplicar eventos pelo simples fato de reler o lote."
+        },
+        {
+          "name": "Indicadores e denominadores",
+          "narrative": "O exemplo separa recebidos, aceitos, rejeitados e pendentes. Um campo desconhecido não é transformado em zero, e cada percentual identifica sua base. A apresentação executiva conserva as mesmas limitações do detalhamento técnico para que a simplificação visual não transforme a falta de dados em ausência de eventos."
+        },
+        {
+          "name": "Encerramento e explicabilidade",
+          "narrative": "O caderno vincula cada saída ao contrato de dados e ao modelo que a produziu. Não afirma que uma explicação documental garanta a correção do modelo. Os resultados fictícios servem para testar a continuidade de tabelas, referências e retestes; qualquer decisão sobre um sistema real exigiria evidência independente."
+        }
+      ]
+    }
+  ]
+}

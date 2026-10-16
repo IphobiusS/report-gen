@@ -1,5 +1,6 @@
 /* Independent R8 acceptance. Synthetic disposable projects only. */
 'use strict';
+const {clickNavigationControl}=require('./browser-navigation.cjs');
 const fs=require('node:fs'), path=require('node:path'), os=require('node:os'), {spawn}=require('node:child_process');
 const root=path.resolve(process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..'));
 const args=process.argv.slice(2),out=path.resolve(args.includes('--output')?args[args.indexOf('--output')+1]:process.env.R8_EXPERIENCE_OUT||'out/project-gallery-0330');
@@ -178,7 +179,7 @@ async function exportViaUI(format,label){
  const general=await page.evaluate(()=>({slug:S.slug,meta:S.data.meta,sections:S.data.report.sections,expectedPreset:S.presets.find(p=>p.id===selectedPresetId())}));results.generalProject=general;
  check('Saved general design overrides the old preset appearance without dropping client/language',general.meta.theme==='ejecutivo'&&general.meta.lang==='en'&&general.meta.client==='Entidad ficticia'&&general.meta.report_title==='Informe de validación sintética R8',general.meta);
  const editIndex=await page.evaluate(()=>S.data.report.sections.findIndex(s=>(S.catBy[s.key]?.fields||[]).some(f=>f.type==='markdown')));
- check('Representative general project exposes an editable authored section',editIndex>=0,editIndex,true);await page.locator('#navReport').click();await page.locator('#sectionList .finding-nav').nth(editIndex).click();
+ check('Representative general project exposes an editable authored section',editIndex>=0,editIndex,true);await page.locator('#navReport').click();await clickNavigationControl(page,page.locator('#sectionList .finding-nav').nth(editIndex));
  const ta=page.locator('#editor .mded textarea').first(),literalUrl='https://evidence.example/review/r8/segment_(retained)/'+('long-component-'.repeat(8))+'?asset=server-x&scope=%2Fbank%2Fidentity&trace=R8%20sample';
  await ta.fill(literalUrl);await ta.focus();await page.keyboard.press('ControlOrMeta+A');await page.getByRole('button',{name:'Enlace',exact:true}).first().click();
  const linkDialog=page.locator('dialog[data-link-dialog]');await linkDialog.waitFor();

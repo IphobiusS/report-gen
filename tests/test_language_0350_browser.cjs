@@ -1,5 +1,6 @@
 /* Real startup, explicit language selection and report-language independence. */
 'use strict';
+const {exposeNavigationControl}=require('./browser-navigation.cjs');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{spawn}=require('node:child_process'),{createHash}=require('node:crypto');
 const root=path.resolve(__dirname,'..'),args=process.argv.slice(2),opt=(name,fallback)=>args.includes(name)?args[args.indexOf(name)+1]:fallback;
 const engine=opt('--browser','chromium'),out=path.resolve(opt('--output','out/language-0350'));
@@ -47,7 +48,7 @@ let server,browser,timer;
    await page.locator('[data-field="lang"]').selectOption('pt');await page.waitForFunction(()=>!projectStore.dirty&&!projectStore.saving);
    check('Explicit report-language edit is saved and UI stays Portuguese',await page.evaluate(()=>S.data.meta.lang==='pt'&&S.uiLang==='pt'&&document.activeElement.matches('[data-field="lang"]')));
    check('Explicit report-language edit preserves authored sections, findings and title',await page.evaluate(contents=>JSON.stringify({findings:S.data.findings,sections:S.data.report.sections,title:S.data.meta.report_title})===contents,contents));
-   const sidebar=await page.locator('#sectionList').innerText();check('Report-language edit refreshes section labels immediately',sidebar.includes(await page.evaluate(()=>S.catBy.findings.title_pt)),sidebar);
+   await exposeNavigationControl(page,'#sectionList');const sidebar=await page.locator('#sectionList').innerText();check('Report-language edit refreshes section labels immediately',sidebar.includes(await page.evaluate(()=>S.catBy.findings.title_pt)),sidebar);
    const destination=path.join(out,'portuguese-editor.png');await page.screenshot({path:destination});result.screens.push({path:destination,sha256:createHash('sha256').update(fs.readFileSync(destination)).digest('hex')});
    await page.reload();await idle(page);check('Saved report language survives real reload',await page.evaluate(()=>S.data.meta.lang==='pt'));
   }

@@ -78,6 +78,26 @@ En páginas con mapas de fuentes personalizados o texto de derecha a izquierda, 
 
 El lateral agrupa **Registro y cobertura** y **Historial y seguimiento** en desplegables. Al abrir directamente una de sus secciones, el grupo se expande para mostrar dónde estás. En Inicio, **Más herramientas del proyecto** reúne controles menos frecuentes; las funciones y los datos existentes se conservan.
 
+## Navegación lateral en 0.39.0
+
+La barra izquierda sigue el orden de trabajo. Sus cinco grupos usan filas uniformes, separadores discretos y una marca del grupo que contiene la selección actual.
+
+| Grupo | Contenido |
+| --- | --- |
+| **01 Proyecto** | Inicio y datos generales del informe. |
+| **02 Contenido** | Tablero de hallazgos e índices desplegables de secciones y hallazgos. |
+| **03 Evidencia y alcance** | Evidencias; **Registro y cobertura** abre la bandeja de captura, activos y cobertura. |
+| **04 Análisis y seguimiento** | Causas raíz, tareas de remediación, correcciones y retest, cambios desde la entrega, matriz de retest y versiones. |
+| **05 Entrega** | Revisión de entrega, respaldo del proyecto y **Herramientas**. |
+
+Los contadores de los índices reflejan el total del proyecto. La lista de hallazgos conserva páginas de 50 entradas; en proyectos grandes, el índice tiene desplazamiento propio para que las demás herramientas sigan accesibles. Al abrir un hallazgo o una sección desde otro lugar, se despliega su índice y se revela la fila seleccionada dentro de ambos contenedores. Ese ajuste no cambia el foco ni el desplazamiento del editor; la navegación al contenido conserva su comportamiento habitual.
+
+Los triángulos señalan grupos desplegables. Puedes abrirlos y cerrarlos con clic, **Enter** o **Espacio**. Los refrescos de fondo no deshacen un cierre voluntario ni el desplazamiento manual; cambiar de destino o reabrir la barra móvil vuelve a revelar la selección. Los índices permanecen disponibles en Inicio y en el tablero. Sus acciones que requieren proyecto se habilitan al abrir uno.
+
+En **Entrega → Herramientas** están **Biblioteca de informes**, **Respaldo integral**, **Datos privados guardados**, **Comprobar instalación**, **Actualizar report-gen** y, en escritorio, **Evidencia y decisiones**. En móvil, esta última conserva su acceso en **Más**; **Tutorial visual** también permanece en **Más**. El respaldo del proyecto sigue como acceso directo separado del respaldo integral.
+
+En móvil, abre **Navegación**. Elegir un destino cierra la barra y lleva el foco al contenido; **Escape** cierra la barra y devuelve el foco a su botón. Un diálogo abierto mantiene su propio foco, incluido **Mover** secciones. La jerarquía se conserva en español, inglés y portugués de Brasil, en los temas claro y oscuro; cambiar el idioma de la interfaz no reescribe el informe.
+
 ## Organizar varios proyectos
 
 En **Inicio → Tus proyectos**, busca por título, cliente o identificador; la búsqueda admite texto sin acentos. Filtra por activos, archivados, todos o retest pendiente. Ordena por última modificación, cliente, fecha más próxima o cantidad de retests pendientes. La lista muestra ocho proyectos por página.
@@ -100,7 +120,7 @@ No modifica estado, verificación técnica, evidencias ni retests. Un error de g
 
 ## Compartir un diagnóstico
 
-Abre **Comprobar instalación**. Las pruebas generan archivos sintéticos temporales para los motores PDF y DOCX y comprueban la escritura del espacio de trabajo; no exportan proyectos reales. Un motor ausente aparece como fallo, separado de los demás.
+Abre **Entrega → Herramientas → Comprobar instalación**. Las pruebas generan archivos sintéticos temporales para los motores PDF y DOCX y comprueban la escritura del espacio de trabajo; no exportan proyectos reales. Un motor ausente aparece como fallo, separado de los demás.
 
 En **Diagnóstico para compartir**, revisa el JSON, marca **He revisado los campos del diagnóstico** y usa **Descargar diagnóstico revisado**. El archivo contiene únicamente versión de report-gen, sistema operativo genérico, versión de Python y estados de exportaciones sintéticas y escritura. Excluye nombres de proyectos, clientes y usuarios, rutas, hostname, variables de entorno y detalles de excepciones. No se envía automáticamente. Cambiar el contenido de la vista previa invalida su descarga; vuelve a generar el diagnóstico si necesitas actualizar los resultados.
 
@@ -200,7 +220,7 @@ El HTML portátil contiene todo el informe; los filtros y la vista ejecutiva son
 
 ## Actualización asistida
 
-Abre **Actualizar report-gen**. No hay consultas de red en segundo plano ni actualizaciones automáticas.
+Abre **Entrega → Herramientas → Actualizar report-gen**. No hay consultas de red en segundo plano ni actualizaciones automáticas.
 
 1. Marca **Permitir consulta y descarga desde GitHub** y pulsa **Comprobar versión oficial**. Se consulta exclusivamente el repositorio oficial `IphobiusS/report-gen`; no se envían informes, rutas locales ni credenciales. Si no existe una versión estable más reciente, se indica sin preparar archivos.
 2. Revisa la versión, el tamaño, el SHA-256 y su publicación. Confirma por separado la preparación del paquete y del **respaldo privado sin cifrar**; pulsa **Descargar, verificar y respaldar**. Se guardan los cambios pendientes del proyecto abierto antes de preparar.

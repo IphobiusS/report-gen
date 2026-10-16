@@ -1,3 +1,35 @@
+# Cambios 0.39.0 (2026-10-16)
+
+- Navegación lateral organizada en cinco grupos: Proyecto, Contenido,
+  Evidencia y alcance, Análisis y seguimiento y Entrega. Filas coherentes,
+  separadores discretos, etiquetas ES/EN/PT y acentos numerados sobrios.
+  Herramientas reúne bibliotecas, respaldo integral, privacidad, diagnóstico
+  y actualización, conservando los accesos principales a revisión y respaldo
+  del proyecto.
+- Índices desplegables de secciones y hallazgos con contadores, disponibles
+  también en Inicio y el tablero. La lista extensa conserva su paginación;
+  navegar a un elemento lo revela en el índice y en la barra exterior sin
+  robar foco ni desplazar el editor. Los refrescos respetan el cierre y el
+  desplazamiento manual; reabrir la navegación móvil revela la selección.
+- Escape cierra la barra móvil y devuelve el foco a su botón, sin interferir
+  con diálogos abiertos. Mover una sección ya no dispara el cierre de la barra
+  ni le quita el foco al diálogo. Las acciones de hallazgos que requieren un
+  proyecto permanecen deshabilitadas hasta abrir uno.
+- Retirada la agrupación secundaria duplicada de GuideUI y los estilos
+  obsoletos de ocultamiento y espaciado sustituidos por la nueva jerarquía.
+- Nuevo caso ficticio Atlas Servicios Financieros: 60 hallazgos de
+  vulnerabilidad, siete cuadernos de máquinas, 28 activos, 84 evidencias,
+  23 secciones, 180 registros de cobertura y 31 retests. Catálogos de contenido
+  redactado en español, inglés y portugués de Brasil, con identidades y cifras
+  coherentes entre idiomas.
+- Protocolo reproducible de exportación, inspección y recorridos API por
+  idioma, con informes completos y muestras de catálogo contabilizados por
+  separado. Los documentos los genera exclusivamente report-gen. La aceptación
+  final, las páginas y los totales comprobados dependen de los recibos de cada
+  ejecución; no se declaran por adelantado. Véase
+  [QA-ATLAS-0390](docs/QA-ATLAS-0390.md).
+- README y guías de usuario ES/EN/PT actualizados para la nueva navegación.
+
 # Cambios 0.38.0 (2026-10-16)
 
 - Diagnósticos privados de importación y exportación con registro, línea, campo,

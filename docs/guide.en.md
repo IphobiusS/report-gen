@@ -82,6 +82,26 @@ On pages with custom font maps or right-to-left text, the reader recovers a line
 
 The sidebar groups capture/coverage and history/follow-up tools in expandable sections. Direct navigation to one of their pages expands the group to show your location. **More project tools** on Overview contains less frequent controls; existing functions and data remain available.
 
+## Sidebar navigation in 0.39.0
+
+The left sidebar follows the working sequence. Its five groups use consistent rows, subtle separators and a marker for the group containing the current selection.
+
+| Group | Contents |
+| --- | --- |
+| **01 Project** | Overview and general report details. |
+| **02 Content** | Findings board and expandable section and finding indices. |
+| **03 Evidence and scope** | Evidence; **Capture and coverage** opens the capture inbox, assets and coverage. |
+| **04 Analysis and follow-up** | Root causes, remediation tasks, remediation and retest, changes since delivery, retest matrix and versions. |
+| **05 Delivery** | Delivery review, project backup and **Tools**. |
+
+Index counters reflect the whole project. The finding list retains pages of 50 entries. For large projects, the index scrolls independently so other tools remain accessible. Opening a finding or section from elsewhere expands its index and reveals the selected row within both scroll containers. This adjustment does not move focus or scroll the editor; navigating to content retains its usual behavior.
+
+Chevrons identify expandable groups. Use a click, **Enter** or **Space** to open or close them. Background refreshes preserve a manually collapsed group and manual scrolling; choosing another destination or reopening mobile navigation reveals the selection again. Indices remain available on Overview and the findings board. Actions requiring a project become enabled when one is opened.
+
+**Delivery → Tools** contains **Report design library**, **Workspace backup**, **Stored private data**, **Check installation**, **Update report-gen** and, on desktop, **Evidence and decisions**. On mobile, the latter remains under **More**; **Visual tutorial** also remains under **More**. Project backup retains its direct entry, separate from workspace backup.
+
+On mobile, open **Navigation**. Choosing a destination closes the sidebar and focuses content; **Escape** closes it and restores focus to its trigger. An open dialog retains its focus, including the section **Move** dialog. The hierarchy is available in Spanish, English and Brazilian Portuguese, in light and dark themes. Changing interface language does not rewrite the report.
+
 ## Organize multiple projects
 
 Under **Overview → Your projects**, search titles, clients or identifiers; accented text can be searched without accents. Filter active, archived, all or pending-retest projects. Sort by last modification, client, nearest due date or pending retest count. Eight projects appear per page.
@@ -104,7 +124,7 @@ Status, technical verification, evidence and retests are unchanged. A save error
 
 ## Share diagnostics
 
-Open **Check installation**. The checks generate temporary synthetic PDF and DOCX files and probe workspace write access; they do not export real projects. An unavailable engine is reported separately as failed.
+Open **Delivery → Tools → Check installation**. The checks generate temporary synthetic PDF and DOCX files and probe workspace write access; they do not export real projects. An unavailable engine is reported separately as failed.
 
 Under **Shareable diagnostics**, review the JSON, check **I have reviewed the diagnostic fields**, then select **Download reviewed diagnostics**. It contains only report-gen version, generic operating system, Python version and synthetic-export/write statuses. It excludes project, client and user names, paths, hostname, environment variables and exception details. Nothing is sent automatically. Changing preview content invalidates its download; run diagnostics again to refresh results.
 
@@ -206,7 +226,7 @@ Portable HTML contains the entire report. Executive view and filters are present
 
 ## Guided updates
 
-Open **Update report-gen**. There are no background network checks or automatic updates.
+Open **Delivery → Tools → Update report-gen**. There are no background network checks or automatic updates.
 
 1. Check **Allow checking and downloading from GitHub**, then choose **Check official version**. Only the official `IphobiusS/report-gen` repository is queried; reports, local paths and credentials are not sent. If no newer stable version exists, the dialog says so without preparing files.
 2. Review the version, size, SHA-256 and release. Separately acknowledge preparing the package and an **unencrypted private backup**, then choose **Download, verify and back up**. Pending changes to the open project are saved before preparation.

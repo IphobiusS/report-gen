@@ -3,7 +3,7 @@
 const assert = require('node:assert/strict');
 
 async function exposeNavigationControl(page, selector) {
-  const target = page.locator(selector).first();
+  const target = typeof selector === 'string' ? page.locator(selector).first() : selector;
   const inSidebar = await target.evaluate(el => !!el.closest('#workspaceSidebar'));
   if (inSidebar && await page.locator('#sidebarToggle').isVisible()
       && await page.locator('#sidebarToggle').getAttribute('aria-expanded') !== 'true') {

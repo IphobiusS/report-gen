@@ -51,6 +51,14 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
+## New in 0.39.0
+
+The left sidebar organizes work into five groups: **Project**, **Content**, **Evidence and scope**, **Analysis and follow-up** and **Delivery**. Rows use consistent sizing and spacing. Expandable section and finding indices show their counts and retain pagination for large projects.
+
+Navigating to an item opens its group and reveals the selection. This sidebar visibility adjustment preserves focus and does not scroll the editor. You can collapse the current group; background refreshes respect that choice. **Delivery → Tools** collects libraries, workspace backup, privacy, diagnostics and application updates. On mobile, **Navigation** opens the sidebar and **Escape** closes it, restoring focus to its trigger.
+
+The new fictional **Atlas Servicios Financieros** case prepares extensive testing with authored Spanish, English and Brazilian Portuguese content. Its [acceptance protocol](docs/QA-ATLAS-0390.md) separates complete reports, style excerpts, API journeys and visual checks. Results are established per run; unfinished outputs are not treated as accepted. [Sidebar walkthrough](docs/guide.en.md#sidebar-navigation-in-0390).
+
 ## New in 0.38.0
 
 **Error locations:** imports show the available record, field and line; failed exports identify a finding, table, row, cell or evidence item when the contract can locate it reliably. Otherwise, the original general error remains. These private details are excluded from delivery manifests.
