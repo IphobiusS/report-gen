@@ -21,6 +21,81 @@ function projectSearch(language, data){
   return new Function('S',app.slice(0,app.indexOf('// ---- shared transport'))+source+'\nreturn searchProject;')({uiLang:language,data,catBy:{}});
 }
 
+function searchActivation(){
+  const dom=new JSDOM('<div class="search-wrap"><input id="globalSearch"><div id="searchResults"></div></div><button id="elsewhere">Elsewhere</button>',{runScripts:'outside-only',url:'http://localhost/'});
+  const w=dom.window,app=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8'),workbench=fs.readFileSync(path.join(root,'webapp/static/workbench.js'),'utf8');
+  // Run the real input debounce, search renderer and keyboard handlers together.
+  // A deterministic clock keeps input and Enter in the same event-loop turn.
+  let now=0,next=0;const timers=new Map();
+  w.setTimeout=(fn,delay=0)=>{const id=++next;timers.set(id,{fn,at:now+delay});return id;};
+  w.clearTimeout=id=>timers.delete(id);
+  const advance=ms=>{const end=now+ms;for(;;){const pending=[...timers].filter(([,timer])=>timer.at<=end).sort((a,b)=>a[1].at-b[1].at)[0];if(!pending)break;timers.delete(pending[0]);now=pending[1].at;pending[1].fn();}now=end;};
+  w.eval(app.slice(0,app.indexOf('// ---- shared transport'))+`
+    const S={slug:'search-fixture',uiLang:'en',catBy:{},sel:{type:'report',idx:-1},data:{meta:{},report:{sections:[]},findings:Array.from({length:62},(_,i)=>({uid:'stable-'+(i+1),id:'F'+(i+1),title:'Synthetic finding '+(i+1)}))}};
+    const projectStore={revision:7,etag:'saved-revision',dirty:false};
+    const t=key=>key,scopedResourceURL=value=>value;
+    let created=0;
+    function addFinding(){created++;}
+    function select(type,idx){S.sel={type,idx};}
+    function toast(message){throw Error(message);}
+  `+workbench+'\n'+app.slice(app.indexOf('function searchTargets()'),app.indexOf('function select(type, val)'))+'\n'+
+    app.slice(app.indexOf('  {\n    const si = $("#globalSearch")'),app.indexOf('  $("#previewBtn").addEventListener'))+'\n'+
+    `(()=>{const search=WorkbenchUI.search;`+workbench.slice(workbench.indexOf("    $('#globalSearch').addEventListener('focus'"),workbench.indexOf("    document.addEventListener('keydown',shortcut);"))+`})();\n`+
+    app.slice(app.indexOf('  document.addEventListener("keydown", e => {\n    const mod'),app.indexOf('  $("#downloadBtn").addEventListener'))+`
+    window.searchState={S,projectStore,created:()=>created};
+  `);
+  const input=w.document.querySelector('#globalSearch'),box=w.document.querySelector('#searchResults');
+  const type=value=>{input.value=value;input.dispatchEvent(new w.Event('input',{bubbles:true}));};
+  const key=value=>input.dispatchEvent(new w.KeyboardEvent('keydown',{key:value,bubbles:true,cancelable:true}));
+  return {dom,w,input,box,type,key,advance,state:w.searchState};
+}
+
+for(const prior of ['', 'F1'])test('immediate search Enter uses the current query after '+(prior||'empty command list'),async()=>{
+  const q=searchActivation();try{
+    q.input.value=prior;q.input.focus();
+    const before=JSON.stringify(q.state.S.data),store=JSON.stringify(q.state.projectStore);
+    q.type('Synthetic finding 62');q.key('Enter');
+    assert.equal(q.state.created(),0,'Search must not activate the stale Create finding command');
+    assert.equal(q.state.S.data.findings[q.state.S.sel.idx]?.uid,'stable-62');
+    assert.equal(q.box.classList.contains('open'),false);
+    q.advance(200);
+    assert.equal(q.box.classList.contains('open'),false,'A pending input timer must not reopen empty commands');
+    assert.equal(q.input.value,'');assert.equal(JSON.stringify(q.state.S.data),before);assert.equal(JSON.stringify(q.state.projectStore),store);
+  }finally{await Promise.resolve();q.dom.window.close();}
+});
+
+test('immediate Enter with no search match does not create a finding',async()=>{
+  const q=searchActivation();try{
+    q.input.focus();const before=JSON.stringify(q.state.S.data),selection=JSON.stringify(q.state.S.sel);
+    q.type('nonexistent search target');q.key('Enter');q.advance(200);
+    assert.equal(q.state.created(),0);assert.equal(JSON.stringify(q.state.S.data),before);assert.equal(JSON.stringify(q.state.S.sel),selection);assert.equal(q.box.querySelectorAll('button').length,0);
+  }finally{await Promise.resolve();q.dom.window.close();}
+});
+
+for(const key of ['ArrowDown','ArrowUp'])test('immediate search '+key+' focuses only current results and keeps focus after debounce',async()=>{
+  const q=searchActivation();try{
+    q.input.focus();q.type('Synthetic finding 62');q.key(key);
+    const focused=q.w.document.activeElement;assert.equal(focused.tagName,'BUTTON');assert.match(focused.textContent,/Synthetic finding 62/);
+    q.advance(200);assert.equal(q.w.document.activeElement,focused);assert.equal(focused.isConnected,true);
+    focused.click();assert.equal(q.state.S.data.findings[q.state.S.sel.idx]?.uid,'stable-62');assert.equal(q.state.created(),0);assert.equal(q.box.classList.contains('open'),false);
+  }finally{await Promise.resolve();q.dom.window.close();}
+});
+
+test('an intentional immediate command runs once and the pending search stays dismissed',async()=>{
+  const q=searchActivation();try{
+    q.input.focus();q.type('Create finding');q.key('Enter');assert.equal(q.state.created(),1);
+    q.advance(200);assert.equal(q.state.created(),1);assert.equal(q.box.classList.contains('open'),false);
+  }finally{await Promise.resolve();q.dom.window.close();}
+});
+
+test('Escape cancels a pending search without reopening commands',async()=>{
+  const q=searchActivation();try{
+    q.input.focus();q.type('Synthetic finding 62');q.key('Escape');q.advance(120);
+    assert.equal(q.box.classList.contains('open'),false,'Pending search must remain dismissed before blur cleanup');q.advance(80);
+    assert.equal(q.state.created(),0);assert.equal(q.input.value,'');assert.equal(q.box.classList.contains('open'),false);
+  }finally{await Promise.resolve();q.dom.window.close();}
+});
+
 for(const language of ['es','en','pt']){
   test(language+': search matches canonically equivalent accents and authored whitespace without mutating content',()=>{
     const data={meta:{},report:{sections:[{key:'unicode',title:'Synthetic chapter',body:'La remediacio\u0301n conserva café y corrective\n\t action.',private_note:'PRIVATE_UNICODE_CANARY'}]},findings:[]};

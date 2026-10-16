@@ -1594,9 +1594,18 @@ function bindUI() {
   { const ii = $("#importFindingsInput"); if (ii) ii.addEventListener("change", importFindings); }
   {
     const si = $("#globalSearch"); let st = null;
-    si.addEventListener("input", e => { clearTimeout(st); st = setTimeout(() => renderSearch(e.target.value), 120); });
-    si.addEventListener("keydown", e => { if (e.key === "Escape") { si.value = ""; renderSearch(""); si.blur(); } });
-    si.addEventListener("blur", () => setTimeout(() => {if(!$(".search-wrap").contains(document.activeElement))$("#searchResults").classList.remove("open");}, 150));
+    si.addEventListener("input", () => {
+      clearTimeout(st); $("#searchResults").classList.remove("open");
+      st = setTimeout(() => renderSearch(si.value), 120);
+    });
+    si.addEventListener("keydown", e => {
+      // Refresh before Workbench's document handler activates or focuses a
+      // result. The old command list must never act on a newly typed query.
+      if (["Enter", "ArrowDown", "ArrowUp", "Escape"].includes(e.key)) clearTimeout(st);
+      if (["Enter", "ArrowDown", "ArrowUp"].includes(e.key)) renderSearch(si.value);
+      if (e.key === "Escape") { si.value = ""; renderSearch(""); si.blur(); }
+    });
+    si.addEventListener("blur", () => {clearTimeout(st);setTimeout(() => {if(!$(".search-wrap").contains(document.activeElement))$("#searchResults").classList.remove("open");}, 150);});
     si.addEventListener("focus", e => {
       // Desktop search sits outside More; dismiss the overlapping menu before
       // showing results. Mobile search lives inside it and must stay visible.

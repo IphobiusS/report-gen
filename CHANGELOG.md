@@ -12,6 +12,9 @@
 - Corregido el guardado de importaciones Burp con referencias HTML: los
   destinos HTTP/HTTPS se extraen como texto nativo y se conservan al recargar
   el proyecto, sin alterar los hallazgos previos ni su estado de revisión.
+- La búsqueda rápida actualiza los resultados de la consulta actual antes
+  de ejecutar Enter o navegar con las flechas; descarta los resultados y
+  temporizadores anteriores para evitar activar comandos obsoletos.
 - Nuevo caso bancario ficticio reproducible Banco Horizonte Austral y recorridos
   de aceptación de exportaciones, interfaz y ciclo de vida del proyecto.
   La matriz distingue lo ejecutado de las dependencias externas pendientes.
