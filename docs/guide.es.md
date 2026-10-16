@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.39.0
+# Guía de uso de report-gen 0.40.0
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Português (Brasil)](guide.pt.md) · [Cambios](../CHANGELOG.md)
 
@@ -76,27 +76,33 @@ La exportación PDF predeterminada con WeasyPrint detecta caracteres sin glifo e
 
 En páginas con mapas de fuentes personalizados o texto de derecha a izquierda, el lector sólo recupera un guion ASCII de final de línea cuando los códigos y mapas explícitos del PDF y un segundo lector concuerdan carácter por carácter. Un guion blando, un mapa no admitido o una lectura divergente aún pueden resultar ambiguos. Si aparece ese error específico, la entrega se detiene sin sustituir el archivo anterior: ajusta ese salto o usa otro formato y revisa el resultado. El verificador no inventa el carácter que falta.
 
-El lateral agrupa **Registro y cobertura** y **Historial y seguimiento** en desplegables. Al abrir directamente una de sus secciones, el grupo se expande para mostrar dónde estás. En Inicio, **Más herramientas del proyecto** reúne controles menos frecuentes; las funciones y los datos existentes se conservan.
+En Inicio, **Más herramientas del proyecto** reúne controles menos frecuentes. Las herramientas globales y el índice de contenido se describen a continuación.
 
-## Navegación lateral en 0.39.0
+<a id="navegación-lateral-en-0390"></a>
 
-La barra izquierda sigue el orden de trabajo. Sus cinco grupos usan filas uniformes, separadores discretos y una marca del grupo que contiene la selección actual.
+## Navegación lateral en 0.40.0
+
+La barra izquierda reúne herramientas en cinco grupos estables. Las listas de contenido están en un **Índice** separado, junto al editor: recorrer una lista extensa no alarga la navegación global.
 
 | Grupo | Contenido |
 | --- | --- |
 | **01 Proyecto** | Inicio y datos generales del informe. |
-| **02 Contenido** | Tablero de hallazgos e índices desplegables de secciones y hallazgos. |
-| **03 Evidencia y alcance** | Evidencias; **Registro y cobertura** abre la bandeja de captura, activos y cobertura. |
+| **02 Contenido** | **Hallazgos** abre el tablero; **Secciones del informe** y **Lista de hallazgos** abren el índice correspondiente. |
+| **03 Evidencia y alcance** | Evidencias, bandeja de captura, activos y cobertura. |
 | **04 Análisis y seguimiento** | Causas raíz, tareas de remediación, correcciones y retest, cambios desde la entrega, matriz de retest y versiones. |
 | **05 Entrega** | Revisión de entrega, respaldo del proyecto y **Herramientas**. |
 
-Los contadores de los índices reflejan el total del proyecto. La lista de hallazgos conserva páginas de 50 entradas; en proyectos grandes, el índice tiene desplazamiento propio para que las demás herramientas sigan accesibles. Al abrir un hallazgo o una sección desde otro lugar, se despliega su índice y se revela la fila seleccionada dentro de ambos contenedores. Ese ajuste no cambia el foco ni el desplazamiento del editor; la navegación al contenido conserva su comportamiento habitual.
+En las vistas del informe, secciones, hallazgos y tablero, usa **Índice** para abrir el panel y **Cerrar índice** para plegarlo. Sus pestañas **Secciones** y **Hallazgos** cambian la lista, sin cambiar la ficha abierta. Busca por ID o título y, para hallazgos, filtra por **Severidad** o **Tipo**. La lista conserva el orden del proyecto y muestra hasta 50 entradas por página. Buscar, filtrar o cambiar de página no reordena ni edita el informe.
 
-Los triángulos señalan grupos desplegables. Puedes abrirlos y cerrarlos con clic, **Enter** o **Espacio**. Los refrescos de fondo no deshacen un cierre voluntario ni el desplazamiento manual; cambiar de destino o reabrir la barra móvil vuelve a revelar la selección. Los índices permanecen disponibles en Inicio y en el tablero. Sus acciones que requieren proyecto se habilitan al abrir uno.
+Si la selección actual queda fuera del filtro, el panel lo indica y ofrece **Mostrar selección**. La ficha abierta permanece en el editor hasta que elijas otra. Cada lista tiene su propio desplazamiento dentro del panel; ya no está anidada en una lista de la barra global.
 
-En **Entrega → Herramientas** están **Biblioteca de informes**, **Respaldo integral**, **Datos privados guardados**, **Comprobar instalación**, **Actualizar report-gen** y, en escritorio, **Evidencia y decisiones**. En móvil, esta última conserva su acceso en **Más**; **Tutorial visual** también permanece en **Más**. El respaldo del proyecto sigue como acceso directo separado del respaldo integral.
+Para cambiar el orden de las secciones, activa **Ordenar secciones**, usa **Mover** en la fila correspondiente e indica la posición de destino. Puedes deshacer ese cambio; **Terminar orden** vuelve a la navegación normal. Las filas normales no se arrastran. Para mover hallazgos, abre el tablero **Hallazgos**, selecciona el orden **Manual** y usa su acción **Mover**. Estos movimientos sí cambian el orden del proyecto; los filtros del índice no lo hacen.
 
-En móvil, abre **Navegación**. Elegir un destino cierra la barra y lleva el foco al contenido; **Escape** cierra la barra y devuelve el foco a su botón. Un diálogo abierto mantiene su propio foco, incluido **Mover** secciones. La jerarquía se conserva en español, inglés y portugués de Brasil, en los temas claro y oscuro; cambiar el idioma de la interfaz no reescribe el informe.
+En escritorio, **Ancho del índice** permite ajustar el panel entre 220 y 420 píxeles, en pasos de 20. El control admite teclado: flechas para ajustar, **Inicio** para el mínimo y **Fin** para el máximo. Apertura, ancho, pestaña, búsquedas, filtros y página se conservan en este navegador por espacio de trabajo y proyecto; no se escriben como contenido del informe. En pantallas pequeñas, el ancho se adapta automáticamente. Si el índice deja sin espacio a la vista previa, ciérralo o usa **Mostrar vista previa** para recuperar ese espacio.
+
+En **Entrega → Herramientas** están **Biblioteca de informes**, **Respaldo integral**, **Datos privados guardados**, **Comprobar instalación**, **Actualizar report-gen** y, en escritorio, **Evidencia y decisiones**. En móvil, esta última conserva su acceso en **Más**; **Tutorial visual** también permanece en **Más**. El respaldo del proyecto sigue separado del respaldo integral.
+
+En móvil, **Navegación** abre la barra global. El índice se abre con su propio botón; seleccionar una entrada lo cierra y lleva el foco al contenido. **Escape** cierra el panel abierto y devuelve el foco a su botón. Un diálogo superpuesto conserva su propio manejo del foco. Los nombres y controles están disponibles en español, inglés y portugués de Brasil, en temas claro y oscuro; cambiar el idioma de la interfaz no traduce el contenido redactado.
 
 ## Organizar varios proyectos
 
@@ -186,11 +192,11 @@ En **LibreOffice 24.2.7.2 de los paquetes de Ubuntu**, la instalación del compl
 Para construir el OXT desde el código fuente descargado de report-gen, sin instalarlo:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.39.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.40.0.oxt
 ```
 
 1. En la instalación de LibreOffice elegida abre **Herramientas → Extensiones → Añadir**. Algunas versiones llaman al menú **Gestor de extensiones**.
-2. Selecciona `report-gen-libreoffice-0.39.0.oxt` e instálalo para tu usuario.
+2. Selecciona `report-gen-libreoffice-0.40.0.oxt` e instálalo para tu usuario.
 3. Cierra todas las ventanas de esa instalación de LibreOffice, vuelve a abrirla y abre una copia del DOCX recién exportado por report-gen.
 4. Comprueba sus URL, listas y tablas después de abrirlo, editarlo y guardarlo. Para retirarlo, desactívalo o elimínalo en el mismo gestor y reinicia LibreOffice.
 
@@ -349,7 +355,7 @@ Para restaurar, selecciona el `.rgbackup` y su contraseña en una instalación v
 
 ## Causas raíz y tareas de remediación
 
-En **Historial y seguimiento > Causas raíz**, crea un grupo con nombre, causa y acción común. Asigna los hallazgos relacionados; cada uno conserva su identificador permanente, severidad, evidencias, responsable y retests. Quitar un grupo desvincula sus miembros después de confirmar, pero no elimina los hallazgos. En cada hallazgo puedes definir además un **Criterio de cierre** comprobable.
+En **Análisis y seguimiento → Causas raíz**, crea un grupo con nombre, causa y acción común. Asigna los hallazgos relacionados; cada uno conserva su identificador permanente, severidad, evidencias, responsable y retests. Quitar un grupo desvincula sus miembros después de confirmar, pero no elimina los hallazgos. En cada hallazgo puedes definir además un **Criterio de cierre** comprobable.
 
 La acción específica de un hallazgo tiene prioridad sobre la acción común. La sección de causas raíz del informe está desactivada por defecto: actívala expresamente y revisa el resultado. Las entregas parciales conservan solo grupos con hallazgos incluidos; las vistas pública y ejecutiva no incorporan este contenido privado automáticamente.
 

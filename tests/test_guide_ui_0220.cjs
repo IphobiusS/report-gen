@@ -189,7 +189,7 @@ async function axeGuide(page, label) {
     await page.locator('#workspaceResearch > summary').click();
     await page.locator('[data-workflow="coverage"]').click();
     await page.getByRole('textbox', {name: 'Limitaciones del trabajo', exact: true}).waitFor();
-    await clickNavigationControl(page,page.locator('#sectionList .finding-nav').filter({hasText: /Alcance|Scope/}).first());
+    await clickNavigationControl(page,'#workspaceSections');await clickNavigationControl(page,page.locator('#sectionList .finding-nav').filter({hasText: /Alcance|Scope/}).first());
     await page.locator('#workspaceFollowup > summary').click();
     await page.locator('[data-workflow="retest"]').click();
     await page.waitForFunction(() => S.sel.type === 'workflow' && S.sel.idx === 'retest');
@@ -199,7 +199,7 @@ async function axeGuide(page, label) {
       dataUnchanged: afterReading.data === original.data, yamlUnchanged: afterReading.yaml === original.yaml,
       revisionUnchanged: afterReading.revision === original.revision
     });
-    await clickNavigationControl(page,page.locator('#sectionList .finding-nav').filter({hasText: /Alcance|Scope/}).first());
+    await clickNavigationControl(page,'#workspaceSections');await clickNavigationControl(page,page.locator('#sectionList .finding-nav').filter({hasText: /Alcance|Scope/}).first());
     await page.getByRole('textbox', {name: 'Objetivos', exact: true}).fill('Synthetic objective: evaluate the authorized .example portal.');
     await settled(page);
     check('An explicit scope objective edit initializes and saves its field', await page.evaluate(() => S.data.report.sections.find(section => section.key === 'scope').objectives === 'Synthetic objective: evaluate the authorized .example portal.') && fs.readFileSync(path.join(workspace, 'projects', 'guide-read-only-editors', 'engagement.yaml'), 'utf8').includes('Synthetic objective: evaluate the authorized .example portal.'));

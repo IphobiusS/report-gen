@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen com Prometeo e Evaristo" width="300">
 </p>
 
-# report-gen 0.39.0
+# report-gen 0.40.0
 
 **Um editor local para transformar avaliações de segurança em relatórios claros.** Organize achados, vincule evidências, acompanhe a remediação e os retestes e produza **PDF, Word, Markdown com imagens e HTML portátil** a partir de uma revisão salva.
 
@@ -37,7 +37,15 @@ O português é a variante **Brasil**. A chave interna é `pt`; os argumentos de
 
 O **tutorial visual** permanece no menu. Seus seis passos têm instruções e capturas reais em espanhol, inglês e português, com ampliação e progresso local. A apresentação inicial pode ser ignorada. Consultar o tutorial não modifica o relatório; ele também funciona quando o navegador não consegue salvar seu progresso.
 
+## Novidades da 0.40.0
+
+A barra lateral mantém cinco grupos de ferramentas. As listas de seções e achados abrem em um **Índice** ao lado do editor, com busca, filtros de achados e páginas de 50 registros. Você pode fechar o painel ou ajustar sua largura sem alterar o relatório. Se um filtro ocultar o item aberto, **Mostrar seleção** permite localizá-lo novamente.
+
+**Ordenar seções** ativa explicitamente os controles para movê-las. A lista normal mantém a ordem do projeto. No celular, selecionar um item fecha o índice; **Escape** devolve o foco ao botão. As preferências do índice ficam neste navegador, separadas por espaço de trabalho e projeto. [Uso do índice e navegação](docs/guide.pt.md#navegação-lateral-na-0400).
+
 ## Novidades da 0.39.0
+
+*Histórico da 0.39.0: a organização em cinco grupos permanece; suas listas expansíveis dentro da barra foram substituídas pelo índice contextual na 0.40.0.*
 
 A barra lateral organiza o trabalho em cinco grupos: **Projeto**, **Conteúdo**, **Evidências e escopo**, **Análise e acompanhamento** e **Entrega**. As linhas mantêm tamanho e espaçamento consistentes. Os índices expansíveis de seções e achados mostram suas quantidades e preservam a paginação dos projetos extensos.
 

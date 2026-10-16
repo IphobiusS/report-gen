@@ -3,6 +3,7 @@
  * Functional observations are explicitly automated, not human visual approval.
  */
 'use strict';
+const {exposeNavigationControl,clickNavigationControl}=require('../tests/browser-navigation.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
@@ -44,6 +45,7 @@ function directoryHashes(directory, prefix = '') {
     }));
 }
 const sources = [
+  'tests/browser-navigation.cjs', 'webapp/static/context-index.js', 'webapp/static/context-index.css',
   'scripts/audit-horizonte-authoring.cjs', 'scripts/browser-server-0211.py',
   'webapp/static/app.js', 'webapp/static/insights.js', 'webapp/static/design-library.js',
   'webapp/design_api.py', 'webapp/visual_api.py', 'visual_review.py',
@@ -76,21 +78,8 @@ const clean = page => page.waitForFunction(() => typeof S !== 'undefined' &&
   !document.querySelector('#splash'), null, {timeout: 60000});
 const data = page => page.evaluate(() => JSON.parse(JSON.stringify(S.data)));
 const savedState = page => page.evaluate(() => ({data: JSON.parse(JSON.stringify(S.data)), etag: projectStore.etag}));
-async function expose(page, selector) {
-  const target = page.locator(selector).first();
-  const ancestors = await target.evaluate(el => {
-    let d = el.parentElement?.closest('details');
-    const list = [];
-    while (d) { if (!d.open) list.unshift(d.id || null); d = d.parentElement?.closest('details'); }
-    return list;
-  });
-  for (const id of ancestors) {
-    assert.ok(id, 'Menu disclosure has a stable ID');
-    await page.locator('#' + id + ' > summary').click();
-  }
-  return target;
-}
-async function click(page, selector) { await (await expose(page, selector)).click(); }
+async function expose(page,selector){return exposeNavigationControl(page,selector);}
+async function click(page,selector){await clickNavigationControl(page,selector);}
 async function screen(page, name, target) {
   await page.evaluate(() => document.fonts.ready);
   if (target) await target.scrollIntoViewIfNeeded();
@@ -110,6 +99,8 @@ async function importBundle(page) {
 }
 async function moveSection(page, key, position) {
   await click(page, '#navReport');
+  await click(page, '#workspaceSections');
+  if(await page.locator('#contextIndexSort').getAttribute('aria-pressed')!=='true')await page.locator('#contextIndexSort').click();
   await click(page, '[data-section-move="' + key + '"]');
   const dialog = page.locator('dialog.experience-dialog[open]');
   await dialog.locator('[data-section-position]').fill(String(position));
@@ -119,7 +110,8 @@ async function moveSection(page, key, position) {
 }
 const sectionKeys = project => project.report.sections.map(section => section.key);
 async function sidebarKeys(page) {
-  return page.locator('#sectionList [data-section-move]').evaluateAll(nodes => nodes.map(n => n.dataset.sectionMove));
+  await click(page, '#workspaceSections');
+  return page.locator('#sectionList > li').evaluateAll(nodes => nodes.map(n => n.dataset.sectionKey));
 }
 async function saveRaster(response, number) {
   check('Native viewer page ' + number + ' returns actual PNG bytes',
@@ -254,6 +246,7 @@ fs.writeFileSync(path.join(workspace, '.test-only'), 'synthetic acceptance works
     await page.reload(); await clean(page);
     check('Reordered sections persist across a real reload', isDeepStrictEqual(await savedState(page), moved));
     await click(page, '#navReport');
+    await click(page, '#workspaceSections');await page.locator('#contextIndexSort').click();
     await screen(page, '04-banking-sections-reordered', await expose(page, '[data-section-move="' + key + '"]'));
     await moveSection(page, key, originalPosition);
     await page.reload(); await clean(page);

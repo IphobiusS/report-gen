@@ -273,6 +273,21 @@ jobs:
             --compare-pdf "$ATLAS_OUTPUT/exports/samples/general/es/serio/outputs/informe.pdf" \
             --compare-other-pdf "$ATLAS_OUTPUT/exports/samples/general/en/serio/outputs/informe.pdf" \
             --output "$ATLAS_OUTPUT/browser"
+      - name: Preserve a separately downloadable lifecycle and navigation evidence package
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: atlas-review-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/atlas/case/
+            ${{ runner.temp }}/atlas/runtime/
+            ${{ runner.temp }}/atlas/api/
+            ${{ runner.temp }}/atlas/ui/
+            ${{ runner.temp }}/atlas/browser/
+            ${{ runner.temp }}/atlas/exports/matrix-*.json
+            ${{ runner.temp }}/atlas/publication-scan.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Preserve original inputs, outputs, receipts and real screenshots without repeated snapshots
         if: always()
         uses: actions/upload-artifact@v7.0.2
@@ -282,6 +297,5 @@ jobs:
             ${{ runner.temp }}/atlas/
             !${{ runner.temp }}/atlas/exports/variant-sources/**
             !${{ runner.temp }}/atlas/exports/**/snapshot/**
-            !${{ runner.temp }}/atlas/api/**/workspace-*/**
           if-no-files-found: error
           retention-days: 14

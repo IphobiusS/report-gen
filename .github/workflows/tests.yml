@@ -43,6 +43,7 @@ jobs:
           node --test tests/test_language_0350_core.cjs
           RG_PYTHON=python node tests/test_language_0350_dom.cjs
           RG_PYTHON=python npm run test:sidebar
+          RG_PYTHON=python npm run test:context-index
           node tests/test_atlas_browser_harness_0390.cjs
           RG_PYTHON=python node --test tests/test_portuguese_modules_0350.cjs
 

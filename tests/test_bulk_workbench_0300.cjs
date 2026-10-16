@@ -3,6 +3,7 @@
    Editorial inference uses a synthetic local protocol fixture, not an LLM. */
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
+const {clickNavigationControl}=require('./browser-navigation.cjs');
 const args=process.argv.slice(2),option=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
 const root=path.resolve(option('--tool',process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..'))),out=path.resolve(option('--output','out/bulk-workbench-0300'));
 const {chromium}=require(process.env.REPORT_GEN_PLAYWRIGHT_MODULE||require.resolve('playwright',{paths:[root,process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES||root]}));
@@ -45,7 +46,7 @@ async function ready(){await page.waitForFunction(()=>typeof BulkUI!=='undefined
  check('Manual keyboard ordering is available with fewer than 50 findings',await page.locator('[data-finding-move]').count()===3);
  await page.locator('[data-finding-move]').first().focus();await page.keyboard.press('Enter');await page.locator('[data-finding-position]').fill('3');await page.locator('[data-finding-move-apply]').focus();await page.keyboard.press('Enter');
  check('Keyboard reorder preserves stable finding IDs and every technical field',await page.evaluate(before=>JSON.stringify(S.data.findings)===JSON.stringify([before[1],before[2],before[0]]),original.data.findings));
- await page.evaluate(()=>select('section','custom-first'));await page.locator('[data-section-move="custom-first"]').focus();await page.keyboard.press('Enter');await page.locator('[data-section-position]').fill('2');await page.locator('[data-section-move-apply]').focus();await page.keyboard.press('Enter');
+ await page.evaluate(()=>select('section','custom-first'));await clickNavigationControl(page,'#workspaceSections');await page.locator('#contextIndexSort').click();await page.locator('[data-section-move="custom-first"]').focus();await page.keyboard.press('Enter');await page.locator('[data-section-position]').fill('2');await page.locator('[data-section-move-apply]').focus();await page.keyboard.press('Enter');
  check('Section keyboard reorder preserves content and selected section identity',await page.evaluate(before=>S.sel.key==='custom-first'&&JSON.stringify(S.data.report.sections)===JSON.stringify([before[1],before[0]]),original.data.report.sections));
  await page.evaluate(async()=>{await doSave();select('findings');});await page.locator('[data-bulk-open]').click();
  check('Bulk editing starts without selected findings or fields and cannot save',await page.locator('[data-bulk-finding]:checked').count()===0&&await page.locator('[data-bulk-field]:checked').count()===0&&await page.locator('[data-bulk-apply]').isDisabled());

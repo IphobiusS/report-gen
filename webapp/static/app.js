@@ -555,6 +555,7 @@ async function init() {
   if(typeof ProgressUI!=="undefined")ProgressUI.bind();
   if(typeof WorkbenchUI!=="undefined")WorkbenchUI.bind();
   StudioUI.bind();
+  if(typeof ContextIndexUI!=="undefined")ContextIndexUI.bind();
   if(typeof GuideUI!=="undefined")GuideUI.bind();
   if(typeof InsightsUI!=="undefined")InsightsUI.bind();
   if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.bind();
@@ -607,7 +608,7 @@ async function loadProject(slug) {
 }
 
 // ---- sidebar ---------------------------------------------------------------
-const findingPageState = { slug:null, sidebar:0, board:0, boardKey:"" };
+const findingPageState = { board:0, boardKey:"" };
 function workspacePageBar(area, total, page, size, change) {
   const pages=Math.max(1,Math.ceil(total/size));
   const nav=h("nav",{class:"workspace-pagebar","data-workspace-pagination":area,"aria-label":uiText("Paginación", "Pagination", "Paginação")});
@@ -621,47 +622,7 @@ function workspacePageBar(area, total, page, size, change) {
 function renderSidebar(pageOverride) {
   WorkflowUI.updateNav();
   $("#navReport").classList.toggle("active", S.sel.type === "report");
-  // secciones activas
-  const sl = $("#sectionList"); sl.innerHTML = "";
-  const secs = (S.data && S.data.report && S.data.report.sections) || [];
-  secs.forEach((sec, i) => {
-    const schema = S.catBy[sec.key] || {};
-    const lang = normalizeUiLanguage(S.data.meta.lang, "en");
-    const title = sec.title || schema["title_" + lang] || schema.title_es || sec.key;
-    const active = S.sel.type === "section" && S.sel.key === sec.key;
-    const li = h("li", { draggable: "true", class: active ? "active" : "" },
-      h("button", {type:"button",class:"finding-nav","aria-current":active?"page":null,onclick:()=>select("section",sec.key)},
-      h("span", { class: "ftitle" }, `${i + 1}. ${title}`),
-      schema.special ? h("span", { class: "sect-badge" }, schema.special) : null));
-    li.addEventListener("dragstart", e => { dragCtx = { arr: secs, from: i }; e.dataTransfer.effectAllowed = "move"; });
-    makeDropZone(li, secs, i);
-    if(secs.length>1)li.append(h("button",{type:"button",class:"btn sm","data-section-move":sec.key,"aria-label":(uiText("Mover ", "Move ", "Mover "))+title,onclick:()=>moveFindingDialog(sec.key,true)},uiText("Mover", "Move", "Mover")));
-    sl.append(li);
-  });
-  // hallazgos
-  const ul = $("#findingList"); ul.innerHTML = "";
-  ul.parentElement.querySelector('[data-workspace-pagination="sidebar"]')?.remove();
-  const findings=S.data?.findings||[], pageSize=50;
-  if(findingPageState.slug!==S.slug){findingPageState.slug=S.slug;findingPageState.sidebar=0;findingPageState.board=0;findingPageState.boardKey="";}
-  if(Number.isInteger(pageOverride))findingPageState.sidebar=pageOverride;
-  else if(S.sel.type==="finding")findingPageState.sidebar=Math.floor(S.sel.idx/pageSize);
-  findingPageState.sidebar=Math.max(0,Math.min(Math.max(0,Math.ceil(findings.length/pageSize)-1),findingPageState.sidebar));
-  const start=findings.length>pageSize?findingPageState.sidebar*pageSize:0;
-  findings.slice(start,start+pageSize).forEach((f, offset) => {
-    const i=start+offset;
-    const sev = f.severity || (f.mode === "machine" ? "info" : "info");
-    const active = S.sel.type === "finding" && S.sel.idx === i;
-    const li = h("li", { draggable: "true", class: active ? "active" : "", "data-finding-uid":f.uid },
-      h("button",{type:"button",class:"finding-nav","aria-current":active?"page":null,onclick:()=>select("finding",i)},
-      h("span", { class: "sev-dot sev-" + sev }),
-      h("span", { class: "fid" }, f.id || ""),
-      h("span", { class: "ftitle" }, f.title || t("untitled")))
-    );
-    li.addEventListener("dragstart", e => { dragCtx = { arr: S.data.findings, from: i }; e.dataTransfer.effectAllowed = "move"; });
-    makeDropZone(li, S.data.findings, i);
-    ul.append(li);
-  });
-  if(findings.length>pageSize)ul.after(workspacePageBar("sidebar",findings.length,findingPageState.sidebar,pageSize,page=>renderSidebar(page)));
+  if(typeof ContextIndexUI!=="undefined")ContextIndexUI.render(pageOverride);
 }
 // ---- buscador global -------------------------------------------------------
 function searchTargets() {
@@ -1042,8 +1003,7 @@ function field(label, obj, key, opts = {}) {
     inp = h("input", { type: opts.type || "text", value: obj[key] || "", oninput: e => {
       obj[key] = e.target.value; if(opts.onChange)opts.onChange(); scheduleSave();
       if(key==="title"&&S.sel.type==="finding"&&S.data?.findings[S.sel.idx]===obj){
-        const item=Array.from(document.querySelectorAll("#findingList [data-finding-uid]")).find(el=>el.dataset.findingUid===obj.uid);
-        const title=item?.querySelector(".ftitle");if(title)title.textContent=obj.title||t("untitled");
+        ContextIndexUI.render();
       }
     } });
   }
@@ -1614,7 +1574,7 @@ function bindUI() {
     });
   }
   $("#previewBtn").addEventListener("click", () => S.previewMode === "live" ? refreshLivePreview() : renderPdf(false));
-  $("#previewToggle").addEventListener("click", () => setPreviewVisible(!S.previewVisible));
+  $("#previewToggle").addEventListener("click", () => typeof ContextIndexUI!=="undefined"?ContextIndexUI.togglePreview():setPreviewVisible(!S.previewVisible));
   { let v = true; try { v = localStorage.getItem("rg.previewVisible") !== "0"; } catch (_) {} setPreviewVisible(v); }
   $("#pvLive").addEventListener("click", () => setPreviewMode("live"));
   $("#pvPdf").addEventListener("click", () => setPreviewMode("pdf"));

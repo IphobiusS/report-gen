@@ -23,7 +23,9 @@ const WorkspaceUI = (() => {
     $('#navHome').classList.toggle('active',home);
     $('#navHome').setAttribute('aria-current',home?'page':'false');
     $('#navReport').setAttribute('aria-current',S.sel.type==='report'?'page':'false');
-    const section=S.sel.type==='section'?$('#sectionList .active .ftitle')?.textContent:
+    const selectedSection=S.sel.type==='section'?S.data?.report?.sections?.find(item=>item.key===S.sel.key):null;
+    const sectionSchema=selectedSection?S.catBy?.[selectedSection.key]||{}:{};
+    const section=S.sel.type==='section'?(selectedSection?.title||sectionSchema['title_'+normalizeUiLanguage(S.data?.meta?.lang,'en')]||sectionSchema.title_es||S.sel.key):
       S.sel.type==='finding'?S.data?.findings?.[S.sel.idx]?.title:
       S.sel.type==='workflow'?$('[data-workflow="'+S.sel.idx+'"]')?.textContent:
       S.sel.type==='capture'?w('Bandeja de captura','Capture inbox', "Caixa de capturas"):
@@ -48,6 +50,7 @@ const WorkspaceUI = (() => {
     if(typeof StudioUI!=='undefined')StudioUI.update();
     if(typeof GuideUI!=='undefined')GuideUI.update();
     if(typeof InsightsUI!=='undefined')InsightsUI.update();
+    if(typeof ContextIndexUI!=='undefined')ContextIndexUI.update();
   }
   function stat(value, label, kind) {
     const b=button('',()=>go('workflow',kind)); b.className='workspace-stat';
@@ -203,7 +206,7 @@ const WorkspaceUI = (() => {
     const privacyButton=button(w('Datos privados guardados','Stored private data', "Dados privados armazenados"),()=>PrivacyUI.open());privacyButton.id='privacyBtn';
     tools.append($('#designLibraryBtn'),backupButton,privacyButton,$('#diagnosticsBtn'));$('.sidebar').append(tools);
     $('#sidebarToggle').addEventListener('click',()=>{const open=$('.layout').classList.toggle('navigation-open');$('#sidebarToggle').setAttribute('aria-expanded',String(open));if(open&&typeof WorkbenchUI!=='undefined')WorkbenchUI.revealNavigation();});
-    $('.sidebar').addEventListener('click',event=>{if(event.target.closest('.navitem,.finding-nav')&&window.matchMedia('(max-width:760px)').matches){$('.layout').classList.remove('navigation-open');$('#sidebarToggle').setAttribute('aria-expanded','false');$('#editor').focus({preventScroll:true});}});
+    $('.sidebar').addEventListener('click',event=>{if(event.target.closest('.navitem')&&window.matchMedia('(max-width:760px)').matches){$('.layout').classList.remove('navigation-open');$('#sidebarToggle').setAttribute('aria-expanded','false');if(!event.target.closest('[aria-controls="contextIndex"]'))$('#editor').focus({preventScroll:true});}});
     document.querySelectorAll('.action-menu').forEach(menu=>menu.addEventListener('toggle',()=>{if(menu.open)document.querySelectorAll('.action-menu').forEach(other=>{if(other!==menu)other.open=false;});}));
     document.addEventListener('click',event=>{document.querySelectorAll('.action-menu[open]').forEach(menu=>{if(!menu.contains(event.target))menu.open=false;});});
     document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!document.querySelector('dialog[open],.modal.open'))document.querySelectorAll('.action-menu[open]').forEach(menu=>{menu.open=false;menu.querySelector('summary').focus();});});

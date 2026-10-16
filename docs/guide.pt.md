@@ -1,4 +1,4 @@
-# Guia do usuário do report-gen 0.39.0
+# Guia do usuário do report-gen 0.40.0
 
 [Boas-vindas](../README.pt.md) · [Español](guide.es.md) · [English](guide.en.md) · [Histórico de alterações](../CHANGELOG.md)
 
@@ -68,25 +68,31 @@ Abra **Tutorial visual** no menu **Mais**, em desktop ou celular. A primeira vis
 
 O CVSS descreve severidade técnica; sozinho, não representa risco de negócio. As seções **Postura de risco e impacto no negócio** e **Recomendações estratégicas** permitem documentar contexto, prioridades e apetite ao risco acordados com a organização. Ative-as em **Gerenciar seções**. O modelo não calcula nem aprova suas conclusões.
 
-## Navegação lateral na 0.39.0
+<a id="navegação-lateral-na-0390"></a>
 
-A barra lateral acompanha a sequência de trabalho. Seus cinco grupos usam linhas consistentes, separadores discretos e uma indicação do grupo que contém a seleção atual.
+## Navegação lateral na 0.40.0
+
+A barra lateral reúne ferramentas em cinco grupos estáveis. As listas de conteúdo ficam em um **Índice** separado, ao lado do editor: percorrer uma lista extensa não aumenta a navegação global.
 
 | Grupo | Conteúdo |
 | --- | --- |
 | **01 Projeto** | Visão geral e dados gerais do relatório. |
-| **02 Conteúdo** | Quadro de achados e índices expansíveis de seções e achados. |
-| **03 Evidências e escopo** | Evidências; **Captura e cobertura** abre a caixa de capturas, ativos e cobertura. |
+| **02 Conteúdo** | **Achados** abre o quadro; **Seções do relatório** e **Lista de achados** abrem o índice correspondente. |
+| **03 Evidências e escopo** | Evidências, caixa de capturas, ativos e cobertura. |
 | **04 Análise e acompanhamento** | Causas raiz, tarefas de correção, correções e retestes, alterações desde a entrega, matriz de retestes e versões. |
 | **05 Entrega** | Revisão de entrega, backup do projeto e **Ferramentas**. |
 
-Os contadores dos índices mostram o total do projeto. A lista de achados mantém páginas de 50 registros. Em projetos extensos, o índice tem rolagem própria para que as outras ferramentas continuem acessíveis. Abrir um achado ou uma seção por outro caminho expande seu índice e revela a linha selecionada nos dois contêineres de rolagem. Esse ajuste não move o foco nem rola o editor; a navegação para o conteúdo mantém seu comportamento habitual.
+Nas telas do relatório, de seções, de achados e do quadro, use **Índice** para abrir o painel e **Fechar índice** para recolhê-lo. As abas **Seções** e **Achados** mudam a lista sem trocar o item aberto. Pesquise por ID ou título e filtre achados por **Severidade** ou **Tipo**. A lista mantém a ordem do projeto e mostra até 50 registros por página. Pesquisar, filtrar ou mudar de página não reordena nem edita o relatório.
 
-As setas indicam grupos expansíveis. Use clique, **Enter** ou **Espaço** para abri-los ou fechá-los. Atualizações em segundo plano preservam o fechamento voluntário e a rolagem manual; escolher outro destino ou reabrir a navegação móvel revela a seleção novamente. Os índices permanecem disponíveis na visão geral e no quadro de achados. Ações que exigem um projeto são habilitadas ao abrir um.
+Se um filtro excluir a seleção atual, o painel informa isso e oferece **Mostrar seleção**. O item aberto permanece no editor até que você escolha outro. Cada lista tem sua própria rolagem no painel; ela já não fica aninhada em uma lista da barra global.
 
-**Entrega → Ferramentas** reúne **Biblioteca de modelos de relatório**, **Backup do espaço de trabalho**, **Dados privados armazenados**, **Verificar instalação**, **Atualizar report-gen** e, no desktop, **Evidências e decisões**. No celular, esta última permanece em **Mais**; **Tutorial visual** também fica em **Mais**. O backup do projeto conserva seu acesso direto, separado do backup integral.
+Para mudar a ordem das seções, ative **Ordenar seções**, use **Mover** na linha correspondente e escolha a posição de destino. É possível desfazer essa alteração; **Concluir ordenação** retorna à navegação normal. As linhas normais não permitem arrastar. Para mover achados, abra o quadro **Achados**, escolha a ordem **Manual** e use a ação **Mover**. Esses movimentos alteram a ordem do projeto; os filtros do índice não a alteram.
 
-No celular, abra **Navegação**. Escolher um destino fecha a barra e leva o foco ao conteúdo; **Escape** fecha a barra e devolve o foco ao botão. Um diálogo aberto conserva seu foco, inclusive o diálogo **Mover** seções. A hierarquia está disponível em espanhol, inglês e português do Brasil, nos temas claro e escuro. Alterar o idioma da interface não reescreve o relatório.
+No desktop, **Largura do índice** ajusta o painel de 220 a 420 pixels, em passos de 20. Use as setas do teclado para ajustar, **Home** para o mínimo e **End** para o máximo. Abertura, largura, aba, pesquisas, filtros e página ficam salvos neste navegador, separados por espaço de trabalho e projeto; não são gravados como conteúdo do relatório. Em telas menores, a largura se adapta automaticamente. Se o índice deixar pouco espaço para a prévia, feche-o ou use **Mostrar prévia** para recuperar esse espaço.
+
+**Entrega → Ferramentas** reúne **Biblioteca de modelos de relatório**, **Backup do espaço de trabalho**, **Dados privados armazenados**, **Verificar instalação**, **Atualizar report-gen** e, no desktop, **Evidências e decisões**. No celular, esta última permanece em **Mais**; **Tutorial visual** também fica em **Mais**. O backup do projeto continua separado do backup integral.
+
+No celular, **Navegação** abre a barra global. O índice tem seu próprio botão; selecionar um item fecha o painel e leva o foco ao conteúdo. **Escape** fecha o painel aberto e devolve o foco ao botão. Um diálogo sobreposto mantém seu próprio controle de foco. Rótulos e controles estão disponíveis em espanhol, inglês e português do Brasil, nos temas claro e escuro; mudar o idioma da interface não traduz o conteúdo redigido.
 
 ## Modelos e idiomas
 
@@ -171,7 +177,7 @@ O provedor UNO deve pertencer à mesma instalação do LibreOffice. A `.venv` do
 Crie a OXT sem instalá-la:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.39.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.40.0.oxt
 ```
 
 1. No LibreOffice escolhido, abra **Ferramentas → Extensões → Adicionar**; algumas versões usam **Gerenciador de extensões**.
@@ -287,7 +293,7 @@ A criptografia cobre esse arquivo baixado, não projetos em disco nem rascunhos.
 
 ## Causas raiz e tarefas de correção
 
-Em **Histórico e acompanhamento → Causas raiz**, crie um grupo com nome, causa e ação compartilhada. Vincule os achados; cada um mantém identidade, severidade, evidências, responsável e retestes. Remover um grupo desvincula membros após confirmação, sem excluir achados. Cada achado também pode ter critérios verificáveis de encerramento.
+Em **Análise e acompanhamento → Causas raiz**, crie um grupo com nome, causa e ação compartilhada. Vincule os achados; cada um mantém identidade, severidade, evidências, responsável e retestes. Remover um grupo desvincula membros após confirmação, sem excluir achados. Cada achado também pode ter critérios verificáveis de encerramento.
 
 Uma ação específica do achado tem precedência sobre a ação compartilhada. A seção de causas raiz fica desativada por padrão; ative-a explicitamente e revise o resultado. Entregas parciais conservam somente grupos com achados incluídos. Públicos executivo e público não recebem automaticamente esse conteúdo privado.
 

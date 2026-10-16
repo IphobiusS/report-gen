@@ -62,7 +62,7 @@ with tempfile.TemporaryDirectory(prefix='report-gen-pt-alias-') as directory:
  q.select('section','executive_summary');
  check('Imported alias uses Portuguese section title and field label',doc.querySelector('#editor h2').textContent===q.S.catBy.executive_summary.title_pt&&doc.querySelector('#editor').textContent.includes(q.S.catBy.executive_summary.fields[0].label_pt));
  q.openSectionsModal();
- check('Imported alias uses Portuguese catalog modal labels',doc.querySelector('[data-section-key="executive_summary"]').closest('label').textContent.includes(q.S.catBy.executive_summary.title_pt));
+ check('Imported alias uses Portuguese catalog modal labels',doc.querySelector('#sectionsModal input[data-section-key="executive_summary"]').closest('label').textContent.includes(q.S.catBy.executive_summary.title_pt));
  doc.querySelector('#sectionsModal').close();q.setUiLang('en');
  check('Imported alias localization preserves authored text, exact data and revision',JSON.stringify(q.S.data)===importedBefore&&q.projectStore.etag===importedRevision&&!q.projectStore.dirty);
  const importedStored=await transport.fetch('/api/projects/portuguese-alias').then(response=>response.json());

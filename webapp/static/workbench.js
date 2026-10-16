@@ -93,7 +93,7 @@ const WorkbenchUI = (() => {
     select(type,value);restoring=true;
     requestAnimationFrame(()=>{requestAnimationFrame(()=>{$('#editor').scrollTop=Number(p.scroll)||0;if(innerWidth<=760)window.scrollTo(0,Number(p.windowScroll)||0);$('#editor').focus({preventScroll:true});restoring=false;});});
   }
-  function projectChanged(){UndoUI.clear();WorkflowUI.resetReview?.();filters=cleanFilters(read('filters.'+S.slug,{}));renderedKey=null;previewStale=false;previewSnapshot=null;}
+  function projectChanged(){if(typeof ContextIndexUI!=='undefined')ContextIndexUI.projectChanged();UndoUI.clear();WorkflowUI.resetReview?.();filters=cleanFilters(read('filters.'+S.slug,{}));renderedKey=null;previewStale=false;previewSnapshot=null;}
   function dirty(){previewStale=true;previewSnapshot=null;invalidateLivePreview();updatePreview();const title=$('#editor .finding-context-title strong');if(title&&S.sel.type==='finding'){const f=S.data.findings.find(item=>item.uid===renderedFindingUid());title.textContent=f?.title||w('Sin título','Untitled', "Sem título");const chips=$('#editor .finding-chips');if(chips&&f)chips.replaceWith(findingChips(f));}}
   function previewReady(revision=projectStore.revision,snapshot=null){if(snapshot)previewSnapshot={...snapshot,revision};previewStale=revision!==projectStore.revision;updatePreview();followPreview();}
   function hasLivePreview(){return !previewStale&&previewSnapshot?.slug===S.slug&&previewSnapshot.document===$('#pdfPreview')?.contentDocument&&previewSnapshot.revision===projectStore.revision;}
@@ -158,7 +158,7 @@ const WorkbenchUI = (() => {
     document.querySelectorAll('[data-workflow]').forEach(control=>control.setAttribute('aria-current',S.sel.type==='workflow'&&S.sel.idx===control.dataset.workflow?'page':'false'));
     $('#navFindings')?.setAttribute('aria-current',S.sel.type==='findings'?'page':'false');
     const sidebar=$('.sidebar'),primary={home:'navHome',report:'navReport',findings:'navFindings',capture:'navCaptures',insights:'insightsBtn'};
-    const selected=S.sel.type==='section'?$('#sectionList .active .finding-nav'):S.sel.type==='finding'?$('#findingList .active .finding-nav'):S.sel.type==='workflow'?$('[data-workflow="'+S.sel.idx+'"]'):$('#'+primary[S.sel.type]);
+    const selected=S.sel.type==='section'?$('#workspaceSections'):S.sel.type==='finding'?$('#workspaceFindings'):S.sel.type==='workflow'?$('[data-workflow="'+S.sel.idx+'"]'):$('#'+primary[S.sel.type]);
     const key=JSON.stringify([S.slug,S.sel]),changed=key!==navigationKey;navigationKey=key;
     if(selected&&sidebar?.contains(selected)&&(changed||reveal)){
       for(let group=selected.parentElement;group&&group!==sidebar;group=group.parentElement)if(group.tagName==='DETAILS')group.open=true;
@@ -166,7 +166,7 @@ const WorkbenchUI = (() => {
       // must not pull the user away from another part of a long index.
       requestAnimationFrame(()=>{
         if(!selected.isConnected||navigationKey!==key)return;
-        for(const container of [selected.closest('.sidebar-index-body'),sidebar].filter(Boolean)){
+        for(const container of [sidebar]){
           const row=selected.getBoundingClientRect(),bounds=container.getBoundingClientRect();
           if(!bounds.height)continue;
           if(row.top<bounds.top)container.scrollTop-=bounds.top-row.top;
@@ -174,6 +174,7 @@ const WorkbenchUI = (() => {
         }
       });
     }
+    for(const id of ['workspaceSections','workspaceFindings']){const control=$('#'+id),active=control===selected;control?.classList.toggle('active',active);control?.setAttribute('aria-current',active?'page':'false');}
     document.querySelectorAll('[data-sidebar-group]').forEach(group=>group.classList.toggle('has-current',!!selected&&group.contains(selected)));
   }
   async function attention(box){
@@ -416,11 +417,10 @@ const WorkbenchUI = (() => {
     const group=(key,id,number)=>h('section',{class:'navigation-group','data-sidebar-group':key,'aria-labelledby':id},h('h2',{class:'side-head'},h('span',{class:'sidebar-group-number','aria-hidden':'true'},number),h('span',{id})));
     const project=group('project','navProject','01'),content=group('content','navWork','02'),evidence=group('evidence','navEvidence','03'),delivery=group('delivery','navDelivery','05');
     const projectSection=$('#navHome').parentElement;project.append($('#navHome'),$('#navReport'));projectSection.remove();content.append(board);
-    for(const [id,listId,label] of [['workspaceSections','sectionList',null],['workspaceFindings','findingList','navFindingIndex']]){
-      const old=$('#'+listId).parentElement,head=old.querySelector('.side-head');
-      const text=h('span',label?{id:label}:{'data-i18n':'sections_head'},head.textContent);
-      const details=h('details',{id,class:'sidebar-index workspace-secondary'},h('summary',{},text,h('span',{'data-sidebar-count':'',class:'sidebar-count'},'0')));
-      head.remove();const body=h('div',{class:'sidebar-index-body'});body.append(...old.childNodes);details.append(body);content.append(details);old.remove();
+    for(const [id,mode,label] of [['workspaceSections','sections',null],['workspaceFindings','findings','navFindingIndex']]){
+      const text=h('span',label?{id:label}:{'data-i18n':'sections_head'});
+      const control=h('button',{type:'button',id,class:'navitem context-index-link','aria-controls':'contextIndex',onclick:()=>ContextIndexUI.open(mode)},text,h('span',{'data-sidebar-count':'',class:'sidebar-count'},'0'));
+      content.append(control);
     }
     const research=h('details',{id:'workspaceResearch',class:'workspace-secondary'},h('summary',{},h('span',{id:'navResearch'})));
     research.append(nav,...['assets','coverage'].map(key=>$('[data-workflow="'+key+'"]')));evidence.append($('[data-workflow="evidence"]'),research);

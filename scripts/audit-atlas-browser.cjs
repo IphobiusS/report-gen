@@ -1,6 +1,7 @@
 /* Real Atlas UI acceptance for 0.39: diagnostic locations, native DOCX and
  * structural PDF privacy. Reports are generated only by report-gen. */
 'use strict';
+const {exposeNavigationControl,clickNavigationControl}=require('../tests/browser-navigation.cjs');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
 const {spawn,execFileSync}=require('node:child_process'),{createHash}=require('node:crypto'),{isDeepStrictEqual}=require('node:util');
 const root=path.resolve(__dirname,'..'),args=process.argv.slice(2),opt=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
@@ -14,7 +15,7 @@ for(const lang of ['es','en','pt']){assert.ok(bundles&&fs.statSync(path.join(bun
 fs.mkdirSync(out,{recursive:true});
 const workspace=fs.mkdtempSync(path.join(os.tmpdir(),'report-gen-acceptance-0211-atlas-'));
 fs.writeFileSync(path.join(workspace,'.test-only'),'synthetic acceptance workspace');
-const sourcePaths=['scripts/audit-atlas-browser.cjs','webapp/static/index.html','webapp/static/workspace.js','webapp/static/workspace.css','webapp/static/workbench.js','webapp/static/workbench.css','webapp/static/studio.js','webapp/static/studio.css','webapp/static/app.js','webapp/static/transport.js','webapp/static/progress.js','webapp/static/diagnostics-ui.js','webapp/static/docx-preview.js','webapp/static/annexes.js','diagnostic_locations.py','finding_imports.py','scanner_imports.py','export_contract.py','export_semantics.py','docx_preview.py','pdf_attachment_inspection.py','attachments.py','export_jobs.py','webapp/docx_preview_api.py'];
+const sourcePaths=['tests/browser-navigation.cjs','webapp/static/context-index.js','webapp/static/context-index.css','scripts/audit-atlas-browser.cjs','webapp/static/index.html','webapp/static/workspace.js','webapp/static/workspace.css','webapp/static/workbench.js','webapp/static/workbench.css','webapp/static/studio.js','webapp/static/studio.css','webapp/static/app.js','webapp/static/transport.js','webapp/static/progress.js','webapp/static/diagnostics-ui.js','webapp/static/docx-preview.js','webapp/static/annexes.js','diagnostic_locations.py','finding_imports.py','scanner_imports.py','export_contract.py','export_semantics.py','docx_preview.py','pdf_attachment_inspection.py','attachments.py','export_jobs.py','webapp/docx_preview_api.py'];
 const sourceHashes=()=>Object.fromEntries(sourcePaths.map(name=>[name,hash(fs.readFileSync(path.join(root,name)))]));
 const results={schema:'report-gen-atlas-browser/1',started:new Date().toISOString(),engine,launch_mode:headed?'headed':'headless',checks:[],screens:[],downloads:[],coverage:[],pageErrors:[],consoleDiagnostics:[],nativeViewer:[],apiErrors:[],expectedApiErrors:[],externalRequests:[],sourceStart:sourceHashes(),input:{bundles:Object.fromEntries(['es','en','pt'].map(lang=>[lang,hash(fs.readFileSync(path.join(bundles,'atlas-'+lang+'.zip')))])),pdf_sha256:hash(fs.readFileSync(pdfInput)),compare_pdf_sha256:hash(fs.readFileSync(comparePDF)),compare_other_pdf_sha256:hash(fs.readFileSync(compareOtherPDF))},limits:['Only report-gen generates reports and the derived native PDF.','The fixture is fictional; no external systems are contacted.','LibreOffice preview is not Microsoft Word acceptance.','Browser assertions and screenshots are not a human visual approval.','PDF privacy is bounded structural inspection, without OCR or an assertion that no secrets exist.','Native PDF painting is checked only in explicitly headed runs; a blob URL alone does not establish painted pages.','PDF comparison uses complete report-gen sample PDFs; reports beyond the existing 80-page comparison limit are deliberate negative controls, not generation failures.']};
 const save=()=>fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(results,null,2)+'\n');
@@ -23,9 +24,9 @@ const clean=page=>page.waitForFunction(()=>typeof S!=='undefined'&&!projectStore
 const snapshot=page=>page.evaluate(()=>JSON.stringify({data:S.data,revision:projectStore.revision,etag:projectStore.etag,dirty:projectStore.dirty}));
 const data=page=>page.evaluate(()=>JSON.parse(JSON.stringify(S.data)));
 const labels={es:{close:'Cerrar',format:'Formato',review:'Revisar selección',download:'Descargar',native:'Vista DOCX con LibreOffice',annex:'Inventario de anexos',upload:'Cargar anexo',scan:'Analizar posibles secretos',record:'Registro',line:'Línea',through:'Hasta línea',column:'Columna',field:'Campo',limits:'Alcance y límites de privacidad'},en:{close:'Close',format:'Format',review:'Review selection',download:'Download',native:'DOCX preview with LibreOffice',annex:'Annex inventory',upload:'Upload annex',scan:'Check for possible secrets',record:'Record',line:'Line',through:'Through line',column:'Column',field:'Field',limits:'Privacy scope and limits'},pt:{close:'Fechar',format:'Formato',review:'Revisar seleção',download:'Baixar',native:'Visualização DOCX com LibreOffice',annex:'Inventário de anexos',upload:'Enviar anexo',scan:'Verificar possíveis segredos',record:'Registro',line:'Linha',through:'Até a linha',column:'Coluna',field:'Campo',limits:'Escopo e limites de privacidade'}};
-async function expose(page,selector){const target=page.locator(selector).first(),ancestors=await target.evaluate(el=>{let d=el.parentElement?.closest('details'),list=[];while(d){if(!d.open)list.unshift(d.id||null);d=d.parentElement?.closest('details');}return list;});for(const id of ancestors){assert.ok(id,'Stable disclosure ID');await page.locator('#'+id+' > summary').click();}return target;}
+async function expose(page,selector){return exposeNavigationControl(page,selector);}
 async function sidebarVisible(){if(page.viewportSize().width<=760&&await page.locator('#sidebarToggle').getAttribute('aria-expanded')!=='true')await page.locator('#sidebarToggle').click();}
-async function click(page,selector){if(await page.locator(selector).first().evaluate(el=>!!el.closest('#workspaceSidebar')))await sidebarVisible();await (await expose(page,selector)).click();}
+async function click(page,selector){await clickNavigationControl(page,selector);}
 async function closeDrawer(page){if(await page.locator('#exportDrawer').count())await page.locator('#exportDrawer .experience-heading button').click();}
 async function language(page,lang){await closeDrawer(page);await (await expose(page,'#langToggle')).selectOption(lang);if(await page.locator('#studioMore').evaluate(el=>el.open))await page.locator('#studioMore > summary').click();await clean(page);}
 async function screen(page,name){await boundedDiagnostic(page.evaluate(()=>document.fonts.ready),5000,'Screenshot fonts');const file=path.join(out,name+'.png');await page.screenshot({path:file,fullPage:false,timeout:10000});results.screens.push({name,path:file,sha256:hash(fs.readFileSync(file)),viewport:page.viewportSize()});save();}
@@ -213,18 +214,17 @@ async function sidebarGeometry(lang,width,theme,state){
  results.sidebarGeometry??=[];results.sidebarGeometry.push({language:lang,width,theme,state,...geometry,contrast});save();
 }
 // Observation only: never scroll, focus or click the row before this check.
-// Measuring both scrollports catches a row that is visible in its bounded index
-// but still hidden above or below the outer sidebar.
+// The sole list scrollport, panel and viewport must all contain the selected row.
 async function selectedIndexGeometry(lang,scenario){
  await boundedDiagnostic(page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))),5000,'Selected index layout');
  const geometry=await page.evaluate(()=>{
-  const selected=document.querySelector('#workspaceSidebar .sidebar-index-body [aria-current="page"]'),index=selected?.closest('.sidebar-index-body'),sidebar=document.querySelector('#workspaceSidebar');
+  const selected=document.querySelector('#contextIndex ul:not([hidden]) [aria-current="page"]'),index=selected?.closest('.context-index-list-scroll'),panel=document.querySelector('#contextIndex');
   const box=el=>{if(!el)return null;const r=el.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height,scrollTop:el.scrollTop,clientHeight:el.clientHeight};};
-  const row=box(selected),ports=[{kind:'index',...box(index)},{kind:'sidebar',...box(sidebar)}],viewport={top:0,bottom:innerHeight,left:0,right:innerWidth};
+  const row=box(selected),ports=[{kind:'index',...box(index)},{kind:'panel',...box(panel)}],viewport={top:0,bottom:innerHeight,left:0,right:innerWidth};
   const inside=parent=>!!row&&row.width>0&&row.height>0&&parent.height>0&&row.top>=parent.top-1&&row.bottom<=parent.bottom+1&&row.left>=parent.left-1&&row.right<=parent.right+1;
-  return {row,ports,viewport,inside_index:inside(ports[0]),inside_sidebar:inside(ports[1]),inside_viewport:!!row&&row.top>=-1&&row.bottom<=innerHeight+1&&row.left>=-1&&row.right<=innerWidth+1,focus:document.activeElement?.id||document.activeElement?.tagName,editor_scroll_top:document.querySelector('#editor').scrollTop};
+  return {row,ports,viewport,inside_index:inside(ports[0]),inside_panel:inside(ports[1]),single_list_scrollport:document.querySelectorAll('#contextIndex .context-index-list-scroll').length===1,inside_viewport:!!row&&row.top>=-1&&row.bottom<=innerHeight+1&&row.left>=-1&&row.right<=innerWidth+1,focus:document.activeElement?.id||document.activeElement?.tagName,editor_scroll_top:document.querySelector('#editor').scrollTop};
  });
- check(lang+' '+scenario+' selected row is revealed in both scrollports without assisted scrolling',geometry.inside_index&&geometry.inside_sidebar&&geometry.inside_viewport,geometry);
+ check(lang+' '+scenario+' selected row is revealed in the sole list scrollport, panel and viewport without assisted scrolling',geometry.inside_index&&geometry.inside_panel&&geometry.inside_viewport&&geometry.single_list_scrollport,geometry);
  results.selectedIndexGeometry??=[];results.selectedIndexGeometry.push({language:lang,scenario,...geometry});save();
 }
 async function sidebarAcceptance(lang){
@@ -234,26 +234,27 @@ async function sidebarAcceptance(lang){
  const expectedLabels={es:['Proyecto','Contenido','Evidencia y alcance','Análisis y seguimiento','Entrega'],en:['Project','Content','Evidence and scope','Analysis and follow-up','Delivery'],pt:['Projeto','Conteúdo','Evidências e escopo','Análise e acompanhamento','Entrega']}[lang],actualLabels=await page.locator('#navProject,#navWork,#navEvidence,#navReview,#navDelivery').allTextContents();
  check(lang+' sidebar group names are fully localized',isDeepStrictEqual(actualLabels,expectedLabels),actualLabels);
  check(lang+' sidebar counts match the complete report',Number(await page.locator('#workspaceSections [data-sidebar-count]').innerText())===baseline.report.sections.length&&Number(await page.locator('#workspaceFindings [data-sidebar-count]').innerText())===total);
- for(const id of ['workspaceSections','workspaceFindings','workspaceResearch','workspaceFollowup','workspaceTools'])await disclosure(id,false);
+ check(lang+' content launchers are buttons and both collections live outside global navigation',await page.evaluate(()=>['workspaceSections','workspaceFindings'].every(id=>document.getElementById(id).tagName==='BUTTON'&&document.getElementById(id).getAttribute('aria-controls')==='contextIndex')&&['sectionList','findingList'].every(id=>document.getElementById(id).closest('#contextIndex')&&!document.getElementById(id).closest('#workspaceSidebar'))));
+ for(const id of ['workspaceResearch','workspaceFollowup','workspaceTools'])await disclosure(id,false);
  for(const theme of ['dark','light']){
   await setTheme(theme);
   for(const width of [1440,390]){
    await page.setViewportSize({width,height:1000});await sidebarVisible();await page.locator('#navHome').scrollIntoViewIfNeeded();
    await sidebarGeometry(lang,width,theme,'collapsed');await screen(page,'sidebar-'+lang+'-'+width+'-'+theme);
-   for(const id of ['workspaceSections','workspaceFindings','workspaceResearch','workspaceFollowup','workspaceTools'])await disclosure(id,true);
+   for(const id of ['workspaceResearch','workspaceFollowup','workspaceTools'])await disclosure(id,true);
    await sidebarGeometry(lang,width,theme,'expanded');await screen(page,'sidebar-expanded-'+lang+'-'+width+'-'+theme);
-   for(const id of ['workspaceSections','workspaceFindings','workspaceResearch','workspaceFollowup','workspaceTools'])await disclosure(id,false);
+   for(const id of ['workspaceResearch','workspaceFollowup','workspaceTools'])await disclosure(id,false);
   }
  }
  await page.setViewportSize({width:1440,height:1000});await setTheme('dark');
  // Native details keyboard behavior: opening/closing must retain focus.
- for(const id of ['workspaceSections','workspaceFindings','workspaceResearch','workspaceFollowup','workspaceTools']){
+ for(const id of ['workspaceResearch','workspaceFollowup','workspaceTools']){
   await disclosure(id,false);const summary=page.locator('#'+id+' > summary');await summary.focus();await page.keyboard.press('Enter');
   check(lang+' '+id+' opens with Enter and keeps keyboard focus',await page.locator('#'+id).evaluate(el=>el.open&&document.activeElement===el.querySelector('summary')));
   await page.keyboard.press('Space');check(lang+' '+id+' closes with Space and keeps keyboard focus',await page.locator('#'+id).evaluate(el=>!el.open&&document.activeElement===el.querySelector('summary')));
  }
  await click(page,'#sectionList .finding-nav');await clean(page);
- check(lang+' selected section is current and its index stays open',await page.locator('#workspaceSections').evaluate(el=>el.open)&&await page.locator('#sectionList [aria-current="page"]').count()===1);
+ check(lang+' selected section is current and its index stays open',await page.locator('#contextIndex').isVisible()&&await page.locator('#contextSectionsTab').getAttribute('aria-pressed')==='true'&&await page.locator('#sectionList [aria-current="page"]').count()===1);
  await selectedIndexGeometry(lang,'section selection');await screen(page,'section-selected-'+lang);
  await click(page,'#navFindings');await clean(page);
  check(lang+' full findings board uses bounded first page',await page.locator('.dash-row').count()===50,{total});
@@ -266,29 +267,34 @@ async function sidebarAcceptance(lang){
  check(lang+' owner filter resets pagination and returns exact matching records',isDeepStrictEqual(actual,expected),{owner,expected,actual});
  await page.locator('.finding-filters').getByRole('button',{name:{es:'Limpiar filtros',en:'Clear filters',pt:'Limpar filtros'}[lang],exact:true}).click();
  check(lang+' clearing filters restores the bounded first page',await page.locator('.dash-row').count()===50);
- const lastPage=Math.floor((total-1)/50);await disclosure('workspaceFindings',true);await page.locator('[data-workspace-pagination="sidebar"] select').selectOption(String(lastPage));
- check(lang+' sidebar final page exposes actual records beyond fifty',await page.locator('#findingList > li').count()===total-lastPage*50);
+ const lastPage=Math.floor((total-1)/50);await click(page,'#workspaceFindings');await page.locator('[data-workspace-pagination="context"] select').selectOption(String(lastPage));
+ check(lang+' context index final page exposes actual records beyond fifty',await page.locator('#findingList > li').count()===total-lastPage*50);
  const target=baseline.findings[total-1];await click(page,'#findingList [data-finding-uid="'+target.uid+'"] .finding-nav');await clean(page);
- check(lang+' exact last finding is selected and current in its open index',await page.evaluate(uid=>S.sel.type==='finding'&&S.data.findings[S.sel.idx].uid===uid&&document.querySelector('#workspaceFindings').open&&document.querySelector('#findingList [aria-current="page"]')?.closest('li').dataset.findingUid===uid,target.uid));
+ check(lang+' exact last finding is selected and current in its open index',await page.evaluate(uid=>S.sel.type==='finding'&&S.data.findings[S.sel.idx].uid===uid&&!document.querySelector('#contextIndex').hidden&&document.querySelector('#contextFindingsTab').getAttribute('aria-pressed')==='true'&&document.querySelector('#findingList [aria-current="page"]')?.closest('li').dataset.findingUid===uid,target.uid));
  check(lang+' selected finding preserves its full accessible title',await page.locator('#findingList [aria-current="page"]').innerText().then(value=>value.includes(target.title)));
  await selectedIndexGeometry(lang,'last finding selection');await screen(page,'finding-selected-'+lang);
- await click(page,'#navHome');await disclosure('workspaceFindings',false);
+ await page.locator('#contextIndexClose').click();await click(page,'#navHome');
  await (await expose(page,'#globalSearch')).fill(target.id);await page.keyboard.press('Enter');await clean(page);
- check(lang+' keyboard search selects the exact record beyond the first index page',await page.evaluate(uid=>S.sel.type==='finding'&&S.data.findings[S.sel.idx].uid===uid&&document.querySelector('#workspaceFindings').open,target.uid));
+ check(lang+' keyboard search selects the exact record beyond the first index page while preserving a closed index',await page.evaluate(uid=>S.sel.type==='finding'&&S.data.findings[S.sel.idx].uid===uid&&document.querySelector('#contextIndex').hidden,target.uid));
+ await click(page,'#workspaceFindings');
  await selectedIndexGeometry(lang,'keyboard search beyond fifty');
  await page.setViewportSize({width:390,height:1000});
- // Close and reopen through the actual toggle even if an earlier responsive
- // traversal left navigation-open set while it was hidden on desktop.
+ // Reopen the contextual index from its toolbar, then observe unassisted geometry.
  if(await page.locator('#sidebarToggle').getAttribute('aria-expanded')==='true')await page.locator('#sidebarToggle').click();
- await sidebarVisible();await selectedIndexGeometry(lang,'mobile reopening');await screen(page,'finding-selected-'+lang+'-390');
- await page.keyboard.press('Escape');check(lang+' mobile Escape closes navigation and returns focus to its toggle',await page.locator('#sidebarToggle').getAttribute('aria-expanded')==='false'&&await page.locator('#sidebarToggle').evaluate(el=>el===document.activeElement));
- await click(page,'#navHome');check(lang+' mobile selection closes navigation and focuses the editor',await page.locator('#sidebarToggle').getAttribute('aria-expanded')==='false'&&await page.locator('#editor').evaluate(el=>el===document.activeElement));
+ await page.locator('#contextIndexClose').click();await page.locator('#contextIndexToggle').click();
+ await selectedIndexGeometry(lang,'mobile reopening');await screen(page,'finding-selected-'+lang+'-390');
+ await page.keyboard.press('Escape');check(lang+' mobile Escape closes the context index and returns focus to its toggle',await page.locator('#contextIndex').isHidden()&&await page.locator('#contextIndexToggle').evaluate(el=>el===document.activeElement));
+ await page.locator('#contextIndexToggle').click();await page.locator('#findingList [aria-current="page"]').click();
+ check(lang+' mobile contextual selection closes its panel and focuses the editor',await page.locator('#contextIndex').isHidden()&&await page.locator('#editor').evaluate(el=>el===document.activeElement));
+ await sidebarVisible();await page.locator('#navHome').focus();await page.keyboard.press('Escape');
+ check(lang+' mobile Escape closes global navigation and returns focus to its toggle',await page.locator('#sidebarToggle').getAttribute('aria-expanded')==='false'&&await page.locator('#sidebarToggle').evaluate(el=>el===document.activeElement));
+ await click(page,'#navHome');check(lang+' mobile route selection closes navigation and focuses the editor',await page.locator('#sidebarToggle').getAttribute('aria-expanded')==='false'&&await page.locator('#editor').evaluate(el=>el===document.activeElement));
  await page.setViewportSize({width:1440,height:1000});
  for(const [route,disclosureId] of [['assets','workspaceResearch'],['root_causes','workspaceFollowup']]){
   await disclosure(disclosureId,false);await workflow(page,route);check(lang+' '+route+' navigation identifies and reveals its selected group',await page.locator('#'+disclosureId).evaluate(el=>el.open)&&await page.locator('[data-workflow="'+route+'"]').getAttribute('aria-current')==='page');await screen(page,'sidebar-'+route+'-'+lang);
  }
  check(lang+' sidebar navigation, themes, filters and keyboard never edit authored data or revision',await snapshot(page)===original);
- results.coverage.push({area:'Sidebar '+lang,mode:'real headed UI',details:'Five grouped regions, data counts, details Enter/Space, current section/finding, bounded indices beyond fifty, filters, keyboard search, dark/light 1440px/390px collapsed/expanded screenshots, labeled controls, mobile focus return and unassisted selected-row geometry in both scrollports plus viewport.'});
+ results.coverage.push({area:'Sidebar '+lang,mode:'real headed UI',details:'Five grouped regions, data counts, three real disclosures with Enter/Space, contextual section/finding launchers, bounded index beyond fifty, filters, keyboard search respecting a closed index, dark/light 1440px/390px collapsed/expanded screenshots, labeled controls, mobile route/context focus return and unassisted selected-row geometry in its sole list scrollport, panel and viewport.'});
 }
 async function compareSamples(lang){
  const original=await snapshot(page);await workflow(page,'history');await page.getByRole('button',{name:{es:'Comparar archivos PDF',en:'Compare PDF files',pt:'Comparar arquivos PDF'}[lang],exact:true}).click();

@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.39.0
+# report-gen 0.40.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -51,7 +51,15 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
 
+## New in 0.40.0
+
+The left sidebar keeps five tool groups. Section and finding lists open in an **Index** beside the editor, with search, finding filters and pages of 50 entries. Close the panel or adjust its width without changing the report. If a filter hides the open item, **Show selection** helps locate it again.
+
+**Order sections** explicitly enables controls for moving them. The normal list retains the project order. On mobile, selecting an entry closes the index; **Escape** returns focus to its button. Index preferences are retained in this browser separately for each workspace and project. [Using the index and navigation](docs/guide.en.md#sidebar-navigation-in-0400).
+
 ## New in 0.39.0
+
+*0.39.0 history: the five-group organization remains; its expandable lists inside the sidebar were replaced by the contextual index in 0.40.0.*
 
 The left sidebar organizes work into five groups: **Project**, **Content**, **Evidence and scope**, **Analysis and follow-up** and **Delivery**. Rows use consistent sizing and spacing. Expandable section and finding indices show their counts and retain pagination for large projects.
 
@@ -135,7 +143,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.39.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.40.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

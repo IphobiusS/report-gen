@@ -2,6 +2,7 @@
  * No fixture-created report bytes: exports and comparisons use report-gen outputs.
  */
 'use strict';
+const {exposeNavigationControl,clickNavigationControl}=require('../tests/browser-navigation.cjs');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),assert=require('node:assert/strict');
 const {spawn,execFileSync}=require('node:child_process'),{createHash}=require('node:crypto'),{isDeepStrictEqual}=require('node:util');
 const root=path.resolve(__dirname,'..'),args=process.argv.slice(2),opt=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
@@ -13,7 +14,7 @@ fs.mkdirSync(out,{recursive:true});
 const workspace=fs.mkdtempSync(path.join(os.tmpdir(),'report-gen-acceptance-0211-horizonte-'));
 fs.writeFileSync(path.join(workspace,'.test-only'),'synthetic acceptance workspace');
 const hash=value=>createHash('sha256').update(value).digest('hex');
-const sourcePaths=['webapp/static/app.js','webapp/static/workbench.js','webapp/static/workflow.js','webapp/static/design-library.js','webapp/static/guide.js','webapp/static/pdf-compare.js','webapp/static/progress.js'];
+const sourcePaths=['tests/browser-navigation.cjs','webapp/static/context-index.js','webapp/static/context-index.css','webapp/static/app.js','webapp/static/workbench.js','webapp/static/workflow.js','webapp/static/design-library.js','webapp/static/guide.js','webapp/static/pdf-compare.js','webapp/static/progress.js'];
 const sourceHashes=()=>Object.fromEntries(sourcePaths.map(name=>[name,hash(fs.readFileSync(path.join(root,name)))]));
 const results={schema:'report-gen-horizonte-browser/1',started:new Date().toISOString(),engine,checks:[],screens:[],downloads:[],pageErrors:[],externalRequests:[],apiErrors:[],sourceStart:sourceHashes(),input:{bundle:path.resolve(bundle),sha256:hash(fs.readFileSync(bundle))},coverage:[],limits:['Only report-gen generates report artifacts. The fixture authors fictional source data.','Browser DOM assertions and screenshots are separate from human visual review.','This exercise does not execute Microsoft Word or assert semantic PDF equivalence.']};
 const save=()=>fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(results,null,2)+'\n');
@@ -21,13 +22,8 @@ function check(name,passed,detail){results.checks.push({name,passed:!!passed,...
 const clean=page=>page.waitForFunction(()=>typeof S!=='undefined'&&!projectStore.loading&&!projectBusyCount&&!projectStore.dirty&&!projectStore.saving&&!document.querySelector('#splash'),null,{timeout:60000});
 const snapshot=page=>page.evaluate(()=>JSON.stringify({data:S.data,revision:projectStore.revision,etag:projectStore.etag,dirty:projectStore.dirty}));
 const data=page=>page.evaluate(()=>JSON.parse(JSON.stringify(S.data)));
-async function expose(page,selector){
- const target=page.locator(selector).first();
- const ancestors=await target.evaluate(el=>{let d=el.parentElement?.closest('details'),list=[];while(d){if(!d.open)list.unshift(d.id||null);d=d.parentElement?.closest('details');}return list;});
- for(const id of ancestors){assert.ok(id,'Disclosure ancestor has a stable ID');await page.locator('#'+id+' > summary').click();}
- return target;
-}
-async function click(page,selector){await (await expose(page,selector)).click();}
+async function expose(page,selector){return exposeNavigationControl(page,selector);}
+async function click(page,selector){await clickNavigationControl(page,selector);}
 async function screen(page,name){await page.evaluate(async()=>{await document.fonts.ready;document.querySelectorAll('dialog[open]').forEach(d=>d.scrollTop=0);window.scrollTo(0,0);});const file=path.join(out,name+'.png');await page.screenshot({path:file,fullPage:false});results.screens.push({name,path:file,sha256:hash(fs.readFileSync(file)),viewport:page.viewportSize()});save();}
 async function download(page,trigger,name,kind='report-gen UI download'){
  const waiting=page.waitForEvent('download',{timeout:180000});await trigger();const value=await waiting;const file=path.join(out,name);await value.saveAs(file);

@@ -22,6 +22,7 @@ async function until(predicate, attempts=150) {
   const w=dom.window;w.fetch=request;w.confirm=()=>true;w.alert=()=>{};
   w.AbortController=AbortController;w.AbortSignal=AbortSignal;
   w.matchMedia=()=>({matches:false});
+  w.ResizeObserver=class{observe(){}disconnect(){}};
   // JSDOM has no layout: model the desktop preview pane's visibility rather
   // than treating its default empty rect list as a real hidden browser pane.
   w.innerWidth=1512;
@@ -35,7 +36,7 @@ async function until(predicate, attempts=150) {
   w.HTMLAnchorElement.prototype.click=function(){downloads.push(this.download);};
   w.URL.createObjectURL=()=> 'blob:report-test';w.URL.revokeObjectURL=()=>{};
   const sources=[];
-  for(const name of ['cvss40.js','drafts.js','save-manager.js','workflow.js','experience.js','design-library.js','backup-routine.js','workspace.js','progress.js','workbench.js','studio.js','annexes.js','transport.js','cvss31.js','cvss-editor.js','preview-controller.js','app.js']) {
+  for(const [,name] of fs.readFileSync(path.join(root,'webapp/static/index.html'),'utf8').matchAll(/<script src="\/static\/([^"/]+)"/g)) {
     let source=fs.readFileSync(path.join(root,'webapp/static',name),'utf8');
     if(name==='app.js')source+='\nwindow.qa={S,projectStore,scheduleSave,doSave,loadProject,exportFile,runValidation,WorkflowUI,select,renderMain,ensureFindingIds,saveToLibrary,renderPdf,refreshLivePreview,setPreviewMode};';
     sources.push(source);

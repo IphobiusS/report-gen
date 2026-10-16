@@ -75,6 +75,7 @@ function setPreviewVisible(vis) {
   // el botón "Actualizar preview" no aplica cuando está oculto
   const pv = $("#previewBtn"); if (pv) pv.style.display = vis ? "" : "none";
   try { localStorage.setItem("rg.previewVisible", vis ? "1" : "0"); } catch (_) { /* sin storage */ }
+  if(typeof ContextIndexUI!=="undefined")ContextIndexUI.update();
   if (vis && S.previewMode === "live") refreshLivePreview();
 }
 

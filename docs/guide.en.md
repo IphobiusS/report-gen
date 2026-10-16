@@ -1,4 +1,4 @@
-# report-gen 0.39.0 user guide
+# report-gen 0.40.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Português (Brasil)](guide.pt.md) · [Changelog](../CHANGELOG.md)
 
@@ -80,27 +80,33 @@ The default WeasyPrint PDF export detects characters lacking a glyph in availabl
 
 On pages with custom font maps or right-to-left text, the reader recovers a line-ending ASCII hyphen only when the PDF’s explicit codes and maps and a second reader agree character by character. A soft hyphen, unsupported map or divergent reading can still be ambiguous. If this specific error appears, delivery stops without replacing the previous file: adjust that line break or use another format and review the result. The verifier does not invent a missing character.
 
-The sidebar groups capture/coverage and history/follow-up tools in expandable sections. Direct navigation to one of their pages expands the group to show your location. **More project tools** on Overview contains less frequent controls; existing functions and data remain available.
+**More project tools** on Overview contains less frequent controls. Global tools and the content index are described below.
 
-## Sidebar navigation in 0.39.0
+<a id="sidebar-navigation-in-0390"></a>
 
-The left sidebar follows the working sequence. Its five groups use consistent rows, subtle separators and a marker for the group containing the current selection.
+## Sidebar navigation in 0.40.0
+
+The left sidebar contains five stable tool groups. Content lists live in a separate **Index** beside the editor, so browsing a long list does not lengthen global navigation.
 
 | Group | Contents |
 | --- | --- |
 | **01 Project** | Overview and general report details. |
-| **02 Content** | Findings board and expandable section and finding indices. |
-| **03 Evidence and scope** | Evidence; **Capture and coverage** opens the capture inbox, assets and coverage. |
+| **02 Content** | **Findings** opens the board; **Report sections** and **Finding list** open the corresponding index. |
+| **03 Evidence and scope** | Evidence, capture inbox, assets and coverage. |
 | **04 Analysis and follow-up** | Root causes, remediation tasks, remediation and retest, changes since delivery, retest matrix and versions. |
 | **05 Delivery** | Delivery review, project backup and **Tools**. |
 
-Index counters reflect the whole project. The finding list retains pages of 50 entries. For large projects, the index scrolls independently so other tools remain accessible. Opening a finding or section from elsewhere expands its index and reveals the selected row within both scroll containers. This adjustment does not move focus or scroll the editor; navigating to content retains its usual behavior.
+In the report, section, finding and board views, use **Index** to open the panel and **Close index** to collapse it. Its **Sections** and **Findings** tabs switch the list without changing the open item. Search by ID or title and filter findings by **Severity** or **Type**. The list preserves project order and displays up to 50 entries per page. Searching, filtering or changing pages does not reorder or edit the report.
 
-Chevrons identify expandable groups. Use a click, **Enter** or **Space** to open or close them. Background refreshes preserve a manually collapsed group and manual scrolling; choosing another destination or reopening mobile navigation reveals the selection again. Indices remain available on Overview and the findings board. Actions requiring a project become enabled when one is opened.
+If a filter excludes the current selection, the panel explains this and offers **Show selection**. The open item stays in the editor until you choose another. Each list scrolls within the panel; it is no longer nested inside a global-sidebar list.
 
-**Delivery → Tools** contains **Report design library**, **Workspace backup**, **Stored private data**, **Check installation**, **Update report-gen** and, on desktop, **Evidence and decisions**. On mobile, the latter remains under **More**; **Visual tutorial** also remains under **More**. Project backup retains its direct entry, separate from workspace backup.
+To change section order, enable **Order sections**, use **Move** on the relevant row and choose its destination position. You can undo that change; **Finish ordering** returns to normal navigation. Normal rows cannot be dragged. To move findings, open the **Findings** board, select **Manual** order and use its **Move** action. These moves change project order; index filters do not.
 
-On mobile, open **Navigation**. Choosing a destination closes the sidebar and focuses content; **Escape** closes it and restores focus to its trigger. An open dialog retains its focus, including the section **Move** dialog. The hierarchy is available in Spanish, English and Brazilian Portuguese, in light and dark themes. Changing interface language does not rewrite the report.
+On desktop, **Index width** adjusts the panel from 220 to 420 pixels in steps of 20. Use arrow keys to adjust the control, **Home** for the minimum and **End** for the maximum. Open state, width, tab, searches, filters and page are retained in this browser separately for each workspace and project; they are not written into report content. On smaller screens, the width adapts automatically. If the index leaves too little room for the preview, close it or use **Show preview** to recover that space.
+
+**Delivery → Tools** contains **Report design library**, **Workspace backup**, **Stored private data**, **Check installation**, **Update report-gen** and, on desktop, **Evidence and decisions**. On mobile, the latter remains under **More**; **Visual tutorial** also remains under **More**. Project backup stays separate from workspace backup.
+
+On mobile, **Navigation** opens the global sidebar. The index has its own button; selecting an entry closes it and focuses the content. **Escape** closes the open panel and returns focus to its button. An overlaid dialog retains its own focus handling. Labels and controls are available in Spanish, English and Brazilian Portuguese, in light and dark themes; changing interface language does not translate authored content.
 
 ## Organize multiple projects
 
@@ -192,11 +198,11 @@ Extension installation failed with **Ubuntu's LibreOffice 24.2.7.2 packages**, e
 Build the OXT from the downloaded report-gen source without installing it:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.39.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.40.0.oxt
 ```
 
 1. In the chosen LibreOffice installation, open **Tools → Extensions → Add**. Some versions call it **Extension Manager**.
-2. Select `report-gen-libreoffice-0.39.0.oxt` and install it for your user.
+2. Select `report-gen-libreoffice-0.40.0.oxt` and install it for your user.
 3. Close every window of that LibreOffice installation, reopen it and open a copy of the DOCX freshly exported by report-gen.
 4. Inspect its URLs, lists and tables after opening, editing and saving it. To remove the extension, disable or remove it in the same manager and restart LibreOffice.
 

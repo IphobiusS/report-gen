@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.39.0
+# report-gen 0.40.0
 
 <a id="qué-es"></a>
 
@@ -61,7 +61,15 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
+## Novedades de 0.40.0
+
+La barra izquierda mantiene cinco grupos de herramientas. Las listas de secciones y hallazgos se abren en un **Índice** junto al editor, con búsqueda, filtros de hallazgos y páginas de 50 entradas. Puedes cerrar el panel o ajustar su ancho sin cambiar el informe. Si un filtro oculta la ficha abierta, **Mostrar selección** permite localizarla de nuevo.
+
+**Ordenar secciones** activa los controles para moverlas de forma explícita. La lista normal conserva el orden del proyecto. En móvil, el índice se cierra al elegir una entrada; **Escape** devuelve el foco a su botón. Las preferencias del índice se conservan en este navegador por espacio de trabajo y proyecto. [Uso del índice y navegación](docs/guide.es.md#navegación-lateral-en-0400).
+
 ## Novedades de 0.39.0
+
+*Historial de 0.39.0: la organización de cinco grupos se conserva; sus listas desplegables dentro de la barra fueron sustituidas por el índice contextual en 0.40.0.*
 
 La barra izquierda organiza el trabajo en cinco grupos: **Proyecto**, **Contenido**, **Evidencia y alcance**, **Análisis y seguimiento** y **Entrega**. Las filas mantienen un tamaño y espaciado coherentes; los índices desplegables de secciones y hallazgos muestran sus cantidades y conservan la paginación de proyectos extensos.
 
@@ -150,7 +158,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.39.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.40.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

@@ -3,7 +3,7 @@ name: Capture localized tutorial
 on:
   workflow_dispatch:
   push:
-    branches: [feature/portuguese-r16]
+    branches: [feature/portuguese-r16, feature/context-index-0400]
 
 permissions:
   contents: read

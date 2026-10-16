@@ -4,6 +4,40 @@ on:
   pull_request:
   workflow_dispatch:
 jobs:
+  context_index:
+    name: Contextual index (${{ matrix.browser }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+    env:
+      RG_PYTHON: python
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+      - run: sudo apt-get update && sudo apt-get install -y xvfb libpango-1.0-0 libpangocairo-1.0-0
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Build the extensive localized Atlas input fixture
+        run: python scripts/build-atlas-case.py --output "$RUNNER_TEMP/ux0400-case"
+      - name: Exercise contextual navigation with real keyboard, pointer and responsive layout
+        run: xvfb-run -a node scripts/audit-context-index-0400.cjs --projects "$RUNNER_TEMP/ux0400-case/projects" --output out/context-index-0400-${{ matrix.browser }} --browser ${{ matrix.browser }} --headed
+      - name: Preserve exact navigation checks and real screenshots
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: context-index-0400-${{ matrix.browser }}-${{ github.sha }}
+          path: out/context-index-0400-${{ matrix.browser }}/
+          if-no-files-found: error
+          retention-days: 14
   browser:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
