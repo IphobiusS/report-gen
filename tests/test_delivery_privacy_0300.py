@@ -48,8 +48,15 @@ def test_real_delivery_zip_excludes_private_warning_payloads(tmp_path, language,
     dump_yaml(data, source / 'engagement.yaml')
     before = (source / 'engagement.yaml').read_bytes()
     private_review = workflows.preflight(data, source, language)
-    assert 'EXCLUDED_ANNEX_CANARY_030' in json.dumps(private_review)
-    assert 'NEEDLE_ONLY_CANARY_030' in json.dumps(private_review)
+    diagnostic_text = json.dumps(private_review)
+    # Actual author content is checked before redaction and must still produce
+    # private diagnostics for the real delivery sanitizer to remove.
+    for marker in ('EXCLUDED_ANNEX_CANARY_030', 'SOURCE_TEXT_CANARY_030', 'BATCH_OWNER_CANARY_030'):
+        assert marker in diagnostic_text
+    # An unused redaction needle is private configuration, never report prose
+    # requiring an editorial placeholder warning. It remains a ZIP canary.
+    assert 'NEEDLE_ONLY_CANARY_030' not in diagnostic_text
+    assert not any(row['path'].startswith(('publication.', 'remediation_exchanges.')) for row in private_review)
     if profile:
         captured = audience.capture(data, source, tmp_path / 'snapshot', {'profile': profile})
         build = audience.build

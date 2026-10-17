@@ -11,7 +11,28 @@ const results={checks:[],pageErrors:[],externalRequests:[]},save=()=>fs.writeFil
 function check(name,passed,detail){results.checks.push({name,passed:!!passed,...(detail===undefined?{}:{detail})});save();assert.ok(passed,name);console.log('PASS '+name);}
 const server=spawn(process.env.RG_PYTHON||'python',[path.join(root,'scripts/browser-server-0211.py'),'--workspace',workspace],{cwd:root,env:{...process.env,PYTHONPATH:root+path.delimiter+path.join(root,'webapp')}});
 server.stderr.on('data',value=>fs.appendFileSync(path.join(out,'server.log'),value));
+// Keep an independent, explicit contract: every outcome stays visible even when
+// its count is zero, including the three per-instance aggregates added in 0.42.
+const outcomeLabels={
+ fixed:['Corregido','Fixed','Corrigido'],
+ open:['Sigue abierto','Still open','Continua aberto'],
+ partial:['Corrección parcial','Partially fixed','Correção parcial'],
+ not_verified:['No verificable','Not verifiable','Não verificável'],
+ not_run:['Sin observaciones registradas','No recorded observations','Sem observações registradas'],
+ undated:['Sin fecha válida para ordenar','No valid date for ordering','Sem data válida para ordenar'],
+ invalid_result:['Resultado no reconocido','Unrecognized result','Resultado não reconhecido'],
+ instances_fixed:['Todas las instancias verificadas','All instances verified fixed','Todas as instâncias verificadas'],
+ instances_partial:['Instancias con correcciones pendientes','Instances with outstanding fixes','Instâncias com correções pendentes'],
+ instances_pending:['Instancias sin corrección verificada','Instances without a verified fix','Instâncias sem correção verificada'],
+};
+const fixtureCounts={fixed:1,open:1,partial:1,not_run:1,undated:1};
 let timer,browser,page;
+async function checkChart(name,counts,lang='es'){
+ const language=['es','en','pt'].indexOf(lang);assert.notEqual(language,-1,'Known chart language');
+ const expected=Object.keys(outcomeLabels).sort().map(key=>({key,text:outcomeLabels[key][language]+': '+(counts[key]||0)}));
+ const actual=await page.locator('[data-retest-result-count]').evaluateAll(elements=>elements.map(element=>({key:element.dataset.retestResultCount,text:element.textContent})).sort((a,b)=>a.key<b.key?-1:a.key>b.key?1:0));
+ check(name,await page.locator('[data-retest-chart]').count()===1&&JSON.stringify(actual)===JSON.stringify(expected),{expected,actual});
+}
 (async()=>{try{
  const base=await new Promise((resolve,reject)=>{let text='';timer=setTimeout(()=>reject(Error('Server timeout')),20000);server.stdout.on('data',value=>{text+=value;for(const line of text.split('\n'))try{const parsed=JSON.parse(line);if(parsed.url){clearTimeout(timer);resolve(parsed.url);}}catch{}});server.on('exit',code=>reject(Error('Server exited '+code)));});
  browser=await chromium.launch({headless:true,executablePath:process.env.REPORT_GEN_CHROMIUM||process.env.RG_CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox']});results.browser=browser.version();
@@ -41,13 +62,17 @@ let timer,browser,page;
  await page.locator('[data-retest-matrix]').waitFor();await page.waitForFunction(()=>!projectStore.loading&&!projectStore.dirty&&!projectBusyCount);
  const original=await page.evaluate(()=>({json:JSON.stringify(S.data),revision:projectStore.revision,etag:projectStore.etag})),beforeWrites=writes;
  check('Matrix shows five source findings with independent status, verification and outcome',await page.locator('[data-retest-row]').count()===5&&await page.evaluate(()=>{const rows=[...document.querySelectorAll('[data-retest-row]')];return rows[0].textContent.includes('Corrección comunicada')&&rows[0].textContent.includes('Sin verificar')&&rows[0].textContent.includes('Sin observaciones registradas')&&rows[1].dataset.retestOutcome==='open'&&rows[2].dataset.retestOutcome==='partial'&&rows[4].textContent.includes('Sin verificación registrada');}));
- check('Executive graph has complete numeric text for every outcome including zero counts',await page.locator('[data-retest-chart]').count()===1&&await page.locator('[data-retest-result-count]').count()===7&&await page.locator('[data-retest-result-count="fixed"]').textContent()==='Corregido: 1'&&await page.locator('[data-retest-result-count="not_run"]').textContent()==='Sin observaciones registradas: 1');
+ await checkChart('Executive graph has exact numeric text for all ten outcomes including zero counts',fixtureCounts);
  check('Matrix is a semantic table with caption and six scoped column headers',await page.locator('.rm-table caption').textContent()==='Matriz de retest del proyecto guardado'&&await page.locator('.rm-table thead th[scope="col"]').count()===6&&await page.locator('.rm-table tbody th[scope="row"]').count()===5);
  check('Verified-fixed contradiction and fixed-without-evidence remain visible',await page.locator('[data-retest-row="finding:1"]').textContent().then(text=>text.includes('último resultado fechado no es'))&&await page.locator('[data-retest-row="finding:3"]').textContent().then(text=>text.includes('sin evidencia del retest vinculada')));
  await page.locator('[data-retest-filter="status"]').selectOption('reported_fixed');check('Tracking-status filter does not turn a reported fix into a fixed observation',await page.locator('[data-retest-row]').count()===1&&await page.locator('[data-retest-result-count="fixed"]').textContent()==='Corregido: 0');
+ await checkChart('Tracking-status filter preserves every outcome and its exact count',{not_run:1});
  await page.locator('[data-retest-filter="status"]').selectOption('');await page.locator('[data-retest-filter="severity"]').selectOption('high');check('Severity filter counts actual source severities',await page.locator('[data-retest-row]').count()===2);
+ await checkChart('Severity filter reports exact outcome counts',{open:1,not_run:1});
  await page.locator('[data-retest-filter="severity"]').selectOption('');const asset=await page.evaluate(()=>S.data.assets[0].uid);await page.locator('[data-retest-filter="asset"]').selectOption(asset);check('Asset filter follows explicit linked UID instead of affected prose',await page.locator('[data-retest-row]').count()===2);
+ await checkChart('Asset filter reports exact outcome counts',{partial:1,not_run:1});
  await page.locator('[data-retest-filter="outcome"]').selectOption('open');check('Combined filters have an honest empty state',await page.locator('[data-retest-row]').count()===0&&await page.locator('[data-retest-empty]').count()===1);
+ await checkChart('Empty combined filter keeps all ten outcomes with zero counts',{});
  await page.locator('[data-retest-filter="asset"]').selectOption('');await page.locator('[data-retest-filter="outcome"]').selectOption('');
  await page.getByText('Cobertura registrada y límites de esta vista',{exact:true}).click();check('Coverage displays blocked records without a completion percentage or certification',await page.locator('.rm-scope').textContent().then(text=>text.includes('Bloqueada: 1')&&text.includes('Realizada: 0')&&text.includes('no certifica')&&text.includes('no se añade a PDF')&&!text.includes('%')));
  check('Reading and filtering never issue writes or change report inclusion, saved data or revision',writes===beforeWrites&&await page.evaluate(before=>JSON.stringify(S.data)===before.json&&projectStore.revision===before.revision&&projectStore.etag===before.etag&&S.data.report.workflow.include_retest===false,original));
@@ -76,9 +101,10 @@ let timer,browser,page;
  const busyReads=matrixReads,busyWrites=writes;await page.evaluate(()=>{busyProject(true);select('workflow','retest_matrix');});
  await page.locator('[data-retest-stale]').waitFor({state:'visible'});check('A busy project cannot request or install a matrix snapshot',matrixReads===busyReads&&writes===busyWrites&&await page.locator('[data-retest-matrix]').count()===0);await page.evaluate(()=>busyProject(false));
  const matrixStates=[];
- for(const lang of ['es','en'])for(const theme of ['dark','light'])for(const width of [320,1366])for(const growth of [1,2]){
+ for(const lang of ['es','en','pt'])for(const theme of ['dark','light'])for(const width of [320,1366])for(const growth of [1,2]){
    await page.setViewportSize({width,height:1000});await page.evaluate(({lang,theme})=>{document.querySelectorAll('[data-matrix-test-growth]').forEach(element=>{element.style.removeProperty('font-size');element.removeAttribute('data-matrix-test-growth');});setUiLang(lang);applyUiTheme(theme);select('workflow','retest_matrix');},{lang,theme});
    await page.locator('[data-retest-matrix]').waitFor();
+   await checkChart('Exact translated outcome labels and counts '+[lang,theme,width,growth*100+'%'].join('/'),fixtureCounts,lang);
    const sizes=await page.evaluate(growth=>{const node=document.querySelector('[data-retest-matrix]'),before=parseFloat(getComputedStyle(node).fontSize);if(growth===2){const elements=[...document.querySelectorAll('*')].filter(element=>element instanceof HTMLElement).map(element=>[element,parseFloat(getComputedStyle(element).fontSize)]);for(const [element,size]of elements){element.style.fontSize=size*2+'px';element.setAttribute('data-matrix-test-growth','');}}return {before,after:parseFloat(getComputedStyle(node).fontSize)};},growth);
    const layout=await page.evaluate(()=>({viewport:innerWidth,page:document.documentElement.scrollWidth,controls:[...document.querySelectorAll('[data-retest-filter]')].map(element=>({width:element.getBoundingClientRect().width,left:element.getBoundingClientRect().left,right:element.getBoundingClientRect().right})),rows:document.querySelectorAll('[data-retest-row]').length,caption:document.querySelector('.rm-table caption').textContent,captionWidth:document.querySelector('.rm-table caption').getBoundingClientRect().width,tableWidth:document.querySelector('.rm-table').getBoundingClientRect().width}));
    // DevTools audit instrumentation preserves the app's real CSP; it does not

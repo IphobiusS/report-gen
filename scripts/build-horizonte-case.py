@@ -413,9 +413,10 @@ def add_annexes(directory, data):
 def write_import_inputs(directory):
     """All input formats are manufactured and validated offline by report-gen."""
     directory.mkdir(parents=True, exist_ok=True)
+    # Duplicate source identity requires the same external ID and target.
     csv_input = csv_bytes(['title', 'severity', 'affected', 'description_md', 'impact_md', 'remediation_md', 'external_id'], [
         ['Entrada CSV de contrato de soporte [SIMULADA]', 'low', 'https://soporte.horizonte.example/csv', 'Fila sintética con coma, acentos y salto\nde línea para comprobar importación.', 'No describe una exposición real.', 'Revisar contrato ficticio.', 'BHA-CSV-01'],
-        ['Entrada CSV de contrato de soporte [SIMULADA]', 'low', 'https://soporte.horizonte.example/csv', 'Duplicado deliberado de identidad para la vista previa.', 'No describe una exposición real.', 'Revisar contrato ficticio.', 'BHA-CSV-DUP']])
+        ['Entrada CSV de contrato de soporte [SIMULADA]', 'low', 'https://soporte.horizonte.example/csv', 'Duplicado deliberado de identidad para la vista previa.', 'No describe una exposición real.', 'Revisar contrato ficticio.', 'BHA-CSV-01']])
     burp = '''<?xml version="1.0" encoding="UTF-8"?>
 <issues burpVersion="synthetic"><issue><serialNumber>BHA-BURP-01</serialNumber><name>Respuesta de soporte [SIMULADA]</name><host>https://soporte.horizonte.example</host><path>/burp</path><severity>Information</severity><confidence>Tentative</confidence><issueBackground>Archivo ficticio creado para probar un importador.</issueBackground><issueDetail>Sin peticiones realizadas.</issueDetail><remediationBackground>Revisar manualmente antes de publicar.</remediationBackground><references>&lt;a href="https://docs.horizonte.example/import/burp"&gt;Referencia ficticia&lt;/a&gt;</references><requestresponse><request>GET /burp HTTP/1.1
 Host: soporte.horizonte.example

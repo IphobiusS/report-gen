@@ -171,8 +171,15 @@ def test_moving_image_between_steps_without_commands_is_detected(tmp_path,fmt):
     data['findings'][0]['walkthrough']=[{'text_md':'Contexto del paso alfa.', 'figure':{'src':'img/e1.png','caption':'Primera captura'}}, {'text_md':'Contexto del paso beta.', 'figure':{'src':'img/e2.png','caption':'Segunda captura'}}]
     data['findings'][1]['walkthrough']=[]
     out,c=prepare(tmp_path,fmt,data);delivery.inspect_export(out,fmt,c)
+    before=export_contract.profile(out,fmt,c['contract'])['F01']
     if fmt=='html':
-        tree=html.document_fromstring(out.read_text());figs=tree.get_element_by_id('F01').xpath('.//figure');figs[1].addprevious(figs[0]);out.write_text(html.tostring(tree,encoding='unicode'))
+        tree=html.document_fromstring(out.read_text())
+        images=tree.get_element_by_id('F01').xpath('.//figure/img')
+        # Move only the image into the other step. Moving the entire figure
+        # also moves its caption paragraph, which correctly fails the prose
+        # contract before this evidence-association regression is exercised.
+        images[1].addprevious(images[0])
+        out.write_text(html.tostring(tree,encoding='unicode'))
     elif fmt=='md':
         def change(blob):
             text=blob.decode();start=text.index('![Primera captura]');end=text.index('\n',start);image=text[start:end];text=text[:start]+text[end:];return text.replace('![Segunda captura]',image+'\n\n![Segunda captura]',1).encode()
@@ -181,4 +188,15 @@ def test_moving_image_between_steps_without_commands_is_detected(tmp_path,fmt):
         def change(blob):
             tree=etree.fromstring(blob);paras=tree.xpath('//w:p[w:r/w:drawing]',namespaces=export_contract.NS);paras[-1].addprevious(paras[-2]);return etree.tostring(tree)
         edit_zip(out,'word/document.xml',change)
-    with pytest.raises(ValueError,match='evidencia'):delivery.inspect_export(out,fmt,c)
+    after=export_contract.profile(out,fmt,c['contract'])['F01']
+    def prose(profile):
+        # Word contributes empty drawing paragraphs; Markdown contributes the
+        # moved image's alt label as an image-only paragraph. Neither is
+        # standalone prose. Numbered caption paragraphs stay in this check.
+        image_labels={row['caption'] for row in profile['semantic']['images']} if fmt=='md' else set()
+        return [text for text in profile['paragraphs'] if text and text not in image_labels]
+    assert prose(after)==prose(before)
+    assert [row['sha256'] for row in after['semantic']['images']]==[row['sha256'] for row in before['semantic']['images']]
+    assert after['semantic']['images']!=before['semantic']['images']
+    with pytest.raises(ValueError,match='evidencia') as rejected:delivery.inspect_export(out,fmt,c)
+    assert any(row['code']=='export.evidence.changed' for row in rejected.value.diagnostics)

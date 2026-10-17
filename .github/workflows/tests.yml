@@ -165,33 +165,45 @@ jobs:
           node -e "process.stdout.write('REPORT_GEN_CHROMIUM=' + require('playwright').chromium.executablePath() + '\n')" >> "$GITHUB_ENV"
       - name: Editor journeys and client contracts
         run: |
-          npm run test:workspace
-          npm run test:editor
-          npm run test:daily
-          npm run test:delivery
-          npm run test:finding
-          npm run test:diff
-          npm run test:matrix
-          npm run test:language
-          npm run test:ui-geometry
-          npm run test:first-use
-          npm run test:first-use-browser
-          npm run test:design-selection
-          npm run test:project-gallery
-          npm run test:tutorial
-          npm run test:pending-recovery
-          npm run test:scanner-imports
-          npm run test:private-tools
-          npm run test:root-causes
-          npm run test:remediation-tasks
-          npm run test:grouped-transfer
-          npm run test:project-catalog
-          npm run test:remediation-return
-          npm run test:workspace-isolation
-          npm run test:bulk-workbench
-          npm run test:remediation-delivery
-          npm run test:guided-update
-          npm run test:backup-routine
+          editor_contract_failed=0
+          run_editor_contract() {
+            printf 'RUN: %s\n' "$*"
+            if "$@"; then
+              printf 'PASS: %s\n' "$*"
+            else
+              editor_contract_status=$?
+              printf 'FAIL (exit %s): %s\n' "$editor_contract_status" "$*"
+              editor_contract_failed=1
+            fi
+          }
+          run_editor_contract npm run test:workspace
+          run_editor_contract npm run test:editor
+          run_editor_contract npm run test:daily
+          run_editor_contract npm run test:delivery
+          run_editor_contract npm run test:finding
+          run_editor_contract npm run test:diff
+          run_editor_contract npm run test:matrix
+          run_editor_contract npm run test:language
+          run_editor_contract npm run test:ui-geometry
+          run_editor_contract npm run test:first-use
+          run_editor_contract npm run test:first-use-browser
+          run_editor_contract npm run test:design-selection
+          run_editor_contract npm run test:project-gallery
+          run_editor_contract npm run test:tutorial
+          run_editor_contract npm run test:pending-recovery
+          run_editor_contract npm run test:scanner-imports
+          run_editor_contract npm run test:private-tools
+          run_editor_contract npm run test:root-causes
+          run_editor_contract npm run test:remediation-tasks
+          run_editor_contract npm run test:grouped-transfer
+          run_editor_contract npm run test:project-catalog
+          run_editor_contract npm run test:remediation-return
+          run_editor_contract npm run test:workspace-isolation
+          run_editor_contract npm run test:bulk-workbench
+          run_editor_contract npm run test:remediation-delivery
+          run_editor_contract npm run test:guided-update
+          run_editor_contract npm run test:backup-routine
+          exit "$editor_contract_failed"
       - name: Compare all four formats with a complete synthetic case
         run: python scripts/audit-exports-0210.py --output out/export-acceptance
       - name: Export evidence
