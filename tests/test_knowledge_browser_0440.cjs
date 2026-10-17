@@ -45,8 +45,8 @@ async function createFixture(target,uiLang,reportLang){await target.evaluate(asy
   for(const [uiLang,reportLang] of [['es','en'],['en','pt'],['pt','es']]){
     const visit=await launch(uiLang);page=visit.page;await createFixture(page,uiLang,reportLang);
     const original=await snapshot(page),writes=[];page.on('request',request=>{if(!['GET','HEAD'].includes(request.method()))writes.push({method:request.method(),url:request.url()});});
-    if(!await page.locator('#contextIndex').isVisible())await page.locator('#contextIndexToggle').click();
-    await page.locator('#contextFindingsTab').click();
+    await page.locator('#workspaceFindings').click();
+    await page.locator('#contextIndex').waitFor({state:'visible'});
     if(!await page.locator('#contextIndexActions').evaluate(node=>node.open))await page.locator('#contextIndexActions>summary').click();
     await page.locator('#libBtn').click();await page.locator('[data-library-tab="personal"]').waitFor();
     check(uiLang+' existing personal library remains the initial tab',await page.locator('[data-library-tab="personal"]').getAttribute('aria-selected')==='true'&&await page.locator('[data-knowledge-catalog]').count()===0);
