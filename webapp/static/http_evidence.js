@@ -112,22 +112,44 @@ const HttpEvidenceUI=(()=>{
   const d=dialog(w('Comparar evidencia HTTP','Compare HTTP evidence','Comparar evidência HTTP')),state={slug:S.slug,workspace:S.workspace_id};
   const options=()=>rows().map(r=>h('option',{value:r.uid},r.title+' · '+r.original.identity));
   const a=h('select',{'aria-label':'A'},options()),b=h('select',{'aria-label':'B'},options());b.selectedIndex=1;
+  let generation=0;
   const result=h('div',{}),run=button(w('Comparar A → B','Compare A → B','Comparar A → B'),async()=>{
-   run.disabled=true;d.error.textContent='';try{
+   const token=++generation,left=a.value,right=b.value,current=()=>d.el.isConnected&&token===generation&&a.value===left&&b.value===right;
+   run.disabled=true;d.error.textContent='';result.replaceChildren();try{
     if(!await doSave()||state.slug!==S.slug||state.workspace!==S.workspace_id)throw Error(errorText());
-    const tag=projectStore.etag,params=new URLSearchParams({left:a.value,right:b.value,revision:tag});
+    if(!current())return;
+    const tag=projectStore.etag,params=new URLSearchParams({left,right,revision:tag});
     const response=await requireOk(await appFetch('/api/projects/'+encodeURIComponent(state.slug)+'/http-evidence/compare?'+params));const data=await response.json();
+    if(!current())return;
     if(state.slug!==S.slug||state.workspace!==S.workspace_id||tag!==projectStore.etag||projectStore.dirty)throw Error(errorText());
     result.replaceChildren();for(const key of ['request','response'])result.append(h('h3',{},w(...words[key])),h('pre',{class:'http-wire'},data[key].truncated?w('Comparación extensa: revisa ambos originales en sus fichas.','Large comparison: review both originals in their records.','Comparação extensa: revise os dois originais em suas fichas.'):data[key].equal?w('Sin diferencias','No differences','Sem diferenças'):data[key].diff));
-   }catch(e){d.error.textContent=e.message;}finally{run.disabled=false;}
-  },true);d.content.append(h('p',{},w('Compara roles o antes/después. Las diferencias no determinan por sí solas una vulnerabilidad o corrección.','Compare roles or before/after. Differences alone do not establish a vulnerability or a fix.','Compare funções ou antes/depois. Diferenças isoladas não comprovam uma vulnerabilidade ou correção.')),h('div',{class:'http-grid'},a,b),run,result);
+   }catch(e){if(current())d.error.textContent=e.message;}finally{run.disabled=false;}
+  },true);for(const selector of [a,b])selector.addEventListener('change',()=>{generation++;result.replaceChildren();d.error.textContent='';});d.content.append(h('p',{},w('Compara roles o antes/después. Las diferencias no determinan por sí solas una vulnerabilidad o corrección.','Compare roles or before/after. Differences alone do not establish a vulnerability or a fix.','Compare funções ou antes/depois. Diferenças isoladas não comprovam uma vulnerabilidade ou correção.')),h('div',{class:'http-grid'},a,b),run,result);
  }
  function importHar(){
-  const d=dialog(w('Importar selección HAR','Import selected HAR entries','Importar entradas HAR selecionadas')),state={slug:S.slug,workspace:S.workspace_id},list=h('div',{class:'http-har-list'}),selected=new Set();let har=null;
+  const d=dialog(w('Importar selección HAR','Import selected HAR entries','Importar entradas HAR selecionadas')),state={slug:S.slug,workspace:S.workspace_id},form=h('fieldset',{class:'http-har-form'}),list=h('div',{class:'http-har-list'}),selected=new Set();let har=null,generation=0,importing=false;
   const file=h('input',{type:'file',accept:'.har,.json,application/json','aria-label':'HAR (4 MiB / 100 entries)'});
-  const apply=button(w('Importar entradas seleccionadas','Import selected entries','Importar entradas selecionadas'),async()=>{apply.disabled=true;try{await mutate(state,'/har',{har,indices:[...selected]});d.el.close();}catch(e){d.error.textContent=e.message;}finally{apply.disabled=!selected.size;}},true,{'data-http-har-import':'',disabled:''});
-  file.addEventListener('change',async()=>{har=null;selected.clear();list.replaceChildren();apply.disabled=true;d.error.textContent='';try{const f=file.files[0];if(!f)return;if(f.size>4*1024*1024)throw Error(w('Máximo 4 MiB.','Maximum 4 MiB.','Máximo de 4 MiB.'));har=JSON.parse(await f.text());const result=await mutate(state,'/har-preview',{har});for(const entry of result.entries){const check=h('input',{type:'checkbox',onchange:()=>{if(check.checked)selected.add(entry.index);else selected.delete(entry.index);apply.disabled=!selected.size;}});list.append(h('label',{class:'wf-check'},check,entry.method+' '+entry.url+' · '+(entry.status||'—')));}}catch(e){har=null;d.error.textContent=e.message;}});
-  d.content.append(h('p',{},w('Máximo 4 MiB, 100 entradas y 256 KiB por cuerpo. Solo se importan las entradas que marques; permanecen privadas.','Maximum 4 MiB, 100 entries and 256 KiB per body. Only checked entries are imported; they remain private.','Máximo de 4 MiB, 100 entradas e 256 KiB por corpo. Somente as entradas marcadas são importadas; permanecem privadas.')),file,list,apply);
+  const current=token=>d.el.isConnected&&token===generation&&state.slug===S.slug&&state.workspace===S.workspace_id;
+  const apply=button(w('Importar entradas seleccionadas','Import selected entries','Importar entradas selecionadas'),async()=>{
+   if(importing||!har||!selected.size)return;
+   importing=true;form.disabled=true;d.close.disabled=true;apply.disabled=true;d.error.textContent='';
+   const payload={har,indices:[...selected]};
+   try{await mutate(state,'/har',payload);d.el.close();}catch(e){if(d.el.isConnected)d.error.textContent=e.message;}
+   finally{importing=false;form.disabled=false;d.close.disabled=false;apply.disabled=!har||!selected.size;}
+  },true,{'data-http-har-import':'',disabled:''});
+  d.el.addEventListener('cancel',event=>{if(importing)event.preventDefault();});
+  file.addEventListener('change',async()=>{
+   if(importing)return;
+   const token=++generation;har=null;selected.clear();list.replaceChildren();apply.disabled=true;d.error.textContent='';
+   try{
+    const f=file.files[0];if(!f)return;if(f.size>4*1024*1024)throw Error(w('Máximo 4 MiB.','Maximum 4 MiB.','Máximo de 4 MiB.'));
+    const candidate=JSON.parse(await f.text());if(!current(token))return;
+    const result=await mutate(state,'/har-preview',{har:candidate});if(!current(token))return;
+    har=candidate;
+    for(const entry of result.entries){const check=h('input',{type:'checkbox',onchange:()=>{if(importing)return;if(check.checked)selected.add(entry.index);else selected.delete(entry.index);apply.disabled=!selected.size;}});list.append(h('label',{class:'wf-check'},check,entry.method+' '+entry.url+' · '+(entry.status||'—')));}
+   }catch(e){if(current(token)){har=null;d.error.textContent=e.message;}}
+  });
+  form.append(file,list,apply);d.content.append(h('p',{},w('Máximo 4 MiB, 100 entradas y 256 KiB por cuerpo. Solo se importan las entradas que marques; permanecen privadas.','Maximum 4 MiB, 100 entries and 256 KiB per body. Only checked entries are imported; they remain private.','Máximo de 4 MiB, 100 entradas e 256 KiB por corpo. Somente as entradas marcadas são importadas; permanecem privadas.')),form);
  }
  function pairing(){
   const d=dialog(w('Vincular Burp Suite','Pair Burp Suite','Parear Burp Suite')),state={slug:S.slug,workspace:S.workspace_id},form=h('fieldset',{}),findings=choiceSet(w('Destino: hallazgos','Destination: findings','Destino: achados'),S.data.findings||[],[]),assets=choiceSet(w('Destino: activos','Destination: assets','Destino: ativos'),S.data.assets||[],[]),output=h('div',{});

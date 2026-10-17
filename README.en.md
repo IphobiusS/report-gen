@@ -2,11 +2,17 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.44.0
+# report-gen 0.45.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
 [Español](README.md) · [Português (Brasil)](README.pt.md) · [Full guide](docs/guide.en.md) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md)
+
+## Audit and stability in 0.45.0
+
+Fixes cover Unicode imports, CVSS validation, HAR selection, HTTP comparison, historical retests, shared-comparison privacy, export cancellation and cleanup, cover metadata and the terminal wizard. Reproduced defects have regression checks; only demonstrated redundant or unreachable code is removed.
+
+[Audit scope and acceptance protocol](docs/QA-AUDIT-0450.md). Publication requires seven passing gates for the same commit. Their receipts document observed results, without claiming universal freedom from bugs.
 
 ## Install and launch
 

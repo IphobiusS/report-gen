@@ -43,14 +43,15 @@ def register(api):
         if not upload or not attachments.valid_name(upload.filename): abort(422,backend_message('Nombre o tipo de anexo no permitido / Unsupported annex filename or type'))
         data=engine.load_engagement(directory/'engagement.yaml')
         states=attachments.inventory(data,directory)
-        if len(states)>=100 and not any(x['name'].casefold()==upload.filename.casefold() for x in states): abort(422,backend_message('Máximo 100 anexos / Maximum 100 annexes'))
-        if any(x['name'].casefold()==upload.filename.casefold() and x['status'] not in ('declared','missing') for x in states):
+        name_key=attachments.canonical_name(upload.filename)
+        if len(states)>=100 and not any(attachments.canonical_name(x['name'])==name_key for x in states): abort(422,backend_message('Máximo 100 anexos / Maximum 100 annexes'))
+        if any(attachments.canonical_name(x['name'])==name_key and x['status'] not in ('declared','missing') for x in states):
             abort(422,backend_message('Ya existe un anexo con ese nombre / Annex name already exists'))
         blob=upload.stream.read(attachments.MAX_FILE+1)
         member='attachments/'+uuid.uuid4().hex+Path(upload.filename).suffix.lower()
         attachments.validate_blob(member,blob)
         if sum(x['bytes'] for x in states)+len(blob)>attachments.MAX_TOTAL: abort(422,backend_message('Anexos mayores que 64 MiB / Annexes exceed 64 MiB'))
-        row=next((x for x in data.get('attachments',[]) if x['name'].casefold()==upload.filename.casefold()),None)
+        row=next((x for x in data.get('attachments',[]) if attachments.canonical_name(x['name'])==name_key),None)
         if row is None:
             row={'uid':str(uuid.uuid4()),'name':upload.filename};data.setdefault('attachments',[]).append(row)
         row.update(member=member,sha256=sha256(blob).hexdigest(),include=False,reviewed=False)

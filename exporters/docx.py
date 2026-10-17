@@ -174,8 +174,6 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             # Cover and contents pagination is handled separately by add_toc.
             p.paragraph_format.page_break_before = False
             p.paragraph_format.space_before = Pt(14)
-        for r in list(p.runs):
-            r.text = ""
         if level == 1:
             sec_no[0] += 1
             n = p.add_run(str(sec_no[0]) + "  "); n.font.color.rgb = ACC; n.bold = True
@@ -313,7 +311,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
     # above the unchanged 1.6 cm body margin, independently of cover geometry.
     sec1.header_distance = Cm(0.95)
     conf = str(br.get("confidential_text") if br.get("confidential_text") is not None else lab["default_confidential"])
-    rhright = "  |  ".join(str(value) for value in (conf, "v" + str(meta["version"]) if meta.get("version") else "", meta.get("date")) if value)
+    rhright = "  |  ".join(str(value) for value in (conf, "v" + str(meta["version"]) if meta.get("version") not in (None, "") else "", meta.get("date")) if value not in (None, ""))
     sec1.header.is_linked_to_previous = False
     hp = sec1.header.paragraphs[0]; hp.paragraph_format.tab_stops.add_tab_stop(Cm(17.4), WD_TAB_ALIGNMENT.RIGHT)
     r = hp.add_run(str(br.get("wordmark") if br.get("wordmark") is not None else "iphobiuss")); r.bold = True; r.font.color.rgb = ACC; r.font.size = Pt(8); r.font.name = MONO
@@ -440,7 +438,7 @@ def to_docx(data, meta, L, engagement_dir, out_path):
             elif sp == "summary":
                 render_summary_body()
             elif sp == "findings":
-                for idx, f in enumerate(data["findings"]):
+                for f in data["findings"]:
                     render_one_finding(f)
             elif sp == "appendix":
                 render_generic(s)
@@ -469,13 +467,14 @@ def to_docx(data, meta, L, engagement_dir, out_path):
 
     # Contactos
     contacts = meta.get("contacts") or {}
-    if contacts.get("client") or contacts.get("assessor"):
-        heading(lab["contacts"], 1, anchor='sec-contacts', chapter_start=True)
-        for grp, gt in [("client", lab["client"]), ("assessor", lab["team"])]:
-            ppl = contacts.get(grp) or []
-            if ppl:
-                heading(gt, 2)
-                data_table([lab["name"], lab["title"], lab["email"]], [[p.get("name", ""), p.get("title", ""), p.get("email", "")] for p in ppl])
+    # Match the canonical HTML/PDF destination even when no contacts were
+    # entered; existing authored links must retain a real editable bookmark.
+    heading(lab["contacts"], 1, anchor='sec-contacts', chapter_start=True)
+    for grp, gt in [("client", lab["client"]), ("assessor", lab["team"])]:
+        ppl = contacts.get(grp) or []
+        if ppl:
+            heading(gt, 2)
+            data_table([lab["name"], lab["title"], lab["email"]], [[p.get("name", ""), p.get("title", ""), p.get("email", "")] for p in ppl])
 
     # Overview
     heading(lab["overview"], 1, anchor='sec-overview', chapter_start=True); heading(lab["approach"], 2)

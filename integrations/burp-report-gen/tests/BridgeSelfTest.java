@@ -29,9 +29,12 @@ public final class BridgeSelfTest {
             +"a".repeat(64)+"\",\"token\":\""+"b".repeat(43)+"\"}").getBytes(StandardCharsets.UTF_8));
     }
     static HttpRequestResponse pair() {
+        return pair("https://target.invalid/account/1");
+    }
+    static HttpRequestResponse pair(String url) {
         ByteArray binary=proxy(ByteArray.class,m->{if(m.equals("getBytes"))return new byte[]{0,(byte)255,65};throw new AssertionError(m);});
         HttpHeader header=proxy(HttpHeader.class,m->switch(m){case "name"->"Authorization";case "value"->"Bearer test-secret";default->throw new AssertionError(m);});
-        HttpRequest request=proxy(HttpRequest.class,m->switch(m){case "method"->"POST";case "url"->"https://target.invalid/account/1";case "httpVersion"->"HTTP/2";case "headers"->List.of(header);case "body"->binary;default->throw new AssertionError(m);});
+        HttpRequest request=proxy(HttpRequest.class,m->switch(m){case "method"->"POST";case "url"->url;case "httpVersion"->"HTTP/2";case "headers"->List.of(header);case "body"->binary;default->throw new AssertionError(m);});
         HttpResponse response=proxy(HttpResponse.class,m->switch(m){case "statusCode"->(short)200;case "httpVersion"->"HTTP/2";case "headers"->List.of();case "body"->binary;default->throw new AssertionError(m);});
         return proxy(HttpRequestResponse.class,m->switch(m){case "request"->request;case "response"->response;default->throw new AssertionError(m);});
     }
@@ -44,6 +47,10 @@ public final class BridgeSelfTest {
         rejected(()->ReportGenExtension.scalar("{\"csrf\":\"a\",\"csrf\":\"b\"}","csrf"));
         String payload=ReportGenExtension.serialize(List.of(pair()),"reader\"\\\nrole");
         check(payload.contains("AP9B")&&payload.contains("Bearer test-secret")&&payload.contains("reader\\\"\\\\\\u000arole"),"Binary and JSON preservation");
+        String unicodeUrl="https://target.invalid/"+"界".repeat(300)+"🧪";
+        String unicodePayload=ReportGenExtension.serialize(List.of(pair(unicodeUrl)),"");
+        check(!unicodePayload.contains("\"title\":")&&ReportGenExtension.scalar(unicodePayload,"url").equals(unicodeUrl),
+              "Unicode display label is server-derived; original URL remains exact");
         ContextMenuEvent event=proxy(ContextMenuEvent.class,m->{if(m.equals("selectedRequestResponses"))return List.of(pair());throw new AssertionError("Unexpected context access: "+m);});
         check(new ReportGenExtension().provideMenuItems(event).size()==1,"Selected-only menu");
         ContextMenuEvent empty=proxy(ContextMenuEvent.class,m->switch(m){case "selectedRequestResponses"->List.of();case "messageEditorRequestResponse"->Optional.empty();default->throw new AssertionError(m);});

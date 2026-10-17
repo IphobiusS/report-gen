@@ -48,7 +48,8 @@ def structure_errors(data):
             errors.append(('error', message('{path}: observación de importación inválida o fuera de límite', en='{path}: invalid or over-budget import observation', pt='{path}: observação de importação inválida ou acima do limite', path=path + part)))
         if not isinstance(observations, list) or len(observations) > MAX_PER_FINDING:
             error(); continue
-        instance_ids = {item.get('uid') for item in finding.get('instances', []) if isinstance(item, dict)} if isinstance(finding.get('instances', []), list) else set()
+        instance_ids = {item['uid'] for item in finding.get('instances', [])
+                        if isinstance(item, dict) and isinstance(item.get('uid'), str)} if isinstance(finding.get('instances', []), list) else set()
         for j, row in enumerate(observations):
             count += 1
             if not isinstance(row, dict) or set(row) != {'uid', 'imported_at', 'instance_uid', 'source', 'snapshot', 'selected_fields'}:

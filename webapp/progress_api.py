@@ -108,25 +108,32 @@ def register(api):
     @api.project_lock
     def comparison(slug, sid):
         directory = api.proj_dir(slug)
+        internal = request.args.get('internal') == '1'
+        lang = request.args.get('lang', 'es')
+        def snapshot_label(snapshot):
+            # History labels may contain private client context. Shared
+            # comparisons use documentary IDs, as retest-diff does.
+            title = snapshot['label'] if internal else (
+                ('Versión ', 'Version ', 'Versão ')[language_index(lang)] + snapshot['id'])
+            return title + ' / ' + snapshot['created']
         record = project_history.get_snapshot(directory, sid)
         old = dict(project_history.snapshot_blobs(directory, record))
         other = request.args.get('to')
         if other:
             record2 = project_history.get_snapshot(directory, other)
             new = dict(project_history.snapshot_blobs(directory, record2))
-            label = record2['label'] + ' / ' + record2['created']
+            label = snapshot_label(record2)
         else:
             new = dict(project_history.project_files(directory))
-            label = ('Actual / ', 'Current / ', 'Atual / ')[language_index(request.args.get('lang', 'es'))] + revision(directory / 'engagement.yaml')[:12]
+            label = ('Actual / ', 'Current / ', 'Atual / ')[language_index(lang)] + revision(directory / 'engagement.yaml')[:12]
             for name, blob in new.items():
                 if name.startswith('attachments/'):
                     __import__('attachments').validate_blob(name,blob)
                 elif name != 'engagement.yaml': project_history.validate_image_blob(name, blob)
         from input_guard import load_yaml
-        internal=request.args.get('internal')=='1'
         if internal and request.args.get('download')=='1' and request.args.get('ack_private')!='1': abort(422,backend_message('Confirma la descarga privada / Acknowledge the private download'))
         markup = report_compare.render(load_yaml(old['engagement.yaml']), load_yaml(new['engagement.yaml']), old, new,
-                                       record['label'] + ' / ' + record['created'], label, request.args.get('lang', 'es'), internal=internal)
+                                       snapshot_label(record), label, lang, internal=internal)
         response = Response(markup, mimetype='text/html')
         if request.args.get('download') == '1':
             response.headers['Content-Disposition'] = 'attachment; filename="comparison.html"'

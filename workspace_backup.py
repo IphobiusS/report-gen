@@ -218,21 +218,20 @@ def recover(projects, findings, designs):
     for tree in (stage, stage/'new', stage/'previous'):
         if tree.is_symlink() or not tree.is_dir():
             raise ValueError(backend_message('Área de recuperación inválida'))
-    if not record['committed']:
-        for i in reversed(range(3)):
-            target, new, previous = paths[i], stage/'new'/str(i), stage/'previous'/str(i)
-            if new.is_symlink() or previous.is_symlink():
-                raise ValueError(backend_message('Enlace en recuperación no permitido'))
-            if not new.exists():
-                if not target.exists() or (record['had'][i] and not previous.exists()):
-                    raise ValueError(backend_message('Estado ambiguo; se conservan las copias de recuperación'))
-                _move(target, new)
-            if previous.exists():
-                if target.exists():
-                    raise ValueError(backend_message('Destino inesperado; se conservan las copias'))
-                _move(previous, target)
-            if target.exists() != record['had'][i]:
-                raise ValueError(backend_message('Recuperación incompleta; se conserva el registro'))
+    for i in reversed(range(3)):
+        target, new, previous = paths[i], stage/'new'/str(i), stage/'previous'/str(i)
+        if new.is_symlink() or previous.is_symlink():
+            raise ValueError(backend_message('Enlace en recuperación no permitido'))
+        if not new.exists():
+            if not target.exists() or (record['had'][i] and not previous.exists()):
+                raise ValueError(backend_message('Estado ambiguo; se conservan las copias de recuperación'))
+            _move(target, new)
+        if previous.exists():
+            if target.exists():
+                raise ValueError(backend_message('Destino inesperado; se conservan las copias'))
+            _move(previous, target)
+        if target.exists() != record['had'][i]:
+            raise ValueError(backend_message('Recuperación incompleta; se conserva el registro'))
     journal.unlink()
     shutil.rmtree(stage)
 

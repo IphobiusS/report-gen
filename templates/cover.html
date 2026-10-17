@@ -2,11 +2,15 @@
 {% set b = meta.branding or {} %}
 {% set fields = [] %}
 {% if meta.client %}{% set _ = fields.append((L.labels.client, meta.client)) %}{% endif %}
-{% if meta.osid %}{% set _ = fields.append((L.labels.cover_osid, meta.osid)) %}{% endif %}
-{% if meta.email %}{% set _ = fields.append((L.labels.cover_email, meta.email)) %}{% endif %}
-{% if meta.assessor %}{% set _ = fields.append((L.labels.cover_assessor, meta.assessor ~ (' · ' ~ meta.assessor_title if meta.assessor_title else ''))) %}{% endif %}
-{% if meta.date %}{% set _ = fields.append((L.labels.cover_date, meta.date)) %}{% endif %}
-{% if meta.version %}{% set _ = fields.append((L.labels.cover_version, meta.version)) %}{% endif %}
+{% if meta.osid is defined and meta.osid is not none and meta.osid != '' %}{% set _ = fields.append((L.labels.cover_osid, meta.osid)) %}{% endif %}
+{% if meta.email is defined and meta.email is not none and meta.email != '' %}{% set _ = fields.append((L.labels.cover_email, meta.email)) %}{% endif %}
+{% if meta.assessor or meta.assessor_title %}
+{% set assessor = meta.assessor or '' %}
+{% if meta.assessor_title %}{% set assessor = assessor ~ (' · ' if assessor else '') ~ meta.assessor_title %}{% endif %}
+{% set _ = fields.append((L.labels.cover_assessor, assessor)) %}
+{% endif %}
+{% if meta.date is defined and meta.date is not none and meta.date != '' %}{% set _ = fields.append((L.labels.cover_date, meta.date)) %}{% endif %}
+{% if meta.version is defined and meta.version is not none and meta.version != '' %}{% set _ = fields.append((L.labels.cover_version, meta.version)) %}{% endif %}
 <section class="cover{% if meta.design %} profile-cover layout-{{ meta.design.layout }}{% endif %}{% if b.cover_image %} has-illustration{% endif %}">
   <div class="cover-header">
     <div class="cover-top"><span class="cv-wordmark">{{ wordmark }}</span><span class="cv-tag">{{ conf }}</span></div>

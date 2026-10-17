@@ -80,15 +80,20 @@ def project(source):
     validate_config(config)
     substitutions=LiteralRedactions(config.get('redactions',[]))
 
-    def visit(node, key='', apply_rules=True, filter_private=True):
+    def visit(node, key='', apply_rules=True, filter_private=True, path=()):
         if key in ('design','workflow'):
             apply_rules=False
             filter_private=False
+        if path == ('meta', 'design', 'certificate') and isinstance(node, str):
+            # This editable label is printed on HTML/PDF and Word covers.
+            # Other design values select layouts, branding or guidance and
+            # remain configuration, including legacy arbitrary dictionaries.
+            apply_rules=True
         if isinstance(node,dict):
-            return {substitutions.text(k,False):visit(v,k,apply_rules,filter_private)
+            return {substitutions.text(k,False):visit(v,k,apply_rules,filter_private,path+(k,))
                     for k,v in node.items() if not filter_private or k not in PRIVATE}
         if isinstance(node,list):
-            return [visit(v,key,apply_rules,filter_private) for v in node]
+            return [visit(v,key,apply_rules,filter_private,path+(i,)) for i,v in enumerate(node)]
         if isinstance(node,str):
             return substitutions.text(node,apply_rules and key not in STRUCTURAL and not key.endswith(('_uid','_uids')))
         return node

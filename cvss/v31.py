@@ -38,7 +38,7 @@ def compute(m):
     """m: dict con AV,AC,PR,UI,S,C,I,A. Devuelve {score, severity, vector}."""
     mm = dict(DEFAULT)
     mm.update({k: v for k, v in (m or {}).items() if k in METRICS and v})
-    if any(not isinstance(mm[k], str) or mm[k] not in VALID[k] for k in METRICS):
+    if any(not isinstance(mm[k], str) or len(mm[k]) != 1 or mm[k] not in VALID[k] for k in METRICS):
         raise ValueError("Métricas CVSS 3.1 inválidas")
     scope_changed = mm["S"] == "C"
     pr = (PR_C if scope_changed else PR_U)[mm["PR"]]

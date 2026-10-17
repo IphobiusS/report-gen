@@ -227,7 +227,7 @@ def add_cover(doc, meta, labels, engagement_dir, hx):
 
     fields=[(labels['client'],meta.get('client')),(labels['cover_osid'],meta.get('osid')),
             (labels['cover_email'],meta.get('email')),
-            (labels['cover_assessor'],str(meta.get('assessor') or '')+(' · '+str(meta['assessor_title']) if meta.get('assessor_title') else '')),
+            (labels['cover_assessor'],' · '.join(str(meta[key]) for key in ('assessor', 'assessor_title') if meta.get(key))),
             (labels['cover_date'],meta.get('date')),(labels['cover_version'],meta.get('version'))]
     fields=[(k,str(v)) for k,v in fields if v not in (None,'')]
     lead=paragraph(bottom,first=True);lead.paragraph_format.line_spacing=Pt(1);run(lead,'',1)

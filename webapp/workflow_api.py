@@ -194,7 +194,14 @@ def register(api):
             # Preserve the independent facts and derive status from all of them.
             finding_instances.update_aggregate(finding)
         else:
-            finding['status'] = {'fixed': 'verified_fixed', 'open': 'open', 'partial': 'in_progress', 'not_verified': 'not_verified'}.get(record['result'], 'open')
+            # Backfilled observations remain historical: the latest test date
+            # determines status, with insertion order breaking same-day ties.
+            # Validate dates before ordering caller-supplied values.
+            issues = workflows.structure_errors(data)
+            if issues:
+                raise ValueError('; '.join(text for _, text in issues))
+            latest = workflows.latest_retest(finding)
+            finding['status'] = {'fixed': 'verified_fixed', 'open': 'open', 'partial': 'in_progress', 'not_verified': 'not_verified'}[latest['result']]
         return saved(d, data)
 
     def library_path(): return Path(app.config['LIBRARY_PATH'])

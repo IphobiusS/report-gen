@@ -11,6 +11,11 @@ SUFFIXES = {'.txt', '.json', '.csv', '.md', '.pdf', '.png', '.jpg', '.jpeg', '.w
 MEMBER = re.compile(r'^attachments/[a-f0-9]{32}\.(?:txt|json|csv|md|pdf|png|jpg|jpeg|webp)$')
 
 
+def canonical_name(name):
+    """Shared identity for validation and matching a declared upload."""
+    return unicodedata.normalize('NFC', name).casefold()
+
+
 def valid_name(name):
     if not isinstance(name, str) or not 1 <= len(name) <= 120:
         return False
@@ -34,7 +39,7 @@ def validate_rows(rows):
             raise ValueError(backend_message('Identificador de anexo inválido o duplicado / Invalid or duplicate annex ID'))
         uids.add(row['uid'])
         name=row.get('name')
-        canonical=unicodedata.normalize('NFC',name).casefold() if isinstance(name,str) else ''
+        canonical=canonical_name(name) if isinstance(name,str) else ''
         if not valid_name(name) or canonical in names:
             raise ValueError(backend_message('Nombre de anexo no portable o duplicado / Nonportable or duplicate annex name'))
         names.add(canonical)

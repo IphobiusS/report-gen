@@ -82,7 +82,7 @@ def _cover_details(W, meta, L):
                          (lab['cover_assessor'], assessor),
                          (lab['cover_date'], meta.get('date')),
                          (lab['cover_version'], meta.get('version'))]:
-        if value: W(f"- **{label}:** {md_text(value)}")
+        if value not in (None, ''): W(f"- **{label}:** {md_text(value)}")
     W('')
     branding = meta.get('branding') or {}
     for key, label in [('logo', lab['assessor_logo']),
@@ -221,17 +221,18 @@ def to_markdown(data, meta, L, engagement_dir):
 
     # Contactos
     contacts = meta.get("contacts") or {}
-    if contacts.get("client") or contacts.get("assessor"):
-        W(anchor("sec-contacts") + f"## {lab['contacts']}\n")
-        for grp, title in [("client", lab["client"]), ("assessor", lab["team"])]:
-            people = contacts.get(grp) or []
-            if people:
-                W(f"### {title}\n")
-                W(f"| {lab['name']} | {lab['title']} | {lab['email']} |")
-                W("|---|---|---|")
-                for p in people:
-                    W(_row(p.get('name',''), p.get('title',''), p.get('email','')))
-                W("")
+    # The legacy HTML/PDF always exposes this section, even before people are
+    # entered. Keep its destination so authored cross-references also work here.
+    W(anchor("sec-contacts") + f"## {lab['contacts']}\n")
+    for grp, title in [("client", lab["client"]), ("assessor", lab["team"])]:
+        people = contacts.get(grp) or []
+        if people:
+            W(f"### {title}\n")
+            W(f"| {lab['name']} | {lab['title']} | {lab['email']} |")
+            W("|---|---|---|")
+            for p in people:
+                W(_row(p.get('name',''), p.get('title',''), p.get('email','')))
+            W("")
 
     # Overview + scope
     W(anchor("sec-overview") + f"## {lab['overview']}\n")

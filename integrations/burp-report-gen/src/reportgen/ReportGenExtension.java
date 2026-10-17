@@ -130,10 +130,9 @@ public final class ReportGenExtension implements BurpExtension, ContextMenuItems
             if (i > 0) json.append(',');
             HttpRequestResponse pair = pairs.get(i);
             var req = pair.request();
-            String title = req.method() + " " + req.url();
-            // Server retains the full URL; this short title is only an editor label.
-            if (title.length() > 200) title = title.substring(0, 200);
-            json.append("{\"title\":").append(quote(title)).append(",\"original\":{\"identity\":").append(quote(identity))
+            // The server derives the display label within its UTF-8 byte limit.
+            // Do not split a UTF-16 surrogate pair or truncate the evidence URL.
+            json.append("{\"original\":{\"identity\":").append(quote(identity))
                     .append(",\"captured_at\":\"\",\"source\":\"Burp Montoya selected messages\",\"request\":{")
                     .append("\"method\":").append(quote(req.method())).append(",\"url\":").append(quote(req.url()))
                     .append(",\"http_version\":").append(quote(req.httpVersion())).append(",\"headers\":")

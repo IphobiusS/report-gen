@@ -128,11 +128,15 @@ def checklist(data, directory, issues, lang='es'):
         linked = {uid for finding in data.get('findings', []) for uid in finding.get('evidence_uids', [])}
         linked.update(uid for finding in data.get('findings', []) for row in finding.get('retests', [])
                       for uid in row.get('evidence_uids', []))
+        linked.update(uid for finding in data.get('findings', []) for instance in finding.get('instances', [])
+                      for uid in instance.get('evidence_uids', []))
+        linked.update(uid for finding in data.get('findings', []) for instance in finding.get('instances', [])
+                      for row in instance.get('retests', []) for uid in row.get('evidence_uids', []))
         unassociated = sum(row['uid'] not in linked for row in data.get('evidence', []))
         checks.append(dict(key='associations', status='blocked' if broken else 'attention' if attention or unassociated else 'checked',
             title=tr('Asociaciones de evidencia', 'Evidence associations', 'Associações de evidências'),
-            detail=tr(f'{broken} errores de referencia; {attention} avisos de asociación; {unassociated} evidencias registradas sin asociación explícita a un hallazgo o retest. Una referencia válida no demuestra que la evidencia pruebe el hallazgo.',
-                      f'{broken} reference errors; {attention} association warnings; {unassociated} registered evidence items without an explicit finding or retest association. A valid reference does not establish that evidence proves the finding.', f'{broken} erros de referência; {attention} avisos de associação; {unassociated} evidências registradas sem associação explícita a um achado ou reteste. Uma referência válida não demonstra que a evidência comprove o achado.'),
+            detail=tr(f'{broken} errores de referencia; {attention} avisos de asociación; {unassociated} evidencias registradas sin asociación explícita a un hallazgo, instancia o retest. Una referencia válida no demuestra que la evidencia pruebe el hallazgo.',
+                      f'{broken} reference errors; {attention} association warnings; {unassociated} registered evidence items without an explicit finding, instance or retest association. A valid reference does not establish that evidence proves the finding.', f'{broken} erros de referência; {attention} avisos de associação; {unassociated} evidências registradas sem associação explícita a um achado, instância ou reteste. Uma referência válida não demonstra que a evidência comprove o achado.'),
             counts=dict(errors=broken, warnings=attention, without_explicit_association=unassociated)))
     checks.append(dict(key='human_review', status='manual', title=tr('Revisión humana', 'Human review', 'Revisão humana'),
         detail=tr('Revisa alcance, hechos, severidad, reproducción y destinatario; abre los archivos generados antes de enviarlos. Esta lista no valida técnicamente el pentest ni autoriza su publicación.',

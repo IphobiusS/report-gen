@@ -15,15 +15,16 @@ Los textos largos (Markdown) se cierran con una linea que contenga solo un punto
 """
 
 import argparse
-import shutil
+import os
 import subprocess
 import sys
+import tempfile
 from datetime import date
 from pathlib import Path
 
 import yaml
 from languages import normalize_language, language_index, language_argument
-from error_messages import language_scope
+from error_messages import language_scope, message
 
 ROOT = Path(__file__).resolve().parent
 
@@ -156,7 +157,8 @@ UI_TEXT = {'Numero': ('Number', 'Número'),
                                                 'adicionar um achado a um relatório existente'),
  'ruta a engagement.yaml': ('path to engagement.yaml', 'caminho de engagement.yaml'),
  'idioma de la interfaz; no cambia el idioma del informe': ('interface language; does not change the report language',
-                                                            'idioma da interface; não altera o idioma do relatório')}
+                                                            'idioma da interface; não altera o idioma do relatório'),
+ 'Captura interrumpida.': ('Data entry interrupted.', 'Preenchimento interrompido.')}
 
 def tr(text, **values):
     translated = text if UI_LANGUAGE == "es" else UI_TEXT.get(text, (text, text))[language_index(UI_LANGUAGE) - 1]
@@ -187,12 +189,16 @@ def dump_yaml(data, path):
 
 
 # --- Entrada -----------------------------------------------------------------
+class InputCancelled(Exception):
+    """Closed terminal input must not become accepted defaults or a busy loop."""
+
+
 def ask(prompt, default=""):
     tail = f" [{default}]" if default else ""
     try:
         s = input(f"{tr(prompt)}{tail}: ").strip()
     except EOFError:
-        s = ""
+        raise InputCancelled from None
     return s or default
 
 
@@ -203,7 +209,7 @@ def ask_block(prompt):
         try:
             line = input()
         except EOFError:
-            break
+            raise InputCancelled from None
         if line.strip() == ".":
             break
         lines.append(line)
@@ -243,15 +249,35 @@ def ask_figure(img_dir):
     if not src:
         return None
     p = Path(src).expanduser()
-    if not p.exists():
+    if not p.is_file():
         print("  " + tr("[!] no existe: {path}. Se omite la figura.", path=p))
         return None
+    from project_history import validate_image_blob
+    from workspace_paths import _no_links
+    with p.open('rb') as source:
+        blob = source.read(12 * 1024 * 1024 + 1)
+    if len(blob) > 12 * 1024 * 1024:
+        raise ValueError(message('Imagen mayor que 12 MiB.', en='Image exceeds 12 MiB.',
+                                 pt='A imagem excede 12 MiB.'))
+    validate_image_blob(p.name, blob)
+    _no_links(img_dir)
     img_dir.mkdir(parents=True, exist_ok=True)
-    dest = img_dir / p.name
-    shutil.copy(p, dest)
+    # Reserve a new, portable name exclusively. Reusing a basename would alter
+    # every earlier figure referencing it; an already-local input is also safe.
+    dest = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=img_dir, prefix='figure-', suffix=p.suffix.lower(), delete=False) as target:
+            dest = Path(target.name)
+            target.write(blob)
+            target.flush()
+            os.fsync(target.fileno())
+    except BaseException:
+        if dest is not None:
+            dest.unlink(missing_ok=True)
+        raise
     print("  " + tr("[+] copiada a {path}", path=dest.relative_to(img_dir.parent)))
     caption = ask("Epigrafe de la figura")
-    return {"src": f"img/{p.name}", "caption": caption}
+    return {"src": f"img/{dest.name}", "caption": caption}
 
 
 def ask_steps(img_dir, label="paso"):
@@ -343,8 +369,9 @@ def ask_finding(fid, img_dir):
 
 
 def next_fid(findings):
-    n = len(findings) + 1
-    return f"F{n}"
+    from copy import deepcopy
+    from workflows import allocate_finding_id
+    return allocate_finding_id({'findings': deepcopy(findings)})
 
 
 # --- Comandos ----------------------------------------------------------------
@@ -399,7 +426,14 @@ def cmd_new(args):
     slug = args.slug or (meta["client"] or meta["report_title"] or "engagement").lower()
     slug = "".join(c if c.isalnum() or c in "-_" else "-" for c in slug).strip("-") or "engagement"
     eng_dir = ROOT / "reports" / slug
-    eng_dir.mkdir(parents=True, exist_ok=True)
+    from workspace_paths import _no_links
+    _no_links(eng_dir)
+    try:
+        eng_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        raise ValueError(message('El proyecto ya existe; elige otro nombre o usa add-finding.',
+                                 en='The project already exists; choose another name or use add-finding.',
+                                 pt='O projeto já existe; escolha outro nome ou use add-finding.')) from None
     img_dir = eng_dir / "img"
 
     findings = []
@@ -421,10 +455,11 @@ def cmd_new(args):
 def cmd_add_finding(args):
     path = Path(args.engagement).resolve()
     from engine import load_engagement
+    from workflows import allocate_finding_id
     data = load_engagement(path)
     data.setdefault("findings", [])
     img_dir = path.parent / "img"
-    fid = next_fid(data["findings"])
+    fid = allocate_finding_id(data)
     section(tr("Nuevo hallazgo {id} en {name}", id=fid, name=path.name))
     data["findings"].append(ask_finding(fid, img_dir))
     dump_yaml(data, path)
@@ -453,8 +488,16 @@ def main():
                               help=tr("idioma de la interfaz; no cambia el idioma del informe"))
     args = ap.parse_args()
     with language_scope(UI_LANGUAGE):
-        args.func(args)
+        try:
+            args.func(args)
+        except (InputCancelled, KeyboardInterrupt):
+            print(tr('Captura interrumpida.'), file=sys.stderr)
+            return 1
+        except (ValueError, OSError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

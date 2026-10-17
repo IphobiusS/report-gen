@@ -64,6 +64,7 @@ jobs:
           node --test tests/test_instances_ui_0420.cjs
           node tests/test_assessment_0420_ui.cjs
           node tests/test_http_evidence_0420.cjs
+          node --test tests/test_ui_async_0450.cjs
           node tests/test_review_exchange_0420.cjs
           node tests/test_tickets_ui_0420.cjs
 

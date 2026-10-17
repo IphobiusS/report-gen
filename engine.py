@@ -6,6 +6,7 @@ import json
 import re
 import sys
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import quote
 
@@ -702,6 +703,72 @@ def _write_private_diagnostics(output, error):
         pass
 
 
+@contextmanager
+def _atomic_companions(destinations):
+    """Stage a CLI pair and undo completed replacements after a publish error.
+
+    This is recovery from ordinary filesystem errors, not a crash-safe
+    transaction. Backups stay beside each destination, including when an HTML
+    symlink resolves onto another filesystem. A failed rollback keeps its prior
+    file available and reports the recovery path instead of deleting it.
+    """
+    import os
+    import shutil
+    staged, backups, retained = {}, {}, set()
+
+    def temporary(destination, prefix):
+        with tempfile.NamedTemporaryFile(dir=destination.parent, prefix=prefix,
+                                         suffix=destination.suffix, delete=False) as stream:
+            return Path(stream.name)
+
+    try:
+        for destination in destinations:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            staged[destination] = temporary(destination, '.export-')
+        yield staged
+        # Preserve every previous artifact before changing either destination.
+        for destination in destinations:
+            backups[destination] = None
+            if destination.exists():
+                backups[destination] = temporary(destination, '.report-gen-previous-')
+                shutil.copy2(destination, backups[destination])
+        published = []
+        try:
+            for destination in destinations:
+                os.replace(staged[destination], destination)
+                published.append(destination)
+        except BaseException:
+            failures = []
+            for destination in reversed(published):
+                previous = backups[destination]
+                try:
+                    if previous is None:
+                        destination.unlink(missing_ok=True)
+                    else:
+                        os.replace(previous, destination)
+                except OSError:
+                    failures.append(destination)
+                    if previous is not None:
+                        retained.add(previous)
+            if failures:
+                details = '; '.join(str(destination) + (
+                    ' <- ' + str(backups[destination]) if backups[destination] is not None else '')
+                    for destination in failures)
+                raise ValueError(message(
+                    'Falló la publicación y no se pudieron restaurar todas las salidas. '
+                    'Conserva las copias previas indicadas y recupéralas manualmente: {paths}',
+                    en='Publication failed and some outputs could not be restored. '
+                       'Keep the listed previous copies and recover them manually: {paths}',
+                    pt='A publicação falhou e algumas saídas não puderam ser restauradas. '
+                       'Preserve as cópias anteriores indicadas e recupere-as manualmente: {paths}',
+                    paths=details))
+            raise
+    finally:
+        for path in [*staged.values(), *backups.values()]:
+            if path is not None and path not in retained:
+                path.unlink(missing_ok=True)
+
+
 def _run(args):
     yaml_path = Path(args.engagement).resolve()
     engagement_dir = yaml_path.parent
@@ -718,8 +785,14 @@ def _run(args):
     issues = validatelib.require_valid(data, final=True)
     from storage import require_export_destination
     out_pdf = require_export_destination(yaml_path, out_pdf, source_inputs)
+    out_html = None
     if args.html:
-        require_export_destination(yaml_path, out_pdf.with_suffix(".html"), source_inputs)
+        out_html = require_export_destination(yaml_path, out_pdf.with_suffix(".html"), source_inputs)
+        if out_html == out_pdf or (out_html.exists() and out_pdf.exists() and out_html.samefile(out_pdf)):
+            raise ValueError(message(
+                'Las salidas PDF y HTML coinciden; elige destinos distintos.',
+                en='PDF and HTML outputs are the same file; choose distinct destinations.',
+                pt='As saídas PDF e HTML são o mesmo arquivo; escolha destinos distintos.'))
     number_figures(data["findings"])
     L = load_lang(report_language(data))
 
@@ -745,12 +818,18 @@ def _run(args):
                       pt="[i] página não resolvida para: {ids}", ids=", ".join(missing)))
 
     html2 = render_html(env, data, engagement_dir, page_map=page_map, pagemarks=False, L=L, machine_graphs=True)
-    if args.html:
-        (out_pdf.with_suffix(".html")).write_text(html2, encoding="utf-8")
-        print(f"[+] HTML: {out_pdf.with_suffix('.html')}")
     from storage import atomic_output
-    with atomic_output(out_pdf) as output:
-        do_render(html2, output, engagement_dir, meta, backend)
+    # Finish both products before publishing either: a failed final PDF pass
+    # must not replace a previously delivered HTML companion with new content.
+    if out_html is None:
+        with atomic_output(out_pdf) as output:
+            do_render(html2, output, engagement_dir, meta, backend)
+    else:
+        with _atomic_companions((out_pdf, out_html)) as pending:
+            pending[out_html].write_text(html2, encoding="utf-8")
+            do_render(html2, pending[out_pdf], engagement_dir, meta, backend)
+    if out_html is not None:
+        print(f"[+] HTML: {out_html}")
     print(f"[+] PDF ({backend}, {meta.get('theme','serio')}, {meta.get('lang','en')}): {out_pdf}")
 
 

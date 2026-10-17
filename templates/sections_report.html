@@ -4,7 +4,7 @@
 {% set wordmark = br.wordmark or 'iphobiuss' %}
 {% set byline = br.byline or meta.assessor or 'iphobiuss' %}
 {% set conf = br.confidential_text or L.labels.default_confidential %}
-{% set rhright = conf ~ '  |  v' ~ (meta.version or '') ~ '  |  ' ~ (meta.date or '') %}
+{% set rhright = conf ~ '  |  v' ~ (meta.version if meta.version is defined and meta.version is not none else '') ~ '  |  ' ~ (meta.date if meta.date is defined and meta.date is not none else '') %}
 {% set clientname = (meta.client or L.labels.client).rstrip('.') %}
 <head>
 <meta charset="utf-8">

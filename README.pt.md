@@ -2,11 +2,17 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen com Prometeo e Evaristo" width="300">
 </p>
 
-# report-gen 0.44.0
+# report-gen 0.45.0
 
 **Um editor local para transformar avaliações de segurança em relatórios claros.** Organize achados, vincule evidências, acompanhe a remediação e os retestes e produza **PDF, Word, Markdown com imagens e HTML portátil** a partir de uma revisão salva.
 
 [Español](README.md) · [English](README.en.md) · [Guia completo em português](docs/guide.pt.md) · [Histórico de alterações](CHANGELOG.md)
+
+## Auditoria e estabilidade na versão 0.45.0
+
+Correções em importações Unicode, validação CVSS, seleção HAR, comparação HTTP, retestes históricos, privacidade de comparações, cancelamento e limpeza de exportações, metadados de capa e assistente de terminal. Os defeitos reproduzidos recebem testes de regressão; somente código comprovadamente redundante ou inalcançável é removido.
+
+[Escopo e protocolo de auditoria](docs/QA-AUDIT-0450.md). A publicação exige sete verificações aprovadas no mesmo commit. Os registros documentam os resultados observados, sem prometer ausência universal de erros.
 
 ## Instalar e abrir
 

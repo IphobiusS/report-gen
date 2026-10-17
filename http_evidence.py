@@ -217,7 +217,10 @@ def add(data, records, finding_uids=(), asset_uids=()):
         if not isinstance(record, dict) or set(record) - {'title', 'notes', 'original'}:
             fail('HTTP: captura inválida', 'HTTP: invalid capture', 'HTTP: captura inválida')
         value = original(record.get('original'))
-        row = dict(uid=workflows.new_uid(), title=record.get('title') or (value['request']['method'] + ' ' + value['request']['url'])[:500],
+        # Only the generated display label is shortened. The evidence URL stays
+        # exact, and the limit is bytes (not characters), as in validate_rows.
+        default_title = (value['request']['method'] + ' ' + value['request']['url']).encode('utf-8')[:500].decode('utf-8', errors='ignore')
+        row = dict(uid=workflows.new_uid(), title=record.get('title') or default_title,
                    notes=record.get('notes', ''), created=project_history.now(), original=value, sha256=digest(value),
                    finding_uids=list(finding_uids), asset_uids=list(asset_uids), publication=None)
         rows.append(row)
@@ -282,7 +285,10 @@ def from_har(payload, indices=None):
             notes = 'HAR: request body text was not captured; parameters were not reconstructed.'
         if content.get('encoding', '') not in ('', 'base64'):
             fail('HAR: codificación no admitida', 'HAR: unsupported encoding', 'HAR: codificação não suportada')
-        response = None if res.get('status') == 0 else dict(status=res.get('status'), http_version=res.get('httpVersion', 'HTTP/1.1'),
+        status = res.get('status')
+        if type(status) is not int:
+            fail('HAR: estado inválido', 'HAR: invalid status', 'HAR: status inválido')
+        response = None if status == 0 else dict(status=status, http_version=res.get('httpVersion', 'HTTP/1.1'),
             headers=[dict(name=h.get('name'), value=h.get('value')) if isinstance(h, dict) else h for h in res.get('headers', [])],
             body=content.get('text', ''), body_encoding='base64' if content.get('encoding') == 'base64' else 'utf-8')
         record = dict(notes=notes, original=dict(captured_at=entry.get('startedDateTime', ''), identity='', source='HAR',

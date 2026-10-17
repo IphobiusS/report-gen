@@ -119,7 +119,7 @@ def issue(data, slug, finding_uids, *, source_revision=None):
     blob = template(batch)
     if source_revision is not None:
         _event(batch, 'issued', source_revision, hashlib.sha256(blob).hexdigest(), len(batch['rows']))
-    kept = [*data.get('remediation_exchanges', []), batch][-MAX_BATCHES:]
+    kept = [*result.get('remediation_exchanges', []), batch][-MAX_BATCHES:]
     while len(kept) > 1 and len(json.dumps(kept, ensure_ascii=False).encode('utf-8')) > MAX_BATCH_BYTES:
         kept.pop(0)
     result['remediation_exchanges'] = kept

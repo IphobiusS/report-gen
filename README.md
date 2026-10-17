@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.44.0
+# report-gen 0.45.0
 
 <a id="qué-es"></a>
 
@@ -60,6 +60,12 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Word | Documento editable `.docx`, con campos propios para el índice. |
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
+
+## Auditoría y estabilidad en 0.45.0
+
+Correcciones en importación Unicode, validación CVSS, selección HAR, comparación HTTP, retests históricos, privacidad de comparaciones, cancelación y limpieza de exportaciones, portadas y asistente de terminal. Se conservan los datos originales y se añaden regresiones para los defectos reproducidos. Se retiran únicamente construcciones redundantes o inalcanzables demostradas.
+
+[Alcance y protocolo de auditoría](docs/QA-AUDIT-0450.md). La publicación exige los siete gates del mismo commit; sus recibos acreditan el resultado de las pruebas, sin prometer ausencia universal de errores.
 
 ## Biblioteca y preparación del trabajo en 0.44.0
 

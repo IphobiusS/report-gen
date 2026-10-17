@@ -338,7 +338,25 @@ class ExportQueue:
     def _purge(self):
         for key, job in list(self.jobs.items()):
             if job['stage'] in TERMINAL and time.time() - job['updated'] > self.ttl:
-                shutil.rmtree(job['root'], ignore_errors=True)
+                try:
+                    shutil.rmtree(job['root'])
+                except OSError:
+                    try:
+                        removed = not job['root'].exists()
+                    except OSError:
+                        removed = False
+                    if not removed:
+                        # A sharing violation must not orphan a private source
+                        # snapshot. Keep ownership for the next purge attempt,
+                        # and do not advertise a partially removed deliverable.
+                        job.update(stage='error', verification=None, diagnostics=[],
+                                   error=backend_message(
+                                       'No se pudo completar la limpieza de la exportación: {detail}',
+                                       en='Export cleanup could not be completed: {detail}',
+                                       detail=backend_message('Se reintentará la limpieza de los archivos temporales.',
+                                                              en='Temporary file cleanup will be retried.',
+                                                              pt='A limpeza dos arquivos temporários será repetida.')))
+                        continue
                 del self.jobs[key]
 
     def submit(self, owner, prepare, specification):
@@ -377,18 +395,21 @@ class ExportQueue:
     def status(self, owner, key):
         with self.lock:
             self._purge()
-            job = self._get(owner, key)
-            result = {k: job[k] for k in ('id', 'stage', 'label', 'revision', 'error', 'filename')}
-            result['formats'] = list(job.get('formats', []))
-            result['diagnostics'] = sanitize_diagnostics(job.get('diagnostics'))
-            result['verification_available'] = bool(job.get('verification')) and job['stage'] == 'done'
-            result['position'] = list(self.pending).index(key) + 1 if key in self.pending else 0
-            return result
+            return self._status_record(self._get(owner, key))
+
+    def _status_record(self, job):
+        """Serialize under the caller's lock without expiring other records."""
+        result = {k: job[k] for k in ('id', 'stage', 'label', 'revision', 'error', 'filename')}
+        result['formats'] = list(job.get('formats', []))
+        result['diagnostics'] = sanitize_diagnostics(job.get('diagnostics'))
+        result['verification_available'] = bool(job.get('verification')) and job['stage'] == 'done'
+        result['position'] = list(self.pending).index(job['id']) + 1 if job['id'] in self.pending else 0
+        return result
 
     def list(self, owner):
         with self.lock:
             self._purge()
-            return [self.status(owner, k) for k, j in self.jobs.items() if j['owner'] == owner]
+            return [self._status_record(job) for job in self.jobs.values() if job['owner'] == owner]
 
     def cancel(self, owner, key):
         with self.lock:
@@ -526,6 +547,19 @@ class ExportQueue:
                     except OSError as result_error:
                         cleanup_errors.append(str(result_error))
                 with self.lock:
+                    # A cancellation can arrive while the completed worker's
+                    # files are being cleaned, after outcome was calculated.
+                    # Recheck under the same lock that publishes terminal state
+                    # so an accepted cancellation cannot become a downloadable
+                    # result. Only the already-rendered result remains here.
+                    if outcome == 'done' and (job['cancelled'] or self.closed):
+                        outcome = 'cancelled'
+                        job['verification'] = None
+                        try:
+                            _clean_job_files(job['root'])
+                        except Exception as exc:
+                            cleanup_errors.append(str(exc))
+                            outcome = 'error'
                     if cleanup_errors:
                         job['verification'] = None
                         job['diagnostics'] = []

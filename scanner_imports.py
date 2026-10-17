@@ -48,6 +48,22 @@ def _report_plain(value):
     return '\n'.join(workflows.md_text(line) for line in tree.text_content().strip().splitlines())
 
 
+def _report_references(value):
+    """Keep actual URL text/attributes, before Markdown escaping prose."""
+    if not value:
+        return []
+    tree = html.fragment_fromstring(value, create_parent='div')
+    for node in tree.xpath('.//script|.//style|.//iframe'):
+        node.drop_tree()
+    # Block boundaries must not concatenate separate plain-text links.
+    for node in tree.xpath('.//br|.//p|.//div|.//li'):
+        node.tail = '\n' + (node.tail or '')
+    candidates = tree.xpath('.//a/@href', smart_strings=False)
+    candidates.extend(re.findall(r'https?://[^\s<>"\']+', tree.text_content(), re.I))
+    return list(dict.fromkeys(url for url in candidates
+                             if re.match(r'^https?://', url, re.I) and not any(c.isspace() for c in url)))
+
+
 def _report_list(value, field):
     if not isinstance(value, list) or len(value) > MAX_ROWS or any(not isinstance(item, dict) for item in value):
         raise DiagnosticError(backend_message('Lista de resultados inválida o excesiva', en='Invalid or oversized results list', pt='Lista de resultados inválida ou excessiva'), code='import.type.list', location={'field': field})
@@ -98,7 +114,7 @@ def zap(raw, lang='es'):
                     value = _text(instance, key, strip=False)
                     if value:
                         evidence.append({'lead': 'ZAP · ' + key, 'command': value})
-                references = re.findall(r'https?://[^\s<>"\']+', _report_plain(_text(alert, 'reference')))
+                references = _report_references(_text(alert, 'reference'))
                 origin = dict(plugin_id=_text(alert, 'pluginid'), alert_ref=plugin, method=method, parameter=param,
                               scanner_version=_text(document, '@version'), observed_at=_text(document, 'created'),
                               reported_risk=risk, record_sha256=sha256(json.dumps([alert, instance], sort_keys=True, ensure_ascii=True).encode()).hexdigest())

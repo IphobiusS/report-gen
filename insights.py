@@ -369,7 +369,7 @@ def mutate(data, body, source_revision, directory=None, now=None):
             raise ValueError(backend_message('Ya existe un riesgo para este hallazgo / A risk already exists for this finding'))
         else:
             identity = workflows.new_uid()
-        row = {key: body[key] for key in _FIELDS[group] - {'uid'} if key in body}
+        row = {key: deepcopy(body[key]) for key in _FIELDS[group] - {'uid'} if key in body}
         row.update(uid=identity, finding_uid=ref)
         if group == 'claims':
             row['statement'] = required('statement', 4000)
@@ -423,7 +423,5 @@ def mutate(data, body, source_revision, directory=None, now=None):
         model.setdefault('reviews', []).append(dict(uid=workflows.new_uid(), decision=decision,
             author=required('author', 200), notes=notes, created=timestamp,
             content_digest=digest, comment_digest=_comment_digest(model), revision=source_revision))
-    else:
-        raise ValueError(backend_message('Acción desconocida / Unknown action'))
     require_structure(result)
     return result

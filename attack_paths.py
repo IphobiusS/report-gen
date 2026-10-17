@@ -327,6 +327,9 @@ def figure_errors(data):
         if not isinstance(edges, list) or count != (len(edges) + 2) // 3:
             _error(errors, key + '.parts', 'cantidad de partes incoherente', 'inconsistent part count', 'quantidade de partes inconsistente')
     for uid, values in parts.items():
-        if sorted(values) != list(range(1, (len(paths[uid].get('edges', [])) + 2) // 3 + 1)):
+        edges = paths[uid].get('edges', [])
+        # The core path validator already reports malformed containers. Keep
+        # validating imported figure metadata without calling len() on them.
+        if isinstance(edges, list) and sorted(values) != list(range(1, (len(edges) + 2) // 3 + 1)):
             _error(errors, 'attack_path_figures', 'faltan partes del gráfico', 'graph parts are missing', 'faltam partes do gráfico')
     return errors

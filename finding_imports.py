@@ -81,6 +81,11 @@ def _burp(raw):
     # and external DTDs are never loaded or expanded, including parameter entities.
     if re.search(br'<!ENTITY\b|<!DOCTYPE[^>\[]*\b(?:SYSTEM|PUBLIC)\b', encoded, re.I):
         raise ValueError(backend_message('No se permiten entidades XML ni DTD externos'))
+    # Intake has already decoded UTF-8. A different XML encoding would make
+    # libxml reinterpret those bytes and silently corrupt names and evidence.
+    declaration = re.match(br'\s*<\?xml\b[^?]*\bencoding\s*=\s*[\'\"]([^\'\"]+)', encoded, re.I)
+    if declaration and declaration[1].lower() not in (b'utf-8', b'utf8', b'ascii', b'us-ascii'):
+        raise ValueError(backend_message('El XML debe declarar UTF-8', en='XML must declare UTF-8', pt='O XML deve declarar UTF-8'))
     parser = etree.XMLParser(resolve_entities=False, load_dtd=False, no_network=True, huge_tree=False)
     try:
         root = etree.fromstring(encoded, parser)
