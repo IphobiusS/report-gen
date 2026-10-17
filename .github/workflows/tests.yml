@@ -38,6 +38,7 @@ jobs:
           npm test
           npm run test:editor-modules
           RG_PYTHON=python node tests/test_delivery_flow_0410.cjs
+          node --test tests/test_delivery_harness_0410.cjs
           node --test tests/test_publication_pending_0410.cjs
           RG_PYTHON=python node tests/test_auxiliary_drafts_0410.cjs
           npm run test:pdf-compare-ui

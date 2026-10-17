@@ -1,6 +1,7 @@
 # Cambios 0.41.0 (2026-10-17)
 
 - Tablas dentro de hallazgos con continuidad por filas, cabeceras repetidas y comprobación de geometría; conserva el rechazo de celdas y encabezados físicamente imposibles.
+- Corregido el falso rechazo del PDF portugués cuando un guion partido comparte página con una viñeta cuyo orden de dibujo difiere del orden visual. El verificador exige mapas Unicode, caracteres, bytes de fuente y posición del glifo corroborados; conserva el rechazo de contenido alterado, fuentes ambiguas y pruebas incompletas.
 - Entrega guiada en cuatro pasos sobre la misma revisión guardada. Corrige respuestas tardías de vista previa y evita guardar otra revisión antes de exportar.
 - Borradores recuperables para edición masiva y formularios auxiliares, con restauración explícita y sin conservar consentimientos.
 - Revisión visual persistente con página, notas, pendientes y copia PDF privada opcional, ligada al hash y revisión de origen; respaldos e historial incluidos, publicación excluida.

@@ -2,6 +2,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const {JSDOM}=require('jsdom'),makeTransport=require('./flask_transport.cjs');
+const {waitForVerifiedExport}=require('./browser-export-readiness.cjs');
 const root=path.resolve(__dirname,'..'),checks=[],requests=[],errors=[];
 const check=(name,value)=>{assert.ok(value,name);checks.push(name);};
 const until=async predicate=>{for(let i=0;i<1000;i++){if(predicate())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Timed out: '+predicate);};
@@ -54,10 +55,10 @@ let dom,bridge,q,pending=0,holdPreview=null;
   change('[data-flow-delivery="ack"]',true);const etag=q.projectStore.etag,queuedStart=requests.length;click('[data-delivery-action="generate"]');await settle();
   const queued=requests.slice(queuedStart).find(r=>r.url.endsWith('/jobs')&&r.method==='POST');
   check('Complete delivery uses the existing immutable queue and exact reviewed If-Match',queued&&queued.status===202&&queued.headers['If-Match']===etag&&JSON.parse(queued.body).formats.join()==='md');
-  let completed=false;for(let attempt=0;attempt<400;attempt++){const job=await q.api.get('/api/jobs/'+queued.payload.id);assert.notEqual(job.stage,'error',job.error);if(job.stage==='done'){completed=true;break;}await new Promise(resolve=>setTimeout(resolve,25));}
+  const completed=await waitForVerifiedExport({evaluate:(_callback,id)=>q.api.get('/api/jobs/'+id)},queued.payload.id,{timeoutMs:20000,pollMs:25});
   const verified=await q.api.get('/api/jobs/'+queued.payload.id+'/verification');
   check('Queued Markdown delivery completes the production output verification',completed&&Object.values(verified.files||{}).length===1&&Object.values(verified.files).every(file=>file.bytes>0&&/^[a-f0-9]{64}$/.test(file.sha256)));
-  q.S.data.meta.title+=' updated';q.scheduleSave();q.DeliveryFlowUI.update();
+  q.S.data.meta.report_title+=' updated';q.scheduleSave();q.DeliveryFlowUI.update();
   check('Editing content immediately invalidates preview and acknowledgement',!hasPreview()&&!doc.querySelector('[data-delivery-preview-confirm]').checked&&!doc.querySelector('[data-flow-delivery="ack"]').checked&&doc.querySelector('[data-delivery-action="generate"]').disabled);
   check('Invalidation preserves label and formats',doc.querySelector('[data-flow-delivery="label"]').value==='Saved delivery label'&&!doc.querySelector('[data-flow-delivery-format="pdf"]').checked&&doc.querySelector('[data-flow-delivery-format="md"]').checked);
   click('[data-delivery-action="step-0"]');click('[data-delivery-action="check"]');await until(isCurrent);await settle();

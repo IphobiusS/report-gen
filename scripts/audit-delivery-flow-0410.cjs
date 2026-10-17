@@ -3,11 +3,12 @@
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto'),assert=require('node:assert/strict'),{spawn}=require('node:child_process');
 const args=process.argv.slice(2),option=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
 const root=path.resolve(option('--tool',process.env.REPORT_GEN_TOOL_ROOT||path.join(__dirname,'..'))),out=path.resolve(option('--output','out/delivery-flow-0410'));
+const {waitForVerifiedExport}=require(path.join(root,'tests/browser-export-readiness.cjs'));
 const playwright=require(process.env.REPORT_GEN_PLAYWRIGHT_MODULE||require.resolve('playwright',{paths:[root,process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES||root]})),engine=option('--browser','chromium');
 assert.ok(['chromium','firefox'].includes(engine));fs.mkdirSync(out,{recursive:true});
 const workspace=fs.mkdtempSync(path.join(os.tmpdir(),'report-gen-acceptance-0211-delivery-0410-'));fs.writeFileSync(path.join(workspace,'.test-only'),'synthetic acceptance workspace');
 const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-const sourcePaths=['webapp/static/delivery-flow.js','webapp/static/delivery-flow.css','webapp/static/insights.js','webapp/static/experience.js','webapp/static/studio.js','webapp/static/app.js','webapp/audience_api.py','webapp/progress_api.py'];
+const sourcePaths=['webapp/static/delivery-flow.js','webapp/static/delivery-flow.css','webapp/static/insights.js','webapp/static/experience.js','webapp/static/studio.js','webapp/static/app.js','webapp/audience_api.py','webapp/progress_api.py','tests/browser-export-readiness.cjs'];
 const sourceHashes=()=>Object.fromEntries(sourcePaths.map(file=>[file,hash(path.join(root,file))]));
 const results={schema:'report-gen-guided-delivery-browser/1',browserEngine:engine,checks:[],screenshots:[],downloads:[],pageErrors:[],consoleErrors:[],externalRequests:[],sourceHashes:sourceHashes()};
 const save=()=>fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(results,null,2));
@@ -59,7 +60,7 @@ const server=spawn(process.env.RG_PYTHON||'python',[root+'/scripts/browser-serve
     }
     const queuedPromise=page.waitForResponse(response=>response.request().method()==='POST'&&/\/projects\/[^/]+\/jobs$/.test(new URL(response.url()).pathname));await action('generate').click();const queued=await queuedPromise,job=await queued.json();
     check(lang+': complete delivery enqueues the exact reviewed revision',queued.status()===202&&queued.request().headers()['if-match']===initial.etag);
-    await page.waitForFunction(async id=>{const job=await api.get('/api/jobs/'+id);if(job.stage==='error')throw Error(job.error);return job.stage==='done';},job.id,{timeout:120000});
+    await waitForVerifiedExport(page,job.id);
     const verification=await page.evaluate(id=>api.get('/api/jobs/'+id+'/verification'),job.id);
     const verifiedFiles=Object.entries(verification.files||{});
     check(lang+': queued Markdown and HTML files pass production export verification',verifiedFiles.length===2&&verifiedFiles.every(([,file])=>file.sha256&&file.bytes>0),verifiedFiles.map(([name,file])=>({name,bytes:file.bytes,sha256:file.sha256})));
@@ -70,7 +71,7 @@ const server=spawn(process.env.RG_PYTHON||'python',[root+'/scripts/browser-serve
     check(lang+': executive plan shows real outgoing text without approving it',await page.locator('.insights-context').innerText().then(text=>text.length>100)&&!await page.locator('[data-delivery-preview-confirm]').isChecked());await screenshot(lang+'-desktop-executive-preview');
     await action('step-1').click();await page.locator('[data-insights-field="title"]').fill('Revised '+lang+' audience');
     check(lang+': editing audience options invalidates preview and export',await page.evaluate(()=>document.querySelector('[data-delivery-flow]').dataset.deliveryPreviewCurrent==='false')&&await page.locator('[data-insights-action="export-audience"]').isDisabled());
-    await page.evaluate(()=>{S.data.meta.title+=' changed';scheduleSave();projectStore.timers.clearTimeout(projectStore.timer);projectStore.timer=null;});
+    await page.evaluate(()=>{S.data.meta.report_title+=' changed';scheduleSave();projectStore.timers.clearTimeout(projectStore.timer);projectStore.timer=null;});
     check(lang+': a dirty project cannot continue with a previous revision',await action('step-2').isDisabled()&&await action('step-3').isDisabled());
     await action('step-0').click();await action('check').click();await page.waitForFunction(()=>document.querySelector('[data-delivery-flow]').dataset.deliveryCurrent==='true');
     check(lang+': explicit recheck saves changed content and keeps the old preview invalid',await page.evaluate(previous=>!projectStore.dirty&&projectStore.etag!==previous&&document.querySelector('[data-delivery-flow]').dataset.deliveryPreviewCurrent==='false',initial.etag));

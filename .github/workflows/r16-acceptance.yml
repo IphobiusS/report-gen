@@ -2,7 +2,7 @@ name: R16 trilingual acceptance
 
 on:
   push:
-    branches: [main, feature/portuguese-r16]
+    branches: [main, feature/portuguese-r16, feature/six-integration-0410]
   pull_request:
     branches: [main]
   workflow_dispatch:

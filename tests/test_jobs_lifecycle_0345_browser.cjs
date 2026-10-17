@@ -8,11 +8,12 @@ const {createHash}=require('node:crypto');
 const root=path.resolve(__dirname,'..'),args=process.argv.slice(2),opt=(n,d)=>args.includes(n)?args[args.indexOf(n)+1]:d;
 const engine=opt('--browser','webkit'),output=path.resolve(opt('--output','out/jobs-lifecycle-0345'));
 const source=path.resolve(opt('--source',path.join(root,'webapp/static/progress.js'))),code=fs.readFileSync(source,'utf8');
+const dependencies=Object.fromEntries(['drafts.js','pending-work.js'].map(name=>['/'+name,fs.readFileSync(path.join(root,'webapp/static',name),'utf8')]));
 const appSource=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8');
 const languageHelpers=appSource.slice(appSource.indexOf('// Language selection'),appSource.indexOf('// ---- shared transport'));
 assert.ok(languageHelpers.includes('function uiText('),'Production language helpers are available');
 const playwright=require(require.resolve('playwright',{paths:[root]}));
-const result={engine,source_sha256:createHash('sha256').update(code).digest('hex'),checks:[],errors:[],failedRequests:[],requests:[],limitations:['Restoration uses deterministic persisted PageTransitionEvent events; actual BFCache admission is not asserted.']};
+const result={engine,source_sha256:createHash('sha256').update(code).digest('hex'),dependency_sha256:Object.fromEntries(Object.entries(dependencies).map(([name,value])=>[name,createHash('sha256').update(value).digest('hex')])),checks:[],errors:[],failedRequests:[],requests:[],limitations:['Restoration uses deterministic persisted PageTransitionEvent events; actual BFCache admission is not asserted.']};
 fs.mkdirSync(output,{recursive:true});
 const save=()=>fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(result,null,2));
 const check=(name,value,detail)=>{result.checks.push({name,passed:!!value,detail});save();assert.ok(value,name);};
@@ -30,10 +31,11 @@ window.setTimeout=(cb,ms,...rest)=>{let id;id=nativeSetTimeout(()=>{qa.timers.de
 window.clearTimeout=id=>{qa.timers.delete(id);nativeClearTimeout(id)};
 addEventListener('unhandledrejection',e=>qa.unhandled.push(String(e.reason)));
 addEventListener('pageshow',e=>qa.persisted.push(e.persisted));
-</script><script src="/progress.js"></script><script>ProgressUI.bind();window.progress=ProgressUI;</script></body></html>`;
+</script><script src="/drafts.js"></script><script src="/pending-work.js"></script><script src="/progress.js"></script><script>ProgressUI.bind();window.progress=ProgressUI;</script></body></html>`;
 const settle=page=>page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
 (async()=>{try{
  server=http.createServer((req,res)=>{
+  if(Object.hasOwn(dependencies,req.url)){res.writeHead(200,{'Content-Type':'text/javascript'});res.end(dependencies[req.url]);return;}
   if(req.url==='/progress.js'){res.writeHead(200,{'Content-Type':'text/javascript'});res.end(code);return;}
   if(req.url==='/api/jobs'){
    result.requests.push({sequence:++sequence,method:req.method});res.on('close',()=>waiting.delete(res));

@@ -630,14 +630,17 @@ def _pdf_shaping_text(page, reader, textpage, primary):
     return unicodedata.normalize('NFC', ''.join(result))
 
 
-def _pdf_simple_hyphens(page, reader, textpage, native):
-    """Prove only hard hyphens from an exactly identified embedded simple font.
+def _pdf_positioned_hyphens(page, reader, textpage, native, *, allow_cid=False):
+    """Prove hard hyphens from embedded TrueType source codes and positions.
 
-    LibreOffice can omit continuation-glyph Unicode mappings elsewhere on a
-    page. That prevents whole-page donor agreement even when PDFium reads the
-    shaped text correctly. This path leaves every other native character
-    untouched and requires independent source-code, font-byte and position
-    proof for each hyphen. Font names alone never establish font identity.
+    A reader can move a list bullet into visual order while its independent
+    donor retains paint order. LibreOffice can also omit unrelated mappings.
+    Neither changes the actual hard hyphen. This narrow fallback leaves every
+    other native character untouched and requires independent source-code,
+    embedded font-byte and position proof for each correction. It supports
+    simple TrueType and Identity-H/CIDToGIDMap Identity TrueType fonts only;
+    font names alone never establish identity. CID proof must be explicitly
+    enabled after whole-page source-map and character-inventory agreement.
     """
     import ctypes
     from pdfminer.converter import PDFPageAggregator
@@ -701,14 +704,30 @@ def _pdf_simple_hyphens(page, reader, textpage, native):
         matches = []
         for font in fonts:
             descriptor = font.get('/FontDescriptor')
+            if font.get('/Subtype') == '/Type0':
+                descendants = font.get('/DescendantFonts', [])
+                if len(descendants) == 1:
+                    descriptor = descendants[0].get_object().get('/FontDescriptor')
             embedded = descriptor.get_object().get('/FontFile2') if descriptor else None
             if embedded is not None and embedded.get_object().get_data() == bytes(font_bytes):
                 matches.append(font)
-        if len(matches) != 1 or matches[0].get('/Subtype') != '/TrueType':
+        if len(matches) != 1:
             fail()
         font = matches[0]
         encoding = font.get('/Encoding')
-        if encoding is not None and isinstance(encoding.get_object(), StreamObject):
+        subtype = font.get('/Subtype')
+        if subtype == '/TrueType':
+            if encoding is not None and isinstance(encoding.get_object(), StreamObject):
+                fail()
+            digits = 2
+        elif subtype == '/Type0' and allow_cid:
+            descendants = font.get('/DescendantFonts', [])
+            if (encoding != '/Identity-H' or len(descendants) != 1
+                    or descendants[0].get_object().get('/Subtype') != '/CIDFontType2'
+                    or descendants[0].get_object().get('/CIDToGIDMap') != '/Identity'):
+                fail()
+            digits = 4
+        else:
             fail()
         cmap = font.get('/ToUnicode')
         cmap = cmap.get_object() if cmap is not None else None
@@ -718,12 +737,13 @@ def _pdf_simple_hyphens(page, reader, textpage, native):
         if re.search(rb'\busecmap\b|beginbfrange', data):
             fail()
         spaces = re.findall(rb'\b(\d+)\s+begincodespacerange\s*(.*?)\s*endcodespacerange\b', data, re.S)
+        expected_space = rb'\s*<' + b'0' * digits + rb'>\s*<' + b'f' * digits + rb'>\s*'
         if (len(spaces) != 1 or int(spaces[0][0]) != 1
-                or not re.fullmatch(rb'\s*<00>\s*<ff>\s*', spaces[0][1], re.I)):
+                or not re.fullmatch(expected_space, spaces[0][1], re.I)):
             fail()
         mapping = {}
         for count, block in re.findall(rb'\b(\d+)\s+beginbfchar\s*(.*?)\s*endbfchar\b', data, re.S):
-            pattern = rb'<([\da-fA-F]{2})>\s*<([\da-fA-F]*)>'
+            pattern = rb'<([\da-fA-F]{' + str(digits).encode() + rb'})>\s*<([\da-fA-F]*)>'
             pairs = re.findall(pattern, block)
             if int(count) != len(pairs) or re.sub(pattern, b'', block).strip():
                 fail()
@@ -763,15 +783,23 @@ def _pdf_proved_hyphens(page, reader, textpage, primary):
     try:
         donor = [char for char in _pdf_hyphen_donor(page, reader) if not char.isspace()]
     except ValueError:
-        return _pdf_simple_hyphens(page, reader, textpage, native)
+        return _pdf_positioned_hyphens(page, reader, textpage, native)
     # Bounded extraction can omit native generated separators between table
     # cells. Retain the native separators only after exact nonspace agreement;
     # no expected content participates in this reconciliation.
     primary = unicodedata.normalize('NFC', native)
     actual = [char for char in primary if not char.isspace()]
     if len(actual) != len(donor) or any(a != b and not (a == '\x02' and b == '-') for a, b in zip(actual, donor)):
-        raise ValueError(backend_message('El texto PDF independiente difiere',
-                                         en='Independent PDF text diverges'))
+        # The native reader may place list markers in visual order while the
+        # donor keeps PDF paint order. Require the same character inventory,
+        # then corroborate only each hard hyphen geometrically. Do not reorder
+        # either stream, discard text, or infer anything from report content.
+        if Counter('-' if char == '\x02' else char for char in actual) != Counter(donor):
+            raise ValueError(backend_message('El texto PDF independiente difiere',
+                                             en='Independent PDF text diverges'))
+        # CID proof is permitted here only after the strict whole-page donor
+        # successfully validated every source mapping and the inventory agrees.
+        return _pdf_positioned_hyphens(page, reader, textpage, native, allow_cid=True)
     confirmed = iter(donor)
     result = []
     for char in primary:

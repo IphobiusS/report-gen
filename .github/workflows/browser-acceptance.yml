@@ -144,19 +144,19 @@ jobs:
       - name: Guided delivery, exact revision, audience and real downloads
         run: xvfb-run -a node scripts/audit-delivery-flow-0410.cjs --browser ${{ matrix.browser }} --output out/integration-0410/delivery-${{ matrix.browser }}
       - name: Save visual review and resume across server restarts
-        if: matrix.browser == 'chromium'
+        if: ${{ !cancelled() && matrix.browser == 'chromium' }}
         run: xvfb-run -a node scripts/audit-visual-persistence-0410.cjs --output out/integration-0410/visual-persistence
       - name: Recover auxiliary forms using real IndexedDB and explicit review
-        if: matrix.browser == 'chromium'
+        if: ${{ !cancelled() && matrix.browser == 'chromium' }}
         run: xvfb-run -a node tests/test_auxiliary_drafts_0410_browser.cjs --output out/integration-0410/auxiliary-drafts
       - name: Native graphical installer in Spanish, English and Portuguese
-        if: matrix.browser == 'chromium'
+        if: ${{ !cancelled() && matrix.browser == 'chromium' }}
         run: xvfb-run -a -s '-screen 0 1280x1000x24' python scripts/audit-install-wizard.py --output out/integration-0410/installer
       - name: Install the optional Python Chromium PDF runtime
-        if: matrix.browser == 'chromium'
+        if: ${{ !cancelled() && matrix.browser == 'chromium' }}
         run: python -m playwright install --with-deps chromium
       - name: Multipage finding tables through the actual Chromium PDF renderer
-        if: matrix.browser == 'chromium'
+        if: ${{ !cancelled() && matrix.browser == 'chromium' }}
         env:
           REPORT_GEN_TEST_CHROMIUM_PDF: '1'
         run: python -m pytest tests/test_finding_table_flow_0410.py -k real_chromium --junitxml=out/integration-0410/chromium-tables.xml
