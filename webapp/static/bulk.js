@@ -18,15 +18,17 @@ const BulkUI=(()=>{
     const data=cleanDraft(row.data),uids=new Set((S.data.findings||[]).map(f=>f.uid)),groups=new Set((S.data.root_cause_groups||[]).map(g=>g.uid));
     return data.finding_uids.some(uid=>!uids.has(uid))||!!(data.values.root_cause_uid&&!groups.has(data.values.root_cause_uid));
   }
-  function open(recovered=null){
+  function open(recovered=null,presetUids=null){
     if(recovered?.format!=='report-gen-pending')recovered=null;
     if(!S.slug||projectBusyCount||projectStore.loading)return;
     if(document.querySelector('[data-bulk-dialog]')){document.querySelector('[data-bulk-dialog] input')?.focus();return;}
     const slug=S.slug,workspace=S.workspace_id,trigger=document.activeElement,retained=PendingUI.active.get(S.slug+'|bulk:assignments');
     const initial=recovered?cleanDraft(recovered.data):retained?cleanDraft(retained.read().data):null;
     if((recovered&&(recovered.slug!==slug||recovered.workspace_id!==BrowserWorkspace.current()))||(initial&&missingReference({data:initial})))throw Error(w('El borrador ya no corresponde al proyecto actual.','The draft no longer matches the current project.','O rascunho não corresponde mais ao projeto atual.'));
-    const selected=new Set(initial?.finding_uids||[]);
-    let preview=null,requestBusy=false,edited=!!initial,page=0,pending=null;
+    const preset=Array.isArray(presetUids)?[...new Set(presetUids)].filter(uid=>S.data.findings.some(f=>f.uid===uid)).slice(0,500):[];
+    const selected=new Set(initial?.finding_uids||preset);
+    if(initial&&preset.length)toast(w('Se abrió la asignación pendiente que ya existía. Su selección se conserva.','The existing pending assignment was opened. Its selection is preserved.','A atribuição pendente existente foi aberta. Sua seleção foi mantida.'),'ok');
+    let preview=null,requestBusy=false,edited=!!initial||!!preset.length,page=0,pending=null;
     const dialog=h('dialog',{class:'experience-dialog workbench-dialog','aria-label':w('Editar hallazgos por lotes','Bulk edit findings', "Editar achados em lote"),'data-bulk-dialog':''});
     const body=h('div',{class:'experience-body'}),form=h('fieldset',{}),list=h('div',{'data-bulk-findings':''}),review=h('div',{'data-bulk-review':''}),error=h('p',{role:'alert'}),count=h('p',{role:'status'});
     const close=h('button',{type:'button',class:'btn',onclick:()=>requestClose()},w('Cerrar','Close', "Fechar"));
@@ -70,7 +72,7 @@ const BulkUI=(()=>{
       if(requestBusy||!confirm(w('¿Descartar esta selección, propuesta y su copia local? Los hallazgos guardados se conservan.','Discard this selection, proposal and local copy? Saved findings are retained.','Descartar esta seleção, proposta e cópia local? Os achados salvos serão mantidos.')))return;
       discard.disabled=true;try{if(await PendingUI.clear(pending)){edited=false;dialog.close();}}catch(e){error.textContent=e.message;}finally{discard.disabled=false;}
     }},w('Descartar formulario pendiente','Discard pending form','Descartar formulário pendente'));
-    if(recovered)PendingUI.changed(pending);
+    if(recovered||!initial&&preset.length)PendingUI.changed(pending);
     async function run(action){
       if(requestBusy)return;requestBusy=true;form.disabled=true;close.disabled=true;discard.disabled=true;compare.disabled=true;apply.disabled=true;error.textContent='';busyProject(true);
       try{await action();}catch(e){error.textContent=e.message;}finally{requestBusy=false;form.disabled=false;close.disabled=false;discard.disabled=false;compare.disabled=false;apply.disabled=!preview||!preview.changes.length||!ack.checked;busyProject(false);}

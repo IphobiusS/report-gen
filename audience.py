@@ -133,6 +133,13 @@ def project(source, options):
     if profile == 'technical':
         data = deepcopy(source)
         data['findings'] = deepcopy(selected_rows)
+        # A selected derivative keeps documentary context, but no reference to
+        # a finding excluded from that derivative may become a dangling link.
+        for case in data.get('test_cases', []):
+            case['finding_uids'] = [uid for uid in case.get('finding_uids', []) if uid in selected]
+        for path in data.get('attack_paths', []):
+            for node in path.get('nodes', []):
+                node['finding_uids'] = [uid for uid in node.get('finding_uids', []) if uid in selected]
         linked_groups = {row.get('root_cause_uid') for row in selected_rows}
         if 'root_cause_groups' in data:
             data['root_cause_groups'] = [group for group in data['root_cause_groups'] if group.get('uid') in linked_groups]
@@ -151,8 +158,15 @@ def project(source, options):
             data.setdefault('report', {})['sections'] = kept
             config = data['report'].setdefault('workflow', {})
             for key, section_key in [('include_assets', 'rg_assets'), ('include_coverage', 'rg_coverage'),
-                                     ('include_retest', 'rg_retest'), ('include_root_causes', 'rg_root_causes')]:
+                                     ('include_retest', 'rg_retest'), ('include_root_causes', 'rg_root_causes'),
+                                     ('include_instances', 'rg_instances'), ('include_test_cases', 'rg_test_cases')]:
                 config[key] = section_key in keys
+            data['attack_paths'] = [path for path in data.get('attack_paths', [])
+                                    if 'rg_attack_' + path['uid'].replace('-', '') in keys]
+            config['include_attack_paths'] = bool(data['attack_paths'])
+            if 'attack_path_figures' in data:
+                paths = {path['uid'] for path in data['attack_paths']}
+                data['attack_path_figures'] = [row for row in data['attack_path_figures'] if row['path_uid'] in paths]
         else:
             keys = list(available)
         if isinstance(data.get('insights'), dict):

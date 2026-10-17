@@ -118,3 +118,50 @@
 #sectionList [data-section-move]{flex:none;margin-right:4px}
 .dash-table .c-drag{width:88px;min-width:88px}
 .dash-table .c-drag .btn{white-space:nowrap;max-width:none}
+
+/* Review queues are UI preferences. Evidence stays beside the editable document. */
+.review-queue-controls,.board-selection-tools{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:16px 0;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.review-queue-controls>span,.board-selection-tools>span{font-size:12px;color:var(--muted)}
+.review-queue-controls .btn,.board-selection-tools .btn{min-height:40px;font-size:12px}
+.table-column-options{position:relative;font-size:12px}.table-column-options>summary{padding:10px;cursor:pointer}.table-column-options[open]{padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--panel2)}
+.table-column-options .wf-check{display:inline-flex;margin:4px 12px 4px 0;gap:6px;min-height:36px}
+.dash-table .c-select{width:44px;min-width:44px;text-align:center}.dash-table .c-select input{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
+.dash-table [hidden]{display:none!important}
+.pinned-evidence{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--panel);border-left:1px solid var(--line);overflow:hidden}
+.pinned-evidence-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;flex:none;padding:16px;border-bottom:1px solid var(--line)}
+.pinned-evidence-heading h2{font-size:15px;margin:0;overflow-wrap:anywhere}.pinned-evidence-heading .btn{min-height:40px;font-size:12px}
+.pinned-evidence-body{padding:16px;overflow:auto;min-height:0;max-width:100%;overflow-wrap:anywhere}.pinned-evidence-body label{font-size:12px}.pinned-evidence-body select{width:100%;min-width:0;font-size:13px}
+.pinned-evidence-body img{display:block;width:100%;height:auto;max-height:60vh;object-fit:contain;margin:16px 0;background:var(--bg)}
+.pinned-evidence-body pre{max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}.pinned-evidence-body small{display:block;color:var(--muted);margin:12px 0}.pinned-evidence-body .btn{max-width:100%;white-space:normal;min-height:40px}
+.search-comment-body{white-space:pre-wrap;overflow-wrap:anywhere}
+/* The inspector temporarily uses the preview's space without changing its saved preference. */
+body .layout.review-evidence-open.review-evidence-open>.preview{display:none!important}
+@media(min-width:1101px){
+ body .layout.review-evidence-open.review-evidence-open{grid-template-columns:240px minmax(320px,1fr) minmax(290px,32%)}
+ body .layout.review-evidence-open.review-evidence-open>.editor{grid-column:2;grid-row:1}
+ body .layout.review-evidence-open.review-evidence-open>.pinned-evidence{grid-column:3;grid-row:1}
+ body .layout.review-evidence-open.review-evidence-open.context-index-open{grid-template-columns:240px clamp(200px,var(--context-index-width,240px),260px) minmax(280px,1fr) minmax(280px,28%)}
+ body .layout.review-evidence-open.review-evidence-open.context-index-open>.editor{grid-column:3}
+ body .layout.review-evidence-open.review-evidence-open.context-index-open>.pinned-evidence{grid-column:4}
+ .focus-mode .layout.review-evidence-open.review-evidence-open[class]{grid-template-columns:minmax(320px,1fr) minmax(300px,36%)}
+ .focus-mode .layout.review-evidence-open.review-evidence-open[class]>.editor{grid-column:1}
+ .focus-mode .layout.review-evidence-open.review-evidence-open[class]>.pinned-evidence{grid-column:2}
+ .focus-mode .layout.review-evidence-open.review-evidence-open.context-index-open[class]{grid-template-columns:clamp(200px,var(--context-index-width,240px),260px) minmax(280px,1fr) minmax(280px,32%)}
+ .focus-mode .layout.review-evidence-open.review-evidence-open.context-index-open[class]>.editor{grid-column:2}
+ .focus-mode .layout.review-evidence-open.review-evidence-open.context-index-open[class]>.pinned-evidence{grid-column:3}
+}
+@media(min-width:761px) and (max-width:1100px){
+ body .layout.review-evidence-open.review-evidence-open{grid-template-columns:220px minmax(0,1fr);grid-template-rows:minmax(150px,35vh) minmax(0,1fr)}
+ body .layout.review-evidence-open.review-evidence-open>.sidebar{grid-column:1;grid-row:1 / span 2}
+ body .layout.review-evidence-open.review-evidence-open>.editor{grid-column:2;grid-row:2}
+ body .layout.review-evidence-open.review-evidence-open>.pinned-evidence{grid-column:2;grid-row:1;border-bottom:1px solid var(--line)}
+ body .layout.review-evidence-open.review-evidence-open.context-index-open{grid-template-columns:220px 220px minmax(0,1fr)}
+ body .layout.review-evidence-open.review-evidence-open.context-index-open>.context-index{grid-column:2;grid-row:1 / span 2}
+ body .layout.review-evidence-open.review-evidence-open.context-index-open>.editor,body .layout.review-evidence-open.review-evidence-open.context-index-open>.pinned-evidence{grid-column:3}
+}
+@media(max-width:760px){
+ .layout.review-evidence-open>.pinned-evidence{position:sticky;bottom:0;max-height:38dvh;z-index:8;border:1px solid var(--line);box-shadow:0 -8px 24px #0003}
+ .pinned-evidence-heading{padding:8px 12px}.pinned-evidence-body{padding:12px}.review-queue-controls,.board-selection-tools{align-items:stretch}.review-queue-controls .btn,.board-selection-tools .btn{min-height:44px}
+}
+@media print{.pinned-evidence{display:none!important}}
+.tickets-form{min-width:0;border:0;padding:0;margin:0}.tickets-form input,.tickets-form select{max-width:100%;min-width:0}.tickets-form pre{white-space:pre-wrap;overflow-wrap:anywhere}

@@ -1,8 +1,12 @@
-# report-gen 0.41.0 user guide
+# report-gen 0.42.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Português (Brasil)](guide.pt.md) · [Changelog](../CHANGELOG.md)
 
 Unless stated otherwise, run commands from the project root containing `start.py`. Initial setup and optional downloads need a connection; ordinary editing and exports run locally.
+
+## Assessment workflow in 0.42.0
+
+See the [review, instances, HTTP, plans, paths and integrations walkthrough](senior-workflow.en.md). It covers publication decisions, module limits and environment checks that require separate acceptance records.
 
 ## Install and launch
 
@@ -198,11 +202,11 @@ Extension installation failed with **Ubuntu's LibreOffice 24.2.7.2 packages**, e
 Build the OXT from the downloaded report-gen source without installing it:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.41.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.42.0.oxt
 ```
 
 1. In the chosen LibreOffice installation, open **Tools → Extensions → Add**. Some versions call it **Extension Manager**.
-2. Select `report-gen-libreoffice-0.41.0.oxt` and install it for your user.
+2. Select `report-gen-libreoffice-0.42.0.oxt` and install it for your user.
 3. Close every window of that LibreOffice installation, reopen it and open a copy of the DOCX freshly exported by report-gen.
 4. Inspect its URLs, lists and tables after opening, editing and saving it. To remove the extension, disable or remove it in the same manager and restart LibreOffice.
 

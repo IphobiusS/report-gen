@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen com Prometeo e Evaristo" width="300">
 </p>
 
-# report-gen 0.41.0
+# report-gen 0.42.0
 
 **Um editor local para transformar avaliações de segurança em relatórios claros.** Organize achados, vincule evidências, acompanhe a remediação e os retestes e produza **PDF, Word, Markdown com imagens e HTML portátil** a partir de uma revisão salva.
 
@@ -36,6 +36,18 @@ O português é a variante **Brasil**. A chave interna é `pt`; os argumentos de
 5. Abra os arquivos gerados antes de compartilhar e mantenha um backup privado do projeto editável.
 
 O **tutorial visual** permanece no menu. Seus seis passos têm instruções e capturas reais em espanhol, inglês e português, com ampliação e progresso local. A apresentação inicial pode ser ignorada. Consultar o tutorial não modifica o relatório; ele também funciona quando o navegador não consegue salvar seu progresso.
+
+## Fluxo de avaliação 0.42.0
+
+A revisão conecta a fila filtrada, a evidência fixada ao lado do editor, as seleções da tabela e a pesquisa de ativos, evidências e comentários. **Salvar e próximo** mantém a sessão de revisão ativa.
+
+Os achados aceitam **instâncias afetadas** com responsável, prazo, evidência e retestes independentes. O status geral deriva do conjunto: uma correção parcial não encerra os destinos pendentes. **Planos de testes** registram metodologia e versão, papéis, organizações e resultados; **caminhos de ataque** distinguem transições demonstradas, inferidas e bloqueadas.
+
+A **evidência HTTP** separa originais privados de cópias revisadas para entrega técnica. Inclui importação HAR, comparação e extensão opcional do Burp para enviar somente mensagens selecionadas. Reimportações de scanners comparam e vinculam novas observações preservando as decisões do analista.
+
+Perfis versionados de cliente e pacotes de revisão editorial mantêm requisitos e mudanças por campo. Jira Cloud e DefectDojo aceitam intercâmbios explícitos com registros existentes em servidores HTTPS públicos; o status externo não substitui o reteste. A revisão editorial com Ollama utiliza fontes selecionadas e preserva o julgamento do autor.
+
+[Fluxo prático e limites da 0.42](docs/senior-workflow.pt.md) · [Caso fictício Aster ES/EN/PT](qa/aster/README.md) · [Extensão Burp](integrations/burp-report-gen/README.md). A aceitação nativa do Word e Burp, contas reais Jira/DefectDojo e inferência Ollama exigem seus próprios registros; esta lista de capacidades não comprova essas execuções.
 
 ## Integração 0.41.0
 

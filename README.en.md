@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.41.0
+# report-gen 0.42.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -50,6 +50,18 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Word | An editable `.docx` with its own table-of-contents fields. |
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
+
+## Assessment workflow 0.42.0
+
+Review connects the filtered queue, evidence pinned beside the editor, table selections and search across assets, evidence and comments. **Save and next** retains the active review session.
+
+Findings support **affected instances** with independent ownership, deadlines, evidence and retests. Overall status derives from the set: a partial fix never closes outstanding targets. **Test plans** record methodology and version, roles, tenants and outcomes; **attack paths** distinguish demonstrated, inferred and blocked transitions.
+
+**HTTP evidence** separates private originals from reviewed technical delivery copies. It includes HAR import, comparison and an optional Burp extension that sends only selected messages. Scanner reimports compare and attach new observations while preserving analyst decisions.
+
+Versioned client profiles and editorial review packages retain requirements and field-level changes. Jira Cloud and DefectDojo support explicit exchanges with existing records on public HTTPS servers; external status does not replace retesting. Ollama editorial review uses selected sources and retains the author's judgment.
+
+[Practical 0.42 workflow and limits](docs/senior-workflow.en.md) · [Fictional Aster ES/EN/PT case](qa/aster/README.md) · [Burp extension](integrations/burp-report-gen/README.md). Native Word and Burp acceptance, live Jira/DefectDojo accounts and Ollama inference need their own records; this capability list does not establish those executions.
 
 ## 0.41.0 integration
 
@@ -157,7 +169,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.41.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.42.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

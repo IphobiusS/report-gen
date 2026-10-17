@@ -56,8 +56,9 @@ const RetestMatrixUI = (() => {
       return h('li',{'data-retest-result-count':key},h('span',{class:'rm-count-label'},labels[key]+': '),
         h('strong',{class:'rm-count-value'},String(count)),h('span',{class:'rm-chart-track','aria-hidden':'true'},bar));
     }));
-    host.replaceChildren(h('h3',{},w('Último resultado registrado por hallazgo','Latest recorded result per finding', "Último resultado registrado por achado")),
+    host.replaceChildren(h('h3',{},w('Resultados registrados por hallazgo e instancias','Recorded results by finding and instances', 'Resultados registrados por achado e instâncias')),
       note('Cada barra cuenta hallazgos del filtro actual. «Corregido» es el resultado escrito en el retest, no una certificación de esta herramienta.','Each bar counts findings in the current filter. “Fixed” is the retest’s recorded result, not a certification by this tool.', "Cada barra contabiliza os achados do filtro atual. “Corrigido” é o resultado registrado no reteste, não uma certificação desta ferramenta."),list);
+    if(rows.some(row=>row.instance_summary))host.append(note('Con instancias, solo se muestra «Todas verificadas» cuando cada destino tiene estado corregido y su último retest es corregido.','With instances, “All verified” requires every target to have verified-fixed status and a latest fixed retest.','Com instâncias, “Todas verificadas” exige que cada destino tenha status corrigido e verificado e o último reteste corrigido.'));
   }
   function table(state,rows,host) {
     const labels=[w('Hallazgo y severidad','Finding and severity', "Achado e severidade"),w('Estado de seguimiento','Tracking status', "Status do acompanhamento"),w('Verificación técnica','Technical verification', "Verificação técnica"),w('Última observación fechada','Latest dated observation', "Última observação com data"),w('Asociaciones explícitas','Explicit associations', "Associações explícitas"),w('Avisos de interpretación','Interpretation notes', "Notas de interpretação")];
@@ -65,9 +66,10 @@ const RetestMatrixUI = (() => {
       const findingLabel=(row.display_id?row.display_id+' · ':'')+(row.title||w('Sin título','Untitled', "Sem título"));
       const finding=row.identity_status==='unique'?h('button',{type:'button',class:'rm-finding','data-retest-finding-uid':row.finding_uid,onclick:()=>openFinding(state,row)},findingLabel):h('span',{},findingLabel);
       const latest=row.latest?h('div',{},h('strong',{},row.outcome_label),h('p',{},row.latest.tested_on),h('p',{},w('Evaluador: ','Assessor: ', "Avaliador: ")+(row.latest.assessor||w('Sin registrar','Not recorded', "Não registrado")))):h('strong',{},row.outcome_label);
+      const instances=row.instance_summary?h('div',{'data-retest-instance-summary':''},h('p',{},row.instance_summary.total+' '+w('instancias afectadas','affected instances','instâncias afetadas')),h('ul',{},Object.entries(row.instance_summary.counts).filter(([,count])=>count).map(([key,count])=>h('li',{},row.instance_summary.labels[key]+': '+count))),row.general_latest?h('p',{},w('Observación general registrada: ','General observation recorded: ','Observação geral registrada: ')+row.general_latest.tested_on):null):null;
       return h('tr',{'data-retest-row':row.key,'data-retest-outcome':row.outcome,role:'row'},
         h('th',{scope:'row'},finding,h('p',{},row.severity_label)),cell(labels[1],row.status_label),cell(labels[2],row.verification_label),
-        cell(labels[3],latest,h('p',{},w('Observaciones registradas: ','Recorded observations: ', "Observações registradas: ")+row.observations)),
+        cell(labels[3],latest,instances,h('p',{},w('Observaciones generales registradas: ','Recorded general observations: ', 'Observações gerais registradas: ')+row.observations)),
         cell(labels[4],association(w('Evidencia original vinculada','Linked original evidence', "Evidência original vinculada"),row.original_evidence),association(w('Evidencia del último retest','Latest retest evidence', "Evidência do último reteste"),row.retest_evidence),association(w('Activos vinculados','Linked assets', "Ativos vinculados"),row.assets),
           row.assets.items.length?h('ul',{},row.assets.items.map(asset=>h('li',{},asset.label))):null),
         cell(labels[5],row.notices.length?h('ul',{},row.notices.map(item=>h('li',{},item.text))):w('Sin avisos derivados de estos registros. La revisión humana sigue pendiente.','No notes derived from these records. Human review is still required.', "Nenhuma nota derivada destes registros. A revisão humana ainda é necessária.")));

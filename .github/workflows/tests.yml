@@ -12,7 +12,7 @@ jobs:
   quick:
     name: Lint and JavaScript
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-node@v7.1.0
@@ -50,6 +50,91 @@ jobs:
           RG_PYTHON=python npm run test:context-index
           node tests/test_atlas_browser_harness_0390.cjs
           RG_PYTHON=python node --test tests/test_portuguese_modules_0350.cjs
+      - name: Senior workflow DOM and real Flask contracts
+        env:
+          RG_PYTHON: python
+        run: |
+          node tests/test_review_workspace_0420.cjs
+          node --test tests/test_instances_ui_0420.cjs
+          node tests/test_assessment_0420_ui.cjs
+          node tests/test_http_evidence_0420.cjs
+          node tests/test_review_exchange_0420.cjs
+          node tests/test_tickets_ui_0420.cjs
+
+  burp_bridge:
+    name: Burp bridge against pinned official Montoya API
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Download and verify the compile-only official API
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out/burp-0420
+          curl --fail --location --proto '=https' --tlsv1.2 --retry 3 --max-time 120 \
+            --output "$RUNNER_TEMP/montoya-api-2025.2.jar" \
+            https://repo.maven.apache.org/maven2/net/portswigger/burp/extensions/montoya-api/2025.2/montoya-api-2025.2.jar
+          echo "8da5acbdab1ad64f26e2151aa292b7afdcbee917f57d07442087d9bef0e7f29f  $RUNNER_TEMP/montoya-api-2025.2.jar" | sha256sum --check
+          sha256sum "$RUNNER_TEMP/montoya-api-2025.2.jar" > out/burp-0420/compile-api.sha256
+      - name: Compile and exercise real interfaces and local transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          python integrations/burp-report-gen/build.py "$RUNNER_TEMP/montoya-api-2025.2.jar" --test 2>&1 | tee out/burp-0420/interface-transport.log
+          cp integrations/burp-report-gen/build/report-gen-burp.jar out/burp-0420/
+          sha256sum out/burp-0420/report-gen-burp.jar > out/burp-0420/extension.sha256
+      - name: Preserve bridge artifact and bounded acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: burp-bridge-0420-${{ github.sha }}
+          path: out/burp-0420/
+          if-no-files-found: error
+          retention-days: 14
+
+  aster:
+    name: Aster trilingual complex reports and native DOCX rendering
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      REPORT_GEN_REQUIRE_MULTISCRIPT_FONTS: '1'
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-audited.txt
+      - name: Install actual native renderer and multilingual fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto-core fonts-noto-cjk libpango-1.0-0 libpangocairo-1.0-0
+          fc-cache -f
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - name: Author the complete Spanish, English and Portuguese input projects
+        run: python scripts/build-aster-case.py --output "$RUNNER_TEMP/aster/case"
+      - name: Generate and inspect twelve reports with report-gen only
+        run: python scripts/audit-aster-0420.py --projects "$RUNNER_TEMP/aster/case/projects" --output "$RUNNER_TEMP/aster/exports" --mode principal
+      - name: Inspect the three generated DOCX files using stable LibreOffice
+        run: python scripts/audit-aster-0420.py --projects "$RUNNER_TEMP/aster/case/projects" --output "$RUNNER_TEMP/aster/exports" --mode native --native-executable /usr/bin/libreoffice --require-stable
+      - name: Preserve full reports, privacy checks and renderer evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: aster-0420-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/aster/
+            !${{ runner.temp }}/aster/exports/**/snapshot/**
+          if-no-files-found: error
+          retention-days: 14
 
   editor_exports:
     name: Editor journeys and four export formats
@@ -224,17 +309,19 @@ jobs:
   test:
     name: test
     if: always()
-    needs: [quick, editor_exports, scale, pytest]
+    needs: [quick, burp_bridge, aster, editor_exports, scale, pytest]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Require every independent gate
         env:
           QUICK: ${{ needs.quick.result }}
+          BURP: ${{ needs.burp_bridge.result }}
+          ASTER: ${{ needs.aster.result }}
           EDITOR: ${{ needs.editor_exports.result }}
           SCALE: ${{ needs.scale.result }}
           PYTEST: ${{ needs.pytest.result }}
-        run: test "$QUICK" = success && test "$EDITOR" = success && test "$SCALE" = success && test "$PYTEST" = success
+        run: test "$QUICK" = success && test "$BURP" = success && test "$ASTER" = success && test "$EDITOR" = success && test "$SCALE" = success && test "$PYTEST" = success
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7.0.0
         with:

@@ -1,0 +1,251 @@
+{
+  "schema": "report-gen-aster-content/1",
+  "language": "en",
+  "strings": {
+    "name": "Aster Financial Group",
+    "title": "Integrated digital banking security assessment",
+    "subtitle": "Extensive fictional case — banking, API, identity, cloud and AI service",
+    "fictional": "FICTIONAL CASE: the organization, people, assets, results and decisions are invented. No real systems were tested.",
+    "simulated": "[SIMULATED]",
+    "role": "fictional role",
+    "team": "Fictional Aster assessment team",
+    "confidential": "FICTIONAL EXAMPLE · NO REAL DATA",
+    "byline": "Digital banking, identity and traceability",
+    "summary": "The scenario links 36 assets, 72 findings, 6 documentary notebooks, 84 synthetic images and 216 acceptance contracts. It adds 18 authorization instances with 15 verified fixes, two open cases and one blocked case, 114 test cases, eight HTTP pairs and three causal paths. Every result is invented and does not demonstrate a real financial institution assessment. Partial closure must keep exceptions visible.",
+    "boundary": "A decision must retain identity, purpose, revision, validity and ownership across producers and consumers. Service availability demonstrates neither the integrity of its result nor the validity of its permissions.",
+    "limitation": "Every observation is documentary. Commands are inert intent records; images were drawn for this test and are not system captures. Acceptance of the generator is recorded separately. Neither regulatory compliance nor universal absence of vulnerabilities is certified.",
+    "description_template": "Within {domain}, {process}. The case proposes: {condition} Asset {host} represents fictional objects, identities and tenants under revision ASTER-R4. No real accounts are queried and no transactions are performed.",
+    "impact_template": "For {domain}, {impact} The hypothesis concerns cross-tenant confidentiality, authorization integrity and decision traceability; losses and probabilities are not assigned to a real company.",
+    "remediation_template": "The team responsible for {domain} must {remediation} Acceptance compares allowed, rejected and recovery cases while retaining record identity and evidence of the revision.",
+    "scenario_template": "Model {domain}: {process}. Compare an authorized subject, another from the same tenant without the required role, and another from a different tenant. Retain request, response, revision, decision and limitations. Messages and addresses are inert.",
+    "closure": "The owner presents an explicit criterion, the evaluated revision and the outcomes of positive, negative and recovery cases. An announcement of remediation does not replace independent verification.",
+    "reported": "The fictional owner announces a proposed correction; the message does not prove closure.",
+    "retest": "Invented documentary follow-up: compare original and proposed revisions, retain partial outcomes and explain what was not verified.",
+    "evidence": "Synthetic representation of a contract",
+    "evidence_caption": "Invented image to check composition, relationships and exports; it does not establish a real test.",
+    "image_labels": [
+      "ASSET",
+      "REVISION",
+      "DECISION",
+      "EXECUTION"
+    ],
+    "image_decision": "Documentary comparison; conditional result",
+    "image_execution": "NONE · INERT MODEL",
+    "image_footer": "Synthetic data · invented organization · no real systems",
+    "machine_title": "Recovery documentation notebook",
+    "machine_summary": "Model of dependencies, write authority and reconciliation for the asset. It represents neither initial access, exploitation nor compromise of a real machine.",
+    "phases": [
+      "Identity and dependencies",
+      "Authorized state",
+      "Reopening and restrictions"
+    ],
+    "phase_text": [
+      "Relate inventory, owner and revision without inferring availability of an address.",
+      "Compare producer authority with the current policy and retain a denied decision.",
+      "Conceptually restore content and reconcile revocations before enabling new transitions."
+    ],
+    "proof": "Invented record; not a captured flag.",
+    "headers": [
+      "Record",
+      "Asset and revision",
+      "Acceptance criterion",
+      "Documentary outcome"
+    ],
+    "row_template": "Banking criterion {n}: relate tenant, identity, object and revision; a retry must neither duplicate the intent nor inherit a revoked authorization.",
+    "row_result": "Synthetic result; does not represent an executed banking operation",
+    "table_intro": "Banking finding criterion inventory. The table must continue across pages without losing rows, headers or its association with the observation.",
+    "table_outro": "End of the criterion inventory for this finding. A readable row does not demonstrate execution of the control.",
+    "contract_headers": [
+      "Path",
+      "Condition",
+      "Expected result"
+    ],
+    "paths": [
+      "Allowed",
+      "Rejected",
+      "Recovery"
+    ],
+    "contract_values": [
+      "Valid subject and revision",
+      "Retired subject or substituted revision",
+      "Earlier backup and later restrictions"
+    ],
+    "contract_results": [
+      "One authorized effect",
+      "No new effect",
+      "Consistent reopening without duplication"
+    ],
+    "asset_roles": [
+      "Decision service",
+      "Operational consumer",
+      "Traceability register"
+    ],
+    "asset_note": "Invented asset using domains and networks reserved for documentation.",
+    "coverage_note": "Fictional contract, not a scanner result. Pending and blocked states are deliberate.",
+    "root_note": "Proposed cause within the scenario, not an inference about a real company.",
+    "annex_names": [
+      "asset-inventory.csv",
+      "acceptance-contracts.csv",
+      "case-manifest.json",
+      "delivery-criteria.txt",
+      "private-note.txt",
+      "dependencies.csv"
+    ],
+    "annex_acceptance": "Accept only files with consistent identity, size and hash. Decisions are bound to a revision; retain limitations and excluded content.",
+    "private": "Synthetic private note that must not appear in publication.",
+    "redacted": "[SYNTHETIC MARKER REMOVED]",
+    "annex_headers": [
+      "Identifier",
+      "Name",
+      "Target",
+      "Owner"
+    ],
+    "control_headers": [
+      "Contract",
+      "Finding",
+      "Path",
+      "Nature"
+    ],
+    "dependency_headers": [
+      "Source",
+      "Destination",
+      "Condition"
+    ],
+    "dependency": "Reopening requires a current revision and policy.",
+    "sections": {
+      "overview": "Executive summary",
+      "governance": "Decision governance and responsibilities",
+      "continuity": "Continuity of distributed operations",
+      "evidence": "Evidence, revisions and limitations",
+      "contracts": "Annex A — Acceptance contracts",
+      "literals": "Annex B — Characters and long references",
+      "annexes": "Annex C — Delivery and exclusions"
+    },
+    "continuity": "Conceptual recovery starts from an earlier backup, a queue with completed intents, and a later revocation. The manifest is checked before relationships are restored, and the consumer cannot reopen while restrictions are missing. Reconciliation must retain a single writer and distinguish repeated messages from new orders. An availability alert does not replace these criteria.",
+    "evidence_text": "Each evidence record has stable identity, a title, synthetic content and a relationship to a finding. Retest outcomes distinguish open, partial, fixed and unverified results. Approval under the same filename is not inherited when its hash changes; private notes and originals do not belong in public delivery.",
+    "annex_text": "Included annexes are delivered as independent files. The private note is explicitly excluded. PDF review is partial and structural: it does not establish OCR, inspection of every image or direct Microsoft Word validation.",
+    "literal_text": "The following literals remain unchanged across languages to check fidelity. The destination was not queried.",
+    "version_notes": "New banking case with instances, reviewed HTTP evidence, versioned plans and causal paths.",
+    "short_term": "Agree on authority, revision and rejection criteria before changing consumers.",
+    "medium_term": "Align producers, queues and registers; check retries and temporary loss of connectivity.",
+    "long_term": "Rehearse integrated reopening, post-backup revocations and delivery with versioned evidence."
+  },
+  "domains": [
+    {
+      "name": "Personal banking",
+      "process": "balances and transactions are queried with owner and tenant separation",
+      "owner": "Personal banking"
+    },
+    {
+      "name": "Business banking",
+      "process": "batches are approved with dual authorization and operator permissions",
+      "owner": "Business banking"
+    },
+    {
+      "name": "Partner API",
+      "process": "orders from different tenants are exchanged under delegated identities",
+      "owner": "Partner API"
+    },
+    {
+      "name": "Payment orchestration",
+      "process": "transfer intents, confirmations and retries are reconciled",
+      "owner": "Payment orchestration"
+    },
+    {
+      "name": "Card operations",
+      "process": "fictional card references are linked to owners and authorizations",
+      "owner": "Card operations"
+    },
+    {
+      "name": "Treasury",
+      "process": "approvals, limits and reconciliation of simulated orders are reviewed",
+      "owner": "Treasury"
+    },
+    {
+      "name": "Corporate identity",
+      "process": "delegations and sessions are withdrawn across directory and applications",
+      "owner": "Corporate identity"
+    },
+    {
+      "name": "Cloud analytics",
+      "process": "cloud accounts, regions, permissions and fictional data tables are linked",
+      "owner": "Cloud analytics"
+    },
+    {
+      "name": "Mobile banking",
+      "process": "session and authorization boundaries are preserved between device and server",
+      "owner": "Mobile banking"
+    },
+    {
+      "name": "Fraud prevention",
+      "process": "alerts, rule versions and analyst decisions are reviewed",
+      "owner": "Fraud prevention"
+    },
+    {
+      "name": "AI service assistant",
+      "process": "system instructions, retrieved context and synthetic responses are separated",
+      "owner": "AI service assistant"
+    },
+    {
+      "name": "Backup and continuity",
+      "process": "policies and records are recovered without restoring revoked permissions",
+      "owner": "Backup and continuity"
+    }
+  ],
+  "controls": [
+    {
+      "title": "Object authorization without tenant isolation",
+      "severity": "critical",
+      "cwe": "CWE-863",
+      "condition": "An earlier authorization remains accepted after its object or revision is substituted.",
+      "impact": "a transition could be attributed to an approval that no longer matches the content.",
+      "remediation": "bind subject, object and revision immutably and authorize changes again.",
+      "root": "Decision without content identity"
+    },
+    {
+      "title": "Delegated identity revocation without propagation",
+      "severity": "high",
+      "cwe": "CWE-613",
+      "condition": "The producer records a revocation while a deferred consumer retains the earlier grant.",
+      "impact": "central withdrawal can coexist with an old decision that remains usable.",
+      "remediation": "define validity, propagation and rejection of revoked grants at every consumer.",
+      "root": "Incomplete distributed validity"
+    },
+    {
+      "title": "Order retry without business idempotency",
+      "severity": "high",
+      "cwe": "CWE-841",
+      "condition": "A new message identifier is interpreted as a new intent even when the earlier result exists.",
+      "impact": "a lost confirmation can produce duplication or contradictory states.",
+      "remediation": "retain durable intent identity and return the same result for retries.",
+      "root": "Transitions without a durable contract"
+    },
+    {
+      "title": "Recovery that restores revoked permissions",
+      "severity": "medium",
+      "cwe": "CWE-693",
+      "condition": "The backup restores content without reconciling restriction decisions made after its date.",
+      "impact": "an available reopening can reintroduce withdrawn permissions.",
+      "remediation": "validate manifest, dependencies and later restrictions before reopening operations.",
+      "root": "Recovery without reconciliation"
+    },
+    {
+      "title": "Analytical decision without verifiable provenance",
+      "severity": "low",
+      "cwe": "CWE-20",
+      "condition": "The indicator omits revision, unit or unknown state and allows absence to be confused with zero.",
+      "impact": "a syntactically valid reading can support a conclusion that has not been demonstrated.",
+      "remediation": "retain origin, unit, revision and denominator while preserving unknown values.",
+      "root": "Incomplete data semantics"
+    },
+    {
+      "title": "Document delivery without a revision binding",
+      "severity": "info",
+      "cwe": "CWE-200",
+      "condition": "Documentary approval uses a filename without identifying the hash of the reviewed file.",
+      "impact": "the recipient can receive a revision different from the one that was assessed.",
+      "remediation": "bind revision and recipient to the final hash and review again when bytes change.",
+      "root": "Insufficient review evidence"
+    }
+  ]
+}

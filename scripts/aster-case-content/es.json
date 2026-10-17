@@ -1,0 +1,251 @@
+{
+  "schema": "report-gen-aster-content/1",
+  "language": "es",
+  "strings": {
+    "name": "Grupo Financiero Aster",
+    "title": "Evaluación integral de seguridad de banca digital",
+    "subtitle": "Caso ficticio extenso — banca, API, identidad, cloud y atención con IA",
+    "fictional": "CASO FICTICIO: la organización, personas, activos, resultados y decisiones son inventados. No se realizaron pruebas contra sistemas reales.",
+    "simulated": "[SIMULADO]",
+    "role": "rol ficticio",
+    "team": "Equipo ficticio de evaluación Aster",
+    "confidential": "EJEMPLO FICTICIO · SIN DATOS REALES",
+    "byline": "Banca digital, identidad y trazabilidad",
+    "summary": "El escenario relaciona 36 activos, 72 hallazgos, 6 cuadernos documentales, 84 imágenes sintéticas y 216 contratos de aceptación. Añade 18 instancias de autorización con 15 correcciones verificadas, dos abiertas y una bloqueada, 114 casos de prueba, ocho pares HTTP y tres rutas causales. Todo resultado es inventado y no demuestra una evaluación real de una entidad financiera. El cierre parcial debe conservar las excepciones visibles.",
+    "boundary": "Una decisión debe conservar identidad, propósito, revisión, vigencia y responsable a través de productores y consumidores. La disponibilidad de un servicio no demuestra la integridad del resultado ni la vigencia de sus permisos.",
+    "limitation": "Toda observación es documental. Los comandos son registros inertes de intención; las imágenes se dibujaron para esta prueba y no son capturas de sistemas. La aceptación del generador se registra por separado. No se certifica cumplimiento normativo ni ausencia universal de vulnerabilidades.",
+    "description_template": "En {domain}, {process}. El caso plantea: {condition} El activo {host} se representa con objetos, identidades y organizaciones ficticias bajo la revisión ASTER-R4. No se consultan cuentas ni se ejecutan transacciones reales.",
+    "impact_template": "Para {domain}, {impact} La hipótesis considera confidencialidad entre organizaciones, integridad de autorizaciones y trazabilidad de decisiones; no se atribuyen pérdidas ni probabilidades a una empresa real.",
+    "remediation_template": "El equipo responsable de {domain} debe {remediation} La aceptación compara el caso permitido, el rechazado y la recuperación, conservando identidad del registro y evidencia de la revisión.",
+    "scenario_template": "Modelar {domain}: {process}. Comparar un sujeto autorizado, otro de la misma organización sin el rol necesario y otro de una organización distinta. Conservar petición, respuesta, revisión, decisión y límites. Los mensajes y direcciones son inertes.",
+    "closure": "El responsable presenta un criterio explícito, la revisión evaluada y el resultado de casos positivos, negativos y de recuperación. Un anuncio de corrección no reemplaza una verificación independiente.",
+    "reported": "El responsable ficticio comunica una corrección propuesta; el mensaje no prueba cierre.",
+    "retest": "Seguimiento documental inventado: comparar la revisión original y la propuesta, conservar el resultado parcial y explicar aquello que no se verificó.",
+    "evidence": "Representación sintética de un contrato",
+    "evidence_caption": "Imagen inventada para comprobar composición, relaciones y exportación; no acredita una prueba real.",
+    "image_labels": [
+      "ACTIVO",
+      "REVISIÓN",
+      "DECISIÓN",
+      "EJECUCIÓN"
+    ],
+    "image_decision": "Comparación documental; resultado condicionado",
+    "image_execution": "NINGUNA · MODELO INERTE",
+    "image_footer": "Datos sintéticos · organización inventada · sin sistemas reales",
+    "machine_title": "Cuaderno documental de recuperación",
+    "machine_summary": "Modelo de dependencias, autoridad de escritura y reconciliación del activo. No representa acceso inicial, explotación ni compromiso de una máquina real.",
+    "phases": [
+      "Identidad y dependencias",
+      "Estado autorizado",
+      "Reapertura y restricciones"
+    ],
+    "phase_text": [
+      "Relacionar inventario, propietario y revisión sin inferir disponibilidad de una dirección.",
+      "Comparar la autoridad del productor con la política vigente y conservar una decisión denegada.",
+      "Restaurar conceptualmente el contenido y reconciliar revocaciones antes de habilitar nuevas transiciones."
+    ],
+    "proof": "Registro inventado; no es una bandera capturada.",
+    "headers": [
+      "Registro",
+      "Activo y revisión",
+      "Criterio de aceptación",
+      "Resultado documental"
+    ],
+    "row_template": "Criterio bancario {n}: relacionar organización, identidad, objeto y revisión; una repetición no debe duplicar la intención ni heredar una autorización retirada.",
+    "row_result": "Resultado sintético; no representa una operación bancaria ejecutada",
+    "table_intro": "Inventario de criterios del hallazgo bancario. La tabla debe continuar entre páginas sin perder filas, cabeceras ni relación con la observación.",
+    "table_outro": "Fin del inventario de criterios de este hallazgo. Una fila legible no demuestra que el control haya sido ejecutado.",
+    "contract_headers": [
+      "Ruta",
+      "Condición",
+      "Resultado esperado"
+    ],
+    "paths": [
+      "Permitida",
+      "Rechazada",
+      "Recuperación"
+    ],
+    "contract_values": [
+      "Sujeto y revisión válidos",
+      "Sujeto retirado o revisión sustituida",
+      "Copia anterior y restricciones posteriores"
+    ],
+    "contract_results": [
+      "Un efecto autorizado",
+      "Ningún efecto nuevo",
+      "Reapertura consistente y sin duplicación"
+    ],
+    "asset_roles": [
+      "Servicio de decisiones",
+      "Consumidor operativo",
+      "Registro de trazabilidad"
+    ],
+    "asset_note": "Activo inventado en dominios y redes reservadas para documentación.",
+    "coverage_note": "Contrato ficticio, no un resultado de escáner. Los estados pendientes y bloqueados son deliberados.",
+    "root_note": "Causa propuesta dentro del escenario, no inferencia sobre una empresa real.",
+    "annex_names": [
+      "inventario-activos.csv",
+      "contratos-aceptacion.csv",
+      "manifiesto-caso.json",
+      "criterios-entrega.txt",
+      "nota-privada.txt",
+      "dependencias.csv"
+    ],
+    "annex_acceptance": "Aceptar únicamente archivos con identidad, tamaño y hash coherentes. Las decisiones se vinculan a una revisión; conservar límites y contenidos excluidos.",
+    "private": "Nota privada sintética que no debe formar parte de la publicación.",
+    "redacted": "[MARCADOR SINTÉTICO RETIRADO]",
+    "annex_headers": [
+      "Identificador",
+      "Nombre",
+      "Destino",
+      "Responsable"
+    ],
+    "control_headers": [
+      "Contrato",
+      "Hallazgo",
+      "Ruta",
+      "Naturaleza"
+    ],
+    "dependency_headers": [
+      "Origen",
+      "Destino",
+      "Condición"
+    ],
+    "dependency": "La reapertura requiere revisión y política vigentes.",
+    "sections": {
+      "overview": "Resumen ejecutivo",
+      "governance": "Gobierno de decisiones y responsabilidades",
+      "continuity": "Continuidad de la operación distribuida",
+      "evidence": "Evidencias, revisiones y límites",
+      "contracts": "Anexo A — Contratos de aceptación",
+      "literals": "Anexo B — Caracteres y referencias extensas",
+      "annexes": "Anexo C — Entrega y exclusiones"
+    },
+    "continuity": "La recuperación conceptual parte de una copia anterior, una cola con intenciones ya completadas y una revocación posterior. Se valida el manifiesto antes de restaurar relaciones y se impide reabrir el consumidor cuando faltan restricciones. La reconciliación debe conservar un único escritor y distinguir mensajes repetidos de nuevas órdenes. Una alarma de disponibilidad no sustituye estos criterios.",
+    "evidence_text": "Cada evidencia tiene identidad estable, título, contenido sintético y relación con un hallazgo. Los resultados de retest distinguen abierto, parcial, corregido y no verificado. Una aprobación con el mismo nombre de archivo no se hereda si cambia su hash; las notas privadas y los originales no pertenecen a la entrega pública.",
+    "annex_text": "Los anexos incluidos se entregan como archivos independientes. La nota privada se excluye expresamente. La revisión del PDF es parcial y estructural: no equivale a OCR, inspección de toda imagen o validación directa de Microsoft Word.",
+    "literal_text": "Los literales siguientes permanecen iguales entre idiomas para comprobar fidelidad. El destino no fue consultado.",
+    "version_notes": "Nuevo caso bancario con instancias, evidencia HTTP revisada, planes versionados y rutas causales.",
+    "short_term": "Acordar autoridad, revisión y criterios de rechazo antes de modificar consumidores.",
+    "medium_term": "Alinear productores, colas y registros; comprobar reintentos y pérdida temporal de conectividad.",
+    "long_term": "Ensayar reapertura integrada, revocaciones posteriores al respaldo y entrega con evidencias versionadas."
+  },
+  "domains": [
+    {
+      "name": "Banca personal",
+      "process": "se consultan saldos y movimientos con separación por titular y organización",
+      "owner": "Banca personal"
+    },
+    {
+      "name": "Banca empresarial",
+      "process": "se aprueban lotes con firma dual y permisos de operadores",
+      "owner": "Banca empresarial"
+    },
+    {
+      "name": "API de socios",
+      "process": "se intercambian órdenes de organizaciones distintas con identidad delegada",
+      "owner": "API de socios"
+    },
+    {
+      "name": "Orquestación de pagos",
+      "process": "se concilian intentos de transferencia, confirmaciones y reintentos",
+      "owner": "Orquestación de pagos"
+    },
+    {
+      "name": "Operación de tarjetas",
+      "process": "se vinculan referencias de tarjetas ficticias a titulares y autorizaciones",
+      "owner": "Operación de tarjetas"
+    },
+    {
+      "name": "Tesorería",
+      "process": "se revisan aprobaciones, límites y reconciliación de órdenes simuladas",
+      "owner": "Tesorería"
+    },
+    {
+      "name": "Identidad corporativa",
+      "process": "se retiran delegaciones y sesiones entre directorio y aplicaciones",
+      "owner": "Identidad corporativa"
+    },
+    {
+      "name": "Analítica cloud",
+      "process": "se relacionan cuentas cloud, regiones, permisos y tablas de datos ficticios",
+      "owner": "Analítica cloud"
+    },
+    {
+      "name": "Banca móvil",
+      "process": "se conservan límites de sesión y autorización entre dispositivo y servidor",
+      "owner": "Banca móvil"
+    },
+    {
+      "name": "Prevención de fraude",
+      "process": "se revisan alertas, versiones de reglas y decisiones de analistas",
+      "owner": "Prevención de fraude"
+    },
+    {
+      "name": "Asistente de atención con IA",
+      "process": "se separan instrucciones del sistema, contexto recuperado y respuestas sintéticas",
+      "owner": "Asistente de atención con IA"
+    },
+    {
+      "name": "Respaldo y continuidad",
+      "process": "se recuperan políticas y registros sin reactivar permisos retirados",
+      "owner": "Respaldo y continuidad"
+    }
+  ],
+  "controls": [
+    {
+      "title": "Autorización de objetos sin separación de organizaciones",
+      "severity": "critical",
+      "cwe": "CWE-863",
+      "condition": "Una autorización previa sigue aceptándose después de sustituir el objeto o su revisión.",
+      "impact": "una transición podría atribuirse a una aprobación que ya no corresponde al contenido.",
+      "remediation": "vincular sujeto, objeto y revisión de manera inmutable y volver a autorizar cambios.",
+      "root": "Decisión sin identidad de contenido"
+    },
+    {
+      "title": "Revocación de identidad delegada sin propagación",
+      "severity": "high",
+      "cwe": "CWE-613",
+      "condition": "El productor registra una revocación, pero un consumidor diferido conserva la concesión anterior.",
+      "impact": "el retiro central puede coexistir con una decisión antigua aún utilizable.",
+      "remediation": "definir vigencia, propagación y rechazo ante concesiones revocadas en cada consumidor.",
+      "root": "Vigencia distribuida incompleta"
+    },
+    {
+      "title": "Reintento de orden sin idempotencia de negocio",
+      "severity": "high",
+      "cwe": "CWE-841",
+      "condition": "Un nuevo identificador de mensaje se interpreta como una intención nueva aunque el resultado anterior exista.",
+      "impact": "una confirmación perdida puede producir duplicación o estados contradictorios.",
+      "remediation": "mantener una identidad durable de intención y devolver el mismo resultado ante reintentos.",
+      "root": "Transiciones sin contrato durable"
+    },
+    {
+      "title": "Recuperación que reintroduce permisos retirados",
+      "severity": "medium",
+      "cwe": "CWE-693",
+      "condition": "La copia recupera contenido, pero no reconcilia decisiones de restricción posteriores a su fecha.",
+      "impact": "una reapertura disponible puede reintroducir autorizaciones retiradas.",
+      "remediation": "validar manifiesto, dependencias y restricciones posteriores antes de reabrir la operación.",
+      "root": "Recuperación sin reconciliación"
+    },
+    {
+      "title": "Decisión analítica sin procedencia verificable",
+      "severity": "low",
+      "cwe": "CWE-20",
+      "condition": "El indicador omite revisión, unidad o estado desconocido y permite confundir ausencia con cero.",
+      "impact": "una lectura sintácticamente válida puede respaldar una conclusión no demostrada.",
+      "remediation": "retener origen, unidad, revisión y denominador, preservando valores desconocidos.",
+      "root": "Semántica incompleta de datos"
+    },
+    {
+      "title": "Entrega documental sin vínculo a la revisión",
+      "severity": "info",
+      "cwe": "CWE-200",
+      "condition": "La aprobación documental se identifica por nombre sin expresar el hash del archivo revisado.",
+      "impact": "el destinatario puede recibir una revisión distinta de la que fue evaluada.",
+      "remediation": "vincular revisión y destinatario al hash final y volver a revisar cuando cambien los bytes.",
+      "root": "Evidencia de revisión insuficiente"
+    }
+  ]
+}

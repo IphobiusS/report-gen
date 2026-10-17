@@ -1,8 +1,12 @@
-# Guia do usuário do report-gen 0.41.0
+# Guia do usuário do report-gen 0.42.0
 
 [Boas-vindas](../README.pt.md) · [Español](guide.es.md) · [English](guide.en.md) · [Histórico de alterações](../CHANGELOG.md)
 
 Execute os comandos na raiz do projeto, onde está `start.py`, salvo indicação diferente. A instalação e os downloads opcionais precisam de conexão; a edição e as exportações normais são locais. O português disponível é a variante Brasil: chave `pt`, com `pt-BR` também aceito nos argumentos de idioma.
+
+## Fluxo de avaliação na 0.42.0
+
+Consulte o [fluxo de revisão, instâncias, HTTP, planos, caminhos e integrações](senior-workflow.pt.md). Inclui decisões de publicação, limites dos módulos e verificações de ambiente que exigem registros separados.
 
 ## Instalar e abrir
 
@@ -177,7 +181,7 @@ O provedor UNO deve pertencer à mesma instalação do LibreOffice. A `.venv` do
 Crie a OXT sem instalá-la:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.41.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.42.0.oxt
 ```
 
 1. No LibreOffice escolhido, abra **Ferramentas → Extensões → Adicionar**; algumas versões usam **Gerenciador de extensões**.

@@ -1,0 +1,21 @@
+.assessment-view { display: grid; gap: 16px; }
+.assessment-row { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; }
+.assessment-row > label { flex: 1 1 180px; min-width: 0; }
+.assessment-card { display: grid; gap: 12px; padding: 18px; min-width: 0; }
+.assessment-card > :is(h3,h4,p) { margin: 0; }
+.assessment-card label { display: grid; gap: 6px; font-size: .9rem; }
+.assessment-card :is(input:not([type=checkbox]),select,textarea) { width: 100%; box-sizing: border-box; min-width: 0; }
+.assessment-card textarea { resize: vertical; min-height: 90px; }
+.assessment-card fieldset { margin: 0; border: 1px solid var(--border,#334155); border-radius: 8px; padding: 12px; }
+.assessment-refs { max-height: 200px; overflow-y: auto; }
+.assessment-refs label { display: flex; align-items: start; gap: 8px; margin: 6px 0; overflow-wrap: anywhere; }
+.assessment-refs input { flex: 0 0 auto; margin-top: 3px; }
+[data-assessment-list], [data-assessment-stages], [data-assessment-transitions] { display: grid; gap: 12px; }
+.assessment-transition { border-left: 3px solid #a16207; padding: 10px 12px; display: grid; gap: 8px; overflow-wrap: anywhere; }
+.assessment-transition[data-causal-state=observed] { border-color: #16a34a; }
+.assessment-transition[data-causal-state=blocked] { border-color: #dc2626; }
+.assessment-status { font-size: .85rem; }
+.assessment-graph { max-width: 100%; height: auto; background: white; border-radius: 8px; }
+.assessment-view summary { cursor: pointer; padding: 10px 0; }
+[data-assessment-matrix-preview] li { overflow-wrap: anywhere; }
+@media (max-width: 650px) { .assessment-row { align-items: stretch; } .assessment-row > label { flex-basis: 100%; } .assessment-card { padding: 12px; } }

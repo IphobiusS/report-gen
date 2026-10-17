@@ -119,3 +119,52 @@ def register(api):
             proposals.pop(body['proposal_id'])
         # Only an ephemeral session-owned suggestion changes, never the project.
         return jsonify(discarded=True)
+
+
+    @app.post('/api/projects/<slug>/assistant/precheck')
+    @api.project_lock
+    def editorial_precheck(slug):
+        body = api._json_dict()
+        if set(body) != {'finding_uids'}:
+            abort(422, backend_message('Selección de revisión inválida.', en='Invalid review selection.', pt='Seleção de revisão inválida.'))
+        directory = api.proj_dir(slug)
+        path = directory / 'engagement.yaml'
+        api.require_revision(path)
+        response = jsonify(assistant.editorial_precheck(engine.load_engagement(path), body['finding_uids']))
+        response.set_etag(revision(path))
+        return response
+
+    @app.post('/api/projects/<slug>/assistant/critique-preview')
+    @api.project_lock
+    def editorial_critique_preview(slug):
+        body = api._json_dict()
+        if set(body) != {'finding_uid', 'fields', 'evidence_uids'}:
+            abort(422, backend_message('Selección de revisión inválida.', en='Invalid review selection.', pt='Seleção de revisão inválida.'))
+        directory = api.proj_dir(slug)
+        path = directory / 'engagement.yaml'
+        api.require_revision(path)
+        response = jsonify(assistant.critique_context(engine.load_engagement(path), body))
+        response.set_etag(revision(path))
+        return response
+
+    @app.post('/api/projects/<slug>/assistant/critique')
+    def editorial_critique(slug):
+        body = api._json_dict()
+        with api._PROJECT_LOCK:
+            project_history.recover_transactions(api.PROJECTS)
+            path = api.proj_dir(slug) / 'engagement.yaml'
+            api.require_revision(path)
+            source = engine.load_engagement(path)
+            assistant.critique_context(source, body)
+            tag = revision(path)
+        if not inference.acquire(blocking=False):
+            abort(429, backend_message('Hay una propuesta local en curso; espera a que termine / A local proposal is running'))
+        try:
+            value = assistant.critique(source, body)
+        finally:
+            inference.release()
+        value['revision'] = tag
+        # Read-only suggestions have no apply token and cannot edit any field.
+        response = jsonify(value)
+        response.set_etag(tag)
+        return response

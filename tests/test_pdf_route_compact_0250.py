@@ -117,3 +117,30 @@ def test_step_heading_stays_with_table_and_long_command_remains_complete(tmp_pat
     complete = ''.join(pages)
     assert all(f'CODE-{i:04d}' in complete for i in range(140))
     assert all(f'ROW-{i:03d}' in complete and f'VALUE-{i:03d}' in complete for i in range(20))
+
+
+@pytest.mark.parametrize('mode', ['vuln', 'machine'])
+def test_inline_step_caption_stays_with_first_command_line(tmp_path, mode):
+    data = document('en', phases=1, steps=1)
+    finding = data['findings'][0]
+    finding['mode'] = mode
+    steps = [{'lead': f'HTTP-PAIR-{i:03d}',
+              'text_md': f'CAPTION-{i:03d}: Reviewed synthetic response with a documented identity and boundary. '
+                         'The following request records the selected account, tenant and authorization context '
+                         'without inferring a result from a scanner observation.',
+              'command': f'GET /synthetic-{i:03d} HTTP/1.1\nHost: example.invalid\nAccept: application/json'}
+             for i in range(24)]
+    if mode == 'machine':
+        finding['phases'][0]['steps'] = steps
+    else:
+        finding.pop('phases')
+        finding['walkthrough'] = steps
+    markup, pages = pdf_pages(data, tmp_path)
+    tree = html.document_fromstring(markup)
+    labels = tree.xpath('//p[@class="step-heading"]')
+    assert len(labels) == 24
+    for i in range(24):
+        assert f'CAPTION-{i:03d}' in labels[i].text_content()
+        page = next(page for page in pages if f'GET /synthetic-{i:03d}' in page)
+        assert f'HTTP-PAIR-{i:03d}' in page
+        assert f'CAPTION-{i:03d}' in page

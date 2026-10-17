@@ -1,6 +1,5 @@
 """Publication boundary. Originals and author data never change here."""
 from error_messages import message as backend_message
-from copy import deepcopy
 from hashlib import sha256
 from io import BytesIO
 from pathlib import Path
@@ -14,8 +13,9 @@ from image_integrity import jpeg_without_metadata as _jpeg_without_metadata, ver
 
 # Literal substitutions are opt-in and operate on content, never file names or IDs.
 PRIVATE = {'attachments', 'capture_inbox', 'publication', 'import_source', 'original', 'provenance', 'insights',
-           'remediation_exchanges', 'project_management'}
-STRUCTURAL = {'src','uid','id','key','mode','theme','lang','severity','status','verification','type','kind','layout','family','provider','profile','variant','sha256','capture_uid','asset_uid','logo','client_logo','cover_image','cvss_vector','cvss_version','report_density','accent','background','foreground'}
+           'remediation_exchanges', 'project_management', 'import_observations', 'review_exchange',
+           'client_profile', 'external_tickets', 'http_evidence'}
+STRUCTURAL = {'src','uid','id','key','mode','theme','lang','severity','status','state','specialty','result','verification','type','kind','layout','family','provider','profile','variant','sha256','capture_uid','asset_uid','logo','client_logo','cover_image','cvss_vector','cvss_version','report_density','accent','background','foreground'}
 
 def validate_config(config):
     if not isinstance(config, dict) or set(config)-{'redactions','exceptions'}:
@@ -74,7 +74,8 @@ def project(source):
     from input_guard import ensure_data_tree
     # Reject oversized/recursive/nonportable source before copying or replacing.
     ensure_data_tree(source)
-    data=deepcopy(source)
+    from http_evidence import project_for_export
+    data=project_for_export(source)
     config=data.pop('publication',{})
     validate_config(config)
     substitutions=LiteralRedactions(config.get('redactions',[]))
@@ -163,6 +164,9 @@ def snapshot(directory,target,data=None):
     from wizard import dump_yaml
     source=data if data is not None else engine.load_engagement(Path(directory)/'engagement.yaml')
     data=project(source)
+    # Graph images are derived from this exact publication, never reused from
+    # stale presentation metadata embedded in a source or an earlier capture.
+    data.pop('attack_path_figures', None)
     tree=render(data,directory)
     target=Path(target);target.mkdir(parents=True,exist_ok=True)
     from urllib.parse import unquote
@@ -171,19 +175,35 @@ def snapshot(directory,target,data=None):
         if ref!="#" and unquote(ref[1:]) not in ids:
             raise ValueError(backend_message('Referencia interna sin destino: {p0} / Missing internal destination', p0=ref))
     inventory={}
+    from exporters.images import word_image_blob
     for name,path in images(tree,directory).items():
         original=path.read_bytes(); blob=clean_image(original)
         dest=target/name;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(blob)
-        from exporters.images import word_image_blob
         word_blob, _ = word_image_blob(blob)
         inventory[name]={'original_sha256':sha256(original).hexdigest(),'sha256':sha256(blob).hexdigest(),
                          'docx_sha256':sha256(word_blob).hexdigest(),'bytes':len(blob),'metadata_removed':True}
+    resource_directory = directory
+    if data.get('attack_paths') and data.get('report', {}).get('workflow', {}).get('include_attack_paths', True):
+        from attack_paths import stage_graphs
+        data = stage_graphs(data, target)
+        tree = render(data, target)
+        resource_directory = target
+        for name, path in images(tree, target).items():
+            if name in inventory:
+                continue
+            # Fresh pixels from our deterministic graph renderer already have
+            # no source metadata. Preserve its content-addressed filename.
+            blob = path.read_bytes()
+            word_blob, _ = word_image_blob(blob)
+            inventory[name] = {'original_sha256': sha256(blob).hexdigest(), 'sha256': sha256(blob).hexdigest(),
+                               'docx_sha256': sha256(word_blob).hexdigest(), 'bytes': len(blob),
+                               'metadata_removed': True, 'generated': 'analyst_declared_attack_path'}
     dump_yaml(data,target/'engagement.yaml')
     return {'images':{k:v['sha256'] for k,v in inventory.items()},
             'docx_images':{k:v['docx_sha256'] for k,v in inventory.items()},
             'resources':inventory,'image_placements':len(tree.xpath('//img')),
             'contract':__import__('export_contract').from_tree(
-                tree,{unquote(path.as_uri()):inventory[name]['sha256'] for name,path in images(tree,directory).items()},
+                tree,{unquote(path.as_uri()):inventory[name]['sha256'] for name,path in images(tree,resource_directory).items()},
                 {v['sha256']:v['docx_sha256'] for v in inventory.values()})}
 
 PATTERNS = [

@@ -174,7 +174,7 @@ def structure_errors(data):
                     else:
                         for field in ('format', 'file_sha256', 'fingerprint', 'external_id', 'confidence', 'imported_at'):
                             text(source, field, path + '.import_source')
-                        if source.get('format') not in ('csv', 'burp', 'nuclei', 'sarif'): err(path, backend_message('origen de importación inválido'))
+                        if source.get('format') not in ('csv', 'burp', 'nuclei', 'sarif', 'zap', 'nessus'): err(path, backend_message('origen de importación inválido'))
                         if type(source.get('reviewed')) is not bool: err(path, backend_message('revisión de importación inválida'))
                         for field in ('file_sha256', 'fingerprint'):
                             if not isinstance(source.get(field), str) or not re.fullmatch(r'[0-9a-f]{64}', source[field]):
@@ -194,6 +194,22 @@ def structure_errors(data):
     except ValueError as exc: err('remediation_exchanges', str(exc))
     from root_cause import structure_errors as root_cause_errors
     errors.extend(root_cause_errors(data, seen))
+    from finding_instances import structure_errors as instance_errors
+    errors.extend(instance_errors(data, seen))
+    from ticket_connectors import structure_errors as ticket_errors
+    errors.extend(ticket_errors(data))
+    from test_plans import structure_errors as test_case_errors
+    from attack_paths import structure_errors as attack_path_errors
+    from import_reconciliation import structure_errors as observation_errors
+    from http_evidence import structure_errors as http_errors
+    from review_exchange import validate_structure as exchange_errors
+    from client_profiles import validate_structure as client_errors
+    errors.extend(test_case_errors(data, seen))
+    errors.extend(attack_path_errors(data, seen))
+    errors.extend(observation_errors(data))
+    errors.extend(http_errors(data))
+    errors.extend(exchange_errors(data))
+    errors.extend(client_errors(data))
     from capture_inbox import validate_rows
     try: validate_rows(data.get('capture_inbox', []))
     except ValueError as exc: err('capture_inbox', str(exc))
@@ -202,7 +218,7 @@ def structure_errors(data):
         cfg = report['workflow']
         if not isinstance(cfg, dict): err('report.workflow', backend_message('debe ser un objeto'))
         else:
-            for key in ('include_assets', 'include_coverage', 'include_retest', 'include_root_causes'):
+            for key in ('include_assets', 'include_coverage', 'include_retest', 'include_root_causes', 'include_instances', 'include_test_cases', 'include_attack_paths'):
                 if key in cfg and not isinstance(cfg[key], bool): err('report.workflow.' + key, backend_message('debe ser booleano'))
     if 'limitations_md' in data and not isinstance(data['limitations_md'], str): err('limitations_md', backend_message('debe ser texto'))
     return errors
@@ -220,6 +236,27 @@ def strings(obj, path=''):
     elif isinstance(obj, list):
         for i, v in enumerate(obj): yield from strings(v, f'{path}[{i}]')
     elif isinstance(obj, str): yield path, obj
+
+
+def report_content(data):
+    """Content checks inspect publishable fields before literal redactions.
+
+    Keep source schema and workflow checks separate: private observations are
+    valid author records, but their Markdown is never a report resource. HTTP
+    contributes only its explicitly reviewed, safely quoted publication copy.
+    """
+    from publication import PRIVATE
+    from http_evidence import project_for_export
+
+    def visible(node, filter_private=True):
+        if isinstance(node, dict):
+            return {key: visible(value, filter_private and key not in ('design', 'workflow'))
+                    for key, value in node.items() if not filter_private or key not in PRIVATE}
+        if isinstance(node, list):
+            return [visible(value, filter_private) for value in node]
+        return node
+
+    return visible(project_for_export(data))
 
 
 def latest_retest(finding):
@@ -254,7 +291,7 @@ def review(data, directory, lang="es"):
                 if ref not in evidence: add('error', backend_message('{p0}: evidencia de retest inexistente', language=lang, p0=name), p + f'.retests[{j}]', uid)
             if record.get('result') == 'fixed' and not record.get('evidence_uids'):
                 add('warning', backend_message('{p0}: retest corregido sin evidencia vinculada', language=lang, p0=name), p + f'.retests[{j}]', uid)
-        if f.get('status') == 'verified_fixed' and latest_retest(f).get('result') != 'fixed':
+        if f.get('status') == 'verified_fixed' and not f.get('instances') and latest_retest(f).get('result') != 'fixed':
             add('warning', backend_message('{p0}: figura corregido sin un último retest que lo verifique', language=lang, p0=name), p + '.status', uid)
         if f.get('due_date') and f['due_date'] < date.today().isoformat() and f.get('status', 'open') not in ('verified_fixed', 'accepted'):
             add('warning', backend_message('{p0}: fecha de corrección vencida', language=lang, p0=name), p + '.due_date', uid)
@@ -278,20 +315,15 @@ def review(data, directory, lang="es"):
     content_language = (data.get('meta') or {}).get('lang') or 'en'
     todo_marker = r'TODO' if normalize_language(content_language) in ('es', 'pt') else r'(?i:TODO)'
     placeholder = re.compile(r'\b' + todo_marker + r'\b|(?i:\b(?:TBD|FIXME|pendiente de completar|pendente de preenchimento|lorem ipsum)\b|\{\{[^}]+\}\}|<COMPLETAR>)')
-    for path, value in strings(data):
-        # Optional reasoning/review is private author material. In particular a
-        # comment containing a placeholder must not leak into the client-facing
-        # delivery verification warning. Its editorial rules have a separate
-        # read-only view; audience projections select presentation text explicitly.
-        if path.startswith(('capture_inbox', 'insights')): continue
+    content = report_content(data)
+    for path, value in strings(content):
         match = placeholder.search(value)
         uid = None
         fm = re.match(r'findings\[(\d+)\]', path)
         if fm: uid = data['findings'][int(fm[1])].get('uid')
         if match: add('warning', backend_message('Texto pendiente: {p0}', language=lang, p0=match[0]), path, uid)
     from resources import image_references, local_image
-    for path, source in image_references(data):
-        if path.startswith(('capture_inbox', 'insights')): continue
+    for path, source in image_references(content):
         uid = None
         fm = re.match(r'findings\[(\d+)\]', path)
         if fm: uid = data['findings'][int(fm[1])].get('uid')
@@ -453,6 +485,8 @@ def report_sections(data):
                     e = by_uid.get(uid)
                     if e: body += '\n\n![' + md_text(e.get('caption') or e.get('title') or ('Evidencia', 'Evidence', 'Evidência')[language_index(lang)]) + '](' + e['src'] + ')'
         add('rg_retest', (('Seguimiento de correcciones y retest', 'Remediation tracking and retest', 'Acompanhamento de correções e reteste')[language_index(lang)]), body)
+    from report_extensions import report_sections as extended_sections
+    out.extend(extended_sections(data))
     return out
 
 

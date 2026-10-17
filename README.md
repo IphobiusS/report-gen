@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.41.0
+# report-gen 0.42.0
 
 <a id="qué-es"></a>
 
@@ -60,6 +60,18 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Word | Documento editable `.docx`, con campos propios para el índice. |
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
+
+## Flujo de evaluación 0.42.0
+
+La revisión conecta la cola filtrada, la evidencia fijada junto al editor, las selecciones de tabla y la búsqueda de activos, evidencias y comentarios. **Guardar y siguiente** conserva la sesión de revisión activa.
+
+Los hallazgos admiten **instancias afectadas** con responsable, plazo, evidencia y retests independientes. El estado general se deriva del conjunto: una corrección parcial no cierra los destinos pendientes. Los **planes de prueba** registran metodología y versión, roles, organizaciones y resultados; las **rutas de ataque** distinguen transiciones demostradas, inferidas y bloqueadas.
+
+La **evidencia HTTP** separa originales privados de copias revisadas para entrega técnica. Incluye importación HAR, comparación y una extensión opcional de Burp para enviar únicamente mensajes seleccionados. Las reimportaciones de escáner permiten comparar y vincular nuevas observaciones conservando las decisiones del analista.
+
+Los perfiles versionados de cliente y los paquetes de revisión editorial reúnen requisitos y cambios por campo. Jira Cloud y DefectDojo admiten intercambios explícitos con registros existentes en servidores HTTPS públicos; el estado externo no sustituye al retest. La revisión editorial con Ollama utiliza fuentes seleccionadas y conserva el juicio del autor.
+
+[Recorrido práctico y límites de 0.42](docs/senior-workflow.es.md) · [Caso ficticio Aster ES/EN/PT](qa/aster/README.md) · [Extensión Burp](integrations/burp-report-gen/README.md). La aceptación nativa de Word y Burp, las cuentas vivas de Jira/DefectDojo y la inferencia Ollama requieren sus propios registros; esta lista de capacidades no acredita esas ejecuciones.
 
 ## Integración 0.41.0
 
@@ -172,7 +184,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.41.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.42.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

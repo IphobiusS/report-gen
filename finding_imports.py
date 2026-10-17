@@ -36,6 +36,34 @@ def fingerprint(finding):
     return sha256(('\0'.join(fields)).encode()).hexdigest()
 
 
+def source_fingerprint(finding):
+    """Scanner identity independent of editable titles and descriptions.
+
+    SARIF keeps its own context-rich identity contract. CSV without source IDs
+    retains the legacy content identity; equality alone is never reconciliation.
+    """
+    source = finding.get('import_source') or {}
+    if source.get('source_fingerprint'):
+        return source['source_fingerprint']
+    kind = source.get('format')
+    if kind == 'sarif':
+        return source.get('fingerprint', '')
+    stable = source.get('external_id', '')
+    if kind == 'nuclei':
+        context = [source.get('template_id', stable), source.get('matched_at', finding.get('affected', '')), source.get('matcher_name', ''), source.get('scanner_type', '')]
+    elif kind == 'zap':
+        context = [source.get('alert_ref', stable), finding.get('affected', ''), source.get('method', ''), source.get('parameter', '')]
+    elif kind == 'nessus':
+        context = [source.get('plugin_id', stable), source.get('host', ''), source.get('port', ''), source.get('protocol', '')]
+    elif kind == 'burp' and source.get('issue_type'):
+        context = [source['issue_type'], source.get('matched_at', finding.get('affected', ''))]
+    elif kind == 'csv' and stable:
+        context = [stable, finding.get('affected', '')]
+    else:
+        return source.get('fingerprint') or fingerprint(finding)
+    return sha256(('source-v1\0' + str(kind) + '\0' + '\0'.join(str(part) for part in context)).encode()).hexdigest()
+
+
 def _plain(markup):
     if not markup:
         return ''
@@ -75,7 +103,7 @@ def _burp(raw):
                         description_md='\n\n'.join(filter(None, [_plain(text('issueBackground')), _plain(text('issueDetail'))])),
                         remediation_md='\n\n'.join(filter(None, [_plain(text('remediationBackground')), _plain(text('remediationDetail'))])),
                         impact_md='', external_id=text('serialNumber'), confidence=text('confidence'),
-                        references=[], walkthrough=[],
+                        references=[], walkthrough=[], origin=dict(issue_type=text('type'), matched_at=text('host') + text('path')),
                         _source_location=dict(record=issue_index + 1, line=issue.sourceline))
             references = text('references')
             if references:
@@ -151,10 +179,10 @@ def preview(body, data):
 
 def _preview(body, data):
     kind, raw = body.get('format'), body.get('text')
-    if not isinstance(kind, str) or kind not in ('csv', 'burp', 'nuclei', 'nmap', 'sarif'):
-        raise ValueError(backend_message('Selecciona CSV, Burp XML, Nuclei JSONL, Nmap XML o SARIF 2.1.0.',
-            en='Select CSV, Burp XML, Nuclei JSONL, Nmap XML or SARIF 2.1.0.',
-            pt='Selecione CSV, Burp XML, Nuclei JSONL, Nmap XML ou SARIF 2.1.0.'))
+    if not isinstance(kind, str) or kind not in ('csv', 'burp', 'nuclei', 'nmap', 'sarif', 'zap', 'nessus'):
+        raise ValueError(backend_message('Selecciona CSV, Burp XML, Nuclei JSONL, Nmap XML, SARIF 2.1.0, ZAP JSON/XML o Nessus XML.',
+            en='Select CSV, Burp XML, Nuclei JSONL, Nmap XML, SARIF 2.1.0, ZAP JSON/XML or Nessus XML.',
+            pt='Selecione CSV, Burp XML, Nuclei JSONL, Nmap XML, SARIF 2.1.0, ZAP JSON/XML ou Nessus XML.'))
     if not isinstance(raw, str) or not raw.strip() or len(raw.encode('utf-8')) > MAX_BYTES:
         raise ValueError(backend_message('El archivo debe contener texto UTF-8 y no superar 4 MiB'))
     original=raw.encode('utf-8')
@@ -173,10 +201,13 @@ def _preview(body, data):
         return scanner_imports.nmap_preview(raw, data, origin)
     if kind == 'sarif':
         return scanner_imports.sarif_preview(raw, data, origin)
-    headers, mapping, rows = (_csv(raw, body.get('mapping')) if kind == 'csv' else
-                              scanner_imports.nuclei(raw, data.get('meta', {}).get('lang', 'es')) if kind == 'nuclei' else _burp(raw))
-    seen = {fingerprint(f) for f in data.get('findings', [])}
-    seen.update(f['import_source']['fingerprint'] for f in data.get('findings', []) if f.get('import_source'))
+    if kind in ('nuclei', 'zap', 'nessus'):
+        headers, mapping, rows = getattr(scanner_imports, kind)(raw, data.get('meta', {}).get('lang', 'es'))
+    else:
+        headers, mapping, rows = _csv(raw, body.get('mapping')) if kind == 'csv' else _burp(raw)
+    seen = {source_fingerprint(f) for f in data.get('findings', [])}
+    for f in data.get('findings', []):
+        seen.update(source_fingerprint({'import_source': observation.get('source', {}), **observation.get('snapshot', {})}) for observation in f.get('import_observations', []))
     project_seen=set(seen)
     result = []
     for index, source in enumerate(rows):
@@ -209,11 +240,14 @@ def _preview(body, data):
             except ValueError:
                 invalid('import.cvss.invalid', 'cvss_vector', backend_message('Vector CVSS inválido / Invalid CVSS vector', en='Invalid CVSS vector', pt='Vetor CVSS inválido'))
         key = fingerprint(f)
-        duplicate = key in seen
-        if not errors: seen.add(key)
         f['import_source'] = {'format': kind, 'file_sha256': digest, 'normalized_sha256': normalized_digest, 'hash_scope': 'original_bytes' if 'bytes_base64' in body else 'received_utf8_text', 'fingerprint': key,
                               'external_id': source.get('external_id', ''), 'confidence': source.get('confidence', ''),
                               'reviewed': False, **source.get('origin', {})}
+        key = source_fingerprint(f)
+        f['import_source']['fingerprint'] = key
+        f['import_source']['source_fingerprint'] = key
+        duplicate = key in seen
+        if not errors: seen.add(key)
         ensure_data_tree(f)
         result.append(dict(index=index, finding=f, duplicate=duplicate, existing_duplicate=key in project_seen,
                            errors=errors, diagnostics=diagnostics, source_location=source_location))

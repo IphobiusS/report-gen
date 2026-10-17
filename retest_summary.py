@@ -11,12 +11,16 @@ from datetime import date
 import re
 
 import workflows
+import finding_instances
 
 OUTCOMES = {
     **workflows.RESULTS,
     'not_run': ('Sin observaciones registradas', 'No recorded observations', 'Sem observações registradas'),
     'undated': ('Sin fecha válida para ordenar', 'No valid date for ordering', 'Sem data válida para ordenar'),
     'invalid_result': ('Resultado no reconocido', 'Unrecognized result', 'Resultado não reconhecido'),
+    'instances_fixed': ('Todas las instancias verificadas', 'All instances verified fixed', 'Todas as instâncias verificadas'),
+    'instances_partial': ('Instancias con correcciones pendientes', 'Instances with outstanding fixes', 'Instâncias com correções pendentes'),
+    'instances_pending': ('Instancias sin corrección verificada', 'Instances without a verified fix', 'Instâncias sem correção verificada'),
 }
 SEVERITIES = {'critical': ('Crítica', 'Critical', 'Crítica'), 'high': ('Alta', 'High', 'Alta'),
               'medium': ('Media', 'Medium', 'Média'), 'low': ('Baja', 'Low', 'Baixa'),
@@ -70,6 +74,8 @@ def summarize(data, lang='es'):
     coverage = _rows(data.get('coverage', []))
     all_rows = findings + assets + evidence + coverage
     all_rows += [row for finding in findings for row in _rows(finding.get('retests', []))]
+    all_rows += [row for finding in findings for row in _rows(finding.get('instances', []))]
+    all_rows += [test for finding in findings for row in _rows(finding.get('instances', [])) for test in _rows(row.get('retests', []))]
     identities = Counter(row['uid'] for row in all_rows
                          if isinstance(row.get('uid'), str) and workflows.UID.fullmatch(row['uid']))
 
@@ -122,8 +128,23 @@ def summarize(data, lang='es'):
         latest = max(dated, key=lambda pair: (pair[1]['tested_on'], pair[0])) if dated else None
         outcome = latest[1].get('result') if latest else 'undated' if observations else 'not_run'
         if latest and (not isinstance(outcome, str) or outcome not in workflows.RESULTS): outcome = 'invalid_result'
+        instance_rows = _rows(finding.get('instances', []))
+        instance_summary = None
+        instance_latest = []
+        general_outcome = outcome
+        if instance_rows:
+            instance_summary = finding_instances.summary(finding, lang)
+            verified = 0
+            for instance in instance_rows:
+                tests = [(i, record) for i, record in enumerate(_rows(instance.get('retests', []))) if _valid_date(record.get('tested_on'))]
+                last = max(tests, key=lambda pair: (pair[1]['tested_on'], pair[0]))[1] if tests else None
+                if last:
+                    instance_latest.append(last)
+                    if last.get('result') == 'fixed' and instance.get('status') == 'verified_fixed': verified += 1
+            instance_summary['verified_with_latest_retest'] = verified
+            outcome = 'instances_fixed' if verified == len(instance_rows) else 'instances_partial' if verified else 'instances_pending'
         result_counts[outcome] += 1
-        status = _text(finding.get('status')) or 'unrecorded'
+        status = instance_summary['status'] if instance_summary else _text(finding.get('status')) or 'unrecorded'
         verification = _text(finding.get('verification')) or 'unrecorded'
         severity = _text(finding.get('severity')) or 'unrecorded'
         status_label = label(workflows.STATUSES, status, tr('Sin estado registrado', 'No recorded status', 'Sem estado registrado') if status == 'unrecorded' else tr('Estado no reconocido: ', 'Unrecognized status: ', 'Estado não reconhecido: ') + status)
@@ -134,6 +155,10 @@ def summarize(data, lang='es'):
         original_evidence = links(finding.get('evidence_uids', []), evidence_registry)
         retest_evidence = links(latest[1].get('evidence_uids', []), evidence_registry) if latest else links([], evidence_registry)
         asset_links = links(finding.get('asset_uids', []), asset_registry)
+        if instance_rows:
+            original_evidence = links(list(finding.get('evidence_uids', [])) + [uid for row in instance_rows for uid in row.get('evidence_uids', [])], evidence_registry)
+            retest_evidence = links([uid for record in instance_latest for uid in record.get('evidence_uids', [])], evidence_registry)
+            asset_links = links(list(finding.get('asset_uids', [])) + [row['asset_uid'] for row in instance_rows if row.get('asset_uid')], asset_registry)
         excluded_dates = len(observations) - len(dated)
         notices = []
         identity_status = identity(finding)
@@ -143,15 +168,17 @@ def summarize(data, lang='es'):
             notices.append(dict(key='excluded_dates', text=tr(f'{excluded_dates} observaciones sin fecha ISO válida; no intervienen en el último resultado.', f'{excluded_dates} observations without a valid ISO date; excluded from latest-result ordering.', f'{excluded_dates} observações sem data ISO válida; excluídas da ordenação do último resultado.')))
         if status == 'reported_fixed':
             notices.append(dict(key='reported_fix', text=tr('La corrección comunicada es un estado de seguimiento; no demuestra una corrección técnica.', 'A reported fix is a tracking status; it does not demonstrate a technical fix.', 'Uma correção comunicada é um estado de acompanhamento; ela não demonstra uma correção técnica.')))
-        if status == 'verified_fixed' and outcome != 'fixed':
+        if status == 'verified_fixed' and outcome not in ('fixed', 'instances_fixed'):
             notices.append(dict(key='contradictory_status', text=tr('El estado indica corregido y verificado, pero el último resultado fechado no es «Corregido».', 'Status says verified fixed, but the latest dated result is not “Fixed”.', 'O estado indica corrigido e verificado, mas o último resultado datado não é “Corrigido”.')))
-        if outcome == 'fixed' and not retest_evidence['registered']:
+        if outcome in ('fixed', 'instances_fixed') and not retest_evidence['registered']:
             notices.append(dict(key='fixed_without_linked_evidence', text=tr('El resultado registrado es «Corregido» sin evidencia del retest vinculada por UID.', 'The recorded result is “Fixed” without retest evidence linked by UID.', 'O resultado registrado é “Corrigido” sem evidência de reteste vinculada por UID.')))
         broken = sum(group[key] for group in (original_evidence, retest_evidence, asset_links) for key in ('missing', 'ambiguous', 'invalid'))
         if broken:
             notices.append(dict(key='broken_associations', text=tr(f'{broken} asociaciones inexistentes, ambiguas o inválidas; no se cuentan como elementos registrados.', f'{broken} missing, ambiguous or invalid associations; not counted as registered items.', f'{broken} associações ausentes, ambíguas ou inválidas; não contadas como itens registrados.')))
         if outcome == 'invalid_result':
             notices.append(dict(key='invalid_result', text=tr('El último registro fechado tiene un resultado no reconocido; revisa el dato original.', 'The latest dated record has an unrecognized result; review the original data.', 'O último registro datado possui um resultado não reconhecido; revise os dados originais.')))
+        if instance_rows:
+            notices.append(dict(key='instance_scope', text=tr('El resultado y estado agregan todas las instancias. Una observación general del hallazgo no verifica destinos individuales.', 'Result and status aggregate all instances. A general finding observation does not verify individual targets.', 'O resultado e o status agregam todas as instâncias. Uma observação geral do achado não verifica destinos individuais.')))
         latest_record = None
         if latest:
             record_index, record = latest
@@ -165,7 +192,9 @@ def summarize(data, lang='es'):
                          status=status, status_label=status_label, verification=verification,
                          verification_label=verification_label, outcome=outcome,
                          outcome_label=OUTCOMES[outcome][language_slot], observations=len(observations),
-                         excluded_dates=excluded_dates, latest=latest_record,
+                         excluded_dates=excluded_dates, latest=None if instance_rows else latest_record,
+                         instance_summary=instance_summary, general_latest=latest_record if instance_rows else None,
+                         general_outcome=general_outcome if instance_rows else None,
                          original_evidence=original_evidence, retest_evidence=retest_evidence,
                          assets=asset_links, notices=notices))
 

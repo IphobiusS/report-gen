@@ -141,6 +141,12 @@ def report_anchor_issues(data, language):
         from root_cause import selected_groups
         if selected_groups(data):
             anchors.append('rg_root_causes')
+    if config.get('include_instances', True) and any(f.get('instances') for f in findings):
+        anchors.append('rg_instances')
+    if config.get('include_test_cases', True) and data.get('test_cases'):
+        anchors.append('rg_test_cases')
+    if config.get('include_attack_paths', True):
+        anchors.extend('rg_attack_' + path['uid'].replace('-', '') for path in data.get('attack_paths', []))
     duplicates = sorted(key for key, count in Counter(anchors).items() if count > 1)
     return [('error', _m('dup_anchors', language, ids=', '.join(duplicates)))] if duplicates else []
 
@@ -150,10 +156,10 @@ def markdown_control_issues(data, lang=None):
     """Return field-addressed errors before a renderer decodes numeric refs."""
     from resources import markdown_fields
     from safe_markup import validate_character_references
-    from workflows import strings
+    from workflows import report_content, strings
     fields = markdown_fields()
     issues = []
-    for path, text in strings(data):
+    for path, text in strings(report_content(data)):
         key = path.rsplit('.', 1)[-1]
         if key.endswith('_md') or key in fields:
             try:
@@ -258,7 +264,8 @@ def validate(data, known_section_keys=None, lang=None):
                     issues.append(("error", _m("unknown_section", lang, key=s.get("key"))))
 
     from resources import image_references, relative_image
-    for path, source in image_references(data):
+    from workflows import report_content
+    for path, source in image_references(report_content(data)):
         try: relative_image(source)
         except ValueError as exc: issues.append(('error', f'{path}: {exc}'))
 

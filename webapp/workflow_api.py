@@ -177,6 +177,11 @@ def register(api):
         d, data = project(slug, True); body = api._json_dict()
         finding = next((f for f in data['findings'] if f.get('uid') == body.get('finding_uid')), None)
         if not finding: abort(404, backend_message('Hallazgo inexistente'))
+        import finding_instances
+        if body.get('instance_uid'):
+            finding_instances.record_retest(data, finding, body['instance_uid'],
+                {key: value for key, value in body.items() if key not in ('finding_uid', 'instance_uid')}, history.now())
+            return saved(d, data)
         if not isinstance(body.get('result'), str) or body['result'] not in workflows.RESULTS: raise ValueError(backend_message('Resultado de retest inválido'))
         record = {k: body.get(k, '') for k in ('tested_on', 'assessor', 'notes_md', 'result')}
         record.update(uid=workflows.new_uid(), created=history.now(), evidence_uids=body.get('evidence_uids', []))
@@ -184,7 +189,12 @@ def register(api):
         pool = {e['uid'] for e in data.get('evidence', [])}
         if not isinstance(record['evidence_uids'], list) or any(not isinstance(x, str) or x not in pool for x in record['evidence_uids']): raise ValueError(backend_message('Evidencia de retest inexistente'))
         finding.setdefault('retests', []).append(record)
-        finding['status'] = {'fixed': 'verified_fixed', 'open': 'open', 'partial': 'in_progress', 'not_verified': 'not_verified'}.get(record['result'], 'open')
+        if finding.get('instances'):
+            # A general observation cannot certify each affected occurrence.
+            # Preserve the independent facts and derive status from all of them.
+            finding_instances.update_aggregate(finding)
+        else:
+            finding['status'] = {'fixed': 'verified_fixed', 'open': 'open', 'partial': 'in_progress', 'not_verified': 'not_verified'}.get(record['result'], 'open')
         return saved(d, data)
 
     def library_path(): return Path(app.config['LIBRARY_PATH'])

@@ -46,7 +46,7 @@
     {% if step_text.startswith(('<table', '<pre', '<figure', '<p', '<ul', '<ol', '<blockquote', '<h')) or (not step_text and (s.command or (s.figure and s.figure.src))) %}
     {% if s.lead %}<p class="step-heading"><b class="lead">{{ s.lead }}</b></p>{% endif %}{{ step_text }}
     {% else %}
-    {% if s.lead %}<b class="lead">{{ s.lead }}</b> {% endif %}{{ step_text }}
+    <p{% if s.command or (s.figure and s.figure.src) %} class="step-heading"{% endif %}>{% if s.lead %}<b class="lead">{{ s.lead }}</b> {% endif %}{{ step_text }}</p>
     {% endif %}
     {% if s.command %}<pre class="cmd">{{ s.command }}</pre>{% endif %}
     {% if s.figure and s.figure.src %}

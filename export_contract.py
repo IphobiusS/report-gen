@@ -811,6 +811,34 @@ def _pdf_proved_hyphens(page, reader, textpage, primary):
     return ''.join(result)
 
 
+def _pdf_observed_separators(primary, native):
+    """Retain independently observed word gaps without changing characters.
+
+    PDF positioning can express a space between differently styled objects
+    without an encoded space glyph. Reconcile only when the entire nonwhite
+    page sequence agrees. Existing line breaks stay intact, and additional
+    separators are spaces, so physical line boundaries are not synthesized.
+    No expected report content participates in this operation.
+    """
+    primary, native = unicodedata.normalize('NFC', primary), unicodedata.normalize('NFC', native)
+    if ''.join(primary.split()) != ''.join(native.split()):
+        return primary
+    gaps, position = set(), 0
+    for char in native:
+        if char.isspace():
+            gaps.add(position)
+        else:
+            position += 1
+    result, position = [], 0
+    for char in primary:
+        if not char.isspace():
+            if position in gaps and result and not result[-1].isspace():
+                result.append(' ')
+            position += 1
+        result.append(char)
+    return ''.join(result)
+
+
 def pdf_text_pages(source, *, geometry_pages=()):
     """Read the PDF, retaining the established extractor for ordinary fonts.
 
@@ -849,19 +877,32 @@ def pdf_text_pages(source, *, geometry_pages=()):
         if special or any(unicodedata.bidirectional(char) in ('R', 'AL') for char in text):
             alternate.append(index)
         raw_pages.append(text)
-    if alternate:
+    if raw_pages:
         import pypdfium2
+        import pypdfium2.raw as raw
+        alternate = set(alternate)
         with _PDFIUM_LOCK, pypdfium2.PdfDocument(source) as document:
-            for index in alternate:
+            for index in range(len(raw_pages)):
                 page = document[index]
                 try:
                     textpage = page.get_textpage()
                     try:
+                        if index not in alternate:
+                            # pypdf can omit a real positioning gap at a font
+                            # boundary. PDFium observes that geometry, but its
+                            # separators are accepted only after whole-page
+                            # character agreement, without Unicode map errors.
+                            # Recompute normalized offsets/line edges later
+                            # from this reconciled text, never from old offsets.
+                            indices = range(textpage.count_chars())
+                            if all(raw.FPDFText_HasUnicodeMapError(textpage, i) == 0 for i in indices):
+                                native = ''.join(chr(raw.FPDFText_GetUnicode(textpage, i)) for i in indices)
+                                raw_pages[index] = _pdf_observed_separators(raw_pages[index], native)
+                            continue
                         # Bounded extraction supports full Unicode (unlike
                         # UCS-2 range extraction), custom font CMaps and logical
                         # RTL order. Read only the file, never expected content.
                         text = textpage.get_text_bounded(errors='strict')
-                        import pypdfium2.raw as raw
                         mapping_error = any(raw.FPDFText_HasUnicodeMapError(textpage, i) == 1
                                             for i in range(textpage.count_chars()))
                         if '\x02' in text or '\ufffe' in text or mapping_error:
@@ -1134,12 +1175,13 @@ def _pdf_line_edges(text):
     return {'starts': starts, 'ends': ends}
 
 
-def _pdf_uri_page_fragments(unit, pages, line_edges, budget):
-    """Match literal-URI continuations at retained extractor line boundaries.
+def _pdf_uri_page_fragments(unit, pages, line_edges, budget, page_limit=None):
+    """Match literal continuations at retained extractor line boundaries.
 
-    Ordinary prose words remain indivisible across pages. Only a URI may
-    continue within a word, from a line end to a line start on the immediately
-    following page. This is bounded textual presence, not block association,
+    A word may continue only inside a URI or after an authored hyphen, from a
+    line end to a line start on the immediately following page. A hyphen must
+    exist in both source and PDF; extraction never gains a missing character.
+    This is bounded textual presence, not block association,
     copyable-whitespace verification or a geometric layout certificate.
     Every accepted character is read from the PDF; source text is never used
     to repair extraction. Actual non-reusable ranges go to the same allocator.
@@ -1147,27 +1189,28 @@ def _pdf_uri_page_fragments(unit, pages, line_edges, budget):
     from bisect import bisect_left
     unit = normal(unit)
     uris = list(re.finditer(r"\b(?:https?|ftps?)://[^\s<>\"'`]+", unit, re.IGNORECASE))
-    if not uris or len(line_edges) != len(pages):
+    hyphens = {match.end() for match in re.finditer(r'(?<=\w)-(?=\w)', unit)}
+    if (not uris and not hyphens) or len(line_edges) != len(pages):
         return []
     budget(len(unit))
     uri_starts = [match.start() for match in uris]
 
-    def in_uri(offset):
+    def literal_boundary(offset):
         index = bisect_left(uri_starts, offset) - 1
-        return index >= 0 and offset < uris[index].end()
+        return offset in hyphens or (index >= 0 and offset < uris[index].end())
 
     def word_char(char):
         return bool(re.match(r'\w', char))
 
     def fragments(first, page, edges):
-        within_uri = in_uri(first)
-        starts = (sorted(edges['starts']) if within_uri else
+        within_word = literal_boundary(first)
+        starts = (sorted(edges['starts']) if within_word else
                   (match.start() for match in re.finditer(re.escape(unit[first]), page)))
         for start in starts:
             budget(1)
             if start >= len(page) or page[start] != unit[first]:
                 continue
-            if (not within_uri and word_char(unit[first]) and start > 0
+            if (not within_word and word_char(unit[first]) and start > 0
                     and word_char(page[start - 1])):
                 continue
             source, actual = first, start
@@ -1193,7 +1236,7 @@ def _pdf_uri_page_fragments(unit, pages, line_edges, budget):
                         yield source, start, actual
                 elif unit[source].isspace() and boundary:
                     yield source + 1, start, actual
-                elif in_uri(source) and actual in edges['ends']:
+                elif literal_boundary(source) and actual in edges['ends']:
                     yield source, start, actual
 
     carry, completed = {}, set()
@@ -1207,7 +1250,7 @@ def _pdf_uri_page_fragments(unit, pages, line_edges, budget):
                     candidate = chain + ((number, start, end),)
                     if consumed == len(unit):
                         completed.add(candidate)
-                    else:
+                    elif page_limit is None or len(candidate) < page_limit:
                         target = progressed.setdefault(consumed, set())
                         if candidate not in target:
                             if states >= _PDF_TEXT_MAX_STATES:
@@ -1300,12 +1343,14 @@ def _pdf_occurrences(unit, pages):
     return found
 
 
-def _pdf_text_fragments(unit, pages, *, prefixes, budget=None):
+def _pdf_text_fragments(unit, pages, *, prefixes, budget=None, page_limit=None):
     """Enumerate actual adjacent-page chains without discarding later starts.
 
     The maximal-prefix pass is a cheap constructive search. If it cannot
     supply a disjoint assignment, the exhaustive pass retains shorter prefixes
-    too. Construction has a work limit before candidates enter the allocator.
+    too. An optional page limit supplies a smaller constructive candidate set;
+    failure of that pass is never proof of missing text. Construction has a
+    work limit before candidates enter the allocator.
     """
     words = normal(unit).split()
     if not words:
@@ -1348,7 +1393,7 @@ def _pdf_text_fragments(unit, pages, *, prefixes, budget=None):
                         candidate = chain + ((page_index, start, end),)
                         if consumed == len(words):
                             completed.add(candidate)
-                        else:
+                        elif page_limit is None or len(candidate) < page_limit:
                             progressed.setdefault(consumed, set()).add(candidate)
         carry = progressed
     return sorted(completed)
@@ -1359,6 +1404,7 @@ def _pdf_present(units, actual, label_es, label_en):
     counts = Counter(unit for unit in units if unit)
     across = {}
     options = []
+    spanning_units = []
     construction_work = 0
 
     def budget(amount):
@@ -1380,6 +1426,7 @@ def _pdf_present(units, actual, label_es, label_en):
                 budget(1)
                 ranges.add(((page_index, *match.span(1)),))
         if len(ranges) < count:
+            spanning_units.append(len(options))
             spanning = _pdf_occurrences(unit, actual['pages'])
             budget(sum(map(len, spanning)))
             ranges.update(spanning)
@@ -1397,14 +1444,16 @@ def _pdf_present(units, actual, label_es, label_en):
 
     if allocated():
         return sum(counts.values()), sum(across.values())
-    # Literal URI continuations have stricter physical-line boundaries than
-    # generic prose fragments. Try that constructive match first: a long URL
-    # after many similar paragraphs otherwise exhausts the generic ambiguity
-    # budget before this independently sufficient, bounded path is reached.
-    if actual.get('line_edges'):
-        for unit, ranges in zip(counts, options):
+
+    items = tuple(counts)
+
+    def uri_alternatives(indices, page_limit=None):
+        if not actual.get('line_edges'):
+            return
+        for index in indices:
+            unit, ranges = items[index], options[index]
             continuations = _pdf_uri_page_fragments(
-                unit, actual['pages'], actual['line_edges'], budget)
+                unit, actual['pages'], actual['line_edges'], budget, page_limit)
             ranges.update(tuple((offsets[p] + start, offsets[p] + end)
                                 for p, start, end in occurrence)
                           for occurrence in continuations)
@@ -1413,17 +1462,46 @@ def _pdf_present(units, actual, label_es, label_en):
             # is a continuation-check count, not a geometric paragraph count.
             across[unit] = max(across.get(unit, 0), sum(
                 len(occurrence) > 1 for occurrence in continuations[:counts[unit]]))
+
+    def prose_alternatives(indices, *, prefixes, page_limit=None):
+        for index in indices:
+            unit, ranges = items[index], options[index]
+            alternatives = _pdf_text_fragments(unit, actual['pages'], prefixes=prefixes,
+                                               budget=budget, page_limit=page_limit)
+            ranges.update(tuple((offsets[p] + start, offsets[p] + end)
+                                for p, start, end in occurrence)
+                          for occurrence in alternatives)
+
+    # First supply alternatives for units whose authored multiplicity was not
+    # found on individual pages. Their greedy continuations can compete with
+    # other paragraphs. Expanding every already-present URI first needlessly
+    # multiplies partial chains through common prose on a large report. This
+    # priority pass still accepts only a complete, globally disjoint witness;
+    # individually sufficient units remain eligible for the full fallback.
+    uri_alternatives(spanning_units, page_limit=2)
+    if allocated():
+        return sum(counts.values()), sum(across.values())
+    # A real two-page chain can be hidden by a greedy chain through several
+    # earlier pages containing the same prose. Enumerating shorter prefixes
+    # within one adjacent-page pair provides alternatives without first
+    # multiplying them over every possible page span. Every candidate still
+    # consists exclusively of exact observed text ranges.
+    prose_alternatives(spanning_units, prefixes=True, page_limit=2)
+    if allocated():
+        return sum(counts.values()), sum(across.values())
+    # Literal URI continuations have stricter physical-line boundaries than
+    # generic prose fragments. Try that constructive match first: a long URL
+    # after many similar paragraphs otherwise exhausts the generic ambiguity
+    # budget before this independently sufficient, bounded path is reached.
+    if actual.get('line_edges'):
+        uri_alternatives(range(len(items)))
         if allocated():
             return sum(counts.values()), sum(across.values())
     # A fast constructive pass may omit the only compatible page continuation.
     # Failure is never proof of missing text until all bounded alternatives
     # have been considered, including shorter prefixes and later starts.
     for prefixes in (False, True):
-        for unit, ranges in zip(counts, options):
-            alternatives = _pdf_text_fragments(unit, actual['pages'], prefixes=prefixes, budget=budget)
-            ranges.update(tuple((offsets[p] + start, offsets[p] + end)
-                                for p, start, end in occurrence)
-                          for occurrence in alternatives)
+        prose_alternatives(range(len(items)), prefixes=prefixes)
         if allocated():
             return sum(counts.values()), sum(across.values())
     raise ValueError(backend_message(

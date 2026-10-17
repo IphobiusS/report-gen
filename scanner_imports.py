@@ -7,7 +7,7 @@ import ipaddress
 import json
 import re
 
-from lxml import etree
+from lxml import etree, html
 from input_guard import ensure_data_tree, load_json
 from project_history import now
 import workflows
@@ -15,6 +15,135 @@ from diagnostic_locations import DiagnosticError, diagnostic, location_scope
 
 MAX_ROWS = 500
 MAX_PORTS = 10000
+
+
+def _report_xml(raw, root_name):
+    """Parse a bounded report; no external resources or entity expansion."""
+    encoded = raw.encode('utf-8')
+    if len(encoded) > 4 * 1024 * 1024:
+        raise ValueError(backend_message('Archivo demasiado grande', en='File too large', pt='Arquivo muito grande'))
+    if re.search(br'<!ENTITY\b|<!DOCTYPE[^>\[]*\b(?:SYSTEM|PUBLIC)\b', encoded, re.I):
+        raise ValueError(backend_message('Entidades XML y DTD externos prohibidos', en='XML entities and external DTDs are forbidden', pt='Entidades XML e DTDs externos são proibidos'))
+    declaration = re.match(br'\s*<\?xml\b[^?]*\bencoding\s*=\s*[\'\"]([^\'\"]+)', encoded, re.I)
+    if declaration and declaration[1].lower() not in (b'utf-8', b'utf8', b'ascii', b'us-ascii'):
+        raise ValueError(backend_message('El XML debe declarar UTF-8', en='XML must declare UTF-8', pt='O XML deve declarar UTF-8'))
+    try:
+        root = etree.fromstring(encoded, etree.XMLParser(resolve_entities=False, load_dtd=False, no_network=True, huge_tree=False))
+    except (etree.XMLSyntaxError, ValueError) as exc:
+        line, column = getattr(exc, 'position', (None, None))
+        raise DiagnosticError(backend_message('Informe XML inválido', en='Invalid XML report', pt='Relatório XML inválido'), code='import.xml.invalid', location=dict(line=line, column=column)) from exc
+    if root.tag != root_name or sum(1 for _ in root.iter()) > 30000:
+        raise ValueError(backend_message('Raíz XML inesperada o demasiados nodos', en='Unexpected XML root or too many nodes', pt='Raiz XML inesperada ou nós demais'))
+    return root
+
+
+def _report_plain(value):
+    if not value:
+        return ''
+    tree = html.fragment_fromstring(value, create_parent='div')
+    for node in tree.xpath('.//script|.//style|.//iframe'):
+        node.drop_tree()
+    for node in tree.xpath('.//br|.//p|.//div|.//li'):
+        node.tail = '\n' + (node.tail or '')
+    return '\n'.join(workflows.md_text(line) for line in tree.text_content().strip().splitlines())
+
+
+def _report_list(value, field):
+    if not isinstance(value, list) or len(value) > MAX_ROWS or any(not isinstance(item, dict) for item in value):
+        raise DiagnosticError(backend_message('Lista de resultados inválida o excesiva', en='Invalid or oversized results list', pt='Lista de resultados inválida ou excessiva'), code='import.type.list', location={'field': field})
+    return value
+
+
+def zap(raw, lang='es'):
+    """Traditional ZAP JSON/XML reports, one reviewable row per occurrence."""
+    if raw.lstrip().startswith('<'):
+        root = _report_xml(raw, 'OWASPZAPReport')
+        sites = []
+        for site in root.findall('site'):
+            alerts = []
+            for alert in site.findall('alerts/alertitem'):
+                record = {child.tag: child.text or '' for child in alert if child.tag != 'instances'}
+                record['instances'] = [{child.tag: child.text or '' for child in instance} for instance in alert.findall('instances/instance')]
+                record['_line'] = alert.sourceline
+                alerts.append(record)
+            sites.append({'@name': site.get('name', ''), 'alerts': alerts})
+        document = {'site': sites, '@version': root.get('version', ''), 'created': root.get('created', '')}
+    else:
+        document = _json_document(raw)
+    if not isinstance(document, dict):
+        raise ValueError(backend_message('Se esperaba un informe tradicional ZAP', en='Expected a traditional ZAP report', pt='Era esperado um relatório tradicional ZAP'))
+    sites = _report_list(document.get('site'), 'site')
+    rows = []
+    for site in sites:
+        for alert in _report_list(site.get('alerts'), 'site.alerts'):
+            plugin = _text(alert, 'alertRef') or _text(alert, 'pluginid')
+            title = _text(alert, 'name') or _text(alert, 'alert')
+            risk = _text(alert, 'riskcode')
+            if not plugin or not title or risk not in ('0', '1', '2', '3'):
+                raise ValueError(backend_message('ZAP: regla, título o riesgo inválidos', en='ZAP: invalid rule, title or risk', pt='ZAP: regra, título ou risco inválidos'))
+            instances = _report_list(alert.get('instances', []), 'instances')
+            if not instances:
+                # Some report filters suppress the instances; keep the site-wide
+                # observation, without inventing an endpoint or successful test.
+                instances = [{'uri': _text(site, '@name')}]
+            for instance in instances:
+                if len(rows) >= MAX_ROWS:
+                    raise ValueError(backend_message('Máximo 500 observaciones', en='Maximum 500 observations', pt='Máximo de 500 observações'))
+                affected = _text(instance, 'uri')
+                if not affected:
+                    raise ValueError(backend_message('ZAP: falta el objetivo', en='ZAP: target is missing', pt='ZAP: alvo ausente'))
+                method, param = _text(instance, 'method'), _text(instance, 'param')
+                evidence = []
+                for key in ('method', 'param', 'attack', 'evidence', 'otherinfo', 'request-header', 'request-body', 'response-header', 'response-body', 'requestHeader', 'requestBody', 'responseHeader', 'responseBody'):
+                    value = _text(instance, key, strip=False)
+                    if value:
+                        evidence.append({'lead': 'ZAP · ' + key, 'command': value})
+                references = re.findall(r'https?://[^\s<>"\']+', _report_plain(_text(alert, 'reference')))
+                origin = dict(plugin_id=_text(alert, 'pluginid'), alert_ref=plugin, method=method, parameter=param,
+                              scanner_version=_text(document, '@version'), observed_at=_text(document, 'created'),
+                              reported_risk=risk, record_sha256=sha256(json.dumps([alert, instance], sort_keys=True, ensure_ascii=True).encode()).hexdigest())
+                rows.append(dict(title=title, affected=affected, severity={'0': 'info', '1': 'low', '2': 'medium', '3': 'high'}[risk],
+                    description_md=_report_plain(_text(alert, 'desc')), impact_md='', remediation_md=_report_plain(_text(alert, 'solution')),
+                    cwe=('CWE-' + _text(alert, 'cweid')) if _text(alert, 'cweid') not in ('', '-1', '0') else '',
+                    external_id=plugin, confidence=_text(alert, 'confidence'), references=references, walkthrough=evidence,
+                    origin=origin, _source_location={'record': len(rows) + 1, **({'line': alert['_line']} if '_line' in alert else {})}))
+    return [], {}, rows
+
+
+def nessus(raw, lang='es'):
+    """Nessus v2 XML only; policies, credentials and scanner commands omitted."""
+    root = _report_xml(raw, 'NessusClientData_v2')
+    rows = []
+    for host in root.findall('Report/ReportHost'):
+        target = host.get('name', '').strip()
+        if not target:
+            raise ValueError(backend_message('Nessus: host sin nombre', en='Nessus: host name missing', pt='Nessus: host sem nome'))
+        properties = {tag.get('name'): tag.text or '' for tag in host.findall('HostProperties/tag')}
+        for item in host.findall('ReportItem'):
+            if len(rows) >= MAX_ROWS:
+                raise ValueError(backend_message('Máximo 500 observaciones', en='Maximum 500 observations', pt='Máximo de 500 observações'))
+            plugin, title, severity = item.get('pluginID', ''), item.get('pluginName', ''), item.get('severity', '')
+            port, protocol = item.get('port', ''), item.get('protocol', '')
+            if (not re.fullmatch(r'[0-9]{1,12}', plugin) or not title.strip() or severity not in ('0', '1', '2', '3', '4')
+                    or not re.fullmatch(r'[0-9]{1,5}', port) or int(port) > 65535 or protocol not in ('tcp', 'udp', 'icmp', '')):
+                raise DiagnosticError(backend_message('Nessus: atributos del resultado inválidos', en='Nessus: invalid result attributes', pt='Nessus: atributos do resultado inválidos'), code='import.nessus.invalid', location={'line': item.sourceline})
+            text = lambda key: item.findtext(key, default='').strip()
+            output = text('plugin_output')
+            # Keep vendor risk and vectors as source claims. The application
+            # must not turn a scanner's risk label into a verified CVSS score.
+            origin = dict(plugin_id=plugin, host=target, port=port, protocol=protocol, service=item.get('svc_name', ''),
+                family=item.get('pluginFamily', ''), observed_at=properties.get('HOST_END', ''), reported_severity=severity,
+                reported_cvss3_vector=text('cvss3_vector'), reported_cvss_vector=text('cvss_vector'),
+                cves=[node.text or '' for node in item.findall('cve')],
+                record_sha256=sha256(etree.tostring(item)).hexdigest())
+            refs = [line.strip() for line in text('see_also').splitlines() if line.strip().startswith(('https://', 'http://'))]
+            rows.append(dict(title=title.strip(), affected=target + ':' + port + '/' + protocol,
+                severity={'0': 'info', '1': 'low', '2': 'medium', '3': 'high', '4': 'critical'}[severity],
+                description_md='\n\n'.join(filter(None, [text('synopsis'), text('description')])), impact_md='',
+                remediation_md=text('solution'), external_id=plugin, confidence='scanner observation; technical review required',
+                references=refs, walkthrough=[{'lead': 'Nessus · plugin_output', 'command': output}] if output else [],
+                origin=origin, _source_location={'record': len(rows) + 1, 'line': item.sourceline}))
+    return [], {}, rows
 
 
 def _json_document(raw, first_line=1):
@@ -634,6 +763,8 @@ def sarif_preview(raw, data, origin):
                     pt='SARIF: é necessário um arquivo autocontido, sem propriedades externas.'))
     project_seen = {finding['import_source']['fingerprint'] for finding in data.get('findings', [])
                     if isinstance(finding.get('import_source'), dict) and finding['import_source'].get('format') == 'sarif'}
+    project_seen.update(observation['source']['fingerprint'] for finding in data.get('findings', [])
+                        for observation in finding.get('import_observations', []) if observation.get('source', {}).get('format') == 'sarif')
     seen = set(project_seen)
     rows, output_bytes = [], 0
     for run_index, run in enumerate(runs):

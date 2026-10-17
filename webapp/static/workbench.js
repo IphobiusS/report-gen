@@ -64,10 +64,11 @@ const WorkbenchUI = (() => {
   let renderedKey=null,navigationKey=null,previewStale=false,previewSnapshot=null,positionTimer,restoring=false,dialogTrigger=null,shortcutSaving=false;
   let filters={status:'',asset:'',owner:'',verification:''};
   const findingTabs=new Map();
+  let reviewQueue=null,boardSelection=new Set(),boardSelectionKey=null;
   function storageKey(key){
     // Names and positions can disclose project context. Legacy unscoped keys
     // remain untouched; a same-named project is not proof of ownership.
-    if(/^(filters|views|resume|recent)\./.test(key))return S.workspace_id?'rg.wb.workspace.'+S.workspace_id+'.'+key:null;
+    if(/^(filters|views|resume|recent|reviewQueue|inspector)\./.test(key))return S.workspace_id?'rg.wb.workspace.'+S.workspace_id+'.'+key:null;
     return 'rg.wb.'+key;
   }
   function read(key,fallback){try{const scoped=storageKey(key);return scoped?JSON.parse(localStorage.getItem(scoped))??fallback:fallback;}catch(_){return fallback;}}
@@ -86,6 +87,7 @@ const WorkbenchUI = (() => {
     if(S.sel.type==='finding'&&!entry.uid)return;
     write('resume.'+S.slug,entry);
     if(entry.uid){const list=recent().filter(x=>x!==entry.uid);write('recent.'+S.slug,[entry.uid,...list].slice(0,12));}
+    if(entry.uid&&reviewQueue?.active&&reviewQueue.uids.includes(entry.uid)){reviewQueue.current_uid=entry.uid;persistQueue();}
   }
   function resume(){
     const stored=read('resume.'+S.slug,{}),p=stored&&typeof stored==='object'?stored:{};
@@ -95,7 +97,17 @@ const WorkbenchUI = (() => {
     select(type,value);restoring=true;
     requestAnimationFrame(()=>{requestAnimationFrame(()=>{$('#editor').scrollTop=Number(p.scroll)||0;if(innerWidth<=760)window.scrollTo(0,Number(p.windowScroll)||0);$('#editor').focus({preventScroll:true});restoring=false;});});
   }
-  function projectChanged(){if(typeof ContextIndexUI!=='undefined')ContextIndexUI.projectChanged();UndoUI.clear();WorkflowUI.resetReview?.();filters=cleanFilters(read('filters.'+S.slug,{}));renderedKey=null;previewStale=false;previewSnapshot=null;}
+  function projectChanged(){if(typeof ContextIndexUI!=='undefined')ContextIndexUI.projectChanged();UndoUI.clear();WorkflowUI.resetReview?.();filters=cleanFilters(read('filters.'+S.slug,{}));reviewQueue=cleanQueue(read('reviewQueue.'+S.slug,null));boardSelection.clear();boardSelectionKey=null;renderedKey=null;previewStale=false;previewSnapshot=null;}
+  function resetProject(slug){
+    const prefix=S.workspace_id?'rg.wb.workspace.'+S.workspace_id+'.':null;
+    if(prefix)try{
+      const exact=new Set(['filters','views','resume','recent','reviewQueue'].map(key=>prefix+key+'.'+slug));exact.add(prefix+'context-index.'+encodeURIComponent(slug));
+      const keys=Array.from({length:localStorage.length},(_,index)=>localStorage.key(index));
+      for(const key of keys)if(exact.has(key)||key?.startsWith(prefix+'inspector.'+slug+'.'))localStorage.removeItem(key);
+    }catch(_){toast(w('No se pudieron borrar todas las preferencias del proyecto en este navegador.','Some project preferences could not be removed from this browser.','Algumas preferências do projeto não puderam ser removidas deste navegador.'),'err');}
+    for(const key of findingTabs.keys())if(key.startsWith(S.workspace_id+'|'+slug+'|'))findingTabs.delete(key);
+    if(S.slug===slug){reviewQueue=null;filters=cleanFilters({});boardSelection.clear();boardSelectionKey=null;$('#pinnedEvidence')?.remove();$('.layout')?.classList.remove('review-evidence-open');}
+  }
   function dirty(){previewStale=true;previewSnapshot=null;invalidateLivePreview();updatePreview();const title=$('#editor .finding-context-title strong');if(title&&S.sel.type==='finding'){const f=S.data.findings.find(item=>item.uid===renderedFindingUid());title.textContent=f?.title||w('Sin título','Untitled', "Sem título");const chips=$('#editor .finding-chips');if(chips&&f)chips.replaceWith(findingChips(f));}}
   function previewReady(revision=projectStore.revision,snapshot=null){if(snapshot)previewSnapshot={...snapshot,revision};previewStale=revision!==projectStore.revision;updatePreview();followPreview();}
   function hasLivePreview(){return !previewStale&&previewSnapshot?.slug===S.slug&&previewSnapshot.document===$('#pdfPreview')?.contentDocument&&previewSnapshot.revision===projectStore.revision;}
@@ -124,6 +136,7 @@ const WorkbenchUI = (() => {
   }
   function afterRender(){
     update();
+    refreshInspector();
     const key=JSON.stringify([S.slug,S.sel]);
     const changed=key!==renderedKey;
     if(changed){$('#editor').scrollTop=0;renderedKey=key;}
@@ -218,12 +231,51 @@ const WorkbenchUI = (() => {
     return list;
   }
   function renderedFindingUid(){return $('#editor .finding-context')?.dataset.findingContextUid||null;}
+  function cleanQueue(value){
+    if(!value||value.schema!==1||!Array.isArray(value.uids)||!value.uids.length||value.uids.length>10000||value.uids.some(uid=>typeof uid!=='string'||!uid||uid.length>100)||typeof value.current_uid!=='string')return null;
+    const available=new Set((S.data?.findings||[]).map(f=>f.uid)),uids=[...new Set(value.uids)].filter(uid=>available.has(uid));
+    if(!uids.length)return null;
+    return {schema:1,uids,current_uid:uids.includes(value.current_uid)?value.current_uid:uids[0],active:value.active===true,filters:cleanFilters(value.filters),severity:typeof value.severity==='string'?value.severity:null,sort:value.sort==='manual'?'manual':'sev'};
+  }
+  function persistQueue(){return write('reviewQueue.'+S.slug,reviewQueue);}
+  function sequenceFor(uid){
+    reviewQueue=cleanQueue(reviewQueue);
+    const active=!!(reviewQueue?.active&&reviewQueue.uids.includes(uid));
+    const pool=new Map(S.data.findings.map(f=>[f.uid,f]));
+    return {active,findings:active?reviewQueue.uids.map(id=>pool.get(id)):S.data.findings};
+  }
+  function openFromRows(rows,uid){
+    if(!S.slug||projectBusyCount||projectStore.loading)return;
+    const available=new Set(S.data.findings.map(f=>f.uid)),uids=[...new Set(rows.map(row=>row.f.uid))].filter(id=>available.has(id));
+    if(!uids.includes(uid))return;
+    // A queue is a stable selection, not a claim that any finding was verified.
+    // Its membership survives edits that no longer match the original filters.
+    reviewQueue={schema:1,uids,current_uid:uid,active:true,filters:{...filters},severity:S.dashFilter||null,sort:S.dashSort||'sev'};
+    const saved=persistQueue();select('finding',S.data.findings.findIndex(f=>f.uid===uid));
+    reviewQueue.current_uid=uid;persistQueue();if(typeof ContextIndexUI!=='undefined')ContextIndexUI.setFilters({query:'',severity:'',kind:''});
+    if(!saved)toast(w('La cola está activa, pero este navegador no pudo guardar su progreso.','The queue is active, but this browser could not save its progress.','A fila está ativa, mas este navegador não conseguiu salvar seu progresso.'),'err');
+  }
+  function resumeQueue(){
+    reviewQueue=cleanQueue(reviewQueue);if(!reviewQueue)return;
+    reviewQueue.active=true;filters={...reviewQueue.filters};S.dashFilter=reviewQueue.severity;S.dashSort=reviewQueue.sort;write('filters.'+S.slug,filters);
+    const uid=reviewQueue.current_uid;persistQueue();select('finding',S.data.findings.findIndex(f=>f.uid===uid));reviewQueue.current_uid=uid;persistQueue();if(typeof ContextIndexUI!=='undefined')ContextIndexUI.setFilters({query:'',severity:'',kind:''});
+  }
+  function reviewOrder(){const f=S.sel.type==='finding'?S.data?.findings?.[S.sel.idx]:null;return f&&sequenceFor(f.uid).active?[...reviewQueue.uids]:null;}
+  function queueControls(rows){
+    const box=h('div',{class:'review-queue-controls','data-review-queue-controls':''});
+    const start=b(w('Revisar esta vista','Review this view','Revisar esta visualização'),()=>openFromRows(rows,rows[0]?.f.uid),true);start.disabled=!rows.length;
+    box.append(start,h('span',{},rows.length+' '+w('hallazgos · la cola conserva esta selección y su orden.','findings · the queue retains this selection and its order.','achados · a fila mantém esta seleção e sua ordem.')));
+    reviewQueue=cleanQueue(reviewQueue);
+    if(reviewQueue){const index=reviewQueue.uids.indexOf(reviewQueue.current_uid);box.append(b(w('Retomar revisión','Resume review','Retomar revisão')+' · '+(index+1)+' / '+reviewQueue.uids.length,resumeQueue));}
+    return box;
+  }
   function moveFinding(offset,expectedUid=renderedFindingUid(),expectedSlug=S.slug){
     if(S.sel.type!=='finding'||S.slug!==expectedSlug||projectBusyCount>0||projectStore.loading)return false;
     const current=S.data.findings.findIndex(item=>item.uid===expectedUid);
     if(current<0){toast(w('Este hallazgo ya no está en el proyecto.','This finding is no longer in the project.', "Este achado não está mais no projeto."),'err');select('report',-1);$('#editor').focus();return false;}
-    const next=S.data.findings[current+offset];if(!next)return false;
-    const uid=next.uid;select('finding',current+offset);
+    const sequence=sequenceFor(expectedUid),index=sequence.findings.findIndex(f=>f.uid===expectedUid),next=sequence.findings[index+offset];if(!next)return false;
+    const uid=next.uid;select('finding',S.data.findings.findIndex(f=>f.uid===uid));
+    if(sequence.active){reviewQueue.current_uid=uid;persistQueue();}
     requestAnimationFrame(()=>{if(S.slug===expectedSlug&&S.sel.type==='finding'&&S.data.findings[S.sel.idx]?.uid===uid)$('#editor .finding-context-title strong')?.focus();});
     return true;
   }
@@ -240,7 +292,7 @@ const WorkbenchUI = (() => {
   }
   function shortcutHelp(){
     const {body}=dialog(w('Atajos de teclado','Keyboard shortcuts', "Atalhos de teclado"));
-    body.append(h('p',{},w('j y k recorren el orden completo del proyecto con un hallazgo abierto. No se activan al escribir. Ctrl+Enter guarda el hallazgo y avanza solo si el guardado finaliza sin conflicto y la selección sigue igual.','j and k follow the complete project order with a finding open. They do not run while typing. Ctrl+Enter saves the finding and advances only after a successful save with an unchanged selection.', "j e k seguem a ordem completa do projeto com um achado aberto. Não funcionam enquanto você digita. Ctrl+Enter salva o achado e avança somente após um salvamento bem-sucedido com a seleção inalterada.")));
+    body.append(h('p',{},w('j y k recorren la cola de revisión activa; fuera de ella siguen el orden del proyecto. No se activan al escribir. Ctrl+Enter guarda y avanza solo si el guardado finaliza sin conflicto y la selección sigue igual.','j and k follow the active review queue; outside it they follow project order. They do not run while typing. Ctrl+Enter saves and advances only after a successful save with an unchanged selection.','j e k percorrem a fila de revisão ativa; fora dela seguem a ordem do projeto. Não funcionam enquanto você digita. Ctrl+Enter salva e avança somente após um salvamento bem-sucedido com a seleção inalterada.')));
     const list=h('dl',{class:'shortcut-list'});
     for(const [key,es,en,pt] of [['j','Siguiente hallazgo','Next finding', "Próximo achado"],['k','Hallazgo anterior','Previous finding', "Achado anterior"],['Ctrl+Enter / ⌘+Enter','Guardar y siguiente (dentro del editor de hallazgo)','Save and next (inside the finding editor)', "Salvar e avançar (dentro do editor do achado)"],['?','Abrir esta ayuda fuera de campos','Open this help outside fields', "Abrir esta ajuda fora dos campos"],['Ctrl+K / ⌘+K','Buscar o ejecutar una acción','Search or run an action', "Pesquisar ou executar uma ação"],['Ctrl+S / ⌘+S','Guardar proyecto','Save project', "Salvar projeto"]])list.append(h('dt',{},h('kbd',{},key)),h('dd',{},w(es,en,pt)));
     body.append(list,h('p',{},w('Los atajos de hallazgo y la ayuda quedan suspendidos en diálogos, búsquedas abiertas y operaciones del proyecto.','Finding shortcuts and help are suspended in dialogs, open search results and project operations.', "Os atalhos dos achados e a ajuda ficam suspensos em diálogos, resultados de pesquisa abertos e operações do projeto.")));
@@ -307,22 +359,101 @@ const WorkbenchUI = (() => {
   function findingNavigation(wrap,f){
     const original=wrap.firstElementChild;original.classList.add('finding-actions');
     const head=h('div',{class:'finding-context','data-finding-context-uid':f.uid},h('div',{class:'finding-context-title'},h('span',{class:'mono'},f.id),h('strong',{tabindex:'-1'},f.title||w('Sin título','Untitled', "Sem título")),h('span',{class:'workspace-severity'},f.mode==='machine'?w('Máquina','Machine', "Máquina"):labelOf(status,f.status||'open'))));
-    const slug=S.slug,index=S.data.findings.findIndex(item=>item.uid===f.uid),total=S.data.findings.length;
-    const sequence=h('nav',{class:'finding-sequence','aria-label':w('Hallazgos en el orden del proyecto','Findings in project order', "Achados na ordem do projeto")});
+    const slug=S.slug,order=sequenceFor(f.uid),index=order.findings.findIndex(item=>item.uid===f.uid),total=order.findings.length;
+    if(order.active){reviewQueue.current_uid=f.uid;persistQueue();}
+    const sequence=h('nav',{class:'finding-sequence','aria-label':order.active?w('Cola de revisión','Review queue','Fila de revisão'):w('Hallazgos en el orden del proyecto','Findings in project order', "Achados na ordem do projeto")});
     const move=offset=>moveFinding(offset,f.uid,slug);
     for(const [offset,es,en,pt] of [[-1,'Anterior','Previous','Anterior'],[1,'Siguiente','Next','Próximo']]){
-      const target=S.data.findings[index+offset],label=w(es,en,pt);
+      const target=order.findings[index+offset],label=w(es,en,pt);
       sequence.append(h('button',{type:'button',class:'btn','data-finding-step':String(offset),disabled:!target||projectBusyCount>0||projectStore.loading?'':null,'aria-label':label+' '+w('hallazgo','finding', "achado")+(target?' '+target.id:''),onclick:()=>move(offset)},offset<0?'‹ '+label:label+' ›'));
     }
-    sequence.append(h('span',{class:'finding-sequence-position',role:'status','data-finding-position-label':''},(index+1)+' '+w('de','of', "de")+' '+total+' · '+w('orden del proyecto','project order', "ordem do projeto")));
+    const saveNext=b(w('Guardar y siguiente','Save and next','Salvar e avançar'),saveAndNext,true);saveNext.dataset.findingSaveNext='';sequence.append(saveNext);
+    sequence.append(h('span',{class:'finding-sequence-position',role:'status','data-finding-position-label':''},(order.active?w('Revisando ','Reviewing ','Revisando '):'')+(index+1)+' '+w('de','of', "de")+' '+total+' · '+(order.active?w('cola de revisión','review queue','fila de revisão'):w('orden del proyecto','project order', "ordem do projeto"))));
+    if(order.active)sequence.append(b(w('Pausar revisión','Pause review','Pausar revisão'),()=>{reviewQueue.active=false;persistQueue();renderMain();}));
     head.append(findingChips(f),sequence);
     if(typeof WorkflowUI!=='undefined')WorkflowUI.reviewControls?.(head);
     const nav=h('nav',{class:'finding-tabs','aria-label':w('Apartados del hallazgo','Finding sections', "Seções do achado")});
-    for(const [key,es,en,pt] of [['description','Descripción','Description', "Descrição"],['reproduction','Reproducción','Reproduction', "Reprodução"],['evidence','Evidencias','Evidence', "Evidências"],['decisions','Decisiones','Decisions', "Decisões"],['remediation','Remediación','Remediation', "Correção"]]){
+    for(const [key,es,en,pt] of [['description','Descripción','Description', "Descrição"],['reproduction','Reproducción','Reproduction', "Reprodução"],['evidence','Evidencias','Evidence', "Evidências"],['decisions','Decisiones','Decisions', "Decisões"],['instances','Instancias','Instances','Instâncias'],['remediation','Remediación','Remediation', "Correção"]]){
       const target=wrap.querySelector('[data-workpart="'+key+'"]');if(!target)continue;
       nav.append(b(w(es,en,pt),()=>{revealFindingPart(key);target.scrollIntoView({block:'start'});target.querySelector('input,textarea,select,button')?.focus({preventScroll:true});}));
     }
     head.append(nav);wrap.prepend(head);
+  }
+  function inspectorItems(f){
+    const slug=S.slug,pool=new Map((S.data.evidence||[]).map(item=>[item.uid,item]));
+    const rows=[...new Set(f.evidence_uids||[])].map(uid=>pool.get(uid)).filter(Boolean).map(item=>({uid:'image:'+item.uid,title:item.title||item.caption||item.uid,render(container){
+      const image=h('img',{src:'/api/projects/'+encodeURIComponent(slug)+'/'+item.src,alt:item.caption||item.title||w('Evidencia vinculada','Linked evidence','Evidência vinculada')});
+      container.append(image,h('p',{},item.caption||''),h('small',{},w('Copia procesada para el informe.','Processed report copy.','Cópia processada para o relatório.')),b(w('Abrir evidencia','Open evidence','Abrir evidência'),()=>openReference('evidence',item.uid)));
+    }}));
+    for(const item of window.ReportGenReviewHooks?.inspectorItems?.(f)||[])if(item&&typeof item.uid==='string'&&typeof item.render==='function'&&!rows.some(row=>row.uid===item.uid))rows.push(item);
+    return rows;
+  }
+  function findingInspector(wrap,f){
+    const toggle=b(w('Evidencia a la vista','Keep evidence in view','Manter evidência à vista'),()=>{write('inspectorVisible',!read('inspectorVisible',false));refreshInspector();});
+    toggle.dataset.inspectorToggle='';toggle.setAttribute('aria-controls','pinnedEvidence');toggle.setAttribute('aria-expanded',String(read('inspectorVisible',false)));
+    wrap.querySelector('.finding-tabs')?.append(toggle);
+    wrap.querySelector('[data-field="evidence_uids"]')?.addEventListener('change',refreshInspector);
+  }
+  function refreshInspector(selected=null){
+    const layout=$('.layout'),f=S.sel.type==='finding'?S.data?.findings?.[S.sel.idx]:null,visible=!!(f&&read('inspectorVisible',false));
+    layout?.classList.toggle('review-evidence-open',visible);$('#editor [data-inspector-toggle]')?.setAttribute('aria-expanded',String(visible));
+    $('#pinnedEvidence')?.remove();if(typeof ContextIndexUI!=='undefined')ContextIndexUI.update();if(!visible)return;
+    const slug=S.slug,panel=h('aside',{id:'pinnedEvidence',class:'pinned-evidence','aria-label':w('Evidencia fijada','Pinned evidence','Evidência fixada')});
+    const close=b(w('Cerrar panel','Close panel','Fechar painel'),()=>{write('inspectorVisible',false);refreshInspector();$('#editor [data-inspector-toggle]')?.focus({preventScroll:true});});
+    const body=h('div',{class:'pinned-evidence-body'}),items=inspectorItems(f),key='inspector.'+slug+'.'+f.uid;
+    panel.append(h('div',{class:'pinned-evidence-heading'},h('h2',{},w('Evidencia a la vista','Evidence in view','Evidência à vista')),close));
+    if(!items.length)body.append(h('p',{},w('Vincula evidencia a este hallazgo para consultarla mientras redactas.','Link evidence to this finding to consult it while writing.','Vincule evidências a este achado para consultá-las enquanto escreve.')));
+    else{
+      const preferred=selected||read(key,''),item=items.find(row=>row.uid===preferred)||items[0],content=h('div',{'data-pinned-evidence-content':item.uid});
+      const picker=selector(w('Evidencia fijada','Pinned evidence','Evidência fixada'),items.map(row=>[row.uid,row.title]),item.uid,value=>{write(key,value);refreshInspector(value);$('#pinnedEvidence select')?.focus({preventScroll:true});});
+      body.append(picker,content);item.render(content);
+    }
+    panel.append(body);$('#editor').after(panel);
+  }
+  function closeInspector(){write('inspectorVisible',false);refreshInspector();}
+  function inspectEvidence(uid){write('inspectorVisible',true);refreshInspector(uid);}
+  function openReference(type,uid){
+    if(type==='http'&&typeof HttpEvidenceUI!=='undefined'){HttpEvidenceUI.open(uid);return;}
+    if(type==='comment'){
+      const comment=(S.data.insights?.comments||[]).find(row=>row.uid===uid);if(!comment)return;
+      const {body}=dialog(w('Comentario','Comment','Comentário'));body.append(h('p',{class:'mono'},comment.field),h('p',{class:'search-comment-body'},comment.body),h('p',{},comment.author||''),h('small',{},comment.status==='open'?w('Abierto','Open','Aberto'):w('Resuelto','Resolved','Resolvido')));
+      if(comment.resolution)body.append(h('p',{},comment.resolution));
+      if(comment.finding_uid)body.append(b(w('Ir al campo comentado','Go to commented field','Ir ao campo comentado'),()=>{body.closest('dialog').close();WorkflowUI.navigateIssue({finding_uid:comment.finding_uid,path:comment.field});}));
+      body.append(b(w('Abrir mesa de revisión','Open review desk','Abrir mesa de revisão'),()=>{body.closest('dialog').close();InsightsUI.open('review');}));return;
+    }
+    const key=type==='asset'?'assets':type==='evidence'?'evidence':type==='capture'?'capture_inbox':null;if(!key)return;
+    const index=(S.data[key]||[]).findIndex(row=>row.uid===uid);if(index<0)return;
+    if(type==='capture'){select('capture');const show=$('#editor input[type="checkbox"]');if(show){show.checked=true;show.dispatchEvent(new Event('change'));}requestAnimationFrame(()=>{const node=$('#editor [data-capture="'+CSS.escape(uid)+'"]');if(node){node.tabIndex=-1;node.scrollIntoView({block:'center'});node.focus();}});return;}
+    WorkflowUI.navigateIssue({path:key+'['+index+'].'+(type==='asset'?'target':'title')});
+  }
+  const columnLabels={cwe:['CWE','CWE','CWE'],cvss:['CVSS','CVSS','CVSS'],owner:['Responsable','Owner','Responsável'],due_date:['Fecha de corrección','Remediation date','Data da correção'],verification:['Verificación','Verification','Verificação'],evidence:['Evidencias','Evidence','Evidências']};
+  function tableColumns(){const value=read('tableColumns',['cwe','cvss']);return Array.isArray(value)?[...new Set(value)].filter(key=>Object.hasOwn(columnLabels,key)):['cwe','cvss'];}
+  function tableColumnVisible(key){return tableColumns().includes(key);}
+  function selectionChanged(){
+    const count=$('[data-board-selection-count]');if(count)count.textContent=boardSelection.size+' '+w('seleccionados en esta vista','selected in this view','selecionados nesta visualização');
+    const edit=$('[data-board-bulk]');if(edit)edit.disabled=!boardSelection.size||projectBusyCount>0;
+    for(const input of document.querySelectorAll('[data-board-select]'))input.checked=boardSelection.has(input.dataset.boardSelect);
+    const all=$('[data-board-select-page]');if(all){const ids=[...document.querySelectorAll('[data-board-select]')].map(input=>input.dataset.boardSelect),selected=ids.filter(uid=>boardSelection.has(uid)).length;all.checked=!!ids.length&&selected===ids.length;all.indeterminate=selected>0&&selected<ids.length;}
+  }
+  function tableTools(rows){
+    const ids=rows.map(row=>row.f.uid),key=JSON.stringify([S.slug,ids]);
+    if(boardSelectionKey!==key){boardSelectionKey=key;const live=new Set(ids);boardSelection=new Set([...boardSelection].filter(uid=>live.has(uid)));}
+    const edit=b(w('Asignar seleccionados','Assign selected','Atribuir selecionados'),()=>BulkUI.open(null,[...boardSelection]));edit.dataset.boardBulk='';edit.disabled=!boardSelection.size;
+    const count=h('span',{'data-board-selection-count':'',role:'status'},boardSelection.size+' '+w('seleccionados en esta vista','selected in this view','selecionados nesta visualização'));
+    const all=b(w('Seleccionar toda la vista','Select entire view','Selecionar toda a visualização'),()=>{boardSelection=new Set(ids);selectionChanged();});all.disabled=!ids.length||ids.length>500;all.title=w('Máximo 500 hallazgos por asignación.','Maximum 500 findings per assignment.','Máximo de 500 achados por atribuição.');
+    const columns=h('details',{class:'table-column-options'},h('summary',{},w('Columnas','Columns','Colunas')));
+    for(const [name,label]of Object.entries(columnLabels)){const input=h('input',{type:'checkbox',checked:tableColumnVisible(name)?'':null,'data-board-column':name,onchange:()=>{const current=new Set(tableColumns());if(input.checked)current.add(name);else current.delete(name);write('tableColumns',[...current]);renderMain();}});columns.append(h('label',{class:'wf-check'},input,w(...label)));}
+    return h('div',{class:'board-selection-tools'},count,edit,all,b(w('Limpiar selección','Clear selection','Limpar seleção'),()=>{boardSelection.clear();selectionChanged();}),columns);
+  }
+  function tableSelect(f,visibleRows){
+    const input=h('input',{type:'checkbox','aria-label':f?w('Seleccionar ','Select ','Selecionar ')+f.id:w('Seleccionar esta página','Select this page','Selecionar esta página'),...(f?{'data-board-select':f.uid,checked:boardSelection.has(f.uid)?'':null}:{'data-board-select-page':''})});
+    input.addEventListener('click',event=>event.stopPropagation());
+    input.addEventListener('change',()=>{const ids=f?[f.uid]:visibleRows.map(row=>row.f.uid);if(input.checked&&new Set([...boardSelection,...ids]).size>500){input.checked=false;toast(w('Selecciona como máximo 500 hallazgos.','Select at most 500 findings.','Selecione no máximo 500 achados.'),'err');return;}for(const uid of ids)if(input.checked)boardSelection.add(uid);else boardSelection.delete(uid);selectionChanged();});
+    if(!f){const selected=visibleRows.filter(row=>boardSelection.has(row.f.uid)).length;input.checked=!!visibleRows.length&&selected===visibleRows.length;input.indeterminate=selected>0&&selected<visibleRows.length;}
+    return input;
+  }
+  function operationalColumns(f=null){
+    return ['owner','due_date','verification','evidence'].map(key=>{let text=w(...columnLabels[key]);if(f){text=key==='verification'?labelOf(verification,f.verification||''):key==='evidence'?String(new Set((f.evidence_uids||[]).filter(uid=>(S.data.evidence||[]).some(e=>e.uid===uid))).size):f[key]||'—';}return h(f?'td':'th',{'data-board-column-cell':key,hidden:tableColumnVisible(key)?null:''},text);});
   }
   function filterRows(rows){return rows.filter(({f})=>(!filters.status||(f.status||'open')===filters.status)&&(!filters.owner||f.owner===filters.owner)&&(!filters.asset||(f.asset_uids||[]).includes(filters.asset))&&(!filters.verification||(f.verification||'')===filters.verification));}
   function saveView(recovered=null){
@@ -438,14 +569,14 @@ const WorkbenchUI = (() => {
       content.append(control);
     }
     const research=h('details',{id:'workspaceResearch',class:'workspace-secondary'},h('summary',{},h('span',{id:'navResearch'})));
-    research.append(nav,...['assets','coverage'].map(key=>$('[data-workflow="'+key+'"]')));evidence.append($('[data-workflow="evidence"]'),research);
+    research.append(nav,...['assets','coverage','assessment_cases'].map(key=>$('[data-workflow="'+key+'"]')).filter(Boolean));evidence.append(...['evidence','http_evidence'].map(key=>$('[data-workflow="'+key+'"]')).filter(Boolean),research);
     const review=h('details',{id:'workspaceFollowup',class:'navigation-group workspace-secondary','data-sidebar-group':'analysis','aria-labelledby':'navReview'},h('summary',{class:'side-head'},h('span',{class:'sidebar-group-number','aria-hidden':'true'},'04'),h('span',{id:'navReview'})));
-    ['root_causes','remediation_tasks','retest','retest_diff','retest_matrix','history'].forEach(key=>review.append($('[data-workflow="'+key+'"]')));
+    ['assessment_paths','root_causes','remediation_tasks','tickets','retest','retest_diff','retest_matrix','history'].forEach(key=>{const node=$('[data-workflow="'+key+'"]');if(node)review.append(node);});
     const oldUtilities=$('.workspace-utilities');oldUtilities.querySelector('.side-head').remove();
     const utilities=h('details',{id:'workspaceTools',class:'workspace-utilities workspace-secondary'},h('summary',{},h('span',{id:'navTools'})));
     utilities.append(...oldUtilities.childNodes);oldUtilities.remove();
     if($('#updateAppBtn'))utilities.append($('#updateAppBtn'));
-    delivery.append($('[data-workflow="review"]'),$('[data-workflow="backup"]'),utilities);
+    delivery.append(...['review','review_exchange','backup'].map(key=>$('[data-workflow="'+key+'"]')).filter(Boolean),utilities);
     sidebar.prepend(project,content,evidence,review,delivery);$('#workflowNav').remove();
     const fresh=h('span',{id:'previewFreshness',role:'status'});$('.preview-head').append(fresh);
     const range=h('input',{type:'range',id:'previewWidth',min:25,max:55,value:read('previewWidth',36)});range.addEventListener('input',()=>{document.documentElement.style.setProperty('--preview-width',range.value+'%');write('previewWidth',Number(range.value));});$('.preview-head').append(range);document.documentElement.style.setProperty('--preview-width',range.value+'%');
@@ -457,5 +588,5 @@ const WorkbenchUI = (() => {
     document.addEventListener('keydown',shortcut);
     update();
   }
-  return {bind,update,afterRender,revealNavigation:()=>updateNavigation(true),position,resume,projectChanged,dirty,previewReady,hasLivePreview,followPreview,attention,recentFindings,findingNavigation,findingWorkspace,revealFindingPart,revealFindingField,renderedFindingUid,findingChips,filterRows,filterBar,search,capture,inbox,verification,labelOf,status};
+  return {bind,update,afterRender,revealNavigation:()=>updateNavigation(true),position,resume,projectChanged,resetProject,dirty,previewReady,hasLivePreview,followPreview,attention,recentFindings,findingNavigation,findingWorkspace,revealFindingPart,revealFindingField,renderedFindingUid,findingChips,filterRows,filterBar,search,capture,inbox,verification,labelOf,status,openFromRows,queueControls,resumeQueue,reviewOrder,closeInspector,findingInspector,refreshInspector,inspectEvidence,openReference,tableTools,tableSelect,tableColumnVisible,operationalColumns};
 })();

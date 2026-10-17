@@ -18,7 +18,7 @@ const invalid=[
 function projectSearch(language, data){
   const app=fs.readFileSync(path.join(root,'webapp/static/app.js'),'utf8');
   const source=app.slice(app.indexOf('function searchTargets()'),app.indexOf('function navTo(nav)'));
-  return new Function('S',app.slice(0,app.indexOf('// ---- shared transport'))+source+'\nreturn searchProject;')({uiLang:language,data,catBy:{}});
+  return new Function('S','window',app.slice(0,app.indexOf('// ---- shared transport'))+source+'\nreturn searchProject;')({uiLang:language,data,catBy:{}},{});
 }
 
 function searchActivation(){
@@ -43,6 +43,7 @@ function searchActivation(){
     let created=0;
     function addFinding(){created++;}
     function select(type,idx){S.sel={type,idx};}
+    const WorkflowUI={navigateIssue:issue=>select('finding',S.data.findings.findIndex(row=>row.uid===issue.finding_uid))};
     function toast(message){throw Error(message);}
   `+read('drafts.js')+'\n'+read('pending-work.js')+'\n'+workbench+'\n'+between(app,'function searchTargets()','function select(type, val)')+'\n'+
     between(app,'  {\n    const si = $("#globalSearch")','  $("#previewBtn").addEventListener')+'\n'+
@@ -384,7 +385,7 @@ function findingActionEditor(data){
     const projectStore={revision:0,etag:'a1'},nextFid=()=> 'F99';
     const appFetch=async(url,options)=>({ok:true,json:async()=>({data:JSON.parse(options.body)})}),requireOk=async response=>response;
     const WorkflowUI={uid:()=> 'new-finding',findingPanel:()=>document.createElement('section')};
-    const WorkbenchUI={findingWorkspace:()=>{},findingNavigation:()=>{}};
+    const WorkbenchUI={findingWorkspace:()=>{},findingNavigation:()=>{},findingInspector:()=>{}};
     const vulnEditor=()=>document.createElement('section');
   `+workbench.slice(0,workbench.indexOf('const WorkbenchUI'))+'\n'+app.slice(app.indexOf('function findingEditor('),app.indexOf('function parseCweId('))+'\n'+app.slice(app.indexOf('async function importFindings('),app.indexOf('function addFinding('))+`
     window.actions={state:S,undo:UndoUI.undo,remove:()=>UndoUI.remove(S.data.findings,0),render:()=>document.querySelector('#editor').append(findingEditor(S.data.findings[0])),importFile:file=>importFindings({target:{files:[file]}})};

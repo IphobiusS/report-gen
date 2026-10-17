@@ -14,6 +14,7 @@ with tempfile.TemporaryDirectory(prefix='report-gen-dom-') as tmp:
     webapp.PROJECTS=root/'projects';webapp.PROJECTS.mkdir()
     webapp.app.config['LIBRARY_PATH']=str(root/'library'/'findings.json')
     webapp.app.config['DESIGN_LIBRARY_PATH']=str(root/'library'/'designs.json')
+    webapp.app.config['CLIENT_PROFILES_PATH']=str(root/'library'/'client-profiles.json')
     client=webapp.app.test_client()
     if '--seed' in sys.argv:
         csrf=client.get('/api/session').get_json()['csrf']

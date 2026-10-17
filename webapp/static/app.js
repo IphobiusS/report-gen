@@ -643,10 +643,10 @@ function searchTargets() {
     fields.forEach(f => { const v = sec[f.key]; if (typeof v === "string" && v) out.push({ nav, where, text: v }); });
   });
   (d.findings || []).forEach((f, idx) => {
-    const nav = { type: "finding", idx }, location = f.id + (f.title ? " " + f.title : "");
+    const nav = { type: "finding", idx, uid:f.uid }, location = f.id + (f.title ? " " + f.title : "");
     if (f.id) out.push({ nav, where: location + " \u00b7 ID", text: String(f.id), findingId: true });
     [["title", w("Título", "Title", "Título")], ["cwe", "CWE"], ["affected", "Host"], ["description_md", w("Descripción", "Description", "Descrição")], ["impact_md", w("Impacto", "Impact", "Impacto")], ["remediation_md", w("Remediación", "Remediation", "Remediação")]]
-      .forEach(([k, lab]) => { if (f[k]) out.push({ nav, where: location + " \u00b7 " + lab, text: String(f[k]) }); });
+      .forEach(([k, lab]) => { if (f[k]) out.push({ nav:{...nav,path:k}, where: location + " \u00b7 " + lab, text: String(f[k]) }); });
     (f.references || []).forEach(r => { if (r) out.push({ nav, where: location + " \u00b7 Ref", text: r }); });
     if (f.host) [["name", w("Máquina", "Machine", "Máquina")], ["ip", "IP"], ["os", w("SO", "OS", "SO")]].forEach(([k, lab]) => { if (f.host[k]) out.push({ nav, where: location + " \u00b7 " + lab, text: f.host[k] }); });
     if (f.open_ports) out.push({ nav, where: location + " / " + w("Puertos", "Ports", "Portas"), text: f.open_ports });
@@ -658,6 +658,14 @@ function searchTargets() {
       (ph.steps || []).forEach(addStep);
     });
   });
+  for(const [collection,type,label,fields]of [
+    ['assets','asset',w('Activo','Asset','Ativo'),['name','target','kind','notes']],
+    ['evidence','evidence',w('Evidencia','Evidence','Evidência'),['title','caption']],
+    ['capture_inbox','capture',w('Captura privada','Private capture','Captura privada'),['title','note','raw_text']]
+  ])for(const item of d[collection]||[]){const text=fields.map(key=>item[key]).filter(Boolean).join(' · ');if(text)out.push({nav:{type,uid:item.uid},where:label+' · '+(item.title||item.name||item.uid),text});}
+  for(const comment of d.insights?.comments||[])out.push({nav:{type:'comment',uid:comment.uid},where:w('Comentario','Comment','Comentário')+' · '+(comment.author||comment.field),text:[comment.body,comment.resolution,comment.author].filter(Boolean).join(' · ')});
+  for(const item of d.http_evidence||[])out.push({nav:{type:'http',uid:item.uid},where:'HTTP · '+item.title,text:[item.title,item.notes,item.original?.request?.url,item.original?.identity].filter(Boolean).join(' · ')});
+  out.push(...(window.ReportGenReviewHooks?.searchTargets?.()||[]));
   return out;
 }
 function searchText(text) {
@@ -706,7 +714,11 @@ function searchProject(q) {
 }
 function navTo(nav) {
   if (nav.type === "section") select("section", nav.key);
-  else if (nav.type === "finding") select("finding", nav.idx);
+  else if (nav.type === "finding") {
+    const idx=nav.uid?S.data.findings.findIndex(f=>f.uid===nav.uid):nav.idx;if(idx<0)return;
+    if(nav.path)WorkflowUI.navigateIssue({finding_uid:S.data.findings[idx].uid,path:nav.path});else select("finding",idx);
+  }
+  else if(['asset','evidence','capture','comment','http'].includes(nav.type))WorkbenchUI.openReference(nav.type,nav.uid);
   else select("report", -1);
 }
 function renderSearch(q) {
@@ -885,6 +897,7 @@ function findingsDashboard() {
     });
   }
   if (S.dashFilter) rows = rows.filter(({ f }) => S.dashFilter === "machine" ? f.mode === "machine" : (f.mode !== "machine" && (f.severity || "pending") === S.dashFilter));
+  box.append(WorkbenchUI.queueControls(rows),WorkbenchUI.tableTools(rows));
   const canDrag = sortMode === "manual" && !S.dashFilter;
   const pageSize=50, key=JSON.stringify([S.slug,sortMode,S.dashFilter,rows.map(({f})=>f.uid||f.id)]);
   if(findingPageState.boardKey!==key){findingPageState.boardKey=key;findingPageState.board=0;}
@@ -893,9 +906,10 @@ function findingsDashboard() {
   const visibleRows=rows.slice(findingPageState.board*pageSize,(findingPageState.board+1)*pageSize);
   const tbl = h("table", { class: "dash-table" });
   tbl.append(h("thead", {}, h("tr", {},
+    h("th", {class:"c-select"}, WorkbenchUI.tableSelect(null,visibleRows)),
     canDrag ? h("th", { class: "c-drag" }, "") : null,
     h("th", { class: "c-n" }, "#"), h("th", {}, t("dash_sev")), h("th", {}, t("dash_finding")),
-    h("th", {}, t("dash_cwe")), h("th", { class: "c-cvss" }, t("dash_cvss")))));
+    h("th", {hidden:WorkbenchUI.tableColumnVisible("cwe")?null:""}, t("dash_cwe")), h("th", { class: "c-cvss",hidden:WorkbenchUI.tableColumnVisible("cvss")?null:"" }, t("dash_cvss")),...WorkbenchUI.operationalColumns())));
   const tb = h("tbody", {});
   visibleRows.forEach(({ f, idx }) => {
     const isM = f.mode === "machine";
@@ -906,15 +920,16 @@ function findingsDashboard() {
     const cvss = isM ? "—" : (f.cvss != null && f.cvss !== "" ? f.cvss + (f.cvss_version ? "  (" + f.cvss_version + ")" : "") : "—");
     const host = isM && f.host ? (f.host.name || f.host.ip || "") : "";
     const incomplete = !isM && (f.cvss == null || f.cvss === "" || !cwe);
-    const title = h("td", { class: "c-title" }, h("button",{type:"button",class:"finding-row-open",onclick:e=>{e.stopPropagation();select("finding",idx);}},f.title || (isM ? host : "—")));
+    const title = h("td", { class: "c-title" }, h("button",{type:"button",class:"finding-row-open",onclick:e=>{e.stopPropagation();WorkbenchUI.openFromRows(rows,f.uid);}},f.title || (isM ? host : "—")));
     title.append(WorkbenchUI.findingChips(f));
     if (incomplete) title.append(h("span", { class: "dash-warn", title: t("dash_incomplete") }, "!"));
-    const tr = h("tr", { class: "dash-row", "data-finding-uid":f.uid, onclick: e => { if (!e.target.closest(".drag")) select("finding", idx); } },
+    const tr = h("tr", { class: "dash-row", "data-finding-uid":f.uid, onclick: e => { if (!e.target.closest(".drag,input,button,label")) WorkbenchUI.openFromRows(rows,f.uid); } },
+      h("td", {class:"c-select"},WorkbenchUI.tableSelect(f)),
       canDrag ? h("td", { class: "c-drag" }, dragHandle(S.data.findings, idx),h("button",{type:"button",class:"btn sm","data-finding-move":f.uid,"aria-label":(uiText("Mover ", "Move ", "Mover "))+f.id,onclick:event=>{event.stopPropagation();moveFindingDialog(f.uid);}},uiText("Mover", "Move", "Mover"))) : null,
       h("td", { class: "c-n" }, f.id || ("F" + (idx + 1))),
       h("td", {}, sevCell), title,
-      h("td", { class: "c-cwe" }, isM ? host : (cwe || "—")),
-      h("td", { class: "c-cvss" }, cvss));
+      h("td", { class: "c-cwe",hidden:WorkbenchUI.tableColumnVisible("cwe")?null:"" }, isM ? host : (cwe || "—")),
+      h("td", { class: "c-cvss",hidden:WorkbenchUI.tableColumnVisible("cvss")?null:"" }, cvss),...WorkbenchUI.operationalColumns(f));
     if (canDrag) makeDropZone(tr, S.data.findings, idx);
     tb.append(tr);
   });
@@ -1198,7 +1213,7 @@ function findingEditor(f) {
   head.append(modeSel);
   head.append(h("button", { class: "btn sm", style: "float:right;margin-left:8px", onclick: () => {
     const id=requestedFindingId(); if (!id) return;
-    const copy = JSON.parse(JSON.stringify(f)); copy.id = id; copy.uid = WorkflowUI.uid(); delete copy.retests; delete copy.reported_remediation; copy.status = "open"; copy.verification = "unverified"; if(copy.import_source)copy.import_source.reviewed=false;
+    const copy = JSON.parse(JSON.stringify(f)); copy.id = id; copy.uid = WorkflowUI.uid(); delete copy.retests; delete copy.reported_remediation; delete copy.instances; delete copy.import_observations; copy.status = "open"; copy.verification = "unverified"; if(copy.import_source)copy.import_source.reviewed=false;
     S.data.findings.splice(S.sel.idx + 1, 0, copy); ensureFindingIds(); scheduleSave(); select("finding", S.sel.idx + 1);
   } }, t("duplicate_finding")));
   head.append(h("button", { class: "btn sm", style: "float:right;margin-left:8px", onclick: () => saveToLibrary(f) }, t("save_to_lib")));
@@ -1214,7 +1229,11 @@ function findingEditor(f) {
   if(remediationPart)remediationPart.before(evidencePart);else wrap.append(evidencePart);
   wrap.append(tracking);
   if(f.mode==="machine"){const m=wrap.children[1];m.firstElementChild.dataset.workpart="description";const phase=m.querySelector(".card:nth-child(2)");if(phase)phase.dataset.workpart="reproduction";tracking.dataset.workpart="remediation";}
+  if(typeof InstancesUI!=="undefined"){
+    const instances=h("section",{class:"finding-part","data-workpart":"instances"});InstancesUI.render(instances,f);wrap.append(instances);
+  }
   WorkbenchUI.findingNavigation(wrap,f);
+  WorkbenchUI.findingInspector(wrap,f);
   if (S.focusTitle) { S.focusTitle = false; setTimeout(() => { const el = document.querySelector("#editor .card input"); if (el) el.focus(); }, 0); }
   return wrap;
 }
@@ -1415,7 +1434,7 @@ async function importFindings(ev) {
     const candidate=JSON.parse(snapshot);
     for (const f of arr) {
       const g=JSON.parse(JSON.stringify(f));g.id='F'+nextFid(candidate).slice(1).padStart(2,'0');g.uid=WorkflowUI.uid();g.mode ??= 'vuln';
-      delete g.__name;delete g.asset_uids;delete g.evidence_uids;delete g.retests;delete g.root_cause_uid;delete g.reported_remediation;
+      delete g.__name;delete g.asset_uids;delete g.evidence_uids;delete g.retests;delete g.root_cause_uid;delete g.reported_remediation;delete g.instances;delete g.import_observations;
       g.status='open';g.verification='unverified';if(g.import_source)g.import_source.reviewed=false;candidate.findings.push(g);
     }
     if (!unchanged()) throw Error(uiText("El proyecto cambió. Importa el archivo otra vez.", "The project changed. Import the file again.", "O projeto mudou. Importe o arquivo novamente."));
@@ -1638,7 +1657,7 @@ async function deleteProject() {
   try {
     if (!await doSave()) return;
     await api.del(`/api/projects/${encodeURIComponent(slug)}`);
-    if(typeof InsightsUI!=="undefined")InsightsUI.projectDeleted(slug);
+    resetProjectCaches(slug);
     projectStore.reset();
     S.slug = null; S.data = null; S.sel = { type: "report", idx: -1 };
     PreviewController.clearDocument();
@@ -1668,6 +1687,16 @@ function updateDeleteBtn() {
 }
 
 let creatingProject=false;
+// Explicit project deletion/recreation invalidates cached forms and old UI
+// preferences. Ordinary navigation keeps recoverable pending inputs intact.
+function resetProjectCaches(slug){
+  if(typeof InsightsUI!=="undefined")InsightsUI.projectDeleted(slug);
+  else if(typeof PendingUI!=="undefined")PendingUI.reset(slug);
+  if(typeof AssessmentUI!=="undefined")AssessmentUI.resetProject(slug);
+  if(typeof HttpEvidenceUI!=="undefined")HttpEvidenceUI.forgetPending?.(slug,null);
+  if(typeof ReviewExchangeUI!=="undefined")ReviewExchangeUI.invalidate();
+  if(typeof WorkbenchUI!=="undefined")WorkbenchUI.resetProject?.(slug);
+}
 async function createProject() {
   if(creatingProject)return;
   $("#newProjectError")?.remove();
@@ -1679,7 +1708,7 @@ async function createProject() {
     const request = DesignLibraryUI.projectRequest();
     const r = await requireOk(await api.post(request.url, request.body));
     const { slug } = await r.json();
-    if(typeof InsightsUI!=="undefined")InsightsUI.projectCreated(slug);
+    resetProjectCaches(slug);
     if(await DesignLibraryUI.resetCreation()!==false){
       closeModal($("#newModal"));
       $("#mTitle").value = $("#mClient").value = $("#mSlug").value = "";

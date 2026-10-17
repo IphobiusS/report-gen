@@ -140,6 +140,8 @@ def security_headers(response):
         response.headers["Content-Security-Policy"] = "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:; frame-ancestors 'self'"
     if request.path == '/api/pdf-compare':
         response.headers["Content-Security-Policy"] = "default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'"
+    if '/assessment/attack-paths/' in request.path and request.path.endswith('/graph.svg'):
+        response.headers['Content-Security-Policy'] = "default-src 'none'; style-src 'none'; sandbox"
     if request.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-store"
         if getattr(g, 'browser_workspace_id', None):
@@ -470,6 +472,11 @@ def save_project(slug):
     d = proj_dir(slug)
     data = checked_data(_json_dict())
     require_revision(d / "engagement.yaml")
+    from http_evidence import assert_originals_unchanged
+    try:
+        assert_originals_unchanged(engine.load_engagement(d / 'engagement.yaml'), data)
+    except ValueError as exc:
+        abort(422, str(exc))
     project_history.save(d, data)
     response = jsonify({"ok": True, "issues": [{"level": level, "message": message} for level, message in validatelib.validate(data)]})
     response.set_etag(revision(d / "engagement.yaml"))
@@ -659,6 +666,18 @@ def render_snapshot(slug, fmt, attachment=True):
 
 from workflow_api import register as register_workflows  # noqa: E402
 register_workflows(sys.modules[__name__])
+from instances_api import register as register_instances  # noqa: E402
+register_instances(sys.modules[__name__])
+from tickets_api import register as register_tickets  # noqa: E402
+register_tickets(sys.modules[__name__])
+from reconciliation_api import register as register_reconciliation  # noqa: E402
+register_reconciliation(sys.modules[__name__])
+from assessment_api import register as register_assessments  # noqa: E402
+register_assessments(sys.modules[__name__])
+from review_exchange_api import register as register_review_exchange  # noqa: E402
+register_review_exchange(sys.modules[__name__])
+from http_evidence_api import register as register_http_evidence  # noqa: E402
+register_http_evidence(sys.modules[__name__])
 from dashboard_api import register as register_dashboard  # noqa: E402
 register_dashboard(sys.modules[__name__])
 from remediation_api import register as register_remediation  # noqa: E402

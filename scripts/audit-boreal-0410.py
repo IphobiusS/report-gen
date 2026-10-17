@@ -59,8 +59,10 @@ def fixture_contract(doc, language):
     return dict(facts, long_tables=len(BUILDER.LONG_TABLES), long_table_rows=sum(s['rows'] for s in BUILDER.LONG_TABLES))
 
 
-def inspect_long_tables(outputs, language):
+def inspect_long_tables(outputs, language, *, builder=BUILDER, token_prefix='BRL'):
     """Inspect actual generated outputs; fixture text alone never counts as export."""
+    if not re.fullmatch(r'[A-Z][A-Z0-9]{1,15}', token_prefix):
+        raise ValueError('Invalid long-table token prefix')
     import fitz
     from lxml import etree, html
     ns = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
@@ -75,10 +77,10 @@ def inspect_long_tables(outputs, language):
     html_text = compact(html.fromstring((outputs/'informe.html').read_bytes()).text_content())
     with zipfile.ZipFile(outputs/export_format('md').filename) as archive:
         md_text = compact(archive.read('report.md').decode('utf-8'))
-    headers = [compact(value) for value in BUILDER.load_content(language)['strings']['headers']]
+    headers = [compact(value) for value in builder.load_content(language)['strings']['headers']]
     tables = []
-    for number, spec in enumerate(BUILDER.LONG_TABLES, 1):
-        tokens = [f'BRL-T{number:02d}-R{i:03d}' for i in range(1,spec['rows']+1)]
+    for number, spec in enumerate(builder.LONG_TABLES, 1):
+        tokens = [f'{token_prefix}-T{number:02d}-R{i:03d}' for i in range(1,spec['rows']+1)]
         row_pages = []
         for token in tokens:
             actual_pages = [i+1 for i,text in enumerate(pages) if token in text]
@@ -104,7 +106,7 @@ def inspect_long_tables(outputs, language):
         direct_rows = selected.xpath('./w:tr', namespaces=ns)
         if len(direct_rows) != spec['rows']+1:
             raise ValueError('DOCX table row count differs from its authored contract: ' + spec['finding'])
-        tables.append(dict(spec, token=f'BRL-T{number:02d}', pdf_pages=sorted(set(row_pages)),
+        tables.append(dict(spec, token=f'{token_prefix}-T{number:02d}', pdf_pages=sorted(set(row_pages)),
                            repeated_header_pages=header_pages, row_occurrences_each_format=spec['rows'],
                            docx_header_repeat=True, docx_rows=len(direct_rows), passed=True))
     return dict(status='passed', pdf_pages=len(pages), tables=tables,
@@ -113,11 +115,13 @@ def inspect_long_tables(outputs, language):
                          for p in (outputs/export_format(fmt).filename for fmt in delivery.FORMATS)})
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+def main(*, builder=BUILDER, case_key='boreal', contract=fixture_contract, token_prefix='BRL',
+         extra_inspection=None, harness_paths=(), description=__doc__):
+    """Shared immutable four-format acceptance orchestration; case hooks only inspect."""
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument('--projects', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--languages', nargs='+', choices=BUILDER.LANGUAGES, default=BUILDER.LANGUAGES)
+    parser.add_argument('--languages', nargs='+', choices=builder.LANGUAGES, default=builder.LANGUAGES)
     parser.add_argument('--mode', choices=('principal','native'), default='principal')
     parser.add_argument('--native-executable')
     parser.add_argument('--require-stable', action='store_true')
@@ -134,14 +138,14 @@ def main():
     if receipt_path.exists():
         parser.error('Preserve earlier receipts; choose a fresh output or a different mode')
     before, producer = SHARED.hashes(source), SHARED.producer_identity()
-    receipt = dict(schema='report-gen-boreal-acceptance/1', case=BUILDER.CASE, version=__version__,
+    receipt = dict(schema='report-gen-'+case_key+'-acceptance/1', case=builder.CASE, version=__version__,
                    created_utc=datetime.now(timezone.utc).isoformat(), mode=args.mode, languages=args.languages,
                    generation='report-gen delivery.capture/build and registered exporters only',
                    inspection='delivery.inspect_export plus exact long-table row and header checks',
                    producer=producer, visual_review='not_performed_by_this_runner', microsoft_word='not_run',
                    complete_reports=0, sample_reports=0, jobs=[], errors=[],
                    harnesses={path.relative_to(ROOT).as_posix():sha256(path.read_bytes()).hexdigest()
-                              for path in (Path(__file__), ROOT/'scripts/build-boreal-case.py', ROOT/'scripts/audit-horizonte-exports.py')})
+                              for path in {Path(__file__).resolve(), ROOT/'scripts/build-boreal-case.py', ROOT/'scripts/audit-horizonte-exports.py', *harness_paths}})
     try:
         if args.mode == 'native':
             principal_path = out/'matrix-principal.json'
@@ -162,21 +166,29 @@ def main():
                     path = out/'principal'/language/'outputs'/filename
                     if path.stat().st_size != record['bytes'] or sha256(path.read_bytes()).hexdigest() != record['sha256']:
                         raise ValueError('Native review output changed: ' + language + '/' + filename)
+                for filename, record in prior_job.get('workflow_checks', {}).get('artifacts', {}).items():
+                    path = out/'principal'/language/filename
+                    if path.stat().st_size != record['bytes'] or sha256(path.read_bytes()).hexdigest() != record['sha256']:
+                        raise ValueError('Native review workflow artifact changed: ' + language + '/' + filename)
             receipt['principal_receipt_sha256'] = sha256(principal_path.read_bytes()).hexdigest()
         for language in args.languages:
             if SHARED.producer_identity() != producer:
                 raise ValueError('Production code changed during acceptance; preserve run and restart')
             project = source/language
             doc = engine.load_engagement(project/'engagement.yaml')
-            receipt.setdefault('fixture_contracts', {})[language] = fixture_contract(doc, language)
+            receipt.setdefault('fixture_contracts', {})[language] = contract(doc, language)
             if args.mode == 'principal':
                 row = SHARED.export_job(project, out/'principal'/language, delivery.FORMATS,
                                         complete_delivery=True, case_title=doc['meta']['report_title'])
                 row.update(key='principal/'+language, document_scope='complete_case')
                 receipt['jobs'].append(row)
                 if row['status'] != 'passed':
-                    raise ValueError('Boreal native export failed: '+language)
-                row['long_table_checks'] = inspect_long_tables(out/'principal'/language/'outputs', language)
+                    raise ValueError(case_key+' native export failed: '+language)
+                row['long_table_checks'] = inspect_long_tables(out/'principal'/language/'outputs', language, builder=builder, token_prefix=token_prefix)
+                if extra_inspection is not None:
+                    row['workflow_checks'] = extra_inspection(out/'principal'/language/'outputs', language, doc,
+                                                               out/'principal'/language/'snapshot',
+                                                               out/'principal'/language/'delivery.zip')
                 receipt['complete_reports'] += len(delivery.FORMATS)
             if args.native_executable:
                 row = SHARED.native_checks(project, out/'principal'/language/'outputs', out/'native'/language,
@@ -184,7 +196,7 @@ def main():
                 row.update(key='native/'+language, document_scope='complete_case_native_inspection')
                 receipt['jobs'].append(row)
                 if row['status'] != 'passed':
-                    raise ValueError('Boreal native DOCX inspection failed: '+language)
+                    raise ValueError(case_key+' native DOCX inspection failed: '+language)
             SHARED.write_json(receipt_path, receipt)
     except Exception as exc:
         receipt['errors'].append(type(exc).__name__+': '+str(exc))

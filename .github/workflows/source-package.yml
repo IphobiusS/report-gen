@@ -2,7 +2,7 @@ name: Reproducible source package
 
 on:
   push:
-    branches: [main, feature/six-integration-0410]
+    branches: [main, feature/six-integration-0410, feature/senior-workflows-0420]
   pull_request:
   workflow_dispatch:
 

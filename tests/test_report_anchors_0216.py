@@ -100,6 +100,35 @@ def test_only_real_rendered_workflow_and_legacy_anchors_are_reserved(tmp_path):
     assert max(Counter(tree.xpath('//*[@id]/@id')).values()) == 1
 
 
+@pytest.mark.parametrize('kind', ['instances', 'test_cases', 'attack_paths'])
+def test_senior_workflow_anchors_reject_collisions_only_while_enabled(kind):
+    import attack_paths
+    import finding_instances
+    import test_plans
+    import workflows
+    data = document()
+    data['findings'][0]['uid'] = workflows.new_uid()
+    key = 'rg_' + kind
+    if kind == 'instances':
+        data['findings'][0]['instances'] = [finding_instances.new_instance({'endpoint': '/synthetic'})]
+    elif kind == 'test_cases':
+        data['test_cases'] = [test_plans.create({'title': 'Synthetic authorization check'})]
+    else:
+        a, b = workflows.new_uid(), workflows.new_uid()
+        route = attack_paths.create({'title': 'Synthetic route',
+            'nodes': [{'uid': a, 'title': 'Start'}, {'uid': b, 'title': 'Finish'}],
+            'edges': [{'uid': workflows.new_uid(), 'source_uid': a, 'target_uid': b,
+                       'state': 'blocked', 'observation': 'Documented synthetic boundary.'}]})
+        data['attack_paths'] = [route]
+        key = 'rg_attack_' + route['uid'].replace('-', '')
+    data['report']['sections'].append({'key': key, 'title': 'Custom appendix'})
+    before = deepcopy(data)
+    assert any('anclas' in message.lower() for level, message in validate.validate(data) if level == 'error')
+    assert data == before
+    data['report']['workflow'] = {'include_' + kind: False}
+    assert not [message for level, message in validate.validate(data) if level == 'error']
+
+
 def test_reading_notes_are_in_main_without_changing_report_geometry(tmp_path):
     data = document()
     dump_yaml(data, tmp_path / 'engagement.yaml')

@@ -44,7 +44,8 @@ const ContextIndexUI = (() => {
   }
   function rowsFor(mode){
     if(mode==='sections')return (S.data?.report?.sections||[]).map((section,index)=>({identity:section.key,index,id:section.key,title:sectionTitle(section),section}));
-    return (S.data?.findings||[]).map((finding,index)=>({identity:finding.uid,index,id:finding.id||'',title:finding.title||t('untitled'),finding}));
+    const rows=(S.data?.findings||[]).map((finding,index)=>({identity:finding.uid,index,id:finding.id||'',title:finding.title||t('untitled'),finding})),queue=typeof WorkbenchUI!=='undefined'?WorkbenchUI.reviewOrder?.():null;
+    if(!queue)return rows;const byUid=new Map(rows.map(row=>[row.identity,row]));return queue.map(uid=>byUid.get(uid)).filter(Boolean);
   }
   function matches(row,mode){
     const f=prefs[mode],query=normalizeQuery(f.query);
@@ -102,7 +103,7 @@ const ContextIndexUI = (() => {
   function toggle(){ensureScope();if(prefs.open&&eligible())close();else open();}
   function setMode(mode){ensureScope();if(!modes.includes(mode))return;if(prefs.mode!==mode)sorting=false;prefs.mode=mode;persist();render(undefined,{reveal:true});}
   function choose(mode,identity){
-    const index=rowsFor(mode).findIndex(row=>row.identity===identity);if(index<0)return;
+    const row=rowsFor(mode).find(row=>row.identity===identity);if(!row)return;const index=row.index;
     if(mode==='sections')select('section',identity);else select('finding',index);
     if(mobile())close({focus:false});
     $('#editor').focus({preventScroll:true});
@@ -137,10 +138,10 @@ const ContextIndexUI = (() => {
     if(previewToggle)previewToggle.textContent=S.previewVisible&&!obscured?t('hide_preview'):t('show_preview');
     const refresh=$('#previewBtn');if(refresh)refresh.style.display=S.previewVisible&&!obscured?'':'none';
   }
-  function obscuresPreview(){return bound&&!!prefs?.open&&eligible()&&S.sel.type!=='findings'&&innerWidth>1100&&innerWidth<1500;}
-  function togglePreview(){if(obscuresPreview()){close({focus:false});setPreviewVisible(true);}else setPreviewVisible(!S.previewVisible);update();}
+  function obscuresPreview(){return $('.layout')?.classList.contains('review-evidence-open')||bound&&!!prefs?.open&&eligible()&&S.sel.type!=='findings'&&innerWidth>1100&&innerWidth<1500;}
+  function togglePreview(){if($('.layout')?.classList.contains('review-evidence-open')){WorkbenchUI.closeInspector();if(obscuresPreview())close({focus:false});setPreviewVisible(true);}else if(obscuresPreview()){close({focus:false});setPreviewVisible(true);}else setPreviewVisible(!S.previewVisible);update();}
   function labels(){
-    $('#contextIndexTitle').textContent=w('Índice','Index','Índice');
+    $('#contextIndexTitle').textContent=prefs.mode==='findings'&&typeof WorkbenchUI!=='undefined'&&WorkbenchUI.reviewOrder?.()?w('Cola de revisión','Review queue','Fila de revisão'):w('Índice','Index','Índice');
     $('#contextIndexToggle').textContent=w('Índice','Index','Índice');
     $('#contextIndexToggle').setAttribute('aria-label',w('Abrir o cerrar el índice','Open or close index','Abrir ou fechar o índice'));
     $('#contextIndexToggle').title=w('Cierra el índice para ampliar el editor y la vista previa.','Close the index to give the editor and preview more space.','Feche o índice para ampliar o editor e a prévia.');
