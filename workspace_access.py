@@ -19,7 +19,9 @@ def _directory():
     else:
         base = Path(os.environ.get('XDG_CACHE_HOME', str(Path.home() / '.cache')))
     if not base.is_absolute():
-        raise ValueError('The report-gen lock directory must be absolute.')
+        raise ValueError(message('La carpeta de bloqueo de report-gen debe ser una ruta absoluta.',
+            en='The report-gen lock directory must be an absolute path.',
+            pt='A pasta de bloqueio do report-gen deve ser um caminho absoluto.'))
     return base / 'report-gen' / 'locks'
 
 
@@ -46,7 +48,9 @@ def exclusive_paths(*paths, lock_directory=None):
             stream = stack.enter_context(os.fdopen(fd, 'r+b'))
             details = os.fstat(fd)
             if not stat.S_ISREG(details.st_mode) or details.st_nlink != 1:
-                raise ValueError('The report-gen lock must be a regular private file.')
+                raise ValueError(message('El bloqueo de report-gen debe ser un archivo regular privado sin enlaces.',
+                    en='The report-gen lock must be a private regular file without links.',
+                    pt='O bloqueio do report-gen deve ser um arquivo regular privado sem links.'))
             try:
                 if os.name == 'nt':
                     import msvcrt

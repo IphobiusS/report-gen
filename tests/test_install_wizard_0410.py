@@ -11,6 +11,7 @@ from types import SimpleNamespace
 import pytest
 import project_history
 from input_guard import load_yaml_file
+from error_messages import language_scope
 import workspace_access
 from scripts import install_manager as manager
 from scripts import install_snapshot as snapshots
@@ -173,6 +174,29 @@ def test_os_lock_blocks_another_installation_and_releases_after_exit(plan):
     with workspace_access.exclusive_paths(plan.workspace):
         pass
     assert not plan.launcher.exists()
+
+
+@pytest.mark.parametrize('language,fragment', [('es', 'ruta absoluta'), ('en', 'absolute path'), ('pt', 'caminho absoluto')])
+def test_lock_directory_error_uses_selected_language(monkeypatch, language, fragment):
+    monkeypatch.setenv('LOCALAPPDATA', 'relative')
+    monkeypatch.setenv('XDG_CACHE_HOME', 'relative')
+    with language_scope(language), pytest.raises(ValueError, match=fragment):
+        workspace_access._directory()
+
+
+@pytest.mark.parametrize('language,fragment', [('es', 'sin enlaces'), ('en', 'without links'), ('pt', 'sem links')])
+def test_linked_lock_file_error_uses_selected_language(tmp_path, language, fragment):
+    directory = tmp_path / 'locks'; directory.mkdir()
+    protected = tmp_path / 'data'
+    identity = sha256(os.path.normcase(str(protected.resolve())).encode()).hexdigest()
+    original = directory / 'original'; original.write_bytes(b'0')
+    try:
+        os.link(original, directory / (identity + '.lock'))
+    except OSError:
+        pytest.skip('Hard links are unavailable on this filesystem')
+    with language_scope(language), pytest.raises(ValueError, match=fragment):
+        with workspace_access.exclusive_paths(protected, lock_directory=directory):
+            pytest.fail('A linked lock file must be rejected')
 
 
 def test_port_check_rejects_running_legacy_editor():
