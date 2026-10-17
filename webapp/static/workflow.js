@@ -428,6 +428,20 @@ const WorkflowUI = (() => {
     const {body}=await requestJson('/api/projects/import',{method:'POST',body:data});await refreshProjects();await loadProject(body.slug);toast(w('Proyecto importado','Project imported', "Projeto importado"),'ok');
   });}
   async function library(box){
+    if(typeof KnowledgeUI==='undefined')return personalLibrary(box);
+    const tabs=h('div',{class:'knowledge-tabs',role:'tablist','aria-label':w('Bibliotecas de hallazgos','Finding libraries','Bibliotecas de achados')}),panels={};
+    let active='personal',generation=0;
+    for(const [key,labels] of [['personal',['Mi biblioteca','My library','Minha biblioteca']],['curated',['Catálogo curado','Curated catalog','Catálogo revisado']]]){
+      const id='finding-library-'+key,panel=h('section',{id:id+'-panel',class:'knowledge-tab-panel',role:'tabpanel','aria-labelledby':id}),tab=h('button',{id,type:'button',class:'btn',role:'tab','data-library-tab':key,'aria-controls':panel.id},w(...labels));
+      panels[key]={panel,tab};tabs.append(tab);box.append(panel);
+      tab.addEventListener('click',()=>activate(key));
+      tab.addEventListener('keydown',event=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const target=event.key==='Home'?'personal':event.key==='End'?'curated':key==='personal'?'curated':'personal';panels[target].tab.focus();activate(target);}});
+    }
+    box.prepend(tabs);
+    async function activate(key){if(!box.isConnected)return;active=key;const ticket=++generation;for(const [name,item] of Object.entries(panels)){item.panel.hidden=name!==key;item.tab.setAttribute('aria-selected',String(name===key));item.tab.tabIndex=name===key?0:-1;}const panel=panels[key].panel,content=h('div',{});panel.replaceChildren(content);if(key==='curated'){KnowledgeUI.mount(content);return;}try{await personalLibrary(content);}catch(error){if(ticket===generation&&active===key)panel.append(h('p',{role:'alert'},error.message));}}
+    await activate(active);
+  }
+  async function personalLibrary(box){
     const {body,etag}=await requestJson('/api/library');libraryTag=etag;if(!box.isConnected)return;
     box.append(hint('Las plantillas se guardan junto a la herramienta. Revisa su texto para retirar datos del cliente antes de reutilizarlas. Variables: {{cliente}}, {{objetivo}}, {{evaluador}} o nombres propios.','Templates are saved with the tool. Review their text to remove client data before reuse. Variables: {{cliente}}, {{objetivo}}, {{evaluador}}, or custom names.', "Os modelos são salvos com a ferramenta. Revise seus textos para remover dados de clientes antes de reutilizá-los. Variáveis: {{cliente}}, {{objetivo}}, {{evaluador}} ou nomes personalizados."));
     const search=h('input',{type:'search',placeholder:w('Buscar por nombre, etiqueta o contenido','Search name, tag or content', "Pesquisar nome, etiqueta ou conteúdo"),'aria-label':w('Buscar plantillas','Search templates', "Pesquisar modelos")});const list=h('div',{});
@@ -471,7 +485,7 @@ const WorkflowUI = (() => {
         c.phases.forEach((phase,i)=>{phase.steps=phase.steps||[];phases.append(card(localField(w('Fase','Phase', "Fase"),phase,'name'),stepsEditor(phase.steps),button(w('Quitar fase','Remove phase', "Remover fase"),()=>{c.phases.splice(i,1);draw();})));});
         visual.append(phases,button(w('Añadir fase','Add phase', "Adicionar fase"),()=>{c.phases.push({name:'',steps:[]});draw();}));
       }else{
-        visual.append(row(selectField(w('Severidad','Severity', "Severidade"),c,'severity',[['info','Informativa','Informational', "Informativa"],['low','Baja','Low','Baixa'],['medium','Media','Medium', "Média"],['high','Alta','High','Alta'],['critical','Crítica','Critical', "Crítica"]],false),localField('CWE',c,'cwe')),
+        visual.append(row(selectField(w('Severidad','Severity', "Severidade"),c,'severity',[['','Pendiente de valoración','Pending assessment','Avaliação pendente'],['info','Informativa','Informational', "Informativa"],['low','Baja','Low','Baixa'],['medium','Media','Medium', "Média"],['high','Alta','High','Alta'],['critical','Crítica','Critical', "Crítica"]],false),localField('CWE',c,'cwe')),
           localField(w('Vector CVSS (opcional)','CVSS vector (optional)', "Vetor CVSS (opcional)"),c,'cvss_vector'),localField(w('Puntuación CVSS','CVSS score', "Pontuação CVSS"),c,'cvss','number'),
           button(w('Calcular desde el vector','Calculate from vector', "Calcular a partir do vetor"),async()=>{
             const vector=(c.cvss_vector||'').trim();const {body}=await requestJson('/api/cvss',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vector})});
@@ -518,7 +532,8 @@ const WorkflowUI = (() => {
       }),preview,advanced,check(w('He revisado que no contenga datos de otro cliente','I reviewed it for other client data', "Revisei a presença de dados de outros clientes"),false,v=>{checked.value=v;}),button(w('Guardar versión de plantilla','Save template version', "Salvar versão do modelo"),async()=>{
       if(!checked.value)throw Error(w('Revisa el contenido antes de guardar la plantilla.','Review the content before saving.', "Revise o conteúdo antes de salvar."));
       if(advancedDirty)throw Error(w('Aplica primero los cambios del JSON al formulario.','Apply your JSON changes to the form first.', "Aplique primeiro suas alterações de JSON ao formulário."));
-      const payload={name:draft.name,tags:draft.tagsText.split(',').map(x=>x.trim()).filter(Boolean),content:draft.content};
+      const payload={name:draft.name,tags:draft.tagsText.split(',').map(x=>x.trim()).filter(Boolean),content:clone(draft.content)};
+      if(!payload.content.severity)delete payload.content.severity;
       const revision=pending.handle.revision;pending.setBusy(true);try{await requestJson('/api/library'+(entry.uid?'/'+entry.uid:''),{method:entry.uid?'PUT':'POST',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(payload)});if((await pending.committed(revision)).finished)m.closeModal();}finally{pending.setBusy(false);}toast(w('Plantilla guardada','Template saved', "Modelo salvo"),'ok');if(S.sel.type==='workflow'&&S.sel.idx==='library')renderMain();
     },true));
     m.dataset.templateEditor=entry.uid||'new';

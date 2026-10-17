@@ -1,0 +1,2246 @@
+{
+  "format": "report-gen-knowledge",
+  "schema_version": 1,
+  "revision": "2026.10",
+  "entries": [
+    {
+      "id": "RG-AI-001",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "llm",
+        "prompt-injection",
+        "direct",
+        "authorization"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP LLM Prompt Injection Prevention Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM01:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Inyección directa con cruce de una frontera de autorización",
+          "summary": "Evaluar si una instrucción del usuario permite al modelo ordenar una operación que ese usuario no tiene autorizada.",
+          "description_md": "Esta ficha aplica cuando {{objetivo}} convierte texto conversacional en decisiones privilegiadas. Documentar el punto donde una instrucción de menor confianza reemplaza una restricción y el componente que ejecuta la decisión sin comprobar permisos.",
+          "impact_md": "Una acción confirmada puede afectar datos o funciones fuera del rol probado. El impacto depende de los permisos efectivos del ejecutor y de los objetos alcanzados.",
+          "remediation_md": "Comprobar identidad, objeto y acción en el servidor que ejecuta cada operación. Separar las decisiones de autorización de las respuestas del modelo y limitar las capacidades disponibles por tarea.",
+          "prerequisites": "Disponer de dos roles de laboratorio, una operación restringida reversible y una política de acceso explícita. Mantener la misma configuración del modelo en los controles.",
+          "required_evidence": "Guardar entrada, rol, versión, respuesta, llamada propuesta y registro del efecto real. Comparar con una solicitud legítima denegada y registrar intentos exitosos sobre intentos totales.",
+          "false_positives": "Una respuesta ofensiva, un cambio de estilo o afirmar que se ejecutó una operación no demuestra acceso indebido. Tampoco lo demuestra una acción que el rol ya podía realizar.",
+          "retest": "Repetir el caso y sus variaciones autorizadas; verificar rechazo en el ejecutor y funcionamiento normal del rol permitido.",
+          "assessment_notes": "Describir la frontera cruzada, no sólo el texto del prompt. Calificar únicamente el efecto demostrado; usar datos sintéticos y detenerse al obtener evidencia suficiente."
+        },
+        "en": {
+          "title": "Direct prompt injection across an authorization boundary",
+          "summary": "Assess whether a user instruction can make the model request an operation that the user is not authorized to perform.",
+          "description_md": "Use this pattern when {{objetivo}} turns conversational text into privileged decisions. Identify where a lower-trust instruction replaces a restriction and which component executes the decision without checking permissions.",
+          "impact_md": "A confirmed action may affect data or functionality outside the tested role. Impact depends on the executor’s effective permissions and the objects actually reached.",
+          "remediation_md": "Check identity, object and action in the server executing every operation. Keep authorization decisions outside model responses and restrict available capabilities to the task.",
+          "prerequisites": "Provide two laboratory roles, a reversible restricted operation and an explicit access policy. Keep model configuration identical for control trials.",
+          "required_evidence": "Preserve input, role, version, response, proposed call and the actual effect record. Compare against a denied legitimate request and record successful attempts over total attempts.",
+          "false_positives": "Offensive text, a style change or claiming an operation occurred does not prove unauthorized access. An action already permitted to the role does not demonstrate a bypass.",
+          "retest": "Repeat the case and authorized variations; verify rejection at the executor and normal behavior for the permitted role.",
+          "assessment_notes": "Describe the boundary crossed, not just the prompt text. Rate only demonstrated effects; use synthetic data and stop once sufficient evidence is collected."
+        },
+        "pt": {
+          "title": "Injeção direta com violação de uma fronteira de autorização",
+          "summary": "Avaliar se uma instrução do usuário permite ao modelo solicitar uma operação que esse usuário não está autorizado a realizar.",
+          "description_md": "Esta ficha se aplica quando {{objetivo}} converte texto de conversa em decisões privilegiadas. Identificar onde uma instrução de menor confiança substitui uma restrição e qual componente executa a decisão sem verificar permissões.",
+          "impact_md": "Uma ação confirmada pode afetar dados ou funções fora do papel testado. O impacto depende das permissões efetivas do executor e dos objetos realmente alcançados.",
+          "remediation_md": "Verificar identidade, objeto e ação no servidor que executa cada operação. Manter decisões de autorização fora das respostas do modelo e restringir as capacidades à tarefa.",
+          "prerequisites": "Disponibilizar dois papéis de laboratório, uma operação restrita reversível e uma política de acesso explícita. Manter a configuração do modelo igual nos testes de controle.",
+          "required_evidence": "Preservar entrada, papel, versão, resposta, chamada proposta e registro do efeito real. Comparar com uma solicitação legítima negada e registrar sucessos sobre tentativas totais.",
+          "false_positives": "Texto ofensivo, mudança de estilo ou alegação de execução não comprovam acesso indevido. Uma ação já permitida ao papel também não demonstra desvio.",
+          "retest": "Repetir o caso e variações autorizadas; verificar bloqueio no executor e funcionamento normal para o papel permitido.",
+          "assessment_notes": "Descrever a fronteira violada, não apenas o prompt. Avaliar somente efeitos demonstrados; usar dados sintéticos e parar após obter evidência suficiente."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-002",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "llm",
+        "prompt-injection",
+        "indirect",
+        "documents",
+        "rag"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP LLM Prompt Injection Prevention Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM01:2026"
+        },
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI01"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Instrucciones de documentos externos que controlan al asistente",
+          "summary": "Evaluar si contenido recuperado como material de consulta se interpreta como una orden para cambiar la tarea o utilizar herramientas.",
+          "description_md": "En {{objetivo}}, un documento, correo o página puede entrar al contexto sin la autoridad del usuario. La debilidad aparece si instrucciones dentro de ese contenido gobiernan decisiones posteriores y superan los controles de la tarea.",
+          "impact_md": "Puede alterarse una entrega o iniciarse una acción ajena al encargo. Vincular el impacto al contenido controlable por un tercero y a la capacidad alcanzada.",
+          "remediation_md": "Conservar procedencia y nivel de confianza de cada fragmento. Tratar documentos como datos, imponer límites de tarea fuera del modelo y exigir autorización para efectos relevantes.",
+          "prerequisites": "Preparar un repositorio de prueba, un documento neutro y otro con una instrucción benigna identificable. Definir por escrito la tarea original y las acciones permitidas.",
+          "required_evidence": "Adjuntar ambas versiones con hashes, fragmentos recuperados, solicitud del usuario, decisión del agente y efecto registrado. Mostrar que quitar la instrucción elimina la desviación.",
+          "false_positives": "Resumir o citar la instrucción del documento no equivale a obedecerla. Una instrucción que el usuario pidió expresamente ejecutar puede pertenecer al flujo autorizado.",
+          "retest": "Repetir con documento limpio y modificado, después de reindexar. Confirmar que el contenido se puede resumir sin cambiar permisos ni la tarea.",
+          "assessment_notes": "Distinguir el canal de entrada del control fallido. No incluir documentos privados de terceros ni probar envíos reales para demostrar el caso."
+        },
+        "en": {
+          "title": "External document instructions controlling the assistant",
+          "summary": "Assess whether material retrieved for reference is treated as an instruction to change the task or invoke tools.",
+          "description_md": "In {{objetivo}}, a document, email or webpage may enter context without user authority. The weakness occurs if instructions inside that content govern subsequent decisions and bypass task controls.",
+          "impact_md": "A deliverable may be altered or an unrelated action initiated. Tie impact to content a third party can control and the capability actually reached.",
+          "remediation_md": "Preserve provenance and trust level for every excerpt. Treat documents as data, enforce task boundaries outside the model and require authorization for consequential effects.",
+          "prerequisites": "Prepare a test repository, a neutral document and a version containing an identifiable benign instruction. Write down the original task and permitted actions.",
+          "required_evidence": "Attach both versions with hashes, retrieved excerpts, user request, agent decision and recorded effect. Show that removing the instruction removes the deviation.",
+          "false_positives": "Summarizing or quoting a document instruction is not obeying it. An instruction explicitly endorsed by the user may belong to the authorized workflow.",
+          "retest": "Repeat with clean and modified documents after reindexing. Confirm content can still be summarized without changing permissions or the task.",
+          "assessment_notes": "Separate the entry channel from the failed control. Do not use third-party private documents or real outbound messages to demonstrate the case."
+        },
+        "pt": {
+          "title": "Instruções de documentos externos controlando o assistente",
+          "summary": "Avaliar se material recuperado para consulta é interpretado como uma ordem para mudar a tarefa ou utilizar ferramentas.",
+          "description_md": "Em {{objetivo}}, um documento, e-mail ou página pode entrar no contexto sem a autoridade do usuário. A falha ocorre se instruções desse conteúdo controlam decisões posteriores e ultrapassam os controles da tarefa.",
+          "impact_md": "Uma entrega pode ser alterada ou uma ação alheia ao trabalho pode ser iniciada. Relacionar o impacto ao conteúdo controlável por terceiros e à capacidade alcançada.",
+          "remediation_md": "Preservar origem e nível de confiança de cada trecho. Tratar documentos como dados, impor limites de tarefa fora do modelo e exigir autorização para efeitos relevantes.",
+          "prerequisites": "Preparar um repositório de teste, um documento neutro e outro com uma instrução benigna identificável. Registrar a tarefa original e as ações permitidas.",
+          "required_evidence": "Anexar as duas versões com hashes, trechos recuperados, solicitação do usuário, decisão do agente e efeito registrado. Mostrar que retirar a instrução elimina o desvio.",
+          "false_positives": "Resumir ou citar a instrução do documento não significa obedecê-la. Uma instrução expressamente aprovada pelo usuário pode fazer parte do fluxo autorizado.",
+          "retest": "Repetir com documentos limpos e modificados após reindexação. Confirmar que o conteúdo continua resumível sem mudar permissões ou a tarefa.",
+          "assessment_notes": "Distinguir o canal de entrada do controle que falhou. Não usar documentos privados de terceiros nem envios reais para demonstrar o caso."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-003",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "multimodal",
+        "image",
+        "audio",
+        "prompt-injection"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP LLM Prompt Injection Prevention Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM01:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Inyección multimodal que atraviesa el procesamiento de archivos",
+          "summary": "Comprobar si instrucciones presentes en imágenes, audio u otras representaciones reciben autoridad al convertirse en contexto del modelo.",
+          "description_md": "La evaluación de {{objetivo}} debe seguir el contenido desde el archivo hasta OCR, transcripción y decisión. El hallazgo requiere que la instrucción incorporada cause una desviación no autorizada, más allá de reconocer el texto o el sonido.",
+          "impact_md": "La superficie puede alcanzar archivos que usuarios consideran sólo evidencia visual. El impacto depende de la acción o exposición producida después de procesarlos.",
+          "remediation_md": "Propagar la procedencia y la desconfianza a las representaciones derivadas. Aplicar restricciones de acción al resultado de todos los canales y revisar qué datos se añaden al contexto.",
+          "prerequisites": "Usar dos archivos sintéticos equivalentes, uno neutro y otro con un marcador instructivo inocuo. Registrar formato, transformaciones, modelo y rutas de ingestión habilitadas.",
+          "required_evidence": "Conservar hashes de los archivos, extracción intermedia disponible, solicitud original y traza del resultado. Comparar texto plano y archivo para localizar dónde cambia el tratamiento.",
+          "false_positives": "Detectar texto escondido, transcribir una frase o rechazar un archivo no demuestra explotación. Una prueba sólo cubre los formatos y procesadores realmente utilizados.",
+          "retest": "Repetir variantes de formato autorizadas y confirmar que se conserva la información útil sin habilitar instrucciones nuevas. Revisar también la vista previa y la exportación.",
+          "assessment_notes": "Documentar la modalidad y el efecto observado; no prometer protección universal mediante OCR, filtros de palabras o un único ejemplo bloqueado."
+        },
+        "en": {
+          "title": "Multimodal injection crossing file-processing boundaries",
+          "summary": "Check whether instructions in images, audio or other representations gain authority when converted into model context.",
+          "description_md": "Assess {{objetivo}} from the original file through OCR, transcription and decision. A finding requires the embedded instruction to cause an unauthorized deviation beyond merely recognizing the text or sound.",
+          "impact_md": "The surface can include files users regard solely as visual evidence. Impact depends on the action or disclosure occurring after processing.",
+          "remediation_md": "Carry provenance and distrust into derived representations. Apply action restrictions to every input channel and inspect which extracted data enters context.",
+          "prerequisites": "Use two equivalent synthetic files, one neutral and one with a harmless instructional marker. Record format, transformations, model and enabled ingestion paths.",
+          "required_evidence": "Preserve file hashes, available intermediate extraction, original request and result trace. Compare plain text with file input to identify where treatment changes.",
+          "false_positives": "Recognizing hidden text, transcribing a sentence or rejecting a file does not demonstrate exploitation. A trial covers only formats and processors actually exercised.",
+          "retest": "Repeat authorized format variations and confirm useful information remains available without enabling new instructions. Check preview and export paths as well.",
+          "assessment_notes": "Document the modality and observed effect; do not promise universal protection through OCR, word filters or a single blocked example."
+        },
+        "pt": {
+          "title": "Injeção multimodal atravessando o processamento de arquivos",
+          "summary": "Verificar se instruções em imagens, áudio ou outras representações recebem autoridade ao serem convertidas em contexto do modelo.",
+          "description_md": "A avaliação de {{objetivo}} deve acompanhar o arquivo até OCR, transcrição e decisão. O achado exige que a instrução incorporada cause um desvio não autorizado, além de simplesmente reconhecer texto ou som.",
+          "impact_md": "A superfície pode incluir arquivos considerados apenas evidências visuais pelos usuários. O impacto depende da ação ou exposição produzida depois do processamento.",
+          "remediation_md": "Propagar origem e desconfiança às representações derivadas. Aplicar restrições de ação a todos os canais e verificar quais dados extraídos entram no contexto.",
+          "prerequisites": "Usar dois arquivos sintéticos equivalentes, um neutro e outro com um marcador instrutivo inofensivo. Registrar formato, transformações, modelo e caminhos de ingestão habilitados.",
+          "required_evidence": "Preservar hashes, extração intermediária disponível, solicitação original e trilha do resultado. Comparar texto simples e arquivo para localizar a mudança de tratamento.",
+          "false_positives": "Detectar texto oculto, transcrever uma frase ou rejeitar um arquivo não comprova exploração. O teste cobre somente os formatos e processadores realmente utilizados.",
+          "retest": "Repetir variações de formato autorizadas e confirmar que informações úteis permanecem disponíveis sem habilitar novas instruções. Revisar também pré-visualização e exportação.",
+          "assessment_notes": "Documentar modalidade e efeito observado; não prometer proteção universal com OCR, filtros de palavras ou um único exemplo bloqueado."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-004",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "agent",
+        "mcp",
+        "tools",
+        "metadata",
+        "poisoning"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP AI Agent Security Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI02"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Metadatos de herramientas interpretados como instrucciones privilegiadas",
+          "summary": "Revisar si descripciones, nombres o esquemas de herramientas pueden alterar la selección de acciones más allá de su función declarada.",
+          "description_md": "En {{objetivo}}, el descubrimiento dinámico incorpora texto administrado por un conector. Esta ficha cubre el caso en que ese texto modifica el comportamiento del agente o dirige argumentos a otra herramienta sin una comprobación independiente.",
+          "impact_md": "Puede inducir llamadas innecesarias, revelar datos a un conector o confundir herramientas homónimas. El alcance depende de las herramientas disponibles y de la confianza otorgada al proveedor.",
+          "remediation_md": "Identificar herramientas por proveedor y versión, revisar cambios de esquema y restringir qué capacidades puede activar cada conector. Validar argumentos y destino fuera del modelo.",
+          "prerequisites": "Utilizar un servidor de herramientas de laboratorio con una descripción inicial y otra modificada. Mantener idénticas sus funciones y usar destinos de prueba.",
+          "required_evidence": "Guardar definiciones antes y después, identidad del servidor, herramientas descubiertas, llamada seleccionada y autorización aplicada. Aislar el cambio de metadatos como única variable.",
+          "false_positives": "Una descripción ambigua o que el agente la repita no basta. Tampoco demuestra fallo una herramienta seleccionada y ejecutada dentro del propósito aprobado.",
+          "retest": "Repetir el descubrimiento con metadatos modificados; verificar bloqueo o nueva revisión y ausencia de cambios en otras herramientas.",
+          "assessment_notes": "Distinguir manipulación de la interfaz de una dependencia maliciosa instalada. La ficha no presupone que todo servidor MCP sea inseguro."
+        },
+        "en": {
+          "title": "Tool metadata interpreted as privileged instructions",
+          "summary": "Review whether tool descriptions, names or schemas can change action selection beyond their declared purpose.",
+          "description_md": "In {{objetivo}}, dynamic discovery introduces connector-controlled text. This pattern covers that text changing agent behavior or directing arguments to another tool without an independent check.",
+          "impact_md": "It may induce unnecessary calls, disclose data to a connector or confuse similarly named tools. Reach depends on available tools and the trust granted to the provider.",
+          "remediation_md": "Identify tools by provider and version, review schema changes and restrict which capabilities each connector may activate. Validate arguments and destination outside the model.",
+          "prerequisites": "Use a laboratory tool server with an original and modified description. Keep functionality identical and use test destinations.",
+          "required_evidence": "Preserve definitions before and after, server identity, discovered tools, selected call and applied authorization. Isolate the metadata change as the only variable.",
+          "false_positives": "An ambiguous description or the agent repeating it is insufficient. A tool selected and executed within the approved purpose does not demonstrate failure.",
+          "retest": "Repeat discovery with changed metadata; verify blocking or renewed review and no changes to unrelated tools.",
+          "assessment_notes": "Distinguish interface manipulation from an installed malicious dependency. This pattern does not assume every MCP server is insecure."
+        },
+        "pt": {
+          "title": "Metadados de ferramentas interpretados como instruções privilegiadas",
+          "summary": "Revisar se descrições, nomes ou esquemas de ferramentas alteram a escolha de ações além da função declarada.",
+          "description_md": "Em {{objetivo}}, a descoberta dinâmica introduz texto controlado pelo conector. Esta ficha cobre o caso em que esse texto muda o comportamento do agente ou direciona argumentos a outra ferramenta sem verificação independente.",
+          "impact_md": "Pode induzir chamadas desnecessárias, expor dados a um conector ou confundir ferramentas homônimas. O alcance depende das ferramentas disponíveis e da confiança no fornecedor.",
+          "remediation_md": "Identificar ferramentas por fornecedor e versão, revisar mudanças de esquema e restringir capacidades por conector. Validar argumentos e destino fora do modelo.",
+          "prerequisites": "Usar um servidor de laboratório com uma descrição original e outra modificada. Manter as funções idênticas e utilizar destinos de teste.",
+          "required_evidence": "Preservar definições anteriores e posteriores, identidade do servidor, ferramentas descobertas, chamada escolhida e autorização aplicada. Isolar a alteração dos metadados como única variável.",
+          "false_positives": "Uma descrição ambígua ou sua repetição pelo agente não basta. Executar uma ferramenta dentro da finalidade aprovada não demonstra falha.",
+          "retest": "Repetir a descoberta com metadados modificados; verificar bloqueio ou nova revisão e ausência de mudanças em outras ferramentas.",
+          "assessment_notes": "Distinguir manipulação da interface de uma dependência maliciosa instalada. Esta ficha não presume que todo servidor MCP seja inseguro."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-005",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "agent",
+        "tool-output",
+        "prompt-injection",
+        "trust"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP LLM Prompt Injection Prevention Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI01"
+        },
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM01:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Resultados de herramientas que reasignan instrucciones al agente",
+          "summary": "Evaluar si una respuesta de herramienta puede imponer una nueva política, identidad o tarea al volver al contexto conversacional.",
+          "description_md": "Una herramienta de {{objetivo}} puede devolver datos de origen externo aunque su conexión sea legítima. Existe una debilidad si el agente trata instrucciones incrustadas en el resultado como autoridad para acciones posteriores.",
+          "impact_md": "Un dato comprometido puede afectar decisiones de herramientas más privilegiadas. Identificar qué campo del resultado era controlable y qué capacidad adicional fue utilizada.",
+          "remediation_md": "Separar resultado, estado y metadatos de control mediante contratos tipados. Rechazar campos inesperados y aplicar autorización de cada acción sin confiar en afirmaciones de permiso dentro del resultado.",
+          "prerequisites": "Preparar respuestas simuladas reproducibles de una herramienta permitida. Comparar un resultado ordinario con otro que contenga una orden inocua fuera de tarea.",
+          "required_evidence": "Registrar respuesta exacta, herramienta y versión, cadena de llamadas, identidad efectiva y resultado en el servicio receptor. Mostrar la diferencia entre proponer y ejecutar.",
+          "false_positives": "Una herramienta puede devolver instrucciones legítimas de uso como datos. Citar esas instrucciones o solicitar confirmación no demuestra un cruce de confianza.",
+          "retest": "Reproducir ambos resultados, incluidos errores y respuestas parciales. Confirmar que el agente conserva la tarea y que el ejecutor rechaza capacidades no autorizadas.",
+          "assessment_notes": "No atribuir la causa a la conexión cifrada: el problema es la autoridad asignada al contenido. Evitar repetir la misma evidencia como otro hallazgo independiente."
+        },
+        "en": {
+          "title": "Tool results reassigning instructions to the agent",
+          "summary": "Assess whether a tool response can impose a new policy, identity or task when it reenters conversational context.",
+          "description_md": "A tool in {{objetivo}} may return external data even when its connection is legitimate. A weakness exists if embedded result instructions become authority for subsequent actions.",
+          "impact_md": "Compromised data may influence decisions by more privileged tools. Identify the controllable response field and the additional capability actually used.",
+          "remediation_md": "Separate data, status and control metadata through typed contracts. Reject unexpected fields and authorize each action independently of permission claims inside tool results.",
+          "prerequisites": "Prepare reproducible mock responses from an allowed tool. Compare an ordinary result with one containing a harmless instruction outside the task.",
+          "required_evidence": "Record the exact response, tool and version, call chain, effective identity and receiving service outcome. Distinguish proposing an action from executing it.",
+          "false_positives": "Tools may return legitimate usage instructions as data. Quoting them or requesting confirmation does not demonstrate a trust boundary violation.",
+          "retest": "Replay both responses, including errors and partial results. Confirm the agent retains its task and the executor rejects unauthorized capabilities.",
+          "assessment_notes": "Do not attribute the cause to the encrypted connection: the issue is authority assigned to content. Avoid presenting the same evidence as a separate duplicate finding."
+        },
+        "pt": {
+          "title": "Resultados de ferramentas redefinindo instruções do agente",
+          "summary": "Avaliar se uma resposta de ferramenta impõe uma nova política, identidade ou tarefa ao retornar ao contexto da conversa.",
+          "description_md": "Uma ferramenta de {{objetivo}} pode retornar dados externos mesmo com conexão legítima. Há uma falha se instruções incorporadas ao resultado passam a autorizar ações posteriores.",
+          "impact_md": "Dados comprometidos podem influenciar ferramentas mais privilegiadas. Identificar o campo controlável da resposta e a capacidade adicional efetivamente utilizada.",
+          "remediation_md": "Separar dados, estado e metadados de controle com contratos tipados. Rejeitar campos inesperados e autorizar cada ação sem confiar em alegações de permissão presentes nos resultados.",
+          "prerequisites": "Preparar respostas simuladas reproduzíveis de uma ferramenta permitida. Comparar um resultado comum com outro contendo uma instrução inofensiva fora da tarefa.",
+          "required_evidence": "Registrar resposta exata, ferramenta e versão, sequência de chamadas, identidade efetiva e resultado no serviço receptor. Distinguir proposta de execução.",
+          "false_positives": "Ferramentas podem retornar instruções legítimas de uso como dados. Citá-las ou solicitar confirmação não comprova violação de confiança.",
+          "retest": "Reproduzir ambas as respostas, incluindo erros e resultados parciais. Confirmar que o agente mantém a tarefa e o executor rejeita capacidades não autorizadas.",
+          "assessment_notes": "Não atribuir a causa à conexão criptografada: o problema é a autoridade concedida ao conteúdo. Evitar apresentar a mesma evidência como achado independente duplicado."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-006",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "agent",
+        "memory",
+        "persistence",
+        "poisoning"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP AI Agent Security Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI06"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Envenenamiento de memoria persistente del asistente",
+          "summary": "Examinar si contenido de baja confianza puede guardarse como una preferencia o regla permanente y afectar sesiones posteriores.",
+          "description_md": "En {{objetivo}}, una escritura de memoria puede sobrevivir al documento o conversación que la originó. La ficha requiere una modificación persistente no autorizada y una lectura posterior que altere una decisión relevante.",
+          "impact_md": "La desviación puede repetirse y afectar varias tareas sin reintroducir el contenido inicial. Determinar usuarios, proyectos y duración realmente alcanzados.",
+          "remediation_md": "Separar preferencias confirmadas de observaciones externas. Autorizar escrituras de memoria, conservar origen y versiones, limitar el ámbito y permitir inspección, expiración y reversión.",
+          "prerequisites": "Crear un usuario de laboratorio con memoria limpia, una sesión de ingreso controlada y otra sesión independiente. Definir qué información puede persistir legítimamente.",
+          "required_evidence": "Conservar estado inicial y final, evento de escritura, origen del dato, identificador de memoria y efecto en la sesión nueva. Repetir tras eliminar únicamente la entrada introducida.",
+          "false_positives": "Recuerdo dentro de la misma ventana de contexto no prueba persistencia. Una preferencia guardada explícitamente por el usuario puede ser el funcionamiento esperado.",
+          "retest": "Verificar rechazo de escrituras no autorizadas y limpieza de entradas existentes. Abrir sesiones nuevas y confirmar que las preferencias legítimas siguen disponibles.",
+          "assessment_notes": "Distinguir corrupción del contenido de fuga entre usuarios. No borrar memoria real para probar el caso; trabajar sobre una copia sintética restaurable."
+        },
+        "en": {
+          "title": "Persistent assistant memory poisoning",
+          "summary": "Examine whether lower-trust content can be saved as a lasting preference or rule and influence later sessions.",
+          "description_md": "In {{objetivo}}, a memory write can outlive the document or conversation that produced it. This pattern requires an unauthorized persistent change and a later read affecting a consequential decision.",
+          "impact_md": "The deviation may recur across tasks without the initial content being reintroduced. Determine which users, projects and duration are actually affected.",
+          "remediation_md": "Separate confirmed preferences from external observations. Authorize memory writes, retain provenance and versions, limit scope and provide inspection, expiry and rollback.",
+          "prerequisites": "Create a laboratory user with clean memory, a controlled ingestion session and a separate subsequent session. Define what information may legitimately persist.",
+          "required_evidence": "Preserve initial and final state, write event, data origin, memory identifier and effect in the new session. Repeat after removing only the introduced entry.",
+          "false_positives": "Recall within the same context window does not prove persistence. A preference explicitly saved by the user may be expected behavior.",
+          "retest": "Verify unauthorized writes are rejected and existing contaminated entries are removed. Open new sessions and confirm legitimate preferences remain available.",
+          "assessment_notes": "Distinguish content corruption from cross-user disclosure. Do not erase real memory for testing; use a restorable synthetic copy."
+        },
+        "pt": {
+          "title": "Envenenamento de memória persistente do assistente",
+          "summary": "Examinar se conteúdo de baixa confiança pode ser salvo como preferência ou regra permanente e influenciar sessões futuras.",
+          "description_md": "Em {{objetivo}}, uma gravação na memória pode sobreviver ao documento ou conversa de origem. Esta ficha exige uma alteração persistente não autorizada e uma leitura posterior que afete uma decisão relevante.",
+          "impact_md": "O desvio pode se repetir em várias tarefas sem reinserir o conteúdo inicial. Determinar usuários, projetos e duração realmente afetados.",
+          "remediation_md": "Separar preferências confirmadas de observações externas. Autorizar gravações, preservar origem e versões, limitar o escopo e permitir inspeção, expiração e reversão.",
+          "prerequisites": "Criar um usuário de laboratório com memória limpa, uma sessão controlada de entrada e outra sessão independente. Definir o que pode persistir legitimamente.",
+          "required_evidence": "Preservar estados inicial e final, evento de gravação, origem do dado, identificador da memória e efeito na nova sessão. Repetir removendo somente a entrada introduzida.",
+          "false_positives": "Recordação na mesma janela de contexto não comprova persistência. Uma preferência salva explicitamente pelo usuário pode ser comportamento esperado.",
+          "retest": "Verificar rejeição de gravações não autorizadas e remoção de entradas contaminadas existentes. Abrir sessões novas e confirmar que preferências legítimas continuam disponíveis.",
+          "assessment_notes": "Distinguir corrupção do conteúdo de exposição entre usuários. Não apagar memória real no teste; usar uma cópia sintética restaurável."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-007",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "privacy",
+        "session",
+        "tenant",
+        "isolation",
+        "cache"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "Model Context Protocol Security Best Practices",
+          "url": "https://modelcontextprotocol.io/docs/2025-11-25/tutorials/security/security_best_practices",
+          "version": "2025-11-25; versioned guidance",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM02:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Contenido de conversación expuesto entre usuarios o sesiones",
+          "summary": "Comprobar el aislamiento de historial, memoria y caché de respuestas mediante dos identidades con datos sintéticos distintos.",
+          "description_md": "Si {{objetivo}} reutiliza contexto sin vincularlo al usuario y al espacio autorizado, una respuesta puede incorporar información de otra sesión. La evaluación debe identificar el almacén compartido y excluir que ambos usuarios tengan acceso legítimo.",
+          "impact_md": "Puede exponerse información confidencial o condicionarse una decisión con datos ajenos. La magnitud depende del ámbito del recurso reutilizado y de su retención.",
+          "remediation_md": "Derivar las claves de aislamiento de la identidad autenticada y del espacio de trabajo. Autorizar lecturas de historial y memoria; particionar cachés y limpiar contexto al cambiar de cuenta.",
+          "prerequisites": "Disponer de dos cuentas y dos conversaciones nuevas, con marcadores únicos que no existan en documentos compartidos ni en la pregunta de prueba.",
+          "required_evidence": "Registrar cuenta efectiva, sesión, espacio, marcador de origen y respuesta receptora. Incluir controles sin caché y con sesión renovada para localizar el componente responsable.",
+          "false_positives": "Texto común, respuestas similares o datos publicados no demuestran fuga. Tampoco la demuestra un espacio compartido con permisos explícitos para ambos usuarios.",
+          "retest": "Alternar cuentas y sesiones nuevas, con caché caliente y fría. Confirmar aislamiento y acceso legítimo al historial propio.",
+          "assessment_notes": "Reportar sólo los datos sintéticos recuperados y su trayectoria; no intentar descubrir conversaciones reales de otros usuarios."
+        },
+        "en": {
+          "title": "Conversation content disclosed across users or sessions",
+          "summary": "Check isolation of history, memory and response caches using two identities with distinct synthetic data.",
+          "description_md": "If {{objetivo}} reuses context without binding it to the authorized user and workspace, a response may contain another session’s information. Identify the shared store and exclude legitimate access by both users.",
+          "impact_md": "Confidential information may be disclosed or decisions influenced by unrelated data. Reach depends on the reused resource’s scope and retention.",
+          "remediation_md": "Derive isolation keys from authenticated identity and workspace. Authorize history and memory reads, partition caches and clear context when accounts change.",
+          "prerequisites": "Provide two accounts and fresh conversations containing unique markers absent from shared documents and from the test question.",
+          "required_evidence": "Record effective account, session, workspace, source marker and receiving response. Include cache-disabled and renewed-session controls to locate the responsible component.",
+          "false_positives": "Common wording, similar answers or public data do not prove leakage. Neither does a shared workspace where both users explicitly have access.",
+          "retest": "Alternate accounts and fresh sessions with warm and cold caches. Confirm isolation and legitimate access to each user’s own history.",
+          "assessment_notes": "Report only recovered synthetic data and its path; do not try to discover real conversations belonging to other users."
+        },
+        "pt": {
+          "title": "Conteúdo de conversa exposto entre usuários ou sessões",
+          "summary": "Verificar o isolamento de histórico, memória e cache de respostas usando duas identidades com dados sintéticos distintos.",
+          "description_md": "Se {{objetivo}} reutiliza contexto sem vinculá-lo ao usuário e espaço autorizados, uma resposta pode incorporar informações de outra sessão. Identificar o armazenamento compartilhado e excluir acesso legítimo pelos dois usuários.",
+          "impact_md": "Informações confidenciais podem ser expostas ou decisões influenciadas por dados alheios. O alcance depende do escopo do recurso reutilizado e de sua retenção.",
+          "remediation_md": "Derivar chaves de isolamento da identidade autenticada e do espaço de trabalho. Autorizar leituras de histórico e memória, particionar caches e limpar contexto na troca de conta.",
+          "prerequisites": "Disponibilizar duas contas e conversas novas com marcadores únicos, ausentes dos documentos compartilhados e da pergunta de teste.",
+          "required_evidence": "Registrar conta efetiva, sessão, espaço, marcador de origem e resposta receptora. Incluir controles sem cache e com sessão renovada para localizar o componente responsável.",
+          "false_positives": "Texto comum, respostas semelhantes ou dados públicos não comprovam exposição. Um espaço compartilhado com acesso explícito para ambos também não caracteriza falha.",
+          "retest": "Alternar contas e sessões novas, com cache aquecido e vazio. Confirmar isolamento e acesso legítimo ao histórico próprio.",
+          "assessment_notes": "Relatar apenas os dados sintéticos recuperados e seu percurso; não tentar descobrir conversas reais de outros usuários."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-008",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "rag",
+        "retrieval",
+        "acl",
+        "authorization",
+        "embeddings"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP RAG Security Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/RAG_Security_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM09:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Recuperación RAG sin autorización por documento",
+          "summary": "Verificar que la búsqueda semántica aplique los permisos del solicitante antes de introducir fragmentos privados al contexto.",
+          "description_md": "En {{objetivo}}, el índice puede agrupar documentos con permisos diferentes. Un filtro de interfaz o una instrucción al modelo resulta insuficiente si el recuperador entrega contenido que la identidad activa no debe consultar.",
+          "impact_md": "Puede divulgarse el contenido o la existencia de documentos restringidos. Registrar qué datos salieron del límite de autorización, incluso si la respuesta final intenta ocultarlos.",
+          "remediation_md": "Aplicar permisos verificables en la recuperación, mantener etiquetas de acceso al fragmentar y separar colecciones cuando corresponda. No delegar autorización al modelo generador.",
+          "prerequisites": "Crear documentos públicos y privados sintéticos, dos identidades y una matriz de permisos. Incluir términos equivalentes para comprobar búsqueda semántica y literal.",
+          "required_evidence": "Capturar consulta, identidad, filtros efectivos, identificadores de fragmentos recuperados y respuesta. Comparar la misma consulta con una cuenta permitida y otra restringida.",
+          "false_positives": "Una cita inventada no demuestra lectura. La coincidencia semántica con material público o acceso heredado válido puede explicar la respuesta sin vulneración.",
+          "retest": "Reindexar y repetir búsquedas con ambos roles. Confirmar ausencia del fragmento privado tanto en el contexto del generador como en la respuesta al usuario restringido.",
+          "assessment_notes": "Distinguir exposición interna al modelo de divulgación al usuario; documentar cada frontera y no inferir acceso a todo el corpus a partir de un documento."
+        },
+        "en": {
+          "title": "RAG retrieval without document-level authorization",
+          "summary": "Verify semantic search applies the requester’s permissions before private excerpts enter model context.",
+          "description_md": "In {{objetivo}}, an index may combine documents with different permissions. A UI filter or model instruction is insufficient if the retriever supplies content the active identity must not read.",
+          "impact_md": "Restricted document content or existence may be disclosed. Record what crossed the authorization boundary even when the final response attempts to conceal it.",
+          "remediation_md": "Enforce verifiable permissions during retrieval, preserve access labels during chunking and separate collections where appropriate. Do not delegate authorization to the generating model.",
+          "prerequisites": "Create synthetic public and private documents, two identities and a permission matrix. Include equivalent terms to exercise semantic and literal search.",
+          "required_evidence": "Capture query, identity, effective filters, retrieved chunk identifiers and response. Compare the same query with an allowed and a restricted account.",
+          "false_positives": "An invented citation does not prove reading. Semantic overlap with public material or valid inherited access may explain the answer without a breach.",
+          "retest": "Reindex and repeat searches with both roles. Confirm the private excerpt is absent from generator context and the restricted user’s response.",
+          "assessment_notes": "Distinguish internal model exposure from disclosure to a user; document each boundary and do not infer access to the entire corpus from one document."
+        },
+        "pt": {
+          "title": "Recuperação RAG sem autorização por documento",
+          "summary": "Verificar se a busca semântica aplica as permissões do solicitante antes de inserir trechos privados no contexto do modelo.",
+          "description_md": "Em {{objetivo}}, um índice pode reunir documentos com permissões diferentes. Um filtro visual ou instrução ao modelo é insuficiente se o recuperador entrega conteúdo proibido à identidade ativa.",
+          "impact_md": "O conteúdo ou a existência de documentos restritos pode ser exposto. Registrar o que atravessou a fronteira de autorização mesmo quando a resposta final tenta ocultá-lo.",
+          "remediation_md": "Aplicar permissões verificáveis na recuperação, preservar rótulos de acesso na fragmentação e separar coleções quando necessário. Não delegar autorização ao modelo gerador.",
+          "prerequisites": "Criar documentos públicos e privados sintéticos, duas identidades e uma matriz de permissões. Incluir termos equivalentes para testar buscas semânticas e literais.",
+          "required_evidence": "Capturar consulta, identidade, filtros efetivos, identificadores dos trechos recuperados e resposta. Comparar a mesma consulta com contas autorizada e restrita.",
+          "false_positives": "Uma citação inventada não comprova leitura. Semelhança com material público ou acesso herdado válido pode explicar a resposta sem violação.",
+          "retest": "Reindexar e repetir buscas com os dois papéis. Confirmar ausência do trecho privado no contexto do gerador e na resposta ao usuário restrito.",
+          "assessment_notes": "Distinguir exposição interna ao modelo de divulgação ao usuário; documentar cada fronteira e não inferir acesso ao corpus inteiro a partir de um documento."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-009",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "rag",
+        "revocation",
+        "cache",
+        "retention",
+        "authorization"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP RAG Security Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/RAG_Security_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM09:2026"
+        },
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM02:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Acceso RAG persistente después de revocar permisos",
+          "summary": "Comprobar si índices, fragmentos y cachés dejan de servir contenido al revocar acceso en la fuente original.",
+          "description_md": "Aunque {{objetivo}} aplique permisos al indexar, una copia derivada puede conservar autorizaciones antiguas. Esta ficha cubre recuperaciones nuevas posteriores a la revocación, fuera del plazo de propagación definido por el sistema.",
+          "impact_md": "Un usuario puede seguir consultando contenido retirado o restringido. Delimitar la ventana temporal y las copias afectadas; la revocación no borra recuerdos ya adquiridos por el usuario.",
+          "remediation_md": "Propagar cambios de permisos y eliminaciones a índices y cachés. Revalidar acceso al recuperar, versionar permisos y establecer una política comprobable de invalidación y propagación.",
+          "prerequisites": "Indexar un documento sintético accesible a una cuenta de prueba, calentarlo en caché y revocar su permiso. Registrar el plazo esperado y el reloj de los componentes.",
+          "required_evidence": "Guardar eventos de revocación, marcas de tiempo, versión del índice y consultas nuevas. Usar un marcador añadido después de la consulta inicial para diferenciar una lectura nueva de una respuesta anterior.",
+          "false_positives": "Ver el historial propio anterior no demuestra una nueva recuperación. Una demora dentro del plazo acordado requiere evaluación del requisito, no una conclusión automática.",
+          "retest": "Repetir con caché caliente, sesión nueva y búsqueda directa; confirmar rechazo tras el plazo exigido y continuidad del acceso para cuentas autorizadas.",
+          "assessment_notes": "Informar el tiempo medido y los componentes observados. No afirmar borrado universal de todas las copias sin verificar sus políticas."
+        },
+        "en": {
+          "title": "RAG access persisting after permission revocation",
+          "summary": "Check whether indexes, chunks and caches stop serving content when access is revoked at the original source.",
+          "description_md": "Even if {{objetivo}} applies permissions at indexing time, derived copies may retain old authorization. This pattern concerns fresh retrieval after revocation beyond the system’s defined propagation period.",
+          "impact_md": "A user may continue accessing withdrawn or restricted material. Bound the time window and affected copies; revocation cannot erase information already learned by the user.",
+          "remediation_md": "Propagate permission changes and deletions to indexes and caches. Revalidate access on retrieval, version permissions and define a testable invalidation and propagation policy.",
+          "prerequisites": "Index a synthetic document accessible to a test account, warm its cache and revoke permission. Record the expected propagation period and component clocks.",
+          "required_evidence": "Preserve revocation events, timestamps, index version and fresh queries. Use a marker added after the initial query to distinguish a new read from an earlier response.",
+          "false_positives": "Viewing previous personal history does not prove fresh retrieval. A delay within an agreed propagation period requires requirement assessment, not an automatic finding.",
+          "retest": "Repeat with a warm cache, new session and direct search; confirm denial after the required period and continued access for authorized accounts.",
+          "assessment_notes": "Report measured time and observed components. Do not claim universal deletion from every copy without checking their policies."
+        },
+        "pt": {
+          "title": "Acesso RAG persistente após revogação de permissões",
+          "summary": "Verificar se índices, fragmentos e caches deixam de fornecer conteúdo após revogação de acesso na fonte original.",
+          "description_md": "Mesmo que {{objetivo}} aplique permissões na indexação, cópias derivadas podem manter autorizações antigas. Esta ficha trata de recuperações novas após a revogação, além do prazo de propagação definido.",
+          "impact_md": "Um usuário pode continuar consultando material removido ou restrito. Delimitar janela temporal e cópias afetadas; a revogação não apaga informações já conhecidas pelo usuário.",
+          "remediation_md": "Propagar alterações de permissão e exclusões para índices e caches. Revalidar acesso na recuperação, versionar permissões e definir uma política verificável de invalidação e propagação.",
+          "prerequisites": "Indexar um documento sintético acessível a uma conta de teste, aquecer o cache e revogar a permissão. Registrar prazo esperado e relógios dos componentes.",
+          "required_evidence": "Preservar eventos de revogação, horários, versão do índice e consultas novas. Usar um marcador adicionado após a consulta inicial para distinguir leitura nova de resposta anterior.",
+          "false_positives": "Visualizar o próprio histórico antigo não comprova nova recuperação. Atraso dentro do prazo acordado exige avaliar o requisito, sem conclusão automática.",
+          "retest": "Repetir com cache aquecido, sessão nova e busca direta; confirmar rejeição após o prazo exigido e acesso normal para contas autorizadas.",
+          "assessment_notes": "Informar tempo medido e componentes observados. Não afirmar exclusão universal de todas as cópias sem verificar suas políticas."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-010",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "rag",
+        "corpus",
+        "poisoning",
+        "integrity",
+        "provenance"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP RAG Security Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/RAG_Security_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM05:2026"
+        },
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM09:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Contenido no aprobado promovido a fuente de confianza en RAG",
+          "summary": "Evaluar si un actor con permisos limitados puede alterar la base consultada y hacer que información no revisada se presente como fuente autorizada.",
+          "description_md": "La debilidad en {{objetivo}} aparece cuando el ingreso, actualización o ranking del corpus permite sustituir contenido confiable sin la revisión exigida. Puede existir aun sin instrucciones de prompt: basta alterar hechos utilizados por una decisión.",
+          "impact_md": "Las respuestas o decisiones pueden sustentarse en datos falsos con apariencia de procedencia válida. El impacto depende de la autoridad de la fuente y del uso posterior.",
+          "remediation_md": "Separar contenido recibido de contenido aprobado. Conservar versiones, responsables y hashes; verificar procedencia y autorización de cambios, y mostrar al usuario la fuente efectivamente utilizada.",
+          "prerequisites": "Crear un corpus de laboratorio con una regla verificable y un canal de aporte de menor confianza. Definir quién puede aprobar o reemplazar fuentes.",
+          "required_evidence": "Registrar documento original, cambio introducido, permisos del aportante, eventos de ingestión y fragmentos recuperados. Comparar respuestas antes y después sin cambiar la consulta.",
+          "false_positives": "Un documento legítimamente actualizado o una fuente comunitaria claramente rotulada no demuestra promoción indebida. Un resultado no recuperado tampoco prueba influencia.",
+          "retest": "Repetir el aporte no aprobado y verificar cuarentena o etiqueta de confianza. Confirmar que la versión aprobada sigue siendo recuperable y que la reversión invalida copias.",
+          "assessment_notes": "Evitar confundir contaminación de datos con inyección de instrucciones. Documentar cuál garantía de procedencia o revisión se incumple."
+        },
+        "en": {
+          "title": "Unapproved content promoted to a trusted RAG source",
+          "summary": "Assess whether a limited contributor can alter the retrieval corpus and have unreviewed information presented as an authorized source.",
+          "description_md": "The weakness in {{objetivo}} occurs when corpus ingestion, updating or ranking permits trusted content to be replaced without required review. Prompt instructions are unnecessary: altering facts used in a decision can be sufficient.",
+          "impact_md": "Answers or decisions may rely on false data with apparently valid provenance. Impact depends on source authority and downstream use.",
+          "remediation_md": "Separate submitted content from approved content. Preserve versions, owners and hashes; verify provenance and change authorization, and show the source actually used.",
+          "prerequisites": "Create a laboratory corpus with a verifiable rule and a lower-trust contribution channel. Define who may approve or replace sources.",
+          "required_evidence": "Record the original document, introduced change, contributor permissions, ingestion events and retrieved excerpts. Compare answers before and after without changing the query.",
+          "false_positives": "A legitimately updated document or clearly labelled community source does not demonstrate improper promotion. Content never retrieved does not prove influence.",
+          "retest": "Repeat the unapproved contribution and verify quarantine or trust labelling. Confirm the approved version remains retrievable and rollback invalidates copies.",
+          "assessment_notes": "Distinguish data contamination from instruction injection. Document exactly which provenance or review guarantee failed."
+        },
+        "pt": {
+          "title": "Conteúdo não aprovado promovido a fonte confiável em RAG",
+          "summary": "Avaliar se um colaborador com permissões limitadas consegue alterar o corpus e apresentar informações não revisadas como fonte autorizada.",
+          "description_md": "A falha em {{objetivo}} ocorre quando ingestão, atualização ou classificação permitem substituir conteúdo confiável sem a revisão exigida. Não depende de instruções de prompt: alterar fatos usados numa decisão pode bastar.",
+          "impact_md": "Respostas ou decisões podem se apoiar em dados falsos com aparência de origem válida. O impacto depende da autoridade da fonte e do uso posterior.",
+          "remediation_md": "Separar conteúdo recebido de conteúdo aprovado. Preservar versões, responsáveis e hashes; verificar origem e autorização das mudanças, mostrando a fonte realmente utilizada.",
+          "prerequisites": "Criar um corpus de laboratório com uma regra verificável e um canal de contribuição de menor confiança. Definir quem pode aprovar ou substituir fontes.",
+          "required_evidence": "Registrar documento original, alteração introduzida, permissões do colaborador, eventos de ingestão e trechos recuperados. Comparar respostas anteriores e posteriores sem mudar a consulta.",
+          "false_positives": "Uma atualização legítima ou fonte comunitária claramente identificada não demonstra promoção indevida. Conteúdo nunca recuperado também não comprova influência.",
+          "retest": "Repetir a contribuição não aprovada e verificar quarentena ou indicação de confiança. Confirmar que a versão aprovada continua acessível e a reversão invalida cópias.",
+          "assessment_notes": "Distinguir contaminação de dados de injeção de instruções. Documentar exatamente qual garantia de origem ou revisão foi descumprida."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-011",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "privacy",
+        "data-minimization",
+        "field-authorization",
+        "responses"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP AI Agent Security Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM02:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Campos sensibles innecesarios expuestos por el asistente",
+          "summary": "Evaluar si las respuestas incluyen campos privados que el flujo y el destinatario no deben recibir, aunque puedan consultar parte del registro.",
+          "description_md": "En {{objetivo}}, un conector puede devolver registros completos para una tarea que sólo necesita datos limitados. La ficha aplica si el modelo recibe o divulga campos prohibidos por la política de ese flujo sin una reducción verificable.",
+          "impact_md": "Puede ampliar el acceso a identificadores, secretos o detalles comerciales. Distinguir exposición al proveedor del modelo de divulgación al usuario final y justificar cada frontera.",
+          "remediation_md": "Filtrar campos en el servicio de origen según rol y propósito, antes de generar el contexto. Usar esquemas mínimos de respuesta y aplicar controles de divulgación a todas las salidas.",
+          "prerequisites": "Crear un registro sintético con campos permitidos y restringidos. Definir destinatario, finalidad y contrato del conector, incluyendo proveedores externos aprobados.",
+          "required_evidence": "Comparar respuesta de origen, contexto efectivo disponible y respuesta final. Utilizar marcadores únicos por campo y registrar qué canal los transportó.",
+          "false_positives": "La presencia de datos autorizados no basta. Información ya aportada por el usuario o un requisito explícito de mostrar el registro completo puede explicar la respuesta.",
+          "retest": "Repetir solicitudes de resumen y detalle; verificar filtrado antes del modelo y ausencia del campo en texto, citas y exportaciones.",
+          "assessment_notes": "No calificar automáticamente toda información personal como exposición indebida. Vincular el hallazgo a una restricción concreta y datos sintéticos observados."
+        },
+        "en": {
+          "title": "Unnecessary sensitive fields exposed by the assistant",
+          "summary": "Assess whether responses contain private fields the workflow and recipient must not receive, even if they may read part of the record.",
+          "description_md": "In {{objetivo}}, a connector may return complete records for a task needing only limited data. This pattern applies when the model receives or discloses fields prohibited by that workflow’s policy without verifiable minimization.",
+          "impact_md": "Access may expand to identifiers, secrets or business details. Distinguish exposure to a model provider from disclosure to an end user and justify each boundary.",
+          "remediation_md": "Filter fields at the source service according to role and purpose before creating context. Use minimal response schemas and apply disclosure controls to every output channel.",
+          "prerequisites": "Create a synthetic record containing allowed and restricted fields. Define recipient, purpose and connector contract, including approved external providers.",
+          "required_evidence": "Compare source response, available effective context and final answer. Use unique markers for each field and record the channel carrying them.",
+          "false_positives": "Authorized data alone is insufficient. Information supplied by the user or an explicit requirement to display the complete record may explain the response.",
+          "retest": "Repeat summary and detail requests; verify filtering before the model and absence of restricted fields in text, citations and exports.",
+          "assessment_notes": "Do not classify all personal information as improper disclosure automatically. Tie the finding to a concrete restriction and observed synthetic data."
+        },
+        "pt": {
+          "title": "Campos sensíveis desnecessários expostos pelo assistente",
+          "summary": "Avaliar se respostas incluem campos privados que o fluxo e o destinatário não devem receber, mesmo podendo consultar parte do registro.",
+          "description_md": "Em {{objetivo}}, um conector pode retornar registros completos para uma tarefa que exige poucos dados. A ficha se aplica se o modelo recebe ou divulga campos proibidos pela política desse fluxo sem minimização verificável.",
+          "impact_md": "O acesso pode se ampliar a identificadores, segredos ou detalhes comerciais. Distinguir exposição ao fornecedor do modelo de divulgação ao usuário final e justificar cada fronteira.",
+          "remediation_md": "Filtrar campos no serviço de origem conforme papel e finalidade, antes de criar o contexto. Usar esquemas mínimos de resposta e controles de divulgação em todos os canais.",
+          "prerequisites": "Criar um registro sintético com campos permitidos e restritos. Definir destinatário, finalidade e contrato do conector, incluindo fornecedores externos aprovados.",
+          "required_evidence": "Comparar resposta de origem, contexto efetivo disponível e resposta final. Usar marcadores únicos por campo e registrar o canal que os transportou.",
+          "false_positives": "Dados autorizados não bastam. Informações fornecidas pelo usuário ou uma exigência explícita de mostrar o registro completo podem explicar a resposta.",
+          "retest": "Repetir solicitações de resumo e detalhe; verificar filtragem antes do modelo e ausência dos campos em texto, citações e exportações.",
+          "assessment_notes": "Não classificar automaticamente toda informação pessoal como exposição indevida. Relacionar o achado a uma restrição concreta e a dados sintéticos observados."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-012",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "hidden-context",
+        "secrets",
+        "system-prompt",
+        "disclosure"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM08:2026"
+        },
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM02:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Secretos alojados en contexto oculto recuperable",
+          "summary": "Comprobar si instrucciones internas, contexto auxiliar o configuraciones incluyen secretos que terminan disponibles para un solicitante no autorizado.",
+          "description_md": "El carácter oculto de un mensaje en {{objetivo}} no constituye una barrera de seguridad. Esta ficha exige verificar una coincidencia con información interna sensible conocida, no aceptar como prueba una supuesta instrucción del sistema inventada por el modelo.",
+          "impact_md": "Pueden exponerse credenciales, identificadores privados o reglas confidenciales. Describir su utilidad real sin asumir que toda filtración de instrucciones permite comprometer el sistema.",
+          "remediation_md": "Retirar credenciales y secretos del contexto. Resolver acceso a servicios mediante controles externos y credenciales limitadas; reducir información interna enviada al modelo y rotar secretos realmente expuestos.",
+          "prerequisites": "Preparar un entorno aislado con un marcador secreto artificial y una configuración interna conocida. Evitar credenciales válidas o datos de usuarios reales.",
+          "required_evidence": "Registrar ubicación original del marcador, quién puede verla, respuesta exacta y canales de acceso. Confirmar coincidencia completa o parcial suficiente y descartar que la entrada revele el marcador.",
+          "false_positives": "Una reconstrucción plausible del prompt, instrucciones públicas o políticas no confidenciales no demuestran filtración sensible. La sola existencia de un mensaje de sistema tampoco es una falla.",
+          "retest": "Repetir desde una sesión limpia y comprobar que el secreto ya no llega al contexto ni a respuestas o diagnósticos.",
+          "assessment_notes": "Clasificar por sensibilidad y alcance comprobados. La edición 2026 denomina esta categoría Hidden Context Exposure; no reutilizar automáticamente el identificador de 2025."
+        },
+        "en": {
+          "title": "Secrets stored in recoverable hidden context",
+          "summary": "Check whether internal instructions, auxiliary context or configuration contain secrets that become available to an unauthorized requester.",
+          "description_md": "A hidden message in {{objetivo}} is not a security boundary. This pattern requires a verified match with known sensitive internal information, rather than accepting a model’s invented system instruction as proof.",
+          "impact_md": "Credentials, private identifiers or confidential rules may be exposed. Describe their actual usefulness without assuming every instruction disclosure compromises the system.",
+          "remediation_md": "Remove credentials and secrets from context. Access services through external controls and limited credentials, minimize internal information sent to the model and rotate genuinely exposed secrets.",
+          "prerequisites": "Prepare an isolated environment containing an artificial secret marker and a known internal configuration. Avoid valid credentials or real user data.",
+          "required_evidence": "Record the marker’s original location, authorized readers, exact response and access channels. Confirm a sufficient exact match and exclude the marker being revealed by the input.",
+          "false_positives": "A plausible prompt reconstruction, public instructions or nonconfidential policies do not demonstrate sensitive leakage. A system message’s existence is not itself a flaw.",
+          "retest": "Repeat from a clean session and check that the secret no longer enters context, answers or diagnostics.",
+          "assessment_notes": "Classify by demonstrated sensitivity and reach. The2026 category is Hidden Context Exposure; do not automatically reuse the 2025 identifier."
+        },
+        "pt": {
+          "title": "Segredos armazenados em contexto oculto recuperável",
+          "summary": "Verificar se instruções internas, contexto auxiliar ou configurações incluem segredos que ficam disponíveis a solicitantes não autorizados.",
+          "description_md": "Uma mensagem oculta em {{objetivo}} não é uma barreira de segurança. Esta ficha exige coincidência verificada com informação interna sensível conhecida, sem aceitar uma instrução de sistema inventada pelo modelo como prova.",
+          "impact_md": "Credenciais, identificadores privados ou regras confidenciais podem ser expostos. Descrever sua utilidade real sem presumir que qualquer exposição de instruções compromete o sistema.",
+          "remediation_md": "Remover credenciais e segredos do contexto. Acessar serviços por controles externos e credenciais limitadas, minimizar informações internas enviadas ao modelo e rotacionar segredos realmente expostos.",
+          "prerequisites": "Preparar um ambiente isolado com marcador secreto artificial e configuração interna conhecida. Evitar credenciais válidas ou dados reais de usuários.",
+          "required_evidence": "Registrar localização original do marcador, leitores autorizados, resposta exata e canais de acesso. Confirmar coincidência suficiente e excluir a revelação do marcador pela própria entrada.",
+          "false_positives": "Reconstrução plausível do prompt, instruções públicas ou políticas não confidenciais não comprovam exposição sensível. A existência de mensagem de sistema não é falha por si só.",
+          "retest": "Repetir em sessão limpa e verificar que o segredo não chega ao contexto, às respostas ou aos diagnósticos.",
+          "assessment_notes": "Classificar pela sensibilidade e alcance demonstrados. A categoria de 2026 é Hidden Context Exposure; não reutilizar automaticamente o identificador de 2025."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-013",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "telemetry",
+        "logs",
+        "privacy",
+        "traces",
+        "retention"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP AI Agent Security Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM02:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Prompts y datos sensibles expuestos en trazas de IA",
+          "summary": "Revisar si el registro de conversaciones y llamadas revela información a operadores, exportaciones o servicios de observabilidad sin el acceso requerido.",
+          "description_md": "En {{objetivo}}, la depuración puede guardar entradas, resultados y argumentos completos. La debilidad requiere identificar una recopilación o lectura que incumpla la política de acceso o retención, incluyendo sistemas de trazas conectados.",
+          "impact_md": "La exposición puede extenderse a copias de soporte, paneles o retención prolongada. Medir el alcance sin publicar secretos en la evidencia del informe.",
+          "remediation_md": "Registrar sólo lo necesario, enmascarar valores antes de enviarlos al colector y separar acceso operativo de contenido sensible. Limitar retención y auditar exportaciones de trazas.",
+          "prerequisites": "Insertar marcadores sintéticos en una conversación y en argumentos de herramienta. Definir perfiles de observador y plazos permitidos, incluidos los colectores externos.",
+          "required_evidence": "Conservar evento correlacionado, destino del registro, identidad que lo consultó y configuración efectiva de redacción. Comprobar almacenamiento real, no sólo la consola del navegador.",
+          "false_positives": "Un administrador autorizado puede necesitar acceso controlado a datos. Un marcador redactado en almacenamiento pero visible sólo en una sesión local autorizada no demuestra fuga al colector.",
+          "retest": "Repetir el flujo, buscar los marcadores con perfiles limitados y verificar expiración y eliminación conforme a la política acordada.",
+          "assessment_notes": "Separar existencia de telemetría de exposición indebida. Adjuntar evidencia redactada y describir cuándo se aplicó el enmascaramiento."
+        },
+        "en": {
+          "title": "Sensitive prompts and data exposed in AI traces",
+          "summary": "Review whether conversation and tool-call logging reveals information to operators, exports or observability services without required access.",
+          "description_md": "In {{objetivo}}, debugging may store complete inputs, results and arguments. A weakness requires collection or reading that violates an access or retention policy, including connected tracing services.",
+          "impact_md": "Exposure may extend to support copies, dashboards or extended retention. Measure reach without publishing secrets in report evidence.",
+          "remediation_md": "Log only necessary information, redact values before transmission to collectors and separate operational access from sensitive content. Limit retention and audit trace exports.",
+          "prerequisites": "Insert synthetic markers into a conversation and tool arguments. Define observer roles and allowed retention periods, including external collectors.",
+          "required_evidence": "Preserve the correlated event, log destination, reading identity and effective redaction configuration. Check actual storage rather than only the browser console.",
+          "false_positives": "An authorized administrator may need controlled data access. A marker redacted in storage but visible only in an authorized local session does not prove collector leakage.",
+          "retest": "Repeat the flow, search for markers using limited roles and verify expiration and deletion against the agreed policy.",
+          "assessment_notes": "Separate telemetry existence from improper exposure. Attach redacted evidence and explain where masking occurred."
+        },
+        "pt": {
+          "title": "Prompts e dados sensíveis expostos em rastros de IA",
+          "summary": "Revisar se registros de conversas e chamadas revelam informações a operadores, exportações ou serviços de observabilidade sem o acesso exigido.",
+          "description_md": "Em {{objetivo}}, a depuração pode armazenar entradas, resultados e argumentos completos. A falha exige coleta ou leitura que viole uma política de acesso ou retenção, incluindo serviços de rastreamento conectados.",
+          "impact_md": "A exposição pode alcançar cópias de suporte, painéis ou retenção prolongada. Medir o alcance sem publicar segredos nas evidências do relatório.",
+          "remediation_md": "Registrar somente o necessário, mascarar valores antes de enviá-los ao coletor e separar acesso operacional de conteúdo sensível. Limitar retenção e auditar exportações.",
+          "prerequisites": "Inserir marcadores sintéticos numa conversa e nos argumentos de ferramentas. Definir papéis de observador e prazos permitidos, incluindo coletores externos.",
+          "required_evidence": "Preservar evento correlacionado, destino do registro, identidade leitora e configuração efetiva de mascaramento. Verificar armazenamento real, não apenas o console do navegador.",
+          "false_positives": "Um administrador autorizado pode precisar de acesso controlado. Um marcador mascarado no armazenamento, visível apenas numa sessão local autorizada, não comprova exposição ao coletor.",
+          "retest": "Repetir o fluxo, buscar marcadores com papéis limitados e verificar expiração e exclusão conforme a política acordada.",
+          "assessment_notes": "Distinguir existência de telemetria de exposição indevida. Anexar evidências mascaradas e indicar onde ocorreu a proteção."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-014",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "output-handling",
+        "html",
+        "markdown",
+        "xss",
+        "rendering"
+      ],
+      "cwe": "CWE-79",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "CWE-79 official weakness definition",
+          "url": "https://cwe.mitre.org/data/definitions/79.html",
+          "version": "CWE 4.20; page version verified 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM10:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Salida del modelo interpretada como contenido activo",
+          "summary": "Comprobar si respuestas generadas se renderizan como HTML, enlaces o contenido activo sin neutralización adecuada al contexto.",
+          "description_md": "En {{objetivo}}, el modelo puede reproducir texto de usuarios o documentos. La falla se encuentra en el consumidor que transforma esa salida en contenido ejecutable o solicitudes externas no autorizadas.",
+          "impact_md": "Puede ejecutarse contenido en la sesión del lector o enviarse información a un destino externo. Identificar el origen de ejecución, permisos y canales afectados.",
+          "remediation_md": "Escapar texto por defecto, sanitizar con una lista permitida cuando se necesite formato y restringir esquemas de enlaces y cargas remotas. Aplicar una política de contenido como defensa complementaria.",
+          "prerequisites": "Disponer de una vista de respuesta y una ruta de exportación de laboratorio. Usar un marcador visual o solicitud a un receptor controlado sin leer datos de sesión.",
+          "required_evidence": "Guardar respuesta cruda, DOM resultante, sanitizador y versión, evento observable y política de contenido. Diferenciar el texto generado de la transformación del renderizador.",
+          "false_positives": "Mostrar etiquetas como texto, un enlace que requiere acción consciente o una exportación que no interpreta contenido activo no demuestra ejecución.",
+          "retest": "Repetir en vista previa, historial y exportaciones. Confirmar neutralización conservando formato permitido y enlaces legítimos.",
+          "assessment_notes": "No atribuir ejecución al modelo por sí solo. Si el mismo renderizador afecta otras entradas, agrupar la causa común y documentar el canal de IA como alcance."
+        },
+        "en": {
+          "title": "Model output interpreted as active content",
+          "summary": "Check whether generated responses are rendered as HTML, links or active content without context-appropriate neutralization.",
+          "description_md": "In {{objetivo}}, the model may reproduce text from users or documents. The failure belongs to the consumer that transforms this output into executable content or unauthorized external requests.",
+          "impact_md": "Content may execute within the reader’s session or send information to an external destination. Identify execution origin, permissions and affected channels.",
+          "remediation_md": "Escape text by default, use allowlist sanitization where formatting is necessary and restrict link schemes and remote loads. Apply a content policy as an additional defense.",
+          "prerequisites": "Provide a laboratory response view and export path. Use a visual marker or a request to a controlled receiver without reading session data.",
+          "required_evidence": "Preserve raw response, resulting DOM, sanitizer version, observable event and content policy. Distinguish generated text from the renderer’s transformation.",
+          "false_positives": "Displaying tags as text, a link requiring a deliberate action or an export that never interprets active content does not prove execution.",
+          "retest": "Repeat in preview, history and exports. Confirm neutralization while preserving allowed formatting and legitimate links.",
+          "assessment_notes": "Do not attribute execution to the model alone. If the same renderer affects other inputs, group the common cause and document the AI channel as scope."
+        },
+        "pt": {
+          "title": "Saída do modelo interpretada como conteúdo ativo",
+          "summary": "Verificar se respostas geradas são renderizadas como HTML, links ou conteúdo ativo sem neutralização adequada ao contexto.",
+          "description_md": "Em {{objetivo}}, o modelo pode reproduzir texto de usuários ou documentos. A falha está no consumidor que transforma essa saída em conteúdo executável ou solicitações externas não autorizadas.",
+          "impact_md": "Conteúdo pode executar na sessão do leitor ou enviar informações para um destino externo. Identificar origem de execução, permissões e canais afetados.",
+          "remediation_md": "Escapar texto por padrão, sanitizar com lista permitida quando formatação for necessária e restringir esquemas de links e carregamentos remotos. Aplicar política de conteúdo como defesa adicional.",
+          "prerequisites": "Disponibilizar uma visualização de resposta e uma rota de exportação de laboratório. Usar marcador visual ou requisição a receptor controlado sem ler dados de sessão.",
+          "required_evidence": "Preservar resposta bruta, DOM resultante, versão do sanitizador, evento observável e política de conteúdo. Distinguir o texto gerado da transformação do renderizador.",
+          "false_positives": "Mostrar tags como texto, um link que exige ação consciente ou exportação sem interpretação de conteúdo ativo não comprova execução.",
+          "retest": "Repetir em pré-visualização, histórico e exportações. Confirmar neutralização mantendo formatação permitida e links legítimos.",
+          "assessment_notes": "Não atribuir execução somente ao modelo. Se o mesmo renderizador afeta outras entradas, agrupar a causa comum e documentar o canal de IA como alcance."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-015",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "agent",
+        "code-execution",
+        "sandbox",
+        "filesystem",
+        "isolation"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "Model Context Protocol Security Best Practices",
+          "url": "https://modelcontextprotocol.io/docs/2025-11-25/tutorials/security/security_best_practices",
+          "version": "2025-11-25; versioned guidance",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI05"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Código generado ejecutado fuera del aislamiento previsto",
+          "summary": "Evaluar si la herramienta de ejecución puede acceder a recursos del anfitrión que la tarea y el entorno aislado deberían excluir.",
+          "description_md": "Que {{objetivo}} ejecute código puede ser una función intencional. Esta ficha requiere una frontera concreta incumplida: archivos externos, red prohibida, identidad privilegiada o recursos persistentes compartidos.",
+          "impact_md": "Puede afectarse confidencialidad, integridad o disponibilidad del anfitrión. Limitar la conclusión a recursos alcanzados por una comprobación inocua y autorizada.",
+          "remediation_md": "Ejecutar con identidad restringida, sistema de archivos limitado, red controlada y límites de recursos. Eliminar secretos del entorno y separar tareas y usuarios con aislamiento verificable.",
+          "prerequisites": "Preparar un entorno desechable y un archivo marcador fuera del área permitida. Definir recursos accesibles y prohibidos sin utilizar archivos reales del sistema.",
+          "required_evidence": "Guardar política esperada, identidad del proceso, montajes relevantes y resultado de lectura o escritura del marcador. Incluir una operación permitida como control.",
+          "false_positives": "Ejecutar código dentro de un área aprobada no es una vulnerabilidad. Un mensaje que dice haber accedido al anfitrión no sustituye evidencia del proceso o del recurso.",
+          "retest": "Repetir comprobaciones de archivos y red controlada, confirmar bloqueo fuera del ámbito y funcionamiento normal dentro del área autorizada.",
+          "assessment_notes": "No usar pruebas destructivas ni intentar privilegios adicionales. Diferenciar una configuración de aislamiento deficiente de una vulnerabilidad del motor de contenedores."
+        },
+        "en": {
+          "title": "Generated code executing outside its intended isolation",
+          "summary": "Assess whether an execution tool can reach host resources that the task and isolated environment should exclude.",
+          "description_md": "Code execution in {{objetivo}} may be intentional functionality. This pattern requires a concrete broken boundary: outside files, prohibited networking, privileged identity or shared persistent resources.",
+          "impact_md": "Host confidentiality, integrity or availability may be affected. Limit conclusions to resources reached through a harmless authorized check.",
+          "remediation_md": "Execute with restricted identity, limited filesystems, controlled networking and resource ceilings. Remove secrets from the environment and separate tasks and users with verifiable isolation.",
+          "prerequisites": "Prepare a disposable environment and marker file outside the allowed area. Define permitted and forbidden resources without using real system files.",
+          "required_evidence": "Preserve expected policy, process identity, relevant mounts and marker read or write result. Include an allowed operation as a control.",
+          "false_positives": "Executing code in an approved area is not a vulnerability. A message claiming host access cannot replace process or resource evidence.",
+          "retest": "Repeat filesystem and controlled-network checks; confirm denial outside scope and normal execution inside the authorized area.",
+          "assessment_notes": "Avoid destructive tests or attempts to obtain additional privileges. Distinguish inadequate isolation configuration from a container engine vulnerability."
+        },
+        "pt": {
+          "title": "Código gerado executado fora do isolamento previsto",
+          "summary": "Avaliar se a ferramenta de execução alcança recursos do hospedeiro que a tarefa e o ambiente isolado deveriam excluir.",
+          "description_md": "Executar código em {{objetivo}} pode ser uma função intencional. Esta ficha exige uma fronteira concreta violada: arquivos externos, rede proibida, identidade privilegiada ou recursos persistentes compartilhados.",
+          "impact_md": "Confidencialidade, integridade ou disponibilidade do hospedeiro podem ser afetadas. Limitar conclusões aos recursos alcançados por uma verificação inofensiva e autorizada.",
+          "remediation_md": "Executar com identidade restrita, sistema de arquivos limitado, rede controlada e limites de recursos. Remover segredos do ambiente e separar tarefas e usuários com isolamento verificável.",
+          "prerequisites": "Preparar um ambiente descartável e um arquivo marcador fora da área permitida. Definir recursos acessíveis e proibidos sem usar arquivos reais do sistema.",
+          "required_evidence": "Preservar política esperada, identidade do processo, montagens relevantes e resultado de leitura ou escrita do marcador. Incluir uma operação permitida como controle.",
+          "false_positives": "Executar código numa área aprovada não é vulnerabilidade. Uma mensagem alegando acesso ao hospedeiro não substitui evidência do processo ou recurso.",
+          "retest": "Repetir verificações de arquivos e rede controlada; confirmar bloqueio fora do escopo e execução normal dentro da área autorizada.",
+          "assessment_notes": "Evitar testes destrutivos e tentativas de obter privilégios adicionais. Distinguir configuração de isolamento inadequada de vulnerabilidade do mecanismo de contêineres."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-016",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "tools",
+        "ssrf",
+        "url-fetch",
+        "network",
+        "authorization"
+      ],
+      "cwe": "CWE-918",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "Model Context Protocol Security Best Practices",
+          "url": "https://modelcontextprotocol.io/docs/2025-11-25/tutorials/security/security_best_practices",
+          "version": "2025-11-25; versioned guidance",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "CWE-918 official weakness definition",
+          "url": "https://cwe.mitre.org/data/definitions/918.html",
+          "version": "CWE 4.20; page version verified 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM10:2026"
+        },
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI02"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Herramienta de consulta que accede a destinos de red prohibidos",
+          "summary": "Verificar si URLs propuestas por el modelo o recibidas de conectores permiten al servidor consultar recursos fuera del ámbito autorizado.",
+          "description_md": "En {{objetivo}}, una herramienta de navegación, descarga o descubrimiento puede realizar solicitudes desde una red privilegiada. La debilidad requiere demostrar que un destino prohibido resulta alcanzable mediante una entrada controlable.",
+          "impact_md": "Puede revelar servicios internos o interactuar con recursos que el usuario no puede alcanzar directamente. No asumir acceso a credenciales o ejecución remota a partir de una conexión.",
+          "remediation_md": "Validar destinos y redirecciones, aplicar política de salida independiente del modelo y controlar resolución de nombres al conectar. Restringir métodos, puertos y esquemas conforme al propósito.",
+          "prerequisites": "Usar receptores propios en segmentos permitidos y prohibidos del laboratorio. Autorizar por escrito los destinos y evitar servicios de metadatos reales o endpoints administrativos.",
+          "required_evidence": "Registrar URL solicitada, destino efectivo, redirecciones, origen de la conexión y evento en el receptor. Incluir un destino permitido como comparación.",
+          "false_positives": "Una solicitud desde el navegador del usuario no demuestra SSRF del servidor. Un servicio interno expresamente permitido puede ser parte del diseño aprobado.",
+          "retest": "Repetir rutas directas y redirecciones controladas. Confirmar bloqueo antes de conectar al destino prohibido sin romper consultas autorizadas.",
+          "assessment_notes": "Identificar qué componente realiza la petición. Para MCP, distinguir descubrimiento de autorización de una herramienta de consulta ordinaria."
+        },
+        "en": {
+          "title": "Retrieval tool reaching prohibited network destinations",
+          "summary": "Verify whether model-proposed or connector-supplied URLs let the server access resources outside the authorized network scope.",
+          "description_md": "In {{objetivo}}, browsing, download or discovery tools may request resources from a privileged network. A weakness requires proof that a forbidden destination is reachable through controllable input.",
+          "impact_md": "Internal services may be disclosed or contacted despite being unreachable directly by the user. Do not infer credential access or remote execution from connectivity alone.",
+          "remediation_md": "Validate destinations and redirects, enforce egress policy independently of the model and control name resolution at connection time. Restrict methods, ports and schemes to purpose.",
+          "prerequisites": "Use owned receivers in allowed and prohibited laboratory segments. Explicitly authorize destinations and avoid real metadata services or administrative endpoints.",
+          "required_evidence": "Record requested URL, effective destination, redirects, connection origin and receiving event. Include an allowed destination for comparison.",
+          "false_positives": "A request from the user’s browser does not prove server-side SSRF. An explicitly permitted internal service may be intended architecture.",
+          "retest": "Repeat direct paths and controlled redirects. Confirm denial before connecting to the forbidden destination without breaking authorized retrieval.",
+          "assessment_notes": "Identify the component making the request. For MCP, distinguish authorization discovery from an ordinary retrieval tool."
+        },
+        "pt": {
+          "title": "Ferramenta de consulta alcançando destinos de rede proibidos",
+          "summary": "Verificar se URLs propostas pelo modelo ou fornecidas por conectores permitem ao servidor acessar recursos fora do escopo autorizado.",
+          "description_md": "Em {{objetivo}}, ferramentas de navegação, download ou descoberta podem fazer solicitações de uma rede privilegiada. A falha exige demonstrar que uma entrada controlável alcança um destino proibido.",
+          "impact_md": "Serviços internos podem ser revelados ou acessados mesmo sem acesso direto pelo usuário. Não inferir obtenção de credenciais ou execução remota a partir de uma conexão.",
+          "remediation_md": "Validar destinos e redirecionamentos, impor política de saída independente do modelo e controlar resolução de nomes ao conectar. Restringir métodos, portas e esquemas conforme a finalidade.",
+          "prerequisites": "Usar receptores próprios em segmentos permitidos e proibidos do laboratório. Autorizar os destinos e evitar serviços reais de metadados ou endpoints administrativos.",
+          "required_evidence": "Registrar URL solicitada, destino efetivo, redirecionamentos, origem da conexão e evento no receptor. Incluir um destino permitido como comparação.",
+          "false_positives": "Uma requisição do navegador do usuário não comprova SSRF do servidor. Um serviço interno expressamente permitido pode fazer parte do projeto aprovado.",
+          "retest": "Repetir rotas diretas e redirecionamentos controlados. Confirmar bloqueio antes da conexão ao destino proibido sem prejudicar consultas autorizadas.",
+          "assessment_notes": "Identificar o componente que faz a requisição. Para MCP, distinguir descoberta de autorização de uma ferramenta comum de consulta."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-017",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "agent",
+        "excessive-agency",
+        "least-privilege",
+        "tools"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM03:2026"
+        },
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI03"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Herramientas con permisos superiores a la tarea asignada",
+          "summary": "Comparar capacidades efectivas del agente con las operaciones necesarias y expresamente autorizadas para su función.",
+          "description_md": "En {{objetivo}}, una tarea de lectura puede disponer de herramientas o credenciales con escritura, eliminación o acceso global. La ficha aplica cuando esa capacidad excedente puede utilizarse sin una barrera de autorización que limite al usuario y al encargo.",
+          "impact_md": "Una decisión errónea o manipulada puede producir cambios con mayor alcance que la tarea original. Identificar operaciones y recursos concretos disponibles, evitando estimaciones de daño no comprobadas.",
+          "remediation_md": "Reducir funcionalidad y permisos por tarea, usuario y recurso. Separar herramientas de lectura y escritura, usar credenciales temporales y comprobar autorización en el servicio ejecutor.",
+          "prerequisites": "Definir la función del agente y una matriz de capacidades esperadas. Utilizar un recurso sintético reversible para comprobar una operación que debería estar denegada.",
+          "required_evidence": "Conservar scopes efectivos, identidad usada, herramienta disponible, resultado del servicio y control de una operación permitida. No limitarse a listar nombres de herramientas.",
+          "false_positives": "Permisos amplios visibles en configuración pueden quedar restringidos por un control posterior eficaz. Una función administrativa solicitada explícitamente puede requerir escritura legítima.",
+          "retest": "Repetir con roles de lectura y administración; comprobar rechazo de la operación excedente y continuidad de las acciones necesarias.",
+          "assessment_notes": "No asignar severidad por el número de permisos. Explicar la diferencia entre permisos nominales, efectivos y realmente ejercitables."
+        },
+        "en": {
+          "title": "Tool permissions exceeding the assigned task",
+          "summary": "Compare an agent’s effective capabilities with operations necessary and explicitly authorized for its role.",
+          "description_md": "In {{objetivo}}, a read-only task may receive tools or credentials permitting writes, deletion or global access. This pattern applies when excess capability can be exercised without an authorization barrier restricting the user and assignment.",
+          "impact_md": "An incorrect or manipulated decision may produce changes beyond the original task. Identify concrete operations and resources available without estimating unverified damage.",
+          "remediation_md": "Reduce functionality and permissions by task, user and resource. Separate read and write tools, use temporary credentials and verify authorization in the executing service.",
+          "prerequisites": "Define the agent’s role and expected capability matrix. Use a reversible synthetic resource to check an operation that should be denied.",
+          "required_evidence": "Preserve effective scopes, identity used, available tool, service result and an allowed-operation control. Do not stop at listing tool names.",
+          "false_positives": "Broad permissions visible in configuration may be constrained by an effective downstream control. An explicitly requested administrative function may legitimately require writes.",
+          "retest": "Repeat with read-only and administrative roles; verify the excess operation is denied while necessary actions continue working.",
+          "assessment_notes": "Do not assign severity by permission count. Explain the difference between nominal, effective and actually exercisable permissions."
+        },
+        "pt": {
+          "title": "Permissões de ferramentas superiores à tarefa atribuída",
+          "summary": "Comparar capacidades efetivas do agente com as operações necessárias e explicitamente autorizadas para sua função.",
+          "description_md": "Em {{objetivo}}, uma tarefa de leitura pode receber ferramentas ou credenciais com escrita, exclusão ou acesso global. Esta ficha se aplica quando a capacidade excedente pode ser usada sem uma barreira de autorização que limite usuário e tarefa.",
+          "impact_md": "Uma decisão incorreta ou manipulada pode produzir mudanças além da tarefa original. Identificar operações e recursos concretos disponíveis, sem estimar danos não comprovados.",
+          "remediation_md": "Reduzir funções e permissões por tarefa, usuário e recurso. Separar ferramentas de leitura e escrita, usar credenciais temporárias e verificar autorização no serviço executor.",
+          "prerequisites": "Definir a função do agente e uma matriz de capacidades esperadas. Usar um recurso sintético reversível para testar uma operação que deveria ser negada.",
+          "required_evidence": "Preservar escopos efetivos, identidade usada, ferramenta disponível, resultado do serviço e controle de uma operação permitida. Não se limitar a nomes de ferramentas.",
+          "false_positives": "Permissões amplas na configuração podem ser limitadas por um controle posterior eficaz. Uma função administrativa explicitamente solicitada pode exigir escrita legítima.",
+          "retest": "Repetir com papéis de leitura e administração; verificar rejeição da operação excedente e continuidade das ações necessárias.",
+          "assessment_notes": "Não atribuir gravidade pela quantidade de permissões. Explicar diferenças entre permissões nominais, efetivas e realmente utilizáveis."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-018",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "agent",
+        "approval",
+        "toctou",
+        "consent",
+        "action-binding"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP AI Agent Security Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI09"
+        },
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI02"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Aprobación humana no vinculada a la acción ejecutada",
+          "summary": "Verificar que la confirmación corresponda al destinatario, recurso, contenido y operación que finalmente ejecuta el agente.",
+          "description_md": "En {{objetivo}}, un diálogo puede mostrar una propuesta y autorizar otra si los argumentos cambian, se reutiliza una aprobación o el texto de confirmación omite parámetros relevantes. La presencia del botón de aprobación no demuestra control efectivo.",
+          "impact_md": "Un usuario puede autorizar involuntariamente una acción distinta de la revisada. El impacto se limita a las diferencias materiales y a los recursos realmente modificados.",
+          "remediation_md": "Vincular aprobación a una representación canónica de la acción y sus argumentos. Invalidarla ante cambios, caducarla y consumirla una sola vez; mostrar destino y efectos completos.",
+          "prerequisites": "Preparar dos acciones reversibles sobre recursos ficticios y un punto de revisión. Poder observar argumentos propuestos y ejecutados sin alterar sistemas reales.",
+          "required_evidence": "Guardar vista aprobada, identidad revisora, identificador de aprobación, argumentos finales y evento de ejecución. Mostrar la diferencia exacta que no requirió una nueva confirmación.",
+          "false_positives": "Cambios puramente visuales o autorizaciones explícitas por lote pueden ser válidos. Una modificación rechazada antes de ejecutarse no demuestra el fallo.",
+          "retest": "Repetir cambiando destino, contenido y recurso; comprobar nueva revisión y rechazo de aprobaciones vencidas o reutilizadas.",
+          "assessment_notes": "No confundir autorización del usuario con aceptación técnica del modelo. Mantener separados el texto explicativo y la acción verificable."
+        },
+        "en": {
+          "title": "Human approval not bound to the executed action",
+          "summary": "Verify confirmation corresponds to the recipient, resource, content and operation the agent eventually executes.",
+          "description_md": "In {{objetivo}}, a dialog may display one proposal while authorizing another if arguments change, approval is reused or confirmation omits important parameters. An approval button alone does not establish an effective control.",
+          "impact_md": "A user may unintentionally authorize an action different from the reviewed one. Limit impact to material differences and resources actually changed.",
+          "remediation_md": "Bind approval to a canonical representation of the action and arguments. Invalidate it on changes, expire it and consume it once; display complete destination and effects.",
+          "prerequisites": "Prepare two reversible actions on fictional resources and a review point. Observe proposed and executed arguments without changing real systems.",
+          "required_evidence": "Preserve the approved view, reviewer identity, approval identifier, final arguments and execution event. Show the exact difference that did not require renewed confirmation.",
+          "false_positives": "Purely cosmetic changes or explicitly authorized batches may be legitimate. A modification rejected before execution does not demonstrate failure.",
+          "retest": "Repeat with changed destination, content and resource; verify renewed review and rejection of expired or reused approvals.",
+          "assessment_notes": "Do not confuse user authorization with the model’s technical acceptance. Keep explanatory text separate from the verifiable action."
+        },
+        "pt": {
+          "title": "Aprovação humana não vinculada à ação executada",
+          "summary": "Verificar se a confirmação corresponde ao destinatário, recurso, conteúdo e operação que o agente realmente executa.",
+          "description_md": "Em {{objetivo}}, um diálogo pode mostrar uma proposta e autorizar outra se argumentos mudarem, a aprovação for reutilizada ou a confirmação omitir parâmetros relevantes. A presença de um botão de aprovação não comprova controle efetivo.",
+          "impact_md": "Um usuário pode autorizar involuntariamente uma ação diferente da revisada. Limitar o impacto às diferenças materiais e aos recursos realmente alterados.",
+          "remediation_md": "Vincular aprovação à representação canônica da ação e dos argumentos. Invalidá-la após mudanças, expirá-la e consumi-la uma única vez; mostrar destino e efeitos completos.",
+          "prerequisites": "Preparar duas ações reversíveis sobre recursos fictícios e um ponto de revisão. Observar argumentos propostos e executados sem alterar sistemas reais.",
+          "required_evidence": "Preservar a visualização aprovada, identidade revisora, identificador da aprovação, argumentos finais e evento de execução. Mostrar a diferença exata que não exigiu nova confirmação.",
+          "false_positives": "Mudanças apenas visuais ou lotes explicitamente autorizados podem ser legítimos. Uma alteração rejeitada antes da execução não demonstra falha.",
+          "retest": "Repetir alterando destino, conteúdo e recurso; verificar nova revisão e rejeição de aprovações vencidas ou reutilizadas.",
+          "assessment_notes": "Não confundir autorização do usuário com aceitação técnica do modelo. Separar texto explicativo da ação verificável."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-019",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "agent",
+        "delegation",
+        "identity",
+        "oauth",
+        "mcp",
+        "confused-deputy"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "Model Context Protocol Authorization",
+          "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization",
+          "version": "2025-11-25",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "Model Context Protocol Security Best Practices",
+          "url": "https://modelcontextprotocol.io/docs/2025-11-25/tutorials/security/security_best_practices",
+          "version": "2025-11-25; versioned guidance",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI03"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Delegación que pierde la identidad o el alcance autorizado",
+          "summary": "Evaluar si un intermediario ejecuta llamadas con su propia autoridad ignorando la identidad, audiencia o permisos del solicitante original.",
+          "description_md": "En {{objetivo}}, un agente o proxy puede compartir una credencial de servicio entre usuarios. La debilidad aparece si una solicitud limitada adquiere permisos adicionales al cruzar ese intermediario o si se acepta una credencial emitida para otro recurso.",
+          "impact_md": "Puede producir acceso entre usuarios o acciones bajo una identidad con mayor alcance. Precisar qué frontera de delegación falla y qué recurso adicional se alcanza.",
+          "remediation_md": "Validar emisor, audiencia y permisos en cada receptor. Vincular delegación a usuario, cliente y tarea; usar intercambio de credenciales limitado cuando corresponda y consentimiento específico por cliente.",
+          "prerequisites": "Usar dos clientes de laboratorio con permisos distintos y recursos ficticios. Definir qué identidad y alcance deben observar los servicios posteriores.",
+          "required_evidence": "Registrar metadatos no secretos de credenciales, identidad antes y después del intermediario, decisión de autorización y evento del recurso. Ocultar valores de tokens.",
+          "false_positives": "Una cuenta de servicio compartida no prueba por sí sola un fallo si existe autorización efectiva por solicitante. Un token rechazado por audiencia incorrecta confirma el control.",
+          "retest": "Repetir con clientes de diferente alcance y credenciales para otro recurso; confirmar rechazo y trazabilidad del solicitante correcto.",
+          "assessment_notes": "Para MCP, documentar la versión desplegada. No aplicar requisitos de borradores a una implementación sin identificar su contrato vigente."
+        },
+        "en": {
+          "title": "Delegation losing the authorized identity or scope",
+          "summary": "Assess whether an intermediary uses its own authority while ignoring the original requester’s identity, audience or permissions.",
+          "description_md": "In {{objetivo}}, an agent or proxy may share a service credential among users. A weakness occurs if a limited request gains additional permissions across that intermediary or credentials issued for another resource are accepted.",
+          "impact_md": "Cross-user access or actions under a broader identity may result. Specify the failed delegation boundary and additional resource reached.",
+          "remediation_md": "Validate issuer, audience and permissions at every receiver. Bind delegation to user, client and task; use constrained credential exchange where appropriate and client-specific consent.",
+          "prerequisites": "Use two laboratory clients with different permissions and fictional resources. Define the identity and scope downstream services should observe.",
+          "required_evidence": "Record nonsecret credential metadata, identity before and after the intermediary, authorization decision and resource event. Conceal token values.",
+          "false_positives": "A shared service account alone does not prove failure if effective requester-level authorization exists. Rejecting a wrong-audience token confirms the control.",
+          "retest": "Repeat with differently scoped clients and credentials for another resource; verify denial and traceability to the correct requester.",
+          "assessment_notes": "For MCP, document the deployed version. Do not apply draft requirements without identifying the implementation’s current contract."
+        },
+        "pt": {
+          "title": "Delegação que perde a identidade ou o escopo autorizado",
+          "summary": "Avaliar se um intermediário usa sua própria autoridade ignorando identidade, audiência ou permissões do solicitante original.",
+          "description_md": "Em {{objetivo}}, um agente ou proxy pode compartilhar uma credencial de serviço entre usuários. A falha ocorre se uma solicitação limitada ganha permissões no intermediário ou se são aceitas credenciais emitidas para outro recurso.",
+          "impact_md": "Pode haver acesso entre usuários ou ações sob identidade mais privilegiada. Especificar a fronteira de delegação violada e o recurso adicional alcançado.",
+          "remediation_md": "Validar emissor, audiência e permissões em cada receptor. Vincular delegação a usuário, cliente e tarefa; usar troca limitada de credenciais quando cabível e consentimento específico por cliente.",
+          "prerequisites": "Usar dois clientes de laboratório com permissões distintas e recursos fictícios. Definir identidade e escopo esperados pelos serviços posteriores.",
+          "required_evidence": "Registrar metadados não secretos de credenciais, identidade antes e depois do intermediário, decisão de autorização e evento do recurso. Ocultar valores dos tokens.",
+          "false_positives": "Uma conta de serviço compartilhada não comprova falha se há autorização efetiva por solicitante. Rejeitar token de audiência incorreta confirma o controle.",
+          "retest": "Repetir com clientes de escopos diferentes e credenciais para outro recurso; verificar bloqueio e rastreabilidade do solicitante correto.",
+          "assessment_notes": "Para MCP, documentar a versão implantada. Não aplicar requisitos de rascunhos sem identificar o contrato vigente da implementação."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-020",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "agent",
+        "multi-agent",
+        "authentication",
+        "messages",
+        "integrity"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP AI Agent Security Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI07"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Mensajes entre agentes aceptados sin autenticar su origen",
+          "summary": "Comprobar si el receptor verifica quién envía una tarea, resultado o decisión antes de incorporarlos a su flujo.",
+          "description_md": "En {{objetivo}}, una cola o canal compartido puede transportar mensajes con un nombre de agente declarativo. La falla aparece si un emisor no autorizado puede producir un mensaje aceptado como procedente de un agente confiable.",
+          "impact_md": "Puede sustituirse un resultado, iniciar una tarea o influir en decisiones de otros agentes. El impacto requiere vincular el mensaje aceptado con un efecto o dato concreto.",
+          "remediation_md": "Autenticar emisores y receptores, autorizar tipos de mensaje por rol y proteger integridad del contenido. Vincular mensajes a la ejecución y rechazar identidades indicadas sólo en texto.",
+          "prerequisites": "Preparar dos agentes de laboratorio y un emisor sin permiso. Definir el canal, tipos de mensaje aceptados y una tarea reversible de prueba.",
+          "required_evidence": "Registrar identidad de transporte, identidad declarada, mensaje recibido, validación aplicada y efecto posterior. Comparar con un mensaje legítimo del agente autorizado.",
+          "false_positives": "Un canal accesible puede usar autenticación válida en otra capa. Mensajes almacenados pero ignorados no demuestran aceptación funcional.",
+          "retest": "Repetir con identidad incorrecta, mensaje alterado y agente autorizado. Confirmar rechazo antes de modificar el estado de la tarea.",
+          "assessment_notes": "Separar autenticación del emisor de autorización de la acción. Un mensaje auténtico también puede requerir límites de alcance."
+        },
+        "en": {
+          "title": "Inter-agent messages accepted without authenticating origin",
+          "summary": "Check whether recipients verify who sends a task, result or decision before incorporating it into their workflow.",
+          "description_md": "In {{objetivo}}, a shared queue or channel may carry messages containing a self-declared agent name. Failure occurs when an unauthorized sender can produce a message accepted as coming from a trusted agent.",
+          "impact_md": "A result may be replaced, a task started or another agent’s decisions influenced. Impact requires connecting the accepted message to a concrete effect or datum.",
+          "remediation_md": "Authenticate senders and receivers, authorize message types by role and protect content integrity. Bind messages to the execution and reject identities asserted only in text.",
+          "prerequisites": "Prepare two laboratory agents and an unauthorized sender. Define the channel, accepted message types and a reversible test task.",
+          "required_evidence": "Record transport identity, claimed identity, received message, applied validation and subsequent effect. Compare against a legitimate message from the authorized agent.",
+          "false_positives": "An accessible channel may authenticate at another layer. Messages stored but ignored do not demonstrate functional acceptance.",
+          "retest": "Repeat with incorrect identity, modified content and an authorized agent. Confirm rejection before task state changes.",
+          "assessment_notes": "Separate sender authentication from action authorization. An authentic message may still require scope restrictions."
+        },
+        "pt": {
+          "title": "Mensagens entre agentes aceitas sem autenticação de origem",
+          "summary": "Verificar se o receptor confirma quem envia uma tarefa, resultado ou decisão antes de incorporá-los ao fluxo.",
+          "description_md": "Em {{objetivo}}, uma fila ou canal compartilhado pode transportar mensagens com nome de agente autodeclarado. A falha ocorre quando um emissor não autorizado produz mensagem aceita como vinda de um agente confiável.",
+          "impact_md": "Um resultado pode ser substituído, uma tarefa iniciada ou decisões de outros agentes influenciadas. O impacto exige ligar a mensagem aceita a um efeito ou dado concreto.",
+          "remediation_md": "Autenticar emissores e receptores, autorizar tipos de mensagem por papel e proteger integridade do conteúdo. Vincular mensagens à execução e rejeitar identidades declaradas somente no texto.",
+          "prerequisites": "Preparar dois agentes de laboratório e um emissor sem permissão. Definir canal, tipos de mensagem aceitos e uma tarefa reversível de teste.",
+          "required_evidence": "Registrar identidade de transporte, identidade declarada, mensagem recebida, validação aplicada e efeito posterior. Comparar com mensagem legítima do agente autorizado.",
+          "false_positives": "Um canal acessível pode autenticar em outra camada. Mensagens armazenadas mas ignoradas não comprovam aceitação funcional.",
+          "retest": "Repetir com identidade incorreta, conteúdo alterado e agente autorizado. Confirmar bloqueio antes de mudar o estado da tarefa.",
+          "assessment_notes": "Separar autenticação do emissor de autorização da ação. Uma mensagem autêntica também pode exigir limites de escopo."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-021",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "agent",
+        "replay",
+        "freshness",
+        "idempotency",
+        "messages"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI07"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Mensajes o resultados antiguos reutilizados en otra ejecución",
+          "summary": "Evaluar si mensajes auténticos conservan validez fuera de su tarea, sesión o ventana temporal y provocan efectos repetidos.",
+          "description_md": "Aunque {{objetivo}} autentique al emisor, un resultado anterior puede aceptarse para una ejecución distinta si no se comprueban correlación y frescura. La ficha cubre reproducción o asociación incorrecta, no falsificación del contenido.",
+          "impact_md": "Puede duplicarse una operación o aprobarse una tarea con un resultado ajeno. El alcance depende del tipo de mensaje y de las garantías de idempotencia.",
+          "remediation_md": "Vincular mensajes a tarea, emisor, receptor y secuencia; controlar caducidad y consumo. Usar claves de idempotencia para operaciones con efectos y rechazar resultados que no correspondan al estado actual.",
+          "prerequisites": "Preparar dos ejecuciones de laboratorio y una operación reversible contable. Capturar un mensaje legítimo sin extraer secretos ni tráfico de otros usuarios.",
+          "required_evidence": "Registrar identificadores de ambas tareas, mensaje original, momento de repetición y efectos observados. Distinguir nueva ejecución de la devolución de un resultado ya existente.",
+          "false_positives": "La reentrega de mensajes de cola puede ser esperado si el consumidor evita efectos duplicados. Recuperar un resultado histórico claramente identificado no demuestra asociación indebida.",
+          "retest": "Repetir mensajes vencidos, duplicados y de otra tarea; confirmar rechazo o procesamiento idempotente y éxito del mensaje actual legítimo.",
+          "assessment_notes": "Documentar garantías esperadas del transporte y del consumidor. No exigir entrega única si el diseño implementa correctamente procesamiento idempotente."
+        },
+        "en": {
+          "title": "Old messages or results reused in another execution",
+          "summary": "Assess whether authentic messages remain valid outside their task, session or time window and cause repeated effects.",
+          "description_md": "Even if {{objetivo}} authenticates senders, an old result may be accepted for a different execution when correlation and freshness are not checked. This pattern covers replay or incorrect association rather than content forgery.",
+          "impact_md": "An operation may be duplicated or a task approved using an unrelated result. Reach depends on message type and idempotency guarantees.",
+          "remediation_md": "Bind messages to task, sender, recipient and sequence; enforce expiry and consumption. Use idempotency keys for consequential operations and reject results inconsistent with current state.",
+          "prerequisites": "Prepare two laboratory executions and a reversible countable operation. Capture a legitimate message without extracting secrets or other users’ traffic.",
+          "required_evidence": "Record both task identifiers, original message, replay time and observed effects. Distinguish fresh execution from returning an existing result.",
+          "false_positives": "Queue redelivery may be expected if consumers prevent duplicate effects. Retrieving clearly labelled historical results does not demonstrate incorrect association.",
+          "retest": "Repeat expired, duplicate and cross-task messages; verify rejection or idempotent handling and successful processing of the legitimate current message.",
+          "assessment_notes": "Document transport and consumer guarantees. Do not require exactly-once delivery when idempotent processing is correctly implemented."
+        },
+        "pt": {
+          "title": "Mensagens ou resultados antigos reutilizados em outra execução",
+          "summary": "Avaliar se mensagens autênticas continuam válidas fora da tarefa, sessão ou janela temporal e provocam efeitos repetidos.",
+          "description_md": "Mesmo que {{objetivo}} autentique emissores, um resultado antigo pode ser aceito em outra execução sem verificar correlação e atualidade. Esta ficha trata de reprodução ou associação incorreta, não de falsificação do conteúdo.",
+          "impact_md": "Uma operação pode ser duplicada ou uma tarefa aprovada com resultado alheio. O alcance depende do tipo de mensagem e das garantias de idempotência.",
+          "remediation_md": "Vincular mensagens a tarefa, emissor, receptor e sequência; controlar expiração e consumo. Usar chaves de idempotência em operações com efeitos e rejeitar resultados incompatíveis com o estado atual.",
+          "prerequisites": "Preparar duas execuções de laboratório e uma operação reversível contável. Capturar mensagem legítima sem extrair segredos ou tráfego de outros usuários.",
+          "required_evidence": "Registrar identificadores das tarefas, mensagem original, momento da repetição e efeitos observados. Distinguir execução nova da devolução de resultado existente.",
+          "false_positives": "Reentrega de filas pode ser esperada se o consumidor evita efeitos duplicados. Recuperar resultado histórico claramente identificado não demonstra associação indevida.",
+          "retest": "Repetir mensagens vencidas, duplicadas e de outra tarefa; verificar bloqueio ou tratamento idempotente e sucesso da mensagem atual legítima.",
+          "assessment_notes": "Documentar garantias do transporte e consumidor. Não exigir entrega única quando o processamento idempotente está implementado corretamente."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-022",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "agent",
+        "tool-chaining",
+        "data-egress",
+        "confidentiality"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP AI Agent Security Cheat Sheet",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html",
+          "version": "Living document; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI02"
+        },
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM02:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Encadenamiento de herramientas que evade restricciones de salida",
+          "summary": "Comprobar si datos obtenidos mediante una herramienta autorizada pueden enviarse por otra a un destinatario prohibido.",
+          "description_md": "En {{objetivo}}, permisos correctos por herramienta pueden resultar insuficientes para el flujo completo. La ficha aplica cuando una regla sobre destino o clasificación del dato se pierde entre lectura, transformación y envío.",
+          "impact_md": "Puede divulgarse información sin requerir una herramienta individualmente privilegiada. Identificar el dato sintético, el receptor y la restricción incumplida por la combinación.",
+          "remediation_md": "Aplicar autorización a flujos completos y conservar clasificación de datos entre pasos. Restringir destinos, separar capacidades incompatibles y revisar envíos con contenido y destinatario visibles.",
+          "prerequisites": "Utilizar una fuente privada sintética y un receptor controlado marcado como no autorizado. Mantener el volumen mínimo y bloquear cualquier destino real ajeno al laboratorio.",
+          "required_evidence": "Guardar cadena de llamadas, argumentos pertinentes, marcador leído, solicitud enviada y recibo del receptor. Confirmar que no existía autorización explícita para compartirlo.",
+          "false_positives": "Tener herramientas de lectura y envío no demuestra fuga. Un envío solicitado por un usuario autorizado al destinatario correcto puede ser legítimo.",
+          "retest": "Repetir con destinos permitidos y prohibidos, también después de resumir el dato. Confirmar que la transformación no elimina la restricción de salida.",
+          "assessment_notes": "Evaluar el flujo demostrado, no todas las combinaciones posibles. Evitar duplicar este hallazgo con la inyección que lo activó si comparten una única causa."
+        },
+        "en": {
+          "title": "Tool chaining bypassing data egress restrictions",
+          "summary": "Check whether data obtained through an authorized tool can be sent by another tool to a prohibited recipient.",
+          "description_md": "In {{objetivo}}, correct permissions per tool may be insufficient for the complete workflow. This pattern applies when destination or data-classification restrictions are lost between reading, transformation and sending.",
+          "impact_md": "Information may be disclosed without any individually privileged tool. Identify the synthetic datum, recipient and restriction violated by the combination.",
+          "remediation_md": "Authorize complete flows and preserve data classification between steps. Restrict destinations, separate incompatible capabilities and review sends with visible content and recipient.",
+          "prerequisites": "Use a synthetic private source and controlled receiver designated as unauthorized. Keep volume minimal and block real destinations outside the laboratory.",
+          "required_evidence": "Preserve the call chain, relevant arguments, read marker, sent request and receiver receipt. Confirm no explicit sharing authorization existed.",
+          "false_positives": "Having read and send tools does not prove leakage. A send requested by an authorized user to the correct recipient may be legitimate.",
+          "retest": "Repeat with allowed and prohibited destinations, including after summarization. Verify transformation does not remove the egress restriction.",
+          "assessment_notes": "Assess the demonstrated workflow rather than all possible combinations. Avoid duplicating this finding with its triggering injection if both share a single root cause."
+        },
+        "pt": {
+          "title": "Encadeamento de ferramentas contornando restrições de saída",
+          "summary": "Verificar se dados obtidos por uma ferramenta autorizada podem ser enviados por outra a um destinatário proibido.",
+          "description_md": "Em {{objetivo}}, permissões corretas por ferramenta podem ser insuficientes para o fluxo completo. Esta ficha se aplica quando restrições de destino ou classificação do dado se perdem entre leitura, transformação e envio.",
+          "impact_md": "Informações podem ser expostas sem uma ferramenta individualmente privilegiada. Identificar dado sintético, receptor e restrição violada pela combinação.",
+          "remediation_md": "Autorizar fluxos completos e preservar classificação de dados entre etapas. Restringir destinos, separar capacidades incompatíveis e revisar envios com conteúdo e destinatário visíveis.",
+          "prerequisites": "Usar fonte privada sintética e receptor controlado classificado como não autorizado. Manter volume mínimo e bloquear destinos reais fora do laboratório.",
+          "required_evidence": "Preservar sequência de chamadas, argumentos relevantes, marcador lido, solicitação enviada e recibo do receptor. Confirmar ausência de autorização explícita para compartilhar.",
+          "false_positives": "Ter ferramentas de leitura e envio não comprova exposição. Um envio solicitado por usuário autorizado ao destinatário correto pode ser legítimo.",
+          "retest": "Repetir com destinos permitidos e proibidos, inclusive após resumir o dado. Verificar que a transformação não remove a restrição de saída.",
+          "assessment_notes": "Avaliar o fluxo demonstrado, não todas as combinações possíveis. Evitar duplicar este achado com a injeção que o iniciou se ambos compartilham a mesma causa."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-023",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "mlops",
+        "model-artifact",
+        "integrity",
+        "provenance",
+        "supply-chain"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "NIST Secure Software Development Practices for Generative AI and Dual-Use Foundation Models",
+          "url": "https://csrc.nist.gov/pubs/sp/800/218/a/final",
+          "version": "NIST SP 800-218A; final July 2024",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM04:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Artefacto de modelo sustituible durante su promoción",
+          "summary": "Revisar si el modelo o adaptador aprobado coincide con el archivo que se despliega y utiliza realmente.",
+          "description_md": "En {{objetivo}}, una etiqueta mutable o un repositorio con permisos excesivos puede permitir reemplazar un artefacto después de revisarlo. El hallazgo exige demostrar que la promoción acepta una sustitución sin la comprobación de integridad y procedencia prevista.",
+          "impact_md": "Puede ejecutarse un modelo diferente del evaluado y perderse la trazabilidad de sus resultados. La posibilidad de código arbitrario requiere evidencia adicional del cargador.",
+          "remediation_md": "Promover artefactos por identificadores inmutables y verificar hashes o firmas contra una referencia confiable. Separar publicación y aprobación, proteger registros y conservar la cadena de construcción.",
+          "prerequisites": "Usar dos modelos o archivos inocuos distinguibles en un registro de laboratorio. Definir aprobación, digest esperado y permisos del publicador.",
+          "required_evidence": "Registrar hash aprobado y desplegado, eventos del registro, identidad del cambio y versión cargada. Mostrar que el control de promoción omitió la discrepancia.",
+          "false_positives": "No tener firma no implica sustitución posible si existe integridad autenticada equivalente. Una etiqueta cambiante restringida a desarrollo puede ser una decisión documentada.",
+          "retest": "Intentar la misma sustitución controlada y confirmar rechazo antes del despliegue. Verificar que un artefacto aprobado nuevo puede promoverse correctamente.",
+          "assessment_notes": "Distinguir hallazgo técnico de ausencia documental. No atribuir una puerta trasera ni una CVE al modelo sin pruebas específicas."
+        },
+        "en": {
+          "title": "Model artifact substitution during promotion",
+          "summary": "Review whether the approved model or adapter matches the file actually deployed and used.",
+          "description_md": "In {{objetivo}}, a mutable tag or excessively writable repository may allow replacement after review. A finding requires proof that promotion accepts substitution without the expected integrity and provenance check.",
+          "impact_md": "A different model from the evaluated one may run, breaking result traceability. Arbitrary code execution requires additional evidence about the loader.",
+          "remediation_md": "Promote artifacts by immutable identifiers and check hashes or signatures against a trusted reference. Separate publication and approval, protect registries and preserve build provenance.",
+          "prerequisites": "Use two distinguishable harmless models or files in a laboratory registry. Define approval, expected digest and publisher permissions.",
+          "required_evidence": "Record approved and deployed hashes, registry events, change identity and loaded version. Show that promotion failed to detect the discrepancy.",
+          "false_positives": "Lack of signatures does not imply substitution is possible where equivalent authenticated integrity exists. Mutable tags restricted to development may be a documented choice.",
+          "retest": "Attempt the same controlled substitution and confirm rejection before deployment. Verify a newly approved artifact can still be promoted.",
+          "assessment_notes": "Distinguish technical failure from missing documentation. Do not attribute a backdoor or CVE to the model without specific evidence."
+        },
+        "pt": {
+          "title": "Substituição de artefato de modelo durante a promoção",
+          "summary": "Revisar se o modelo ou adaptador aprovado corresponde ao arquivo realmente implantado e utilizado.",
+          "description_md": "Em {{objetivo}}, uma etiqueta mutável ou repositório com escrita excessiva pode permitir substituição após revisão. O achado exige demonstrar que a promoção aceita a troca sem a verificação prevista de integridade e origem.",
+          "impact_md": "Um modelo diferente do avaliado pode executar, comprometendo rastreabilidade dos resultados. Execução arbitrária de código exige evidência adicional sobre o carregador.",
+          "remediation_md": "Promover artefatos por identificadores imutáveis e verificar hashes ou assinaturas contra referência confiável. Separar publicação e aprovação, proteger registros e preservar origem da construção.",
+          "prerequisites": "Usar dois modelos ou arquivos inofensivos distinguíveis num registro de laboratório. Definir aprovação, digest esperado e permissões do publicador.",
+          "required_evidence": "Registrar hashes aprovado e implantado, eventos do registro, identidade da mudança e versão carregada. Mostrar que a promoção não detectou a divergência.",
+          "false_positives": "Ausência de assinatura não implica substituição possível se há integridade autenticada equivalente. Etiquetas mutáveis restritas a desenvolvimento podem ser uma escolha documentada.",
+          "retest": "Tentar a mesma substituição controlada e confirmar bloqueio antes da implantação. Verificar que um artefato novo aprovado pode ser promovido normalmente.",
+          "assessment_notes": "Distinguir falha técnica de documentação ausente. Não atribuir backdoor ou CVE ao modelo sem evidência específica."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-024",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "ml",
+        "model-loading",
+        "deserialization",
+        "pickle",
+        "supply-chain"
+      ],
+      "cwe": "CWE-502",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "Python pickle security guidance",
+          "url": "https://docs.python.org/3/library/pickle.html",
+          "version": "Python 3 documentation; page reports 3.15.0; accessed 2026-10-17",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "CWE-502 official weakness definition",
+          "url": "https://cwe.mitre.org/data/definitions/502.html",
+          "version": "CWE 4.20; page version verified 2026-10-17",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM04:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Deserialización ejecutable de modelos no confiables",
+          "summary": "Evaluar si la carga de pesos, cachés o artefactos de aprendizaje puede ejecutar instrucciones procedentes de un archivo no confiable.",
+          "description_md": "En {{objetivo}}, algunos formatos reconstruyen objetos mediante mecanismos capaces de ejecutar código. La falla requiere una ruta alcanzable que acepte origen no confiable y un cargador inseguro con permisos relevantes.",
+          "impact_md": "El código puede ejecutarse con la identidad del proceso de carga, antes de cualquier inferencia. Determinar acceso a recursos sin utilizar cargas destructivas ni secretos reales.",
+          "remediation_md": "Preferir formatos de datos sin ejecución, restringir el origen y verificar integridad antes de cargar. Aislar conversiones y cargadores, y evitar opciones que habiliten código remoto sin revisión.",
+          "prerequisites": "Disponer de una instancia desechable, versión exacta del cargador y un artefacto de prueba benigno aprobado. La verificación estática puede bastar cuando demuestra la ruta completa.",
+          "required_evidence": "Registrar formato, función de carga, opciones, procedencia y privilegios. Si se prueba ejecución, limitarla a un marcador inocuo y conservar el registro del proceso.",
+          "false_positives": "La extensión del archivo no demuestra el formato real. Un cargador configurado de forma segura o una entrada inaccesible a actores no confiables puede excluir este escenario.",
+          "retest": "Repetir con el archivo de prueba y un modelo válido; confirmar rechazo o carga sin efectos laterales y funcionamiento de inferencia esperado.",
+          "assessment_notes": "No distribuir artefactos maliciosos con el informe. No generalizar el comportamiento de una versión a todos los frameworks."
+        },
+        "en": {
+          "title": "Executable deserialization of untrusted model artifacts",
+          "summary": "Assess whether loading weights, caches or learning artifacts can execute instructions from an untrusted file.",
+          "description_md": "In {{objetivo}}, some formats reconstruct objects through mechanisms capable of running code. Failure requires a reachable path accepting untrusted input and an unsafe loader with relevant permissions.",
+          "impact_md": "Code may run under the loading process identity before inference begins. Determine resource access without destructive samples or real secrets.",
+          "remediation_md": "Prefer nonexecuting data formats, restrict sources and verify integrity before loading. Isolate converters and loaders, and avoid enabling remote code without review.",
+          "prerequisites": "Provide a disposable instance, exact loader version and an approved harmless test artifact. Static verification may suffice when it proves the complete path.",
+          "required_evidence": "Record format, loading function, options, provenance and privileges. If execution is tested, limit it to a harmless marker and retain the process record.",
+          "false_positives": "A file extension does not prove its actual format. A safely configured loader or input unreachable by untrusted actors may exclude this scenario.",
+          "retest": "Repeat with the test artifact and a valid model; confirm rejection or loading without side effects and expected inference behavior.",
+          "assessment_notes": "Do not distribute malicious artifacts with the report. Do not generalize one version’s behavior to every framework."
+        },
+        "pt": {
+          "title": "Desserialização executável de artefatos de modelo não confiáveis",
+          "summary": "Avaliar se o carregamento de pesos, caches ou artefatos de aprendizado pode executar instruções de um arquivo não confiável.",
+          "description_md": "Em {{objetivo}}, alguns formatos reconstroem objetos com mecanismos capazes de executar código. A falha exige um caminho acessível que aceite entrada não confiável e um carregador inseguro com permissões relevantes.",
+          "impact_md": "Código pode executar com a identidade do processo de carregamento antes da inferência. Determinar acesso a recursos sem amostras destrutivas ou segredos reais.",
+          "remediation_md": "Preferir formatos de dados sem execução, restringir origens e verificar integridade antes de carregar. Isolar conversores e carregadores, evitando habilitar código remoto sem revisão.",
+          "prerequisites": "Disponibilizar instância descartável, versão exata do carregador e artefato de teste benigno aprovado. Verificação estática pode bastar se demonstrar o caminho completo.",
+          "required_evidence": "Registrar formato, função de carga, opções, origem e privilégios. Se testar execução, limitá-la a marcador inofensivo e preservar o registro do processo.",
+          "false_positives": "A extensão não comprova o formato real. Carregador configurado com segurança ou entrada inacessível a atores não confiáveis podem excluir o cenário.",
+          "retest": "Repetir com o artefato de teste e um modelo válido; confirmar rejeição ou carregamento sem efeitos colaterais e inferência esperada.",
+          "assessment_notes": "Não distribuir artefatos maliciosos com o relatório. Não generalizar o comportamento de uma versão para todos os frameworks."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-025",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "agent",
+        "connector",
+        "plugins",
+        "tool-updates",
+        "supply-chain"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "Model Context Protocol Security Best Practices",
+          "url": "https://modelcontextprotocol.io/docs/2025-11-25/tutorials/security/security_best_practices",
+          "version": "2025-11-25; versioned guidance",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI04"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Cambio de conector o herramienta sin renovar la confianza",
+          "summary": "Evaluar si una actualización puede ampliar capacidades o cambiar el destino de una herramienta conservando una autorización anterior.",
+          "description_md": "En {{objetivo}}, el usuario puede aprobar una versión y ejecutar otra posteriormente. La debilidad aparece cuando código, proveedor, endpoint o permisos cambian de forma material sin verificación de procedencia ni revisión del nuevo alcance.",
+          "impact_md": "Puede incorporarse un componente con acceso no previsto a datos o al entorno local. Identificar el cambio efectivo y qué capacidad adicional quedó disponible.",
+          "remediation_md": "Fijar identidades y versiones, verificar actualizaciones y comparar capacidades solicitadas. Exigir nueva revisión para ampliaciones y conservar una ruta de revocación y reversión.",
+          "prerequisites": "Preparar dos versiones inocuas de un conector propio: una con alcance mínimo y otra con una capacidad adicional de laboratorio. Registrar la aprobación inicial.",
+          "required_evidence": "Guardar manifiestos o esquemas de ambas versiones, hashes, permisos, eventos de actualización y primer uso de la capacidad nueva. Separar cambio de nombre de cambio funcional.",
+          "false_positives": "Una actualización automática no constituye por sí misma una falla si está autenticada y permanece dentro del alcance aprobado. Una capacidad anunciada pero no utilizable tampoco basta.",
+          "retest": "Repetir actualización y restauración; confirmar verificación de origen, revisión de ampliaciones y revocación efectiva de la versión anterior.",
+          "assessment_notes": "No confundir este caso con instrucciones maliciosas en metadatos: aquí cambia el componente o su autoridad de confianza, no sólo el texto descriptivo."
+        },
+        "en": {
+          "title": "Connector or tool changes without renewed trust",
+          "summary": "Assess whether an update can expand capabilities or change a tool’s destination while retaining an earlier authorization.",
+          "description_md": "In {{objetivo}}, a user may approve one version and execute another later. The weakness occurs when code, provider, endpoint or permissions change materially without provenance verification or review of the new scope.",
+          "impact_md": "A component may gain unexpected access to data or the local environment. Identify the effective change and additional capability made available.",
+          "remediation_md": "Pin identities and versions, verify updates and compare requested capabilities. Require renewed review for expansions and retain revocation and rollback paths.",
+          "prerequisites": "Prepare two harmless versions of an owned connector: one minimally scoped and one with an additional laboratory capability. Record the original approval.",
+          "required_evidence": "Preserve both manifests or schemas, hashes, permissions, update events and first use of the new capability. Separate naming changes from functional changes.",
+          "false_positives": "Automatic updates alone are not a flaw if authenticated and within approved scope. An advertised but unusable capability is also insufficient.",
+          "retest": "Repeat update and rollback; confirm provenance verification, review of scope expansions and effective revocation of the old version.",
+          "assessment_notes": "Distinguish this case from malicious metadata instructions: the component or its trusted authority changes here, rather than only descriptive text."
+        },
+        "pt": {
+          "title": "Mudança de conector ou ferramenta sem renovar a confiança",
+          "summary": "Avaliar se uma atualização amplia capacidades ou muda o destino de uma ferramenta mantendo uma autorização anterior.",
+          "description_md": "Em {{objetivo}}, o usuário pode aprovar uma versão e executar outra depois. A falha ocorre quando código, fornecedor, endpoint ou permissões mudam materialmente sem verificar origem nem revisar o novo escopo.",
+          "impact_md": "Um componente pode obter acesso inesperado a dados ou ao ambiente local. Identificar a mudança efetiva e a capacidade adicional disponibilizada.",
+          "remediation_md": "Fixar identidades e versões, verificar atualizações e comparar capacidades solicitadas. Exigir nova revisão para ampliações e manter caminhos de revogação e reversão.",
+          "prerequisites": "Preparar duas versões inofensivas de um conector próprio: uma com escopo mínimo e outra com capacidade adicional de laboratório. Registrar a aprovação original.",
+          "required_evidence": "Preservar manifestos ou esquemas das versões, hashes, permissões, eventos de atualização e primeiro uso da nova capacidade. Separar mudança de nome de mudança funcional.",
+          "false_positives": "Atualização automática não é falha por si só se autenticada e dentro do escopo aprovado. Uma capacidade anunciada mas inutilizável também não basta.",
+          "retest": "Repetir atualização e reversão; confirmar verificação de origem, revisão das ampliações e revogação efetiva da versão antiga.",
+          "assessment_notes": "Distinguir este caso de instruções maliciosas nos metadados: aqui muda o componente ou sua autoridade confiável, não apenas o texto descritivo."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-026",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "ml",
+        "fine-tuning",
+        "training-data",
+        "poisoning",
+        "integrity"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "NIST Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations",
+          "url": "https://csrc.nist.gov/pubs/ai/100/2/e2025/final",
+          "version": "NIST AI 100-2 E2025; final 2025-03-24",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM05:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Datos no aprobados incorporados al ajuste del modelo",
+          "summary": "Revisar si aportes de menor confianza pueden modificar el conjunto de ajuste y cambiar una conducta de seguridad definida.",
+          "description_md": "En {{objetivo}}, comentarios, ejemplos o etiquetas pueden terminar en un entrenamiento posterior. La ficha requiere una ruta de incorporación sin la revisión exigida y una modificación atribuible a esos datos, o evidencia directa de la falla de integridad del conjunto.",
+          "impact_md": "Puede degradarse una clasificación o decisión del modelo en condiciones específicas. Un efecto observado en una muestra no permite afirmar control general del modelo.",
+          "remediation_md": "Controlar permisos y procedencia de conjuntos de ajuste, separar aportes de datos aprobados y conservar versiones. Evaluar cambios contra un conjunto independiente y mantener reversión al modelo anterior.",
+          "prerequisites": "Utilizar un modelo pequeño y datos sintéticos en un entorno de prueba autorizado. Definir métrica, conducta esperada, presupuesto y conjunto de evaluación antes del experimento.",
+          "required_evidence": "Preservar versiones de datos y modelo, aportes modificados, parámetros y resultados comparables. Registrar repeticiones y controles para separar ruido de entrenamiento del efecto introducido.",
+          "false_positives": "Un error aislado o cambios debidos a parámetros distintos no demuestran contaminación. Una contribución deliberadamente aprobada puede cumplir el proceso previsto.",
+          "retest": "Repetir el ingreso no aprobado y verificar exclusión; reconstruir y comparar con la referencia usando el mismo conjunto independiente.",
+          "assessment_notes": "No contaminar sistemas productivos. Separar evidencia del control de ingestión de conclusiones sobre comportamiento estadístico del modelo."
+        },
+        "en": {
+          "title": "Unapproved data entering model fine-tuning",
+          "summary": "Review whether lower-trust contributions can modify fine-tuning data and change a defined security behavior.",
+          "description_md": "In {{objetivo}}, feedback, examples or labels may enter later training. This pattern requires an ingestion path lacking required review and an attributable behavioral change, or direct evidence of dataset integrity failure.",
+          "impact_md": "A model classification or decision may degrade under specific conditions. An effect on one sample does not establish general control over the model.",
+          "remediation_md": "Control fine-tuning dataset permissions and provenance, separate submitted from approved data and preserve versions. Evaluate changes against an independent set and support rollback to the earlier model.",
+          "prerequisites": "Use a small model and synthetic data in an authorized test environment. Define metrics, expected behavior, budget and evaluation set before the experiment.",
+          "required_evidence": "Preserve dataset and model versions, modified contributions, parameters and comparable outcomes. Record repeated trials and controls to separate training noise from the introduced effect.",
+          "false_positives": "An isolated error or changes caused by different parameters do not prove poisoning. A deliberately approved contribution may comply with the intended process.",
+          "retest": "Repeat unapproved ingestion and verify exclusion; rebuild and compare against baseline using the same independent evaluation set.",
+          "assessment_notes": "Do not contaminate production systems. Separate ingestion-control evidence from conclusions about statistical model behavior."
+        },
+        "pt": {
+          "title": "Dados não aprovados incorporados ao ajuste do modelo",
+          "summary": "Revisar se contribuições de menor confiança modificam os dados de ajuste e alteram uma conduta de segurança definida.",
+          "description_md": "Em {{objetivo}}, feedbacks, exemplos ou rótulos podem entrar em treinamento posterior. Esta ficha exige um caminho de incorporação sem revisão obrigatória e mudança atribuível aos dados, ou evidência direta de falha de integridade do conjunto.",
+          "impact_md": "Uma classificação ou decisão pode se degradar em condições específicas. Um efeito numa amostra não comprova controle geral sobre o modelo.",
+          "remediation_md": "Controlar permissões e origem dos conjuntos de ajuste, separar contribuições de dados aprovados e preservar versões. Avaliar mudanças com conjunto independente e permitir retorno ao modelo anterior.",
+          "prerequisites": "Usar modelo pequeno e dados sintéticos em ambiente autorizado. Definir métrica, comportamento esperado, orçamento e conjunto de avaliação antes do experimento.",
+          "required_evidence": "Preservar versões de dados e modelo, contribuições alteradas, parâmetros e resultados comparáveis. Registrar repetições e controles para separar ruído de treinamento do efeito introduzido.",
+          "false_positives": "Erro isolado ou alterações causadas por parâmetros diferentes não comprovam contaminação. Uma contribuição deliberadamente aprovada pode cumprir o processo previsto.",
+          "retest": "Repetir a ingestão não aprovada e verificar exclusão; reconstruir e comparar à referência com o mesmo conjunto independente.",
+          "assessment_notes": "Não contaminar sistemas produtivos. Separar evidência do controle de ingestão de conclusões sobre comportamento estatístico do modelo."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-027",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "privacy",
+        "training-data",
+        "memorization",
+        "extraction"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "NIST Adversarial Machine Learning: A Taxonomy and Terminology of Attacks and Mitigations",
+          "url": "https://csrc.nist.gov/pubs/ai/100/2/e2025/final",
+          "version": "NIST AI 100-2 E2025; final 2025-03-24",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM02:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Reproducción de datos privados incorporados al entrenamiento",
+          "summary": "Evaluar si un modelo puede devolver contenido privado del conjunto de entrenamiento a un solicitante que no está autorizado a conocerlo.",
+          "description_md": "Esta ficha exige separar memorización de recuperación externa, historial y coincidencia casual. En {{objetivo}}, usar un marcador sintético de procedencia conocida permite evaluar esa hipótesis sin extraer información real de personas.",
+          "impact_md": "Puede comprometerse la confidencialidad de datos de entrenamiento. La reproducción de un marcador prueba ese caso; no demuestra reconstrucción de todo el conjunto ni pertenencia de cualquier registro.",
+          "remediation_md": "Minimizar datos sensibles antes del entrenamiento, revisar consentimiento y restricciones de uso, evaluar exposición y considerar técnicas de privacidad adecuadas. Documentar sus límites y restringir acceso al modelo cuando proceda.",
+          "prerequisites": "Disponer de un modelo y conjunto de prueba propios con marcadores únicos, una referencia sin esos marcadores y recuperación externa deshabilitada.",
+          "required_evidence": "Registrar procedencia del marcador, versiones, configuración, consultas y coincidencias. Comparar con controles negativos y medir frecuencia; no incluir el secreto completo en la propia pregunta.",
+          "false_positives": "Datos públicos, contenido aportado en el prompt o encontrado mediante RAG no prueban memorización. Similitud textual débil o una sola coincidencia común resulta insuficiente.",
+          "retest": "Reentrenar o aplicar la medida elegida y repetir el protocolo con referencia y controles, documentando resultados residuales.",
+          "assessment_notes": "No describir anonimización, eliminación o privacidad diferencial como garantías absolutas. La evaluación estadística debe informar tamaño de muestra y condiciones."
+        },
+        "en": {
+          "title": "Reproduction of private data included in training",
+          "summary": "Assess whether a model can return private training content to a requester not authorized to know it.",
+          "description_md": "This pattern requires separating memorization from external retrieval, history and chance matches. In {{objetivo}}, synthetic markers with known provenance test that hypothesis without extracting real personal information.",
+          "impact_md": "Training-data confidentiality may be compromised. Reproducing one marker establishes that case, not reconstruction of the entire dataset or membership of any arbitrary record.",
+          "remediation_md": "Minimize sensitive training data, review consent and use restrictions, evaluate exposure and consider appropriate privacy techniques. Document their limits and restrict model access where needed.",
+          "prerequisites": "Provide an owned model and test dataset with unique markers, a baseline without them and external retrieval disabled.",
+          "required_evidence": "Record marker provenance, versions, configuration, queries and matches. Compare negative controls and measure frequency; do not include the complete secret in the question itself.",
+          "false_positives": "Public information, prompt-supplied content or RAG results do not prove memorization. Weak textual similarity or one commonplace match is insufficient.",
+          "retest": "Retrain or apply the chosen measure and repeat the protocol with baseline and controls, documenting residual outcomes.",
+          "assessment_notes": "Do not present anonymization, deletion or differential privacy as absolute guarantees. Statistical evaluation must report sample size and conditions."
+        },
+        "pt": {
+          "title": "Reprodução de dados privados incorporados ao treinamento",
+          "summary": "Avaliar se um modelo devolve conteúdo privado do treinamento a um solicitante sem autorização para conhecê-lo.",
+          "description_md": "Esta ficha exige separar memorização de recuperação externa, histórico e coincidência casual. Em {{objetivo}}, marcadores sintéticos de origem conhecida testam essa hipótese sem extrair informações pessoais reais.",
+          "impact_md": "A confidencialidade dos dados de treinamento pode ser comprometida. Reproduzir um marcador comprova esse caso, não a reconstrução do conjunto inteiro nem a presença de qualquer registro arbitrário.",
+          "remediation_md": "Minimizar dados sensíveis antes do treinamento, revisar consentimento e restrições de uso, avaliar exposição e considerar técnicas de privacidade adequadas. Documentar limites e restringir acesso ao modelo quando necessário.",
+          "prerequisites": "Disponibilizar modelo e conjunto próprios com marcadores únicos, uma referência sem eles e recuperação externa desabilitada.",
+          "required_evidence": "Registrar origem do marcador, versões, configuração, consultas e coincidências. Comparar controles negativos e medir frequência; não incluir o segredo completo na própria pergunta.",
+          "false_positives": "Informações públicas, conteúdo fornecido no prompt ou encontrado por RAG não comprovam memorização. Semelhança textual fraca ou uma coincidência comum isolada é insuficiente.",
+          "retest": "Treinar novamente ou aplicar a medida escolhida e repetir o protocolo com referência e controles, documentando resultados residuais.",
+          "assessment_notes": "Não apresentar anonimização, exclusão ou privacidade diferencial como garantias absolutas. A avaliação estatística deve informar tamanho da amostra e condições."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-028",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "llm",
+        "cost",
+        "tokens",
+        "rate-limits",
+        "resource-budget"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM06:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Inferencia sin límites efectivos de consumo por usuario",
+          "summary": "Comprobar si solicitudes válidas pueden superar el presupuesto de cómputo, tokens o gasto definido para una identidad o proyecto.",
+          "description_md": "En {{objetivo}}, un límite por petición puede no controlar concurrencia, reintentos o consumo acumulado. El hallazgo requiere una desviación del presupuesto acordado observable con una carga pequeña y acotada.",
+          "impact_md": "Puede agotarse una cuota compartida o producirse gasto no autorizado. No estimar denegación de servicio general a partir de una sola petición lenta.",
+          "remediation_md": "Aplicar cuotas acumuladas por identidad y proyecto, límites de entrada y salida, concurrencia y tiempo. Reservar presupuesto antes de iniciar trabajo y contabilizar cancelaciones y reintentos.",
+          "prerequisites": "Configurar una cuota de laboratorio deliberadamente pequeña, un máximo de solicitudes autorizado y un criterio de parada. Preferir un proveedor simulado con contabilidad observable.",
+          "required_evidence": "Registrar cuota esperada, identidad, solicitudes, tokens contabilizados, facturación simulada y decisión al alcanzar el límite. Distinguir consumo reservado de consumo final.",
+          "false_positives": "Una respuesta larga puede estar dentro del plan contratado. Consumo permitido por una tolerancia documentada no demuestra un desvío; una estimación visual no sustituye medición.",
+          "retest": "Repetir secuencialmente y con concurrencia mínima controlada; verificar corte efectivo y que otra identidad conserve su cuota independiente.",
+          "assessment_notes": "No efectuar pruebas volumétricas contra proveedores externos. Documentar la tolerancia medida y evitar multiplicar costos hipotéticos sin evidencia."
+        },
+        "en": {
+          "title": "Inference without effective per-user consumption limits",
+          "summary": "Check whether valid requests can exceed the compute, token or spending budget assigned to an identity or project.",
+          "description_md": "In {{objetivo}}, a per-request limit may miss concurrency, retries or cumulative consumption. A finding requires a budget deviation observable with a small bounded workload.",
+          "impact_md": "A shared quota may be exhausted or unauthorized spending incurred. Do not infer service-wide denial from one slow request.",
+          "remediation_md": "Apply cumulative quotas by identity and project plus input, output, concurrency and time limits. Reserve budget before starting work and account for cancellations and retries.",
+          "prerequisites": "Configure a deliberately small laboratory quota, an authorized request ceiling and a stop criterion. Prefer a simulated provider with observable accounting.",
+          "required_evidence": "Record expected quota, identity, requests, accounted tokens, simulated charges and the decision at the threshold. Distinguish reserved from final consumption.",
+          "false_positives": "A long answer may fit the purchased plan. Usage within a documented tolerance is not a deviation; visual estimation cannot replace measurement.",
+          "retest": "Repeat sequentially and with minimal controlled concurrency; verify effective cutoff and independent quota for another identity.",
+          "assessment_notes": "Do not run volumetric tests against external providers. Document measured tolerance and avoid multiplying hypothetical costs without evidence."
+        },
+        "pt": {
+          "title": "Inferência sem limites efetivos de consumo por usuário",
+          "summary": "Verificar se solicitações válidas excedem o orçamento de computação, tokens ou gastos definido para uma identidade ou projeto.",
+          "description_md": "Em {{objetivo}}, um limite por solicitação pode não controlar concorrência, novas tentativas ou consumo acumulado. O achado exige um desvio do orçamento observável com carga pequena e limitada.",
+          "impact_md": "Uma cota compartilhada pode ser esgotada ou gerar gasto não autorizado. Não inferir indisponibilidade geral a partir de uma única solicitação lenta.",
+          "remediation_md": "Aplicar cotas acumuladas por identidade e projeto, além de limites de entrada, saída, concorrência e tempo. Reservar orçamento antes de iniciar trabalho e contabilizar cancelamentos e novas tentativas.",
+          "prerequisites": "Configurar uma cota de laboratório deliberadamente pequena, um máximo autorizado de solicitações e um critério de parada. Preferir fornecedor simulado com contabilidade observável.",
+          "required_evidence": "Registrar cota esperada, identidade, solicitações, tokens contabilizados, cobrança simulada e decisão ao atingir o limite. Distinguir consumo reservado de consumo final.",
+          "false_positives": "Uma resposta longa pode estar dentro do plano contratado. Uso dentro de tolerância documentada não é desvio; estimativa visual não substitui medição.",
+          "retest": "Repetir sequencialmente e com concorrência mínima controlada; verificar interrupção efetiva e manutenção da cota independente de outra identidade.",
+          "assessment_notes": "Não executar testes volumétricos contra fornecedores externos. Documentar tolerância medida e evitar multiplicar custos hipotéticos sem evidência."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-029",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "agent",
+        "recursion",
+        "delegation",
+        "loops",
+        "cancellation",
+        "resource-budget"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI08"
+        },
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM06:2026"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Delegación recursiva sin límite global ni cancelación efectiva",
+          "summary": "Evaluar si un agente puede crear subtareas o reintentos que exceden el presupuesto de la tarea principal o continúan después de cancelarla.",
+          "description_md": "En {{objetivo}}, límites locales por agente pueden reiniciarse al delegar. La falla aparece si la suma de llamadas, profundidad o tiempo supera el contrato global, o si los descendientes pierden la señal de cancelación.",
+          "impact_md": "Puede mantenerse actividad costosa o producirse efectos posteriores a la detención solicitada. Distinguir trabajo en cola, ejecución activa y eventos realmente persistidos.",
+          "remediation_md": "Compartir presupuesto y fecha límite en toda la jerarquía, limitar profundidad y detectar ciclos. Propagar cancelación, impedir nuevas delegaciones y hacer idempotentes los reintentos con efectos.",
+          "prerequisites": "Usar herramientas simuladas, límite bajo y una tarea sintética que genere una delegación controlada. Definir cuánto trabajo puede terminar después de cancelar.",
+          "required_evidence": "Guardar árbol de tareas, llamadas y tiempos, presupuesto heredado y evento de cancelación. Contar actividad posterior y demostrar si excede el margen permitido.",
+          "false_positives": "Una llamada ya comprometida puede terminar legítimamente tras cancelar. Un árbol grande pero acotado dentro del presupuesto no demuestra consumo sin límites.",
+          "retest": "Repetir delegación y cancelación; verificar que descendientes comparten el presupuesto y dejan de crear trabajo tras detener la raíz.",
+          "assessment_notes": "No generar bucles infinitos para probar el control. Utilizar un máximo externo de seguridad y reportar el alcance medido, no una proyección ilimitada."
+        },
+        "en": {
+          "title": "Recursive delegation without a global limit or effective cancellation",
+          "summary": "Assess whether an agent can create subtasks or retries exceeding the parent task’s budget or continuing after cancellation.",
+          "description_md": "In {{objetivo}}, local agent limits may reset on delegation. Failure occurs when total calls, depth or time exceeds the global contract, or descendants lose the cancellation signal.",
+          "impact_md": "Costly activity or effects may continue after a requested stop. Distinguish queued work, active execution and events actually persisted.",
+          "remediation_md": "Share budget and deadline across the hierarchy, limit depth and detect cycles. Propagate cancellation, prevent new delegation and make consequential retries idempotent.",
+          "prerequisites": "Use mock tools, a low limit and a synthetic task producing controlled delegation. Define how much work may finish after cancellation.",
+          "required_evidence": "Preserve the task tree, calls and timestamps, inherited budget and cancellation event. Count subsequent activity and show whether it exceeds allowed tolerance.",
+          "false_positives": "An already committed call may legitimately finish after cancellation. A large but bounded tree within budget does not demonstrate unbounded consumption.",
+          "retest": "Repeat delegation and cancellation; verify descendants share the budget and stop creating work after the root is stopped.",
+          "assessment_notes": "Do not create infinite loops to test this control. Use an external safety ceiling and report measured reach rather than unlimited projections."
+        },
+        "pt": {
+          "title": "Delegação recursiva sem limite global ou cancelamento efetivo",
+          "summary": "Avaliar se um agente cria subtarefas ou novas tentativas que excedem o orçamento da tarefa principal ou continuam após cancelamento.",
+          "description_md": "Em {{objetivo}}, limites locais podem reiniciar a cada delegação. A falha ocorre se chamadas, profundidade ou tempo totais superam o contrato global, ou descendentes perdem o sinal de cancelamento.",
+          "impact_md": "Atividade custosa ou efeitos podem continuar após a parada solicitada. Distinguir trabalho em fila, execução ativa e eventos realmente persistidos.",
+          "remediation_md": "Compartilhar orçamento e prazo em toda a hierarquia, limitar profundidade e detectar ciclos. Propagar cancelamento, impedir novas delegações e tornar idempotentes as tentativas com efeitos.",
+          "prerequisites": "Usar ferramentas simuladas, limite baixo e tarefa sintética com delegação controlada. Definir quanto trabalho pode terminar após cancelamento.",
+          "required_evidence": "Preservar árvore de tarefas, chamadas e horários, orçamento herdado e evento de cancelamento. Contar atividade posterior e mostrar se excede a tolerância permitida.",
+          "false_positives": "Uma chamada já comprometida pode terminar legitimamente após cancelamento. Uma árvore grande, porém limitada ao orçamento, não demonstra consumo ilimitado.",
+          "retest": "Repetir delegação e cancelamento; verificar orçamento compartilhado e que descendentes param de criar trabalho após a interrupção da raiz.",
+          "assessment_notes": "Não criar loops infinitos para testar o controle. Usar um teto externo de segurança e relatar alcance medido, sem projeções ilimitadas."
+        }
+      }
+    },
+    {
+      "id": "RG-AI-030",
+      "category": "ai",
+      "tags": [
+        "ai",
+        "llm",
+        "misinformation",
+        "citations",
+        "grounding",
+        "evidence",
+        "decisions"
+      ],
+      "cwe": "",
+      "reviewed_on": "2026-10-17",
+      "references": [
+        {
+          "title": "OWASP GenAI LLM Top 10 2026",
+          "url": "https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/",
+          "version": "2026; resource dated 2026-08-03",
+          "accessed_on": "2026-10-17"
+        },
+        {
+          "title": "OWASP Top 10 for Agentic Applications",
+          "url": "https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/",
+          "version": "2026; published 2025-12-09",
+          "accessed_on": "2026-10-17"
+        }
+      ],
+      "mappings": [
+        {
+          "framework": "OWASP LLM Top 10",
+          "version": "2026",
+          "id": "LLM07:2026"
+        },
+        {
+          "framework": "OWASP Agentic Top 10",
+          "version": "2026",
+          "id": "ASI09"
+        }
+      ],
+      "locales": {
+        "es": {
+          "title": "Citas no verificadas aceptadas como evidencia de una decisión",
+          "summary": "Evaluar si el sistema permite que una referencia inexistente o que no respalda la afirmación habilite una acción sujeta a evidencia.",
+          "description_md": "En {{objetivo}}, el modelo puede generar identificadores o citas con apariencia válida. Esta ficha exige una garantía de verificación definida y un consumidor que acepte esa referencia sin comprobar existencia, acceso y correspondencia con la afirmación.",
+          "impact_md": "Puede aprobarse una decisión con sustento inexistente o incorrecto. Documentar el efecto sobre el flujo, no sólo la presencia de una respuesta equivocada.",
+          "remediation_md": "Resolver referencias contra fuentes verificables, conservar fragmentos y versiones y comprobar que sustentan la afirmación usada. Separar sugerencias del modelo de evidencias aceptadas y detener acciones cuando falte respaldo.",
+          "prerequisites": "Preparar una base sintética con documentos conocidos y una decisión reversible que requiera una referencia. Incluir una cita válida, otra inexistente y otra que contradiga la afirmación.",
+          "required_evidence": "Guardar respuesta, referencia, resolución de la fuente, afirmación relevante y decisión del consumidor. Comparar con una cita válida y registrar cuándo se realizó la comprobación.",
+          "false_positives": "Una respuesta exploratoria rotulada como no verificada no demuestra fallo de seguridad. Una cita correcta con redacción diferente puede respaldar legítimamente la afirmación.",
+          "retest": "Repetir los tres controles; confirmar que sólo evidencia válida habilita la acción y que los errores quedan visibles para revisión.",
+          "assessment_notes": "No llamar vulnerabilidad a toda alucinación. Definir la obligación de verificación y la consecuencia concreta de su incumplimiento."
+        },
+        "en": {
+          "title": "Unverified citations accepted as decision evidence",
+          "summary": "Assess whether a nonexistent or unsupported reference can enable an action that requires evidence.",
+          "description_md": "In {{objetivo}}, the model may generate plausible identifiers or citations. This pattern requires a defined verification guarantee and a consumer accepting the reference without checking existence, access and support for the claim.",
+          "impact_md": "A decision may be approved on nonexistent or incorrect grounds. Document the workflow effect rather than only an incorrect answer.",
+          "remediation_md": "Resolve references against verifiable sources, preserve excerpts and versions and check support for the relevant claim. Separate model suggestions from accepted evidence and stop actions lacking support.",
+          "prerequisites": "Prepare a synthetic corpus with known documents and a reversible decision requiring a reference. Include a valid citation, a nonexistent one and one contradicting the claim.",
+          "required_evidence": "Preserve response, reference, source resolution, relevant claim and consumer decision. Compare against a valid citation and record when checking occurred.",
+          "false_positives": "An exploratory answer labelled unverified does not demonstrate a security failure. A correct citation with different wording may legitimately support the claim.",
+          "retest": "Repeat all three controls; confirm only valid evidence enables the action and failures remain visible for review.",
+          "assessment_notes": "Do not call every hallucination a vulnerability. Define the verification obligation and concrete consequence of failing it."
+        },
+        "pt": {
+          "title": "Citações não verificadas aceitas como evidência de decisão",
+          "summary": "Avaliar se uma referência inexistente ou sem respaldo permite uma ação que exige evidência.",
+          "description_md": "Em {{objetivo}}, o modelo pode gerar identificadores ou citações com aparência válida. Esta ficha exige uma garantia definida de verificação e um consumidor que aceite a referência sem conferir existência, acesso e sustentação da afirmação.",
+          "impact_md": "Uma decisão pode ser aprovada com base inexistente ou incorreta. Documentar o efeito no fluxo, não apenas uma resposta errada.",
+          "remediation_md": "Resolver referências em fontes verificáveis, preservar trechos e versões e conferir sustentação da afirmação relevante. Separar sugestões do modelo de evidências aceitas e interromper ações sem respaldo.",
+          "prerequisites": "Preparar corpus sintético com documentos conhecidos e decisão reversível que exija referência. Incluir citação válida, inexistente e outra que contradiga a afirmação.",
+          "required_evidence": "Preservar resposta, referência, resolução da fonte, afirmação relevante e decisão do consumidor. Comparar com citação válida e registrar quando ocorreu a verificação.",
+          "false_positives": "Uma resposta exploratória identificada como não verificada não demonstra falha de segurança. Uma citação correta com redação diferente pode sustentar legitimamente a afirmação.",
+          "retest": "Repetir os três controles; confirmar que somente evidência válida permite a ação e que falhas ficam visíveis para revisão.",
+          "assessment_notes": "Não chamar toda alucinação de vulnerabilidade. Definir a obrigação de verificação e a consequência concreta de seu descumprimento."
+        }
+      }
+    }
+  ]
+}

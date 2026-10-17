@@ -1,6 +1,6 @@
 {
   "name": "report-gen-ui-tests",
-  "version": "0.43.0",
+  "version": "0.44.0",
   "private": true,
   "scripts": {
     "test": "node --test tests/test_save_manager.cjs tests/test_drafts_0200.cjs",
@@ -41,7 +41,9 @@
     "test:sidebar": "node tests/test_sidebar_navigation_0390.cjs",
     "test:context-index": "node tests/test_context_index_0400.cjs",
     "test:onboarding": "node --test tests/test_onboarding_ui_0430.cjs",
-    "test:onboarding-browser": "node tests/test_onboarding_browser_0430.cjs --output out/onboarding-0430"
+    "test:onboarding-browser": "node tests/test_onboarding_browser_0430.cjs --output out/onboarding-0430",
+    "test:knowledge": "node tests/test_knowledge_ui_0440.cjs",
+    "test:knowledge-browser": "node tests/test_knowledge_browser_0440.cjs --output out/knowledge-0440"
   },
   "devDependencies": {
     "jsdom": "26.1.0",

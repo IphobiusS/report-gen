@@ -965,8 +965,10 @@ function contactsEditor() {
 
 function scopeListEditor() {
   const m = S.data.meta; m.scope = m.scope || [];
-  return listCard(t("scope_targets"), m.scope, () => ({ target: "", description: "" }),
+  const card=listCard(t("scope_targets"), m.scope, () => ({ target: "", description: "" }),
     row => [inlineField(row, "target", t("target_ph")), inlineField(row, "description", t("description"))]);
+  if(typeof FieldHelpUI!=="undefined")FieldHelpUI.append(card,'scope');
+  return card;
 }
 
 function sectionEditor(key) {
@@ -1042,9 +1044,10 @@ function field(label, obj, key, opts = {}) {
   inp.dataset.field = key;
   if (opts.ph) inp.setAttribute("placeholder", opts.ph);
   const control=h("label", {}, label, inp);
+  const help=typeof FieldHelpUI!=="undefined"?FieldHelpUI.create(key):null;
   if(opts.area&&key.endsWith('_md'))return h('div',{class:'markdown-field'},control,
-    h('button',{type:'button',class:'btn sm','data-markdown-link':key,onclick:()=>openMarkdownLink(inp,()=>inp.dispatchEvent(new Event('input',{bubbles:true})))},uiText('Enlace', 'Link', "Link")));
-  return control;
+    h('button',{type:'button',class:'btn sm','data-markdown-link':key,onclick:()=>openMarkdownLink(inp,()=>inp.dispatchEvent(new Event('input',{bubbles:true})))},uiText('Enlace', 'Link', "Link")),help);
+  return help?h('div',{},control,help):control;
 }
 
 function openMarkdownLink(ta, apply, onInserted = () => {}) {
@@ -1162,7 +1165,9 @@ function mdEditor(label, obj, key, opts = {}) {
     } catch (_) { if (current()) prev.innerHTML = "<em>" + w("error al renderizar", "rendering failed", "falha na renderização") + "</em>"; }
   });
   const box = h("div", { class: "mded" }, bar, ta, prev);
-  return h("div", { class: "mdedlabel" }, h("label", { for: ta.id }, label), box);
+  const wrapper=h("div", { class: "mdedlabel" }, h("label", { for: ta.id }, label), box);
+  if(typeof FieldHelpUI!=="undefined")FieldHelpUI.append(wrapper,key);
+  return wrapper;
 }
 
 function reportEditor() {
@@ -1233,6 +1238,7 @@ function findingEditor(f) {
   wrap.append(f.mode === "machine" ? machineEditor(f) : vulnEditor(f));
   const tracking=WorkflowUI.findingPanel(f);
   const evidencePart=h("section",{"data-workpart":"evidence",class:"finding-part"},h("h3",{},uiText("Evidencias", "Evidence", "Evidências")));
+  if(typeof FieldHelpUI!=="undefined")FieldHelpUI.append(evidencePart,'evidence');
   const evidenceLinks=tracking.querySelector('[data-field="evidence_uids"]');if(evidenceLinks)evidencePart.append(evidenceLinks);
   evidencePart.append(h("button",{type:"button",class:"btn",onclick:()=>select("workflow","evidence")},uiText("Abrir galería de evidencias", "Open evidence gallery", "Abrir galeria de evidências")));
   WorkbenchUI.findingWorkspace(evidencePart,f);
@@ -1293,6 +1299,7 @@ function vulnEditor(f) {
   const g = h("div", { class: "grid2" });
   g.append(h("label", {}, t("dash_sev"), sevSel), cweField(f), field(t("affected"), f, "affected"));
   c.append(g);
+  if(typeof FieldHelpUI!=="undefined")FieldHelpUI.append(c,'severity');
   c.append(h("details",{class:"cvss-details"},h("summary",{},"CVSS / "+(f.cvss||"—")),CVSSEditor.widget(f, sevSel)));
   const description=h("section",{"data-workpart":"description",class:"finding-part"});description.append(c);box.append(description);
 

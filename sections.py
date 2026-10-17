@@ -1,5 +1,5 @@
-import pathlib
 """Catalogo canonico de secciones y resolucion para el renderizador."""
+from importlib.resources import files
 from pathlib import Path
 import yaml
 from languages import normalize_language
@@ -8,11 +8,11 @@ ROOT = Path(__file__).resolve().parent
 CATALOG_PATH = ROOT / "designs" / "report_sections.yaml"
 
 
-HERE = pathlib.Path(__file__).resolve().parent
-
-
 def load_catalog():
-    return yaml.safe_load(CATALOG_PATH.read_text(encoding="utf-8"))
+    # Keep source/frozen layouts and the canonical files; packaged resources
+    # also work when the application modules are loaded from a wheel ZIP.
+    source = CATALOG_PATH if CATALOG_PATH.is_file() else files('designs').joinpath('report_sections.yaml')
+    return yaml.safe_load(source.read_text(encoding="utf-8"))
 
 
 def catalog_by_key():
@@ -25,11 +25,11 @@ def default_enabled():
 
 
 def load_presets():
-    import yaml
-    path = HERE / "designs" / "presets.yaml"
-    if not path.exists():
+    path = ROOT / "designs" / "presets.yaml"
+    source = path if path.is_file() else files('designs').joinpath('presets.yaml')
+    if not source.is_file():
         return []
-    return (yaml.safe_load(path.read_text(encoding="utf-8")) or {}).get("presets", [])
+    return (yaml.safe_load(source.read_text(encoding="utf-8")) or {}).get("presets", [])
 
 
 def preset_by_id(preset_id):

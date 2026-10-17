@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.43.0
+# report-gen 0.44.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -50,6 +50,16 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Word | An editable `.docx` with its own table-of-contents fields. |
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
+
+## Library and engagement preparation in 0.44.0
+
+**Finding library → Curated catalog** provides 90 original entries in Spanish, English and Portuguese: 18 web, 12 API, 8 identity/AD, 8 infrastructure, 8 cloud, 6 mobile and 30 AI/LLM/agent patterns. Search text or filter by category and language. Each entry explains prerequisites, required evidence, false positives, remediation and retest, with sources and a review date. **My library** retains your templates and versions.
+
+AI entries cover direct/indirect/multimodal injection, RAG, memory, tools, agent identities, supply chains, privacy and resource bounds. Sources reviewed on 2026-10-17: OWASP LLM Top 10 2026, Agentic Applications 2026, MITRE ATLAS and NIST AI 100-2e2025. The OWASP 2025 category selector remains labeled with its edition; historical IDs are not reinterpreted.
+
+**Work packages** creates independent projects with structure and pending tests for seven specialties. You can explicitly include suggested entries; they start unverified and without assigned severity/CVSS. **Annotated report** explains nine writing decisions in the fictional Nimbus case. Field guidance contrasts adequate and insufficient examples without automatically filling in results.
+
+[Library and package guide](docs/knowledge.en.md) · [Acceptance protocol](docs/QA-KNOWLEDGE-0440.md). The review date identifies a content edition, not a live update or a guarantee of exhaustive coverage.
 
 ## Guided start in 0.43.0
 
@@ -177,7 +187,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.43.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.44.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

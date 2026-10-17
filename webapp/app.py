@@ -666,6 +666,10 @@ def render_snapshot(slug, fmt, attachment=True):
 
 from workflow_api import register as register_workflows  # noqa: E402
 register_workflows(sys.modules[__name__])
+from knowledge_api import register as register_knowledge  # noqa: E402
+register_knowledge(sys.modules[__name__])
+from work_packages_api import register as register_work_packages  # noqa: E402
+register_work_packages(sys.modules[__name__])
 from instances_api import register as register_instances  # noqa: E402
 register_instances(sys.modules[__name__])
 from tickets_api import register as register_tickets  # noqa: E402

@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen com Prometeo e Evaristo" width="300">
 </p>
 
-# report-gen 0.43.0
+# report-gen 0.44.0
 
 **Um editor local para transformar avaliações de segurança em relatórios claros.** Organize achados, vincule evidências, acompanhe a remediação e os retestes e produza **PDF, Word, Markdown com imagens e HTML portátil** a partir de uma revisão salva.
 
@@ -36,6 +36,16 @@ O português é a variante **Brasil**. A chave interna é `pt`; os argumentos de
 5. Abra os arquivos gerados antes de compartilhar e mantenha um backup privado do projeto editável.
 
 O **tutorial visual** permanece no menu. Seus seis passos têm instruções e capturas reais em espanhol, inglês e português, com ampliação e progresso local. A apresentação inicial pode ser ignorada. Consultar o tutorial não modifica o relatório; ele também funciona quando o navegador não consegue salvar seu progresso.
+
+## Biblioteca e preparação do trabalho na 0.44.0
+
+**Biblioteca de achados → Catálogo revisado** reúne 90 fichas originais em espanhol, inglês e português: 18 web, 12 API, 8 identidade/AD, 8 infraestrutura, 8 cloud, 6 móveis e 30 IA/LLM/agentes. Pesquise texto ou filtre por categoria e idioma. Cada ficha explica condições prévias, evidências necessárias, falsos positivos, correção e reteste, com fontes e data de revisão. **Minha biblioteca** preserva seus modelos e versões.
+
+As fichas de IA incluem injeção direta/indireta/multimodal, RAG, memória, ferramentas, identidades de agentes, cadeia de suprimentos, privacidade e limites de recursos. Fontes revisadas em 17-10-2026: OWASP LLM Top 10 2026, Agentic Applications 2026, MITRE ATLAS e NIST AI 100-2e2025. O seletor de categorias OWASP 2025 permanece identificado com sua edição; IDs históricos não são reinterpretados.
+
+**Pacotes de trabalho** cria projetos independentes com estrutura e testes pendentes para sete especialidades. É possível incluir explicitamente fichas sugeridas; elas começam sem verificação e sem severidade/CVSS atribuídos. **Relatório comentado** explica nove decisões de redação do caso fictício Nimbus. As ajudas nos campos contrastam exemplos adequados e insuficientes sem preencher resultados automaticamente.
+
+[Guia da biblioteca e dos pacotes](docs/knowledge.pt.md) · [Protocolo de aceitação](docs/QA-KNOWLEDGE-0440.md). A data de revisão identifica uma edição do conteúdo, não uma atualização online nem uma garantia de cobertura exaustiva.
 
 ## Início guiado na 0.43.0
 

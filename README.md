@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.43.0
+# report-gen 0.44.0
 
 <a id="qué-es"></a>
 
@@ -60,6 +60,16 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Word | Documento editable `.docx`, con campos propios para el índice. |
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
+
+## Biblioteca y preparación del trabajo en 0.44.0
+
+**Biblioteca de hallazgos → Catálogo curado** reúne 90 fichas originales en español, inglés y portugués: 18 web, 12 API, 8 identidad/AD, 8 infraestructura, 8 cloud, 6 móviles y 30 IA/LLM/agentes. Busca por texto o filtra por categoría e idioma. Cada ficha explica condiciones, evidencia necesaria, falsos positivos, corrección y retest, con fuentes y fecha de revisión. **Mi biblioteca** conserva tus plantillas y versiones.
+
+Las fichas de IA incluyen inyección directa/indirecta/multimodal, RAG, memoria, herramientas, identidades de agentes, cadena de suministro, privacidad y límites de recursos. Referencias revisadas el 17-10-2026: OWASP LLM Top 10 2026, Agentic Applications 2026, MITRE ATLAS y NIST AI 100-2e2025. El selector de categorías OWASP 2025 permanece identificado con su edición; sus IDs históricos no se reinterpretan.
+
+**Paquetes de trabajo** crea proyectos independientes con estructura y pruebas pendientes para siete especialidades. Puedes incluir explícitamente fichas sugeridas; empiezan sin verificar y sin severidad/CVSS asignados. **Informe comentado** explica nueve decisiones de redacción del caso ficticio Nimbus. Las ayudas junto a los campos contrastan ejemplos adecuados e insuficientes y no rellenan resultados automáticamente.
+
+[Guía de biblioteca y paquetes](docs/knowledge.es.md) · [Protocolo de aceptación](docs/QA-KNOWLEDGE-0440.md). La fecha de revisión indica una edición del contenido, no una actualización en línea ni una garantía de cobertura exhaustiva.
 
 ## Inicio guiado en 0.43.0
 
@@ -192,7 +202,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.43.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.44.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

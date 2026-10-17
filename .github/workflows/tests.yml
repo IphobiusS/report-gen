@@ -49,6 +49,9 @@ jobs:
           RG_PYTHON=python npm run test:sidebar
           RG_PYTHON=python npm run test:context-index
           RG_PYTHON=python npm run test:onboarding
+          RG_PYTHON=python npm run test:knowledge
+          RG_PYTHON=python node tests/test_work_packages_ui_0440.cjs
+          RG_PYTHON=python node tests/test_field_help_integration_0440.cjs
           node --test tests/test_practice_0430.cjs
           RG_PYTHON=python node tests/test_onboarding_integration_0430.cjs
           node tests/test_atlas_browser_harness_0390.cjs
@@ -152,6 +155,52 @@ jobs:
             ${{ runner.temp }}/aster/exports/principal/${{ matrix.language }}/
             ${{ runner.temp }}/aster/exports/native/${{ matrix.language }}/
             !${{ runner.temp }}/aster/exports/**/snapshot/**
+          if-no-files-found: error
+          retention-days: 14
+
+  knowledge_complex:
+    name: VEGA 90-pattern complex reports (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [es, en, pt]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-audited.txt
+      - name: Install native DOCX renderer and fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto-core fonts-noto-cjk libpango-1.0-0 libpangocairo-1.0-0
+          fc-cache -f
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - name: Prepare all 90 entries in each language without technical approval
+        run: python scripts/build-knowledge-case.py --output "$RUNNER_TEMP/vega/case"
+      - name: Generate four formats with report-gen and inspect native DOCX
+        run: python scripts/audit-knowledge-0440.py --projects "$RUNNER_TEMP/vega/case/projects" --output "$RUNNER_TEMP/vega/exports" --languages "${{ matrix.language }}" --native-executable /usr/bin/libreoffice --require-stable
+      - name: Preserve compact verification receipts
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: knowledge-0440-${{ matrix.language }}-receipts-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/vega/case/
+            ${{ runner.temp }}/vega/exports/matrix.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve generated reports and native evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: knowledge-0440-${{ matrix.language }}-reports-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/vega/exports/
+            !${{ runner.temp }}/vega/exports/**/snapshot/**
           if-no-files-found: error
           retention-days: 14
 
@@ -340,7 +389,7 @@ jobs:
   test:
     name: test
     if: always()
-    needs: [quick, burp_bridge, aster, editor_exports, scale, pytest]
+    needs: [quick, burp_bridge, aster, knowledge_complex, editor_exports, scale, pytest]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -349,10 +398,11 @@ jobs:
           QUICK: ${{ needs.quick.result }}
           BURP: ${{ needs.burp_bridge.result }}
           ASTER: ${{ needs.aster.result }}
+          KNOWLEDGE: ${{ needs.knowledge_complex.result }}
           EDITOR: ${{ needs.editor_exports.result }}
           SCALE: ${{ needs.scale.result }}
           PYTEST: ${{ needs.pytest.result }}
-        run: test "$QUICK" = success && test "$BURP" = success && test "$ASTER" = success && test "$EDITOR" = success && test "$SCALE" = success && test "$PYTEST" = success
+        run: test "$QUICK" = success && test "$BURP" = success && test "$ASTER" = success && test "$KNOWLEDGE" = success && test "$EDITOR" = success && test "$SCALE" = success && test "$PYTEST" = success
       - uses: actions/checkout@v7.0.1
       - uses: actions/setup-python@v7.0.0
         with:

@@ -1,3 +1,11 @@
+# Cambios 0.44.0 (2026-10-17)
+
+- Catálogo curado local con 90 fichas completas ES/EN/PT: 18 web, 12 API, 8 identidad/AD, 8 infraestructura, 8 cloud, 6 móviles y 30 IA/LLM/agentes. Incluye condiciones, evidencia pendiente, falsos positivos, remediación, retest, fuentes versionadas y fecha de revisión. Referencias actuales de IA: OWASP LLM/Agentic 2026 y NIST AI 100-2e2025; ATLAS consultado como índice, sin asignar técnicas no comprobadas.
+- Consulta, búsqueda, filtros, paginación, detalle y copia explícita a Mi biblioteca o al proyecto. Conserva la biblioteca personal, su historial y el control de revisiones. Las fichas curadas no asignan severidad ni CVSS y siempre se insertan sin verificar. El editor de plantillas ya conserva correctamente la severidad pendiente.
+- Ayudas opcionales por campo con ejemplos adecuados e insuficientes en los tres idiomas. Nueve comentarios de redacción sobre el informe ficticio Nimbus; las notas no se incorporan al informe del cliente. Conserva copias independientes, origen de práctica y regreso al proyecto anterior.
+- Siete paquetes de trabajo con estructura de informe, preguntas de alcance, pruebas pendientes y selección explícita de hallazgos sugeridos. Crea proyectos independientes, guarda antes de cambiar y detiene la transición ante conflictos. Los objetivos sin completar permanecen visibles y pendientes.
+- Aceptación VEGA: protocolo reproducible para generar las 90 fichas en PDF, DOCX, HTML y Markdown en los tres idiomas, con 90 planes, 14 figuras y una tabla de 180 filas. Chromium comprueba flujos, conservación de borradores, conflictos, teclado, accesibilidad y geometría. Los resultados de ejecución se publican como recibos; las pruebas no acreditan usabilidad con participantes ni ejecución de pruebas de seguridad.
+
 # Cambios 0.43.0 (2026-10-17)
 
 - Inicio opcional con vistas **Guiado** y **Completo**. Conservan rutas, herramientas y datos; Guiado pliega herramientas avanzadas y destaca una siguiente acción. El selector permite cambiar de vista durante el trabajo.

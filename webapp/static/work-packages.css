@@ -1,0 +1,25 @@
+.work-package-dialog{width:min(900px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:88vh;padding:0;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:auto;box-sizing:border-box}
+.work-package-dialog::backdrop{background:#02070bbf}
+.work-package-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px;border-bottom:1px solid var(--line)}
+.work-package-heading h2{margin:0;font-size:1.25rem;overflow-wrap:anywhere}
+.work-package-body{padding:20px;overflow-wrap:anywhere}
+.work-package-dialog .btn,.work-package-dialog summary,.work-package-dialog input[type=text]{min-height:40px;white-space:normal;box-sizing:border-box}
+.work-package-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.work-package-card{border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+.work-package-card h3{margin-top:0}
+.work-package-card p,.work-package-body p{line-height:1.65}
+.work-package-notice{padding:12px;border-left:3px solid var(--accent);background:var(--panel2,var(--panel));font-size:.95rem}
+.work-package-body form>label{display:flex;flex-direction:column;gap:6px;margin:16px 0}
+.work-package-body input[type=text]{width:100%;max-width:100%;color:var(--fg);background:var(--bg);border:1px solid var(--line);padding:8px}
+.work-package-body fieldset{min-width:0;border:1px solid var(--line);padding:12px}
+.work-package-choice{display:flex;align-items:flex-start;gap:12px;padding:12px 4px;min-height:44px;border-bottom:1px solid var(--line)}
+.work-package-choice:last-child{border-bottom:0}
+.work-package-choice input{flex-shrink:0;margin-top:5px;accent-color:var(--accent)}
+.work-package-choice small{display:block;line-height:1.6;margin-top:6px}
+.work-package-body details{margin-top:12px;border:1px solid var(--line);border-radius:6px;padding:12px}
+.work-package-body summary{cursor:pointer;display:list-item;padding:8px}
+.work-package-dialog :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(max-width:760px){.work-package-grid{grid-template-columns:minmax(0,1fr)}.work-package-heading,.work-package-body{padding:14px}.work-package-dialog .btn,.work-package-dialog summary,.work-package-dialog input[type=text]{min-height:44px}.work-package-heading{align-items:flex-start}.work-package-heading .btn{flex-shrink:0}}
+
+.work-package-heading { flex-wrap:wrap; }
+.work-package-dialog { min-width:0; }
