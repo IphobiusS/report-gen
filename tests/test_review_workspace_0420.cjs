@@ -59,6 +59,17 @@ function frontend(q){return plain({data:q.S.data,etag:q.projectStore.etag,revisi
  doc.querySelector('[data-finding-step="1"]').click();
  check('The contextual list shows the same queue in order',equal([...doc.querySelectorAll('#findingList li[data-finding-uid]')].map(row=>row.dataset.findingUid),expected));
  check('Next skips the intermediate finding excluded by the view',q.S.data.findings[q.S.sel.idx].uid===expected[1]);
+ const navigationBefore=frontend(q),originalFetch=w.fetch;let navigationWrites=0;
+ w.fetch=(url,options={})=>{if(!['GET','HEAD','OPTIONS'].includes(options.method||url?.method||'GET'))navigationWrites++;return originalFetch(url,options);};
+ [...doc.querySelectorAll('.finding-sequence button')].find(button=>button.textContent==='Pausar revisión').click();
+ check('Pausing retains the current UID and exposes complete project order',q.S.data.findings[q.S.sel.idx].uid===expected[1]&&q.WorkbenchUI.reviewOrder()===null&&doc.querySelector('[data-finding-position-label]').textContent==='4 de 4 · orden del proyecto'&&doc.querySelector('[data-finding-step="1"]').disabled);
+ doc.querySelector('[data-finding-step="-1"]').click();
+ check('Complete-order Previous includes the adjacent low finding excluded by the view',q.S.sel.idx===2&&q.S.data.findings[q.S.sel.idx].severity==='low'&&q.S.dashFilter==='high'&&doc.querySelector('[data-finding-position-label]').textContent==='3 de 4 · orden del proyecto');
+ q.select('finding',0);doc.querySelector('[data-finding-step="1"]').click();
+ check('Direct opening after pause navigates the complete adjacent project order',q.S.sel.idx===1&&q.WorkbenchUI.reviewOrder()===null&&doc.querySelector('[data-finding-position-label]').textContent==='2 de 4 · orden del proyecto');
+ await env.settle();w.fetch=originalFetch;
+ check('Pausing and complete-order navigation retain source, revision and ETag without writes',equal(frontend(q),navigationBefore)&&navigationWrites===0);
+ q.select('findings');doc.querySelector('.finding-row-open').click();doc.querySelector('[data-finding-step="1"]').click();
  doc.querySelector('[data-finding-step="-1"]').click();
  q.S.data.findings[q.S.sel.idx].severity='low';q.scheduleSave();
  doc.querySelector('[data-finding-save-next]').click();await until(()=>q.S.data.findings[q.S.sel.idx]?.uid===expected[1]&&!q.projectStore.dirty);

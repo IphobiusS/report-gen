@@ -4,11 +4,11 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'..'),args=process.argv.slice(2),option=(name,fallback)=>args.includes(name)?args[args.indexOf(name)+1]:fallback;
 const output=path.resolve(option('--output','out/http-evidence-0420'));fs.mkdirSync(output,{recursive:true});
-const results={checks:[],pageErrors:[],externalRequests:[],screens:[],browser_execution:'pending'};
+const results={checks:[],pageErrors:[],externalRequests:[],screens:[],geometry:[],browser_execution:'pending'};
 const save=()=>fs.writeFileSync(path.join(output,'results.json'),JSON.stringify(results,null,2));
 const check=(name,value)=>{results.checks.push({name,passed:!!value});save();assert.ok(value,name);};
 const labels={es:{close:'Cerrar',capture:'Capturar HTTP',copy:'Copiar original para editar',open:'Abrir evidencia',har:'Importar HAR',compare:'Comparar',compareRun:'Comparar A → B',pair:'Vincular Burp',generate:'Generar código de un uso'},en:{close:'Close',capture:'Capture HTTP',copy:'Copy original for editing',open:'Open evidence',har:'Import HAR',compare:'Compare',compareRun:'Compare A → B',pair:'Pair Burp',generate:'Generate one-use code'},pt:{close:'Fechar',capture:'Capturar HTTP',copy:'Copiar original para editar',open:'Abrir evidência',har:'Importar HAR',compare:'Comparar',compareRun:'Comparar A → B',pair:'Parear Burp',generate:'Gerar código de uso único'}};
-let server,browser;
+let server,browser,currentPage;
 (async()=>{try{
  server=spawn(process.env.RG_PYTHON||'python3',[path.join(root,'scripts/browser-server-0212.py')],{cwd:root,env:process.env});
  server.stderr.on('data',part=>fs.appendFileSync(path.join(output,'server.log'),part));
@@ -16,7 +16,7 @@ let server,browser;
  const executable=option('--executable',process.env.RG_CHROMIUM_EXECUTABLE||process.env.REPORT_GEN_CHROMIUM);
  browser=await chromium.launch({headless:true,...(executable?{executablePath:executable}:{})});results.browser_execution='running';results.browser=browser.version();
  for(const lang of ['es','en','pt']){
-  const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'}),page=await context.newPage(),l=labels[lang];
+  const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'}),page=await context.newPage(),l=labels[lang];currentPage=page;
   await context.route('**/*',route=>{const url=route.request().url();if(/^https?:/.test(url)&&!url.startsWith(base+'/')){results.externalRequests.push(url);return route.abort();}return route.continue();});
   await context.addInitScript(lang=>{if(window===window.top){localStorage.setItem('rg.uiLang',lang);localStorage.setItem('rg.previewVisible','0');}},lang);
   page.on('pageerror',error=>results.pageErrors.push(String(error)));
@@ -55,8 +55,14 @@ let server,browser;
   await page.getByRole('button',{name:l.pair,exact:true}).click();dialog=page.locator('dialog.http-dialog');await dialog.getByRole('button',{name:l.generate,exact:true}).click();await dialog.locator('[data-http-pair-code]').waitFor();
   check(lang+' paired code generated',await dialog.locator('[data-http-pair-code]').inputValue().then(value=>value.startsWith('rg1.')));await dialog.getByRole('button',{name:l.close,exact:true}).click();
   await page.setViewportSize({width:390,height:844});await page.locator('[data-http-record]').first().getByRole('button',{name:l.open,exact:true}).click();dialog=page.locator('[data-http-editor]');
-  check(lang+' mobile dialog fits',await dialog.evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&el.scrollWidth<=el.clientWidth+1;}));
+  for(const width of [390,320]){
+   await page.setViewportSize({width,height:844});
+   const geometry=await dialog.evaluate(el=>{const r=el.getBoundingClientRect();return {viewport:innerWidth,left:r.left,right:r.right,clientWidth:el.clientWidth,scrollWidth:el.scrollWidth,overflowing:[...el.querySelectorAll('*')].filter(node=>node.getClientRects().length).map(node=>{const box=node.getBoundingClientRect();return {tag:node.tagName,className:node.className,left:box.left,right:box.right,clientWidth:node.clientWidth,scrollWidth:node.scrollWidth};}).filter(box=>box.left<r.left||box.right>r.right)};});
+   results.geometry.push({lang,width,...geometry});
+   const mobileScreen=path.join(output,'http-mobile-'+lang+'-'+width+'.png');await page.screenshot({path:mobileScreen,fullPage:true});results.screens.push(mobileScreen);save();
+   check(lang+' mobile dialog fits '+width,geometry.left>=0&&geometry.right<=width+1&&geometry.scrollWidth<=geometry.clientWidth+1);
+  }
   await dialog.getByRole('button',{name:l.close,exact:true}).click();await context.close();save();
  }
  check('No page exceptions',results.pageErrors.length===0);check('No outgoing target requests',results.externalRequests.length===0);results.browser_execution='passed';save();
-}catch(error){results.browser_execution='failed_or_unavailable';results.error=String(error.stack||error);save();console.error(error);process.exitCode=1;}finally{await browser?.close();server?.kill('SIGTERM');}})();
+}catch(error){results.browser_execution='failed_or_unavailable';results.error=String(error.stack||error);if(currentPage&&!currentPage.isClosed()){const failure=path.join(output,'failure.png');await currentPage.screenshot({path:failure,fullPage:true}).then(()=>results.screens.push(failure)).catch(()=>{});}save();console.error(error);process.exitCode=1;}finally{await browser?.close();server?.kill('SIGTERM');}})();

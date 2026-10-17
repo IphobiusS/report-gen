@@ -4,10 +4,9 @@ Structured exports continue to certify literal code. PDF extraction only
 certifies presence/order and explicitly requires visual whitespace review.
 """
 from copy import deepcopy
-from types import SimpleNamespace
+import unicodedata
 
 import pytest
-import pypdf
 
 import export_contract
 
@@ -23,10 +22,13 @@ def contract(code):
 
 
 def inspect_text(monkeypatch, tmp_path, source, extracted):
-    # Keep the real page resource interface; replace only text extraction.
-    page = pypdf.PageObject()
-    page.extract_text = lambda: extracted
-    monkeypatch.setattr(pypdf, 'PdfReader', lambda path: SimpleNamespace(pages=[page]))
+    # These are code-presence unit tests, not PDF reader tests. Isolate the
+    # extraction boundary, which now corroborates pypdf with a native reader.
+    # Real PDF extraction and separator proofs have separate integration tests.
+    # pdf_text_pages returns NFC text with discretionary soft hyphens removed;
+    # retain that interface while keeping authored spaces and newlines exact.
+    page_text = unicodedata.normalize('NFC', extracted).replace('\u00ad', '')
+    monkeypatch.setattr(export_contract, 'pdf_text_pages', lambda _source, **_options: [page_text])
     return export_contract.inspect(tmp_path / 'text-presence.pdf', 'pdf', contract(source))
 
 
@@ -78,8 +80,11 @@ def test_pdf_multiline_code_preserves_presence_without_claiming_literal_whitespa
 def test_missing_pdf_code_fails_even_with_unrelated_surrounding_text(monkeypatch, tmp_path):
     extracted = 'Cover and metadata remain.\n' + CANARY[:-1] + '\nA footer.'
     expected = deepcopy(contract(CANARY))
-    page = pypdf.PageObject()
-    page.extract_text = lambda: extracted
-    monkeypatch.setattr(pypdf, 'PdfReader', lambda path: SimpleNamespace(pages=[page]))
+    monkeypatch.setattr(export_contract, 'pdf_text_pages', lambda _source, **_options: [extracted])
     with pytest.raises(ValueError, match='código PDF'):
         export_contract.inspect(tmp_path / 'missing.pdf', 'pdf', expected)
+
+
+def test_missing_pdf_file_is_not_accepted_by_real_extraction(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        export_contract.pdf_text_pages(tmp_path / 'absent.pdf')

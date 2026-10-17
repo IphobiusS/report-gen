@@ -1,10 +1,13 @@
 """Contracts of the substantial synthetic case, independent of its report outputs."""
 from copy import deepcopy
+import csv
 from hashlib import sha256
 import importlib.util
+from io import StringIO
 from pathlib import Path
 
 import engine
+import finding_imports
 import publication
 import pytest
 import workflows
@@ -58,6 +61,35 @@ def test_case_manifest_binds_every_input_and_builder_creates_no_report(case):
         assert Path(name).suffix not in ('.pdf', '.docx', '.html')
     assert {row['format'] for row in manifest['import_previews'].values()} == {'csv', 'burp', 'nuclei', 'nmap', 'sarif'}
     assert manifest['import_previews']['findings.csv']['counts']['duplicates'] == 1
+
+
+@pytest.mark.parametrize('changed_field', ['external_id', 'affected'])
+def test_csv_duplicate_repeats_source_identity_and_distinct_sources_remain_importable(case, builder, changed_field):
+    text = (case[0] / 'inputs/findings.csv').read_text()
+    reader = csv.DictReader(StringIO(text))
+    rows = list(reader)
+    assert len(rows) == 2
+    assert rows[0]['external_id'] == rows[1]['external_id'] == 'GML-CSV-01'
+    assert rows[0]['affected'] == rows[1]['affected']
+    assert rows[0]['description_md'] != rows[1]['description_md']
+    body = {'format': 'csv', 'text': text}
+    empty = {'findings': []}
+    preview = finding_imports.preview(body, empty)
+    fingerprints = [row['finding']['import_source']['fingerprint'] for row in preview['rows']]
+    assert fingerprints[0] == fingerprints[1]
+    with pytest.raises(ValueError):
+        finding_imports.apply({**body, 'selected': [0, 1]}, empty)
+    imported, count = finding_imports.apply({**body, 'selected': [0]}, empty)
+    assert count == 1
+    imported['findings'][0].update(title='Manual title', affected='Manual target grouping')
+    repeated = finding_imports.preview(body, imported)
+    assert all(row['existing_duplicate'] for row in repeated['rows'])
+    rows[1][changed_field] += '-independent'
+    distinct_text = builder.csv_bytes(reader.fieldnames, [[row[key] for key in reader.fieldnames] for row in rows]).decode()
+    distinct_body = {'format': 'csv', 'text': distinct_text}
+    assert finding_imports.preview(distinct_body, empty)['counts']['duplicates'] == 0
+    distinct, count = finding_imports.apply({**distinct_body, 'selected': [0, 1]}, empty)
+    assert count == 2 and len({row['uid'] for row in distinct['findings']}) == 2
 
 
 def test_private_inputs_are_removed_by_real_native_snapshot(case, builder, tmp_path):

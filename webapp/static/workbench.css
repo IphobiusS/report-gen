@@ -165,3 +165,17 @@ body .layout.review-evidence-open.review-evidence-open>.preview{display:none!imp
 }
 @media print{.pinned-evidence{display:none!important}}
 .tickets-form{min-width:0;border:0;padding:0;margin:0}.tickets-form input,.tickets-form select{max-width:100%;min-width:0}.tickets-form pre{white-space:pre-wrap;overflow-wrap:anywhere}
+/* Editorial review keeps explicit confirmations separate from action buttons. */
+[data-workflow-view="review_exchange"] .rt-card{padding:20px;margin:20px 0}
+[data-workflow-view="review_exchange"] .rt-card>h2{margin:0 0 16px}
+[data-workflow-view="review_exchange"] .rt-card>h3{margin:24px 0 12px}
+[data-workflow-view="review_exchange"] .rt-card .rt-check{min-height:32px;gap:10px;margin:6px 0}
+[data-workflow-view="review_exchange"] .rt-card>.btn{min-height:40px;margin:8px 10px 8px 0}
+[data-workflow-view="review_exchange"] .rt-card>input[type="file"]{max-width:100%;margin:8px 0}
+[data-workflow-view="review_exchange"] .rt-card>details{margin:14px 0}
+[data-workflow-view="review_exchange"] .rt-card summary{min-height:36px;padding:4px 0}
+[data-workflow-view="review_exchange"] .rt-card>p:empty{display:none}
+@media(max-width:600px){
+ [data-workflow-view="review_exchange"] .rt-card{padding:16px}
+ [data-workflow-view="review_exchange"] .rt-card>.btn{width:100%;margin:8px 0}
+}

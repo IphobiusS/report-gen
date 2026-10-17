@@ -68,5 +68,10 @@ def test_markdown_context_still_rejects_real_placement_or_text_changes(tmp_path,
         return text.encode()
 
     edit_zip(out, 'report.md', change)
-    with pytest.raises(ValueError, match='evidencia|Evidence'):
+    # The generated lead is now an explicit paragraph, so altered prose is
+    # rejected by the content contract before evidence association is checked.
+    # Moving an unchanged image must still fail the association contract.
+    diagnosis = ('evidencia|Evidence' if mutation == 'move-image'
+                 else 'Párrafo.*ausente o alterado|Missing or changed paragraph')
+    with pytest.raises(ValueError, match=diagnosis):
         delivery.inspect_export(out, 'md', captured)

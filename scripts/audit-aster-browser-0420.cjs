@@ -151,6 +151,13 @@ async function geometry(page,name){
 
   await page.evaluate(()=>{select('studio','deliver');document.querySelector('#editor').scrollTop=0;});await page.locator('[data-delivery-flow][data-delivery-current="true"]').waitFor({timeout:60000});
   check(lang+' saved delivery review has no blockers',await page.locator('[data-delivery-issues="error"] .delivery-flow-issue').count()===0);
+  // The preparation card independently reads the saved review. Waiting only
+  // for the main flow can capture its still-pending secondary request.
+  await page.waitForFunction(()=>{
+   const card=document.querySelector('[data-delivery-readiness]');
+   return card?.dataset.readinessCurrent==='true'&&card.dataset.readinessRevision===projectStore.etag;
+  },null,{timeout:60000});
+  check(lang+' delivery preparation finished for the current revision',await page.locator('[data-delivery-readiness]').evaluate(card=>card.dataset.readinessCurrent==='true'&&card.dataset.readinessRevision===projectStore.etag));
   await capture(page,lang,'12-reviewed-delivery');
 
   await page.setViewportSize({width:430,height:932});await page.evaluate(()=>{select('finding',0);WorkbenchUI.closeInspector();document.querySelector('#editor').scrollTop=0;window.scrollTo(0,0);});await idle(page,lang);
