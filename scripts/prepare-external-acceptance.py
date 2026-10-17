@@ -149,7 +149,7 @@ def summarize(destination):
     return result
 
 
-def prepare(destination):
+def prepare(destination, additional_projects=None):
     destination = Path(destination).resolve()
     if destination.exists() and any(destination.iterdir()):
         raise ValueError("Use an empty output directory; existing evidence is preserved.")
@@ -178,12 +178,14 @@ def prepare(destination):
     }
     dump_yaml(content, stress / "engagement.yaml")
     cases.append("long-content")
-    for lang in ('es', 'en'):
+    for lang in ('es', 'en', 'pt'):
         name = f'url-layout-{lang}'
         folder = sources / name
         folder.mkdir()
-        title = 'URLs literales y ordinales grandes' if lang == 'es' else 'Literal URLs and wide ordinals'
+        title = {'es': 'URLs literales y ordinales grandes', 'en': 'Literal URLs and wide ordinals',
+                 'pt': 'URLs literais e ordinais extensos'}[lang]
         body = (('Caso ficticio de compatibilidad. No es una evaluación real.\n\n' if lang == 'es'
+                 else 'Caso fictício de compatibilidade. Não é uma avaliação real.\n\n' if lang == 'pt'
                  else 'Fictional compatibility case. This is not a real assessment.\n\n')
                 + f'### URL-PARAGRAPH\n\n[{LITERAL_URL}](<{LITERAL_URL}>)\n\n'
                 + f'### URL-LIST\n\n73. [{LITERAL_URL}](<{LITERAL_URL}>)\n74. END-ORDINAL-74\n\n'
@@ -196,6 +198,17 @@ def prepare(destination):
                    'findings': [{'id': 'F001', 'mode': 'vuln', 'title': 'SYNTHETIC LOCAL ANCHOR',
                                  'description_md': 'LOCAL-FINDING-DESTINATION'}]}, folder / 'engagement.yaml')
         cases.append(name)
+    if additional_projects is not None:
+        additional_projects = Path(additional_projects).resolve()
+        for lang in ('es', 'en', 'pt'):
+            source = additional_projects / lang
+            if engine.report_language(engine.load_engagement(source / 'engagement.yaml')) != lang:
+                raise ValueError(f'Additional project language does not match {lang}.')
+            name = f'complex-{lang}'
+            # Reuse the project's bounded, validated archive contract; do not
+            # copy arbitrary neighbouring files into the acceptance package.
+            project_history.import_bundle(project_history.export_bundle(source), sources / name)
+            cases.append(name)
     results = []
     commit = revision()
     for name in cases:
@@ -225,14 +238,14 @@ def prepare(destination):
             writer.writerow([name, "", "", "", "", "", "", "", ""])
     (destination / "INSTRUCTIONS.txt").write_text(
         "PENDING: preparing this kit does not test native Word or observe people.\n"
-        "The six generated DOCX files passed automated scoped-text, image and reference checks. "
+        "The generated DOCX files passed automated scoped-text, image and reference checks. "
         "This does not prove pagination, typography or compatibility with desktop Word.\n"
         "1. On Windows with licensed Word: scripts/verify-microsoft-word.ps1 "
         "-InputDirectory <kit>/word-input -OutputDirectory <kit>/word-verified\n"
         "2. Inspect EVERY rendered PDF page. Complete word-review.csv with pass/fail for literal text/commands, "
         "table/image continuity, heading/page breaks and index/page links. Record the PDF SHA-256, reviewer "
         "and review date; describe failures. Do not infer visual approval from Word automation.\n"
-        "For url-layout-es/en, also follow URL-LAYOUT-EXPECTATIONS.json: compare literal text and exact destinations, "
+        "For url-layout-es/en/pt, also follow URL-LAYOUT-EXPECTATIONS.json: compare literal text and exact destinations, "
         "inspect the paragraph/list/table line widths and verify 2147483646 then 2147483647 after field updates. "
         "A premature URL wrap must be recorded as a text_commands failure; preserving characters alone is not a layout pass. "
         "These probes reproduce a known LibreOffice limitation. Their presence does not resolve it or validate Word.\n"
@@ -245,7 +258,7 @@ def prepare(destination):
         "automatically establish usability acceptance. Never fill missing observations from assumptions.\n",
         encoding="utf-8")
     (destination / 'URL-LAYOUT-EXPECTATIONS.json').write_text(json.dumps({
-        'schema': 1, 'cases': ['url-layout-es', 'url-layout-en'],
+        'schema': 1, 'cases': ['url-layout-es', 'url-layout-en', 'url-layout-pt'],
         'literal_url': LITERAL_URL, 'encoded_url': ENCODED_URL,
         'contexts': ['URL-PARAGRAPH', 'URL-LIST', 'URL-TABLE', 'URL-ENCODED'],
         'expected_ordinals': [73, 74, 2147483646, 2147483647],
@@ -268,8 +281,12 @@ if __name__ == "__main__":
     command = parser.add_mutually_exclusive_group(required=True)
     command.add_argument("--output", type=Path, help="Prepare a new kit in an empty directory.")
     command.add_argument("--summarize", type=Path, help="Validate existing observations without altering them.")
+    parser.add_argument("--additional-projects", type=Path,
+                        help="Include three complex projects from es/, en/ and pt/ in a new Word kit.")
     args = parser.parse_args()
     try:
-        print(json.dumps(summarize(args.summarize) if args.summarize else prepare(args.output), ensure_ascii=False))
+        if args.summarize and args.additional_projects:
+            parser.error('--additional-projects requires --output.')
+        print(json.dumps(summarize(args.summarize) if args.summarize else prepare(args.output, args.additional_projects), ensure_ascii=False))
     except (ValueError, OSError, KeyError, TypeError) as exc:
         parser.exit(1, f"Preparation failed: {exc}\n")

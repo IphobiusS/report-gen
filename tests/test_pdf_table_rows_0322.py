@@ -96,7 +96,7 @@ def test_already_splittable_rows_need_no_extra_layout():
     assert not relax_oversized_rows(document)
 
 
-def test_protected_finding_table_still_fails_before_retry_and_preserves_output(tmp_path, monkeypatch):
+def test_long_finding_row_flows_after_one_retry_without_losing_header(tmp_path, monkeypatch):
     original = HTML.render
     calls = []
 
@@ -108,10 +108,12 @@ def test_protected_finding_table_still_fails_before_retry_and_preserves_output(t
     output = tmp_path / 'protected.pdf'
     output.write_bytes(b'previous verified output')
     body = long_table().replace('class="frontsec"', 'class="finding" id="F-001"')
-    with pytest.raises(ValueError, match='F-001'):
-        engine.render_pdf_weasyprint(source(body), output, tmp_path)
-    assert len(calls) == 1
-    assert output.read_bytes() == b'previous verified output'
+    engine.render_pdf_weasyprint(source(body), output, tmp_path)
+    assert len(calls) == 2
+    with pdfplumber.open(output) as pdf:
+        pages = [page.extract_text() or '' for page in pdf.pages]
+    assert re.findall(r'ROW-\d{3}', '\n'.join(pages)) == [f'ROW-{i:03d}' for i in range(100)]
+    assert all('Control label' in page and 'Decision evidence' in page for page in pages)
 
 
 def test_two_long_cells_and_similar_values_are_not_lost_or_duplicated(tmp_path):

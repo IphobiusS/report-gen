@@ -1,4 +1,4 @@
-# Guia do usuário do report-gen 0.40.0
+# Guia do usuário do report-gen 0.41.0
 
 [Boas-vindas](../README.pt.md) · [Español](guide.es.md) · [English](guide.en.md) · [Histórico de alterações](../CHANGELOG.md)
 
@@ -146,7 +146,7 @@ No PDF, são verificados texto, células, itens de lista, imagens e destinos do 
 
 Linhas lógicas de código quebradas visualmente ficam na mesma página. Uma linha maior que a área imprimível é rejeitada, preservando o arquivo anterior. Espaços literais, associação de blocos e composição visual do PDF precisam de revisão humana. Ocorrências físicas independentes são reservadas para linhas de código e, em cada categoria, títulos, células, itens e parágrafos. Se a ambiguidade exceder o orçamento de verificação, o processo informa que não conseguiu concluir; não inventa perda de conteúdo.
 
-Tabelas dentro de um achado devem caber em uma página com seu título. Divida ou reduza a tabela, ou mova o registro extenso para uma seção narrativa ou apêndice, onde pode continuar entre páginas. O prazo padrão de PDF é de 300 segundos. `REPORT_GEN_PDF_TIMEOUT` aceita inteiros de 30 a 600, definidos antes de abrir o aplicativo. Valor inválido impede iniciar o mecanismo; um timeout preserva a saída anterior e remove intermediários. A fila conserva cancelamento e prazo externo de 1.800 segundos. O orçamento não aumenta sozinho depois de uma falha.
+Tabelas extensas dentro de achados podem continuar por linhas entre páginas, repetindo o cabeçalho. Tabelas curtas permanecem juntas. Cada célula e título devem caber na altura imprimível; caso contrário, reduza ou divida esse conteúdo conforme o diagnóstico. O prazo padrão de PDF é de 300 segundos. `REPORT_GEN_PDF_TIMEOUT` aceita inteiros de 30 a 600, definidos antes de abrir o aplicativo. Valor inválido impede iniciar o mecanismo; um timeout preserva a saída anterior e remove intermediários. A fila conserva cancelamento e prazo externo de 1.800 segundos. O orçamento não aumenta sozinho depois de uma falha.
 
 PDF e HTML portátil ajustam URLs literais à largura disponível sem alterar texto ou destino. Literais ASCII longos possuem regras próprias de quebra, sem inserir caracteres invisíveis. No DOCX, o LibreOffice pode antecipar a quebra de algumas URLs sem a extensão opcional descrita abaixo. Preserve valores literais que sejam evidência ou comandos; rótulos descritivos são uma escolha de redação.
 
@@ -177,7 +177,7 @@ O provedor UNO deve pertencer à mesma instalação do LibreOffice. A `.venv` do
 Crie a OXT sem instalá-la:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.40.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.41.0.oxt
 ```
 
 1. No LibreOffice escolhido, abra **Ferramentas → Extensões → Adicionar**; algumas versões usam **Gerenciador de extensões**.
@@ -195,7 +195,7 @@ O editor funciona em um processo local em `127.0.0.1`; não é um serviço multi
 
 **Backup do espaço de trabalho** contém projetos salvos, originais e bibliotecas. Trate-o como informação privada. Rascunhos pendentes ficam em IndexedDB por 30 dias, separados por identidade do espaço de trabalho, perfil do navegador, host e porta. A interface só informa recuperação disponível depois que a gravação termina. O aplicativo não criptografa esses rascunhos.
 
-Um registro separado protege capturas e formulários de evidências e decisões pendentes, com recuperação explícita: não anexa evidências nem aprova publicação automaticamente. Limites: 16 MiB por imagem, 1 MiB por formulário, 64 MiB no total e 30 dias. Falhas de armazenamento são indicadas como trabalho somente na aba. Após recuperar, a autorização de publicação deve ser dada novamente. Essa proteção não abrange todo diálogo auxiliar.
+Um registro separado protege capturas e formulários de evidências e decisões pendentes, com recuperação explícita: não anexa evidências nem aprova publicação automaticamente. Limites: 16 MiB por imagem, 1 MiB por formulário, 64 MiB no total e 30 dias. Falhas de armazenamento são indicadas como trabalho somente na aba. Após recuperar, a autorização de publicação deve ser dada novamente. A proteção também abrange edição em lote e formulários auxiliares de bibliotecas, importação, anotações e criação. Senhas, aprovações e arquivos que exigem nova seleção não são recuperados automaticamente.
 
 Rascunhos e formulários pendentes ficam fora dos backups e do JSON de emergência; incorpore e salve o trabalho antes de mudar a instalação ou a origem do navegador. Navegação privada, limpeza de armazenamento ou troca de perfil/porta podem tornar as cópias inacessíveis. Use **Mais → Baixar rascunho privado** como cópia de emergência. A recuperação exige o projeto correto e resolução explícita de conflitos.
 
@@ -349,7 +349,7 @@ O repositório contém código, testes, demonstrações, modelos e documentaçã
 
 A [Release](https://github.com/IphobiusS/report-gen/releases/latest) fornece ZIP de código, arquivo SHA-256 e manifesto JSON. A publicação automática exige sete workflows no mesmo commit: **tests**, **Browser acceptance**, **Windows compatibility**, **macOS compatibility**, **Additional renderer acceptance**, **Reproducible source package** e **R16 trilingual acceptance**. O publicador reconstrói a partir do Git e verifica os três ativos antes de publicar. Automação aprovada não substitui revisão de documentos nem sessões humanas.
 
-`python scripts/prepare-external-acceptance.py --output out/external-acceptance` prepara seis DOCX sintéticos e um CSV vazio para cinco participantes e três tarefas. O manifesto registra Word nativo e sessões humanas como `not_run`. O fluxo manual de Word exige Windows com Word de desktop instalado. Consulte `CONTRIBUTING.md` para o protocolo; preparar material não comprova que a observação ocorreu.
+`python scripts/prepare-external-acceptance.py --output out/external-acceptance` prepara sete DOCX sintéticos e um CSV vazio para cinco participantes e três tarefas. O manifesto registra Word nativo e sessões humanas como `not_run`. O fluxo manual de Word exige Windows com Word de desktop instalado. Consulte `CONTRIBUTING.md` para o protocolo; preparar material não comprova que a observação ocorreu.
 
 O kit contém `word-review.csv` e `INSTRUCTIONS.txt`. Depois das verificações reais, `python scripts/prepare-external-acceptance.py --summarize out/external-acceptance` valida hashes e registros sem alterá-los. Automação nativa, revisão visual e sessões humanas mantêm estados separados; preencher registros não comprova usabilidade geral.
 
@@ -402,3 +402,17 @@ Em **Inventário de anexos → Verificar possíveis segredos**, revise as catego
 Os resultados nunca reproduzem valores sensíveis e ficam vinculados ao hash e à revisão inspecionados. A análise é temporária e fica fora das entregas e de seus manifestos. O estado “inspecionado” indica que aquele escopo limitado terminou, não que o arquivo seja seguro. O escopo sempre é parcial e exige revisão manual: não há OCR nem inspeção exaustiva de binários incorporados ou do histórico de revisões incrementais. PDFs criptografados, mesmo com senha vazia, não são inspecionados. Erros, limites e partes omitidas são informados explicitamente.
 
 Os limites incluem 16 MiB por PDF, 200 páginas, 8000 objetos, 2.097.152 caracteres e 20 segundos, além de limites de profundidade e fluxos de texto. **A análise não censura, modifica nem autoriza o anexo.** Revise a cópia que será compartilhada e marque expressamente sua revisão e inclusão. Alertas orientam a revisão; anexos obrigatórios continuam bloqueando entregas incompletas.
+
+## Integração 0.41.0
+
+**Entregar** reúne revisão, destinatário, visualização e exportação. Os impedimentos levam à origem; mudanças de conteúdo ou opções invalidam a visualização. A exportação mantém a revisão examinada e exige nova confirmação quando necessário.
+
+Tabelas extensas dentro dos achados podem continuar por linhas entre páginas, repetindo o cabeçalho. Tabelas curtas permanecem juntas. Uma célula ou título maior que a altura útil continua sendo rejeitado com diagnóstico; o conteúdo não é recortado para forçar a saída.
+
+Os rascunhos recuperáveis abrangem edição em lote e formulários auxiliares de bibliotecas, importação, anotações e criação. A recuperação abre o formulário para revisão; não aplica mudanças nem restaura aprovações. Formulários do espaço de trabalho são separados dos formulários de cada relatório. Permanecem as cotas e a retenção de 30 dias do navegador.
+
+A revisão visual oferece **Salvar progresso no projeto**: página atual, notas e pendências vinculadas ao SHA-256 do PDF e à revisão de origem. Salvar uma cópia privada do PDF é opcional. Sem ela, reabra o arquivo original exato. Os registros ficam fora dos relatórios publicados, mas são incluídos em backups e histórico. Excluir o registro atual não apaga versões anteriores.
+
+Abra o assistente com `python scripts/install.py --gui --lang pt`. Exige Python 3.11 ou posterior, Tkinter e uma sessão gráfica. O assistente orienta diagnóstico, pastas, instalação e recuperação. Atualizações usam uma pasta nova; bloqueios do aplicativo e dos dados impedem atualizar com o editor aberto. Python e requisitos do sistema continuam necessários: o assistente não inclui todas as dependências em um pacote autônomo.
+
+A aceitação nativa do Microsoft Word permanece separada. O corpus inclui espanhol, inglês e português; `--additional-projects CAMINHO` inclui três projetos complexos em `es/`, `en/` e `pt/`. Exige Windows com Word de desktop instalado e licenciado. Preparar o kit, validar DOCX ou renderizar com LibreOffice não executa o Word.

@@ -118,3 +118,53 @@ jobs:
             out/features-0370/
             out/select-contrast-chromium/
             out/markdown-caption-chromium/
+
+  integration_0410:
+    name: Integrated delivery and recoverable work (${{ matrix.browser }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+    env:
+      RG_PYTHON: python
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+      - run: sudo apt-get update && sudo apt-get install -y xvfb python3-tk libpango-1.0-0 libpangocairo-1.0-0
+      - run: python -m pip install -e '.[dev,previews]' -c requirements-audited.txt
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Guided delivery, exact revision, audience and real downloads
+        run: xvfb-run -a node scripts/audit-delivery-flow-0410.cjs --browser ${{ matrix.browser }} --output out/integration-0410/delivery-${{ matrix.browser }}
+      - name: Save visual review and resume across server restarts
+        if: matrix.browser == 'chromium'
+        run: xvfb-run -a node scripts/audit-visual-persistence-0410.cjs --output out/integration-0410/visual-persistence
+      - name: Recover auxiliary forms using real IndexedDB and explicit review
+        if: matrix.browser == 'chromium'
+        run: xvfb-run -a node tests/test_auxiliary_drafts_0410_browser.cjs --output out/integration-0410/auxiliary-drafts
+      - name: Native graphical installer in Spanish, English and Portuguese
+        if: matrix.browser == 'chromium'
+        run: xvfb-run -a -s '-screen 0 1280x1000x24' python scripts/audit-install-wizard.py --output out/integration-0410/installer
+      - name: Install the optional Python Chromium PDF runtime
+        if: matrix.browser == 'chromium'
+        run: python -m playwright install --with-deps chromium
+      - name: Multipage finding tables through the actual Chromium PDF renderer
+        if: matrix.browser == 'chromium'
+        env:
+          REPORT_GEN_TEST_CHROMIUM_PDF: '1'
+        run: python -m pytest tests/test_finding_table_flow_0410.py -k real_chromium --junitxml=out/integration-0410/chromium-tables.xml
+      - name: Preserve exact checks, downloads and genuine screenshots
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: integration-0410-${{ matrix.browser }}-${{ github.sha }}
+          path: out/integration-0410/
+          if-no-files-found: error
+          retention-days: 14

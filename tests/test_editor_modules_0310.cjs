@@ -44,7 +44,7 @@ function searchActivation(){
     function addFinding(){created++;}
     function select(type,idx){S.sel={type,idx};}
     function toast(message){throw Error(message);}
-  `+workbench+'\n'+between(app,'function searchTargets()','function select(type, val)')+'\n'+
+  `+read('drafts.js')+'\n'+read('pending-work.js')+'\n'+workbench+'\n'+between(app,'function searchTargets()','function select(type, val)')+'\n'+
     between(app,'  {\n    const si = $("#globalSearch")','  $("#previewBtn").addEventListener')+'\n'+
     `(()=>{const search=WorkbenchUI.search;`+between(workbench,"    $('#globalSearch').addEventListener('focus'","    document.addEventListener('keydown',shortcut);")+`})();\n`+
     between(app,'  document.addEventListener("keydown", e => {\n    const mod','  $("#downloadBtn").addEventListener')+`
@@ -337,7 +337,7 @@ function draftRecoveryEditor(){
     const requireOk=async response=>{if(!response.ok)throw Error('rejected');return response;};
     const doSave=async()=>{window.saved.push({slug:S.slug,data:JSON.parse(JSON.stringify(S.data))});return true;};
     const renderSidebar=()=>{},renderMain=()=>{};
-  `+fs.readFileSync(path.join(root,'webapp/static/drafts.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'webapp/static/studio.js'),'utf8')+`
+  `+fs.readFileSync(path.join(root,'webapp/static/drafts.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'webapp/static/pending-work.js'),'utf8')+'\n'+fs.readFileSync(path.join(root,'webapp/static/studio.js'),'utf8')+`
     window.recovery={run:StudioUI.resolveDraft,inspect:StudioUI.inspector,state:S,store:projectStore};
   `);
   return dom;

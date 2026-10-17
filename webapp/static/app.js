@@ -1671,23 +1671,26 @@ let creatingProject=false;
 async function createProject() {
   if(creatingProject)return;
   $("#newProjectError")?.remove();
-  creatingProject=true;$("#mCreate").disabled=true;
+  creatingProject=true;
+  const creationControls=[...$("#newModal").querySelectorAll('input,select,textarea,button')].map(control=>[control,control.disabled]);
+  for(const [control] of creationControls)control.disabled=true;
   try {
     if(S.slug&&!await doSave())throw Error(uiText('No se pudo guardar el proyecto abierto. Resuelve su aviso de guardado antes de crear otro proyecto.', 'The open project could not be saved. Resolve its save warning before creating another project.', "Não foi possível salvar o projeto aberto. Resolva o aviso de salvamento antes de criar outro projeto."));
     const request = DesignLibraryUI.projectRequest();
     const r = await requireOk(await api.post(request.url, request.body));
     const { slug } = await r.json();
     if(typeof InsightsUI!=="undefined")InsightsUI.projectCreated(slug);
-    closeModal($("#newModal"));
-    $("#mTitle").value = $("#mClient").value = $("#mSlug").value = "";
-    DesignLibraryUI.resetCreation();
+    if(await DesignLibraryUI.resetCreation()!==false){
+      closeModal($("#newModal"));
+      $("#mTitle").value = $("#mClient").value = $("#mSlug").value = "";
+    }
     await refreshProjects();await loadProject(slug);$("#editor").focus({preventScroll:true});toast(t("toast_created"), "ok");
   } catch(error) {
     const message=error.message || t("create_fail"),modal=$("#newModal");
     if(modal.open)modal.querySelector('.modal-actions').before(h('p',{id:'newProjectError',role:'alert'},message));
     else toast(message,"err");
   }
-  finally {creatingProject=false;$("#mCreate").disabled=false;}
+  finally {creatingProject=false;for(const [control,disabled] of creationControls)if(control.isConnected)control.disabled=disabled;}
 }
 
 function startupFailed(error) {

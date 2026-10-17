@@ -117,8 +117,9 @@ h6 { font-size: 8.5pt; }
 .sumlink { color: var(--ink); text-decoration: none; }
 
 /* Finding */
-/* Findings flow naturally. Keep the heading and compact metadata together,
-   while narrative and walkthroughs may continue on subsequent pages. */
+/* Findings flow naturally. Keep the heading and compact metadata together.
+   The PDF layout pass relaxes only tables/rows larger than a printable page;
+   short tables remain whole and long tables repeat their header. */
 .finding + .finding { margin-top: 8mm; }
 .finding-intro { position: relative; break-inside: avoid; page-break-inside: avoid; break-after: avoid; page-break-after: avoid; }
 .finding table { break-inside: avoid; page-break-inside: avoid; }
@@ -161,8 +162,7 @@ h3 { font-family: var(--font-heading); font-size: 9.5pt; line-height: 1.2; font-
 .step p { margin: 0 0 6px; }
 .lead { color: var(--ink); }
 /* Bind a step's heading to its first block, not its entire procedure. Long
-   commands still split through the existing bounded code flow and oversized
-   protected tables still fail the PDF guard instead of being clipped. */
+   commands and tables continue through their bounded pagination policies. */
 .step-heading { margin: 0 0 4px; break-after: avoid; page-break-after: avoid; }
 code { font-family: var(--font-mono); font-size: 0.9em; background: var(--code-inline-bg); color: var(--code-inline-fg); border: 1px solid var(--code-inline-border); border-radius: 2px; padding: 0 3px; }
 pre, pre.cmd { font-family: var(--font-mono); font-size: 8.5pt; line-height: 1.4; color: #e9e9f2; background: var(--code-bg); border-left: 3px solid var(--accent); padding: 7px 10px; margin: 6px 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; tab-size: 4; break-inside: avoid; page-break-inside: avoid; }

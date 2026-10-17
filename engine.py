@@ -486,10 +486,9 @@ def render_pdf_weasyprint(html, out_pdf, base_url):
     from pdf_pagination import compact_pdf_uri_breaks, keep_short_labelled_lists, relax_oversized_rows, verify_finding_tables, prune_pdf_uri_break_links
     renderer = HTML(string=compact_pdf_uri_breaks(_pdf_code_layout(keep_short_labelled_lists(html))), base_url=str(base_url), url_fetcher=restricted_fetcher(base_url, THEMES))
     document = renderer.render()
-    verify_finding_tables(document)
     if relax_oversized_rows(document):
         document = renderer.render()
-        verify_finding_tables(document)
+    verify_finding_tables(document)
     _verify_pdf_code_lines(document)
     # WeasyPrint records unsupported code points while drawing the PDF, not
     # during layout. A ToUnicode map may preserve their text even though the
@@ -547,7 +546,21 @@ def render_pdf_chromium(html, out_pdf, meta):
             pg.emulate_media(media="print")
             if table_checks:
                 proof = pg.pdf(prefer_css_page_size=True, print_background=True)
-                verify_table_markers(proof, table_checks)
+                # Preserve short tables; let only tables proven to span pages
+                # use the preceding page space, then verify the final layout.
+                margins = (20 * 72 / 25.4, 18 * 72 / 25.4)
+                side_margins = (16 * 72 / 25.4, 16 * 72 / 25.4)
+                fragmented = verify_table_markers(proof, table_checks, check_headers=False, margins=margins, side_margins=side_margins)
+                if fragmented:
+                    pg.evaluate("""keys => {
+                      for (const table of document.querySelectorAll('[data-rg-pdf-table]')) {
+                        if (!keys.includes(table.dataset.rgPdfTable)) continue;
+                        table.style.setProperty('break-inside', 'auto', 'important');
+                        table.style.setProperty('page-break-inside', 'auto', 'important');
+                      }
+                    }""", fragmented)
+                    proof = pg.pdf(prefer_css_page_size=True, print_background=True)
+                verify_table_markers(proof, table_checks, margins=margins, side_margins=side_margins)
             pg.evaluate("document.querySelectorAll('.rg-table-boundary').forEach(node => node.remove())")
             pg.pdf(path=str(out_pdf), prefer_css_page_size=True, print_background=True)
             b.close()

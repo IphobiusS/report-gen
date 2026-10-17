@@ -25,7 +25,7 @@ def test_prepared_documents_and_blank_sessions_remain_unaccepted(tmp_path):
     assert result["word_native"] == result["human_sessions"] == "not_run"
     assert result["human_observations_recorded"] == 0
     assert result["prepared_docx_content"] == "verified"
-    assert {row["case"] for row in result["documents"]} == {"quality-lab", "pending-severity", "nimbus", "long-content", "url-layout-es", "url-layout-en"}
+    assert {row["case"] for row in result["documents"]} == {"quality-lab", "pending-severity", "nimbus", "long-content", "url-layout-es", "url-layout-en", "url-layout-pt"}
     for row in result["documents"]:
         path = tmp_path / "kit" / row["docx"]
         assert hashlib.sha256(path.read_bytes()).hexdigest() == row["docx_sha256"]
@@ -56,6 +56,29 @@ def test_preparation_preserves_existing_evidence(tmp_path):
     with pytest.raises(ValueError, match="empty output"):
         module.prepare(tmp_path)
     assert marker.read_text() == '{"human_observations_recorded": 1}'
+
+
+def test_complex_trilingual_inputs_are_copied_and_exported_without_claiming_word(tmp_path):
+    source = tmp_path / 'projects'
+    before = {}
+    for language in ('es', 'en', 'pt'):
+        folder = source / language
+        folder.mkdir(parents=True)
+        module.dump_yaml({'meta': {'report_title': f'SYNTHETIC-{language}', 'lang': language},
+                          'report': {'sections': [{'key': 'findings'}]},
+                          'findings': [{'id': 'F001', 'mode': 'vuln', 'title': f'COMPLEX-{language}',
+                                        'description_md': 'Synthetic input, not a Word observation.'}]},
+                         folder / 'engagement.yaml')
+        before[language] = (folder / 'engagement.yaml').read_bytes()
+    output = tmp_path / 'kit'
+    result = module.prepare(output, source)
+    assert len(result['documents']) == 10
+    for language, original in before.items():
+        assert (source / language / 'engagement.yaml').read_bytes() == original
+        target = output / f'word-input/complex-{language}.docx'
+        document = Document(target)
+        assert any(f'COMPLEX-{language}' in paragraph.text for paragraph in document.paragraphs)
+    assert module.summarize(output)['word_acceptance'] == 'pending'
 
 
 @pytest.fixture(scope="module")
@@ -190,7 +213,7 @@ def test_long_markdown_table_flows_by_rows_and_preserves_header_and_command(blan
     assert not command.paragraph_format.keep_with_next
 
 
-@pytest.mark.parametrize('lang', ['es', 'en'])
+@pytest.mark.parametrize('lang', ['es', 'en', 'pt'])
 def test_literal_url_and_wide_ordinal_kit_is_an_actual_unaccepted_document(blank_kit, lang):
     document = Document(blank_kit / f'word-input/url-layout-{lang}.docx')
     targets = {rel.rId: rel.target_ref for rel in document.part.rels.values() if rel.reltype.endswith('/hyperlink')}

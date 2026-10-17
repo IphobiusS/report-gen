@@ -6,14 +6,14 @@ const PDFComparisonUI = (() => {
   const safeId=value=>typeof value==='string'&&/^[a-zA-Z0-9_-]{1,100}$/.test(value);
   let activeDialog=null;
 
-  function open(trigger=document.activeElement){
+  function open(trigger=document.activeElement,recovered=null){
     if(activeDialog?.isConnected){activeDialog.querySelector('input')?.focus();return;}
     const title=w('Comparar archivos PDF','Compare PDF files','Comparar arquivos PDF'),projectSlug=S.slug||null;
     const dialog=h('dialog',{class:'experience-dialog pdf-compare-dialog','aria-label':title,'data-pdf-compare':''});
     activeDialog=dialog;
     let capabilities=null,capabilityController=null,comparisonController=null,generation=0,objectURL=null,closed=false,busy=false,saving=false;
     let metadata=null,metadataFiles=null,mapping=null,receipt=null,listController=null,listGeneration=0;
-    const downloadURLs=new Set();
+    const downloadURLs=new Set();let recoveredEditor=null,recoveredPending=null;
     const status=h('p',{class:'pdf-compare-status',role:'status','aria-live':'polite','data-pdf-compare-status':''});
     const error=h('p',{class:'wf-error',role:'alert','data-pdf-compare-error':''});
     const output=h('section',{class:'pdf-compare-output','data-pdf-compare-output':'',hidden:''});
@@ -42,6 +42,12 @@ const PDFComparisonUI = (() => {
       h('div',{class:'pdf-compare-files'},h('label',{},w('PDF anterior','Earlier PDF','PDF anterior'),before),h('label',{},w('PDF nuevo','Later PDF','PDF novo'),after)),
       h('div',{class:'pdf-compare-actions'},compare,pairButton,cancel,retry),status,error,pairs,output,records);
     dialog.append(h('div',{class:'experience-heading'},h('h2',{},title),close),body);
+    if(recovered){
+      const data=recovered.data,author=h('input',{value:data.author,maxlength:120,'data-pdf-recovered-author':''}),note=h('textarea',{rows:4,maxlength:4000,'data-pdf-recovered-note':''});note.value=data.note;
+      recoveredEditor=h('section',{'data-pdf-recovered-draft':''},h('h3',{},w('Notas recuperadas; vuelve a comparar los mismos PDF','Recovered notes; compare the same PDFs again','Notas recuperadas; compare novamente os mesmos PDFs')),h('p',{},w('Elige los archivos originales y los mismos pares de páginas. La decisión y el recibo anterior no se recuperan.','Choose the original files and the same page pairs. The previous decision and receipt are not recovered.','Escolha os arquivos originais e os mesmos pares de páginas. A decisão e o recibo anteriores não são recuperados.')),h('p',{class:'hash'},data.before_sha256+' / '+data.after_sha256),h('label',{},w('Autor','Author','Autor'),author),h('label',{},w('Nota','Note','Nota'),note));body.prepend(recoveredEditor);
+      recoveredPending=PendingUI.attach(recovered.key,w('Notas de comparación PDF pendientes','Pending PDF comparison notes','Notas de comparação PDF pendentes'),()=>({data:{...data,author:author.value,note:note.value}}),{container:recoveredEditor,origin:recovered,onDiscard:()=>{recoveredEditor.remove();recoveredEditor=null;recoveredPending=null;recovered=null;}});
+    }
+
 
     function releaseReceipt(id){if(safeId(id))appFetch('/api/pdf-compare/receipts/'+encodeURIComponent(id),{method:'DELETE'}).catch(()=>{});}
     function clearOutput(){
@@ -153,30 +159,36 @@ const PDFComparisonUI = (() => {
       catch(e){if(!closed&&current===listGeneration&&!controller.signal.aborted)recordStatus.textContent=e.message;}
       finally{if(!closed&&current===listGeneration){listController=null;updateControls();}}
     }
-    function reviewForm(id){
+    function reviewForm(id,binding=null){
+      const key=binding?reviewKey(binding):null,initial=key&&typeof PendingUI!=='undefined'?PendingUI.retained(key)?.data:null;let pending=null;
       const openForm=h('button',{type:'button',class:'btn','data-pdf-review-open':''},w('Guardar registro de revisión','Save review record','Salvar registro de revisão'));
       const form=h('form',{class:'pdf-review-form','data-pdf-review-form':'',hidden:''});
       const author=h('input',{type:'text',required:'',maxlength:'120','data-pdf-review-author':''});
       const decision=h('select',{'data-pdf-review-decision':''},h('option',{value:'accepted'},decisionText('accepted')),h('option',{value:'issues'},decisionText('issues')));
       const note=h('textarea',{rows:'3',maxlength:'4000','data-pdf-review-note':''});
+      if(initial){author.value=initial.author;note.value=initial.note;decision.prepend(h('option',{value:''},w('Selecciona una decisión nueva','Select a new decision','Selecione uma nova decisão')));decision.value='';if(recovered?.key===key){recoveredPending?.dispose();recoveredEditor?.remove();recoveredEditor=null;recoveredPending=null;}}
+
       const formStatus=h('p',{role:'status','aria-live':'polite','data-pdf-review-status':''});
       const save=h('button',{type:'submit',class:'btn primary','data-pdf-review-save':''},w('Guardar registro privado','Save private record','Salvar registro privado'));
       const hide=h('button',{type:'button',class:'btn'},w('Cancelar registro','Cancel record','Cancelar registro'));
       form.append(h('h3',{},w('Decisión de revisión','Review decision','Decisão de revisão')),h('p',{class:'wf-hint'},w('El recibo temporal caduca en 30 minutos; se conservan hasta 8 comparaciones recientes. Al guardar, el registro permanece en el proyecto, su historial y respaldos hasta que los elimines. No se incluyen imágenes ni archivos PDF o HTML, ni se incorpora por defecto a la entrega.','The temporary receipt expires after 30 minutes; up to 8 recent comparisons are kept. Saving retains the record in the project, its history and backups until you delete them. It contains no images, PDF or HTML files and is excluded from delivery by default.','O recibo temporário expira em 30 minutos; até 8 comparações recentes são mantidas. Ao salvar, o registro permanece no projeto, no histórico e nos backups até que você os exclua. Não contém imagens nem arquivos PDF ou HTML e não é incluído na entrega por padrão.')),h('label',{},w('Autor (declaración local)','Author (local declaration)','Autor (declaração local)'),author),h('label',{},w('Decisión','Decision','Decisão'),decision),h('label',{},w('Nota (obligatoria si hay problemas)','Note (required for issues)','Nota (obrigatória se houver problemas)'),note),h('div',{class:'pdf-compare-actions'},save,hide),formStatus);
       decision.addEventListener('change',()=>{note.required=decision.value==='issues';});
-      openForm.addEventListener('click',()=>{form.hidden=false;openForm.hidden=true;author.focus();});hide.addEventListener('click',()=>{form.hidden=true;openForm.hidden=false;openForm.focus();});
+      openForm.addEventListener('click',()=>{bindPending();form.hidden=false;openForm.hidden=true;author.focus();});hide.addEventListener('click',()=>{form.hidden=true;openForm.hidden=false;openForm.focus();});
       form.addEventListener('submit',async event=>{
         event.preventDefault();if(saving||id!==receipt)return;const values={comparison_id:id,author:author.value.trim(),decision:decision.value,note:note.value.trim()};
         if(!values.author||values.author.length>120||values.note.length>4000||!['accepted','issues'].includes(values.decision)||(values.decision==='issues'&&!values.note)){formStatus.textContent=w('Completa el autor y la nota requerida.','Complete the author and required note.','Preencha o autor e a nota obrigatória.');return;}
-        let saved=false;saving=true;updateControls();busyProject(true);formStatus.textContent=w('Guardando registro…','Saving record…','Salvando registro…');
+        const pendingRevision=pending?.handle.revision;let saved=false;saving=true;updateControls();busyProject(true);formStatus.textContent=w('Guardando registro…','Saving record…','Salvando registro…');
         try{
           assertProject();if(!await doSave())throw Error(w('No se pudo guardar el proyecto.','Could not save project.','Não foi possível salvar o projeto.'));assertProject();
           const response=await requireOk(await appFetch(projectURL(),{method:'POST',headers:{'Content-Type':'application/json','If-Match':projectStore.etag},body:JSON.stringify(values)}));const value=await response.json();assertProject();
           await adoptSavedProject(value.data,response.headers.get('ETag'));++listGeneration;listController?.abort();listController=null;renderRecords(value.records);
-          form.hidden=true;openForm.hidden=false;formStatus.textContent='';status.textContent=w('Registro privado guardado en el proyecto.','Private record saved in the project.','Registro privado salvo no projeto.');saved=true;
+          if(pending)await pending.committed(pendingRevision);form.hidden=true;openForm.hidden=false;formStatus.textContent='';status.textContent=w('Registro privado guardado en el proyecto.','Private record saved in the project.','Registro privado salvo no projeto.');saved=true;
         }catch(e){formStatus.textContent=e.message;}
         finally{saving=false;busyProject(false);updateControls();if(saved)openForm.focus();}
-      });return [openForm,form];
+      });
+      function bindPending(){if(!key||typeof PendingUI==='undefined'||pending&&PendingUI.active.has(projectSlug+'|'+key))return;pending?.dispose();pending=PendingUI.attach(key,w('Notas de comparación PDF pendientes','Pending PDF comparison notes','Notas de comparação PDF pendentes'),()=>({data:{...binding,author:author.value,note:note.value}}),{container:form,onDiscard:()=>{author.value='';note.value='';form.hidden=true;openForm.hidden=false;}});}
+      bindPending();
+      return [openForm,form];
     }
     async function run(){
       if(busy||saving||!capabilities?.available||!mappingValid())return;
@@ -192,10 +204,17 @@ const PDFComparisonUI = (() => {
         if(!/\btext\/html\b/i.test(response.headers.get('Content-Type')||''))throw Error(w('La comparación recibida no es un archivo HTML válido.','The received comparison is not a valid HTML file.','A comparação recebida não é um arquivo HTML válido.'));
         const blob=await response.blob();if(closed||current!==generation||controller.signal.aborted||!filesMatch(files))return;
         if(!blob.size||blob.size>Math.min(MAX_OUTPUT_BYTES,capabilities.max_output_bytes||MAX_OUTPUT_BYTES))throw Error(w('La comparación supera el tamaño permitido o está vacía.','The comparison exceeds the size limit or is empty.','A comparação excede o tamanho permitido ou está vazia.'));
+        let binding=null;
+        if(typeof PendingUI!=='undefined'&&receipt&&projectSlug){
+          const parsed=new DOMParser().parseFromString(await blob.text(),'text/html'),manifest=JSON.parse(parsed.querySelector('#comparison-manifest')?.textContent||'null');
+          if(!manifest||manifest.schema!=='report-gen-pdf-comparison/2'||!['before','after'].every(side=>/^[a-f0-9]{64}$/.test(manifest[side+'_sha256']))||!Array.isArray(manifest.pages))throw Error(w('No se pudo vincular la revisión a los PDF originales.','Could not bind the review to the original PDFs.','Não foi possível vincular a revisão aos PDFs originais.'));
+          binding={before_sha256:manifest.before_sha256,after_sha256:manifest.after_sha256,page_pairs:manifest.pages.map(row=>[row.before_page,row.after_page])};
+          if(closed||current!==generation||controller.signal.aborted||!filesMatch(files))return;
+        }
         objectURL=URL.createObjectURL(blob);
         const download=h('a',{class:'btn',href:objectURL,download:'report-gen-pdf-comparison.html','data-pdf-compare-download':''},w('Descargar comparación HTML','Download HTML comparison','Baixar comparação HTML'));
         const frame=h('iframe',{class:'pdf-compare-frame',src:objectURL,sandbox:'',referrerpolicy:'no-referrer',title:w('Resultado de la comparación PDF','PDF comparison result','Resultado da comparação PDF'),'data-pdf-compare-frame':''});
-        output.append(download,...(receipt&&projectSlug?[h('div',{class:'pdf-review-entry'},...reviewForm(receipt))]:[]),frame);output.hidden=false;
+        output.append(download,...(receipt&&projectSlug?[h('div',{class:'pdf-review-entry'},...reviewForm(receipt,binding))]:[]),frame);output.hidden=false;
         status.textContent=w('Comparación lista. Revisa las páginas y descarga el resultado si quieres conservarlo.','Comparison ready. Review the pages and download the result to keep it.','Comparação pronta. Revise as páginas e baixe o resultado para mantê-lo.');
       }catch(e){if(!closed&&current===generation&&!controller.signal.aborted){clearOutput();error.textContent=e.message;status.textContent='';}}
       finally{if(!closed&&current===generation){comparisonController=null;busy=false;updateControls();}}
@@ -207,5 +226,10 @@ const PDFComparisonUI = (() => {
     dialog.addEventListener('close',cleanup);dialog.addEventListener('cancel',event=>{event.preventDefault();if(!saving)dialog.close();});
     document.body.append(dialog);dialog.showModal();before.focus();loadCapabilities();
   }
+  function reviewKey(data){return 'pdf-comparison:review:'+data.before_sha256+':'+data.after_sha256+':'+JSON.stringify(data.page_pairs);}
+  if(typeof PendingUI!=='undefined')PendingUI.register('pdf-comparison:review:',{
+    validate(row){const data=row.data;if(!data||!['before_sha256','after_sha256'].every(key=>/^[a-f0-9]{64}$/.test(data[key]))||!Array.isArray(data.page_pairs)||data.page_pairs.length>160||!data.page_pairs.length||data.page_pairs.some(pair=>!Array.isArray(pair)||pair.length!==2||pair.every(n=>n===null)||pair.some(n=>n!==null&&(!Number.isInteger(n)||n<1||n>80)))||row.key!==reviewKey(data)||typeof data.author!=='string'||data.author.length>120||typeof data.note!=='string'||data.note.length>4000)throw Error(w('Notas de comparación no compatibles.','Unsupported comparison notes.','Notas de comparação não compatíveis.'));},
+    restore:row=>open(document.activeElement,row)
+  });
   return {open};
 })();

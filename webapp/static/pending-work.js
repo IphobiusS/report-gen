@@ -1,10 +1,19 @@
 /* Private pending inputs. Recovery always opens a form; it never publishes or attaches data. */
 const PendingUI=(()=>{
 'use strict';const w=(es,en,pt)=>uiText(es,en,pt),journal=new PendingJournal(),active=new Map();
+const restorers=new Map(),workspaceSlug='@workspace';
+const inScope=row=>row.slug===S.slug||row.slug===workspaceSlug;
+function register(prefix,adapter){
+ if(typeof prefix!=='string'||!prefix||!adapter||typeof adapter.restore!=='function'||restorers.has(prefix))throw Error('Invalid or duplicate pending form adapter');
+ restorers.set(prefix,adapter);
+}
+function recoveryGuard(row){const workspace=BrowserWorkspace.current(),slug=S.slug,etag=projectStore.etag;return ()=>{if(row.workspace_id!==workspace||BrowserWorkspace.current()!==workspace||BrowserWorkspace.blocked?.()||row.slug!==workspaceSlug&&(S.slug!==slug||row.slug!==S.slug||projectStore.etag!==etag))throw Error(w('El contexto de recuperación cambió. Vuelve a abrir la recuperación.','The recovery context changed. Reopen recovery.','O contexto de recuperação mudou. Reabra a recuperação.'));};}
+function adapterFor(key){return [...restorers].filter(([prefix])=>typeof key==='string'&&key.startsWith(prefix)).sort((a,b)=>b[0].length-a[0].length)[0]?.[1];}
 const pack=value=>JSON.parse(JSON.stringify(value,(_,v)=>v instanceof Set?{__pendingSet:[...v]}:v instanceof Map?{__pendingMap:[...v]}:v));
 const unpack=value=>JSON.parse(JSON.stringify(value),(_,v)=>v&&Array.isArray(v.__pendingSet)?new Set(v.__pendingSet):v&&Array.isArray(v.__pendingMap)?new Map(v.__pendingMap):v);
 function track(key,label,read,options={}){
- const slug=S.slug,id=slug+'|'+key,previous=active.get(id);
+ const slug=options.scope==='workspace'?workspaceSlug:S.slug,id=slug+'|'+key,previous=active.get(id);
+ if(!slug)throw Error(w('Abre un proyecto para proteger este formulario.','Open a project to protect this form.','Abra um projeto para proteger este formulário.'));
  if(previous){previous.read=read;if(options.origin){previous.origin=options.origin;previous.etag=projectStore.etag;}return previous;}
  const handle={slug,key,label,read,etag:projectStore.etag,revision:0,persisted:0,record:null,error:null,nodes:new Set(),origin:options.origin||null};active.set(id,handle);return handle;
 }
@@ -27,39 +36,56 @@ async function committed(handle,revision){
  catch(error){const finished=revision===handle.revision;if(finished){active.delete(handle.slug+'|'+handle.key);handle.nodes.clear();}return {finished,warning:error};}
 }
 function missingReference(row){
- const data=unpack(row.data),findings=new Set((S.data.findings||[]).map(x=>x.uid)),evidence=new Set((S.data.evidence||[]).map(x=>x.uid));
+ const extra=adapterFor(row.key);if(extra?.missingReference?.(row))return true;
+ const data=unpack(row.data),findings=new Set((S.data?.findings||[]).map(x=>x.uid)),evidence=new Set((S.data?.evidence||[]).map(x=>x.uid));
  if(data.finding_uid&&!findings.has(data.finding_uid))return true;
  if((data.evidence_uids||[]).some(uid=>!evidence.has(uid)))return true;
- if(data.uid&&row.key.startsWith('insights:claim-')&&!(S.data.insights?.claims||[]).some(item=>item.uid===data.uid))return true;
- if(data.uid&&row.key.startsWith('insights:risk-')&&!(S.data.insights?.risks||[]).some(item=>item.uid===data.uid))return true;
- if(row.key.startsWith('insights:resolve-')&&!(S.data.insights?.comments||[]).some(item=>item.uid===row.key.slice('insights:resolve-'.length)&&item.status==='open'))return true;
+ if(data.uid&&row.key.startsWith('insights:claim-')&&!(S.data?.insights?.claims||[]).some(item=>item.uid===data.uid))return true;
+ if(data.uid&&row.key.startsWith('insights:risk-')&&!(S.data?.insights?.risks||[]).some(item=>item.uid===data.uid))return true;
+ if(row.key.startsWith('insights:resolve-')&&!(S.data?.insights?.comments||[]).some(item=>item.uid===row.key.slice('insights:resolve-'.length)&&item.status==='open'))return true;
  if(data.selected instanceof Set&&[...data.selected].some(uid=>!findings.has(uid)))return true;
  return false;
 }
-async function list(slug){return journal.list(slug);}
+async function list(slug){const own=slug?await journal.list(slug):[];return slug===workspaceSlug?own:[...own,...await journal.list(workspaceSlug)].sort((a,b)=>b.updated-a.updated);}
+function retained(key,scope='project'){return active.get((scope==='workspace'?workspaceSlug:S.slug)+'|'+key)?.read()||null;}
+function attach(key,label,read,options){
+ const handle=track(key,label,read,options),container=options.container;
+ let snapshot=read(),signature=JSON.stringify(pack(snapshot.data)),file=snapshot.file,busy=false,finished=false;
+ const changed=()=>{if(finished)return;const snapshot=read(),next=JSON.stringify(pack(snapshot.data));if(next===signature&&file===snapshot.file)return;signature=next;file=snapshot.file;return PendingUI.changed(handle);};
+ const discard=h('button',{type:'button',class:'btn','data-pending-discard':key},w('Descartar formulario pendiente','Discard pending form','Descartar formulário pendente'));
+ discard.addEventListener('click',async()=>{if(busy||!confirm(w('¿Descartar este formulario y su copia local? Los datos guardados se conservan.','Discard this form and its local copy? Saved data is retained.','Descartar este formulário e sua cópia local? Os dados salvos serão mantidos.')))return;discard.disabled=true;try{if(await clear(handle)){finished=true;await options.onDiscard?.();}}catch(error){toast(error.message,'err');}finally{discard.disabled=busy;}});
+ const controls=h('div',{'data-pending-controls':key},status(handle),discard);container.append(controls);
+ const eventRoot=options.events||container;eventRoot.addEventListener('input',changed);eventRoot.addEventListener('change',changed);
+ if(options.origin)PendingUI.changed(handle);
+ return {handle,controls,changed,dispose(){eventRoot.removeEventListener('input',changed);eventRoot.removeEventListener('change',changed);controls.remove();},setBusy(value){busy=value;discard.disabled=value;},async committed(revision=handle.revision){const result=await committed(handle,revision);if(result.finished)finished=true;if(result.warning)toast(w('Guardado, pero no se pudo eliminar la copia local. Revísala en Datos privados guardados.','Saved, but the local copy could not be deleted. Review Stored private data.','Salvo, mas a cópia local não pôde ser excluída. Revise Dados privados armazenados.'),'err');return result;}};
+}
 function recoverySection(row,onRemoved){
  if(row.workspace_id!==BrowserWorkspace.current())throw Error(w('La copia pertenece a otro espacio o no tiene asignación.','The copy belongs to another workspace or has no assignment.', "A cópia pertence a outro espaço de trabalho ou não tem atribuição."));
  const section=h('section',{class:'card','data-pending-record':row.id}),details=h('details',{},h('summary',{},w('Revisar contenido pendiente','Review pending content', "Revisar conteúdo pendente")));
  details.append(h('pre',{class:'publication-text',tabindex:0},JSON.stringify(row.data,null,2)));
  if(row.file){details.append(h('p',{},(row.file.name||'image')+' · '+row.file.size+' bytes'));let url=null;details.addEventListener('toggle',()=>{if(details.open&&!url){url=URL.createObjectURL(row.file);details.append(h('img',{class:'imgprev',src:url,alt:w('Imagen pendiente, todavía sin incorporar','Pending image, not yet incorporated', "Imagem pendente, ainda não incorporada")}));}else if(!details.open&&url){URL.revokeObjectURL(url);url=null;details.querySelector('img')?.remove();}});section.release=()=>{if(url)URL.revokeObjectURL(url);};}
  section.append(h('h3',{},row.label),h('p',{},new Date(row.updated).toLocaleString()),details);
- const presentedRevision=projectStore.etag,stale=row.etag!==presentedRevision,review=h('input',{type:'checkbox'});
+ const presentedRevision=projectStore.etag,stale=row.slug===workspaceSlug||row.etag!==presentedRevision,review=h('input',{type:'checkbox'});
+ if(row.slug===workspaceSlug)section.append(h('p',{},w('Formulario del espacio de trabajo: no pertenece a un informe concreto. Revisa la biblioteca o los datos de creación actuales antes de recuperar.','Workspace form: it does not belong to one report. Review the current library or project creation details before recovering.','Formulário do espaço de trabalho: não pertence a um relatório específico. Revise a biblioteca ou os dados atuais de criação antes de recuperar.')));
  if(stale)section.append(h('p',{},w('El proyecto cambió desde esta copia. Revisa sus datos actuales antes de recuperar.','The project changed since this copy. Review its current data before recovering.', "O projeto mudou desde esta cópia. Revise os dados atuais antes de recuperar.")),h('label',{class:'wf-check'},review,w('Revisé la versión actual; recuperaré solo el formulario pendiente.','I reviewed the current version; recover the pending form only.', "Revisei a versão atual; recuperar somente o formulário pendente.")));
  const action=(label,run)=>{const b=h('button',{type:'button',class:'btn'},label);b.addEventListener('click',async()=>{b.disabled=true;try{await run();}catch(e){toast(e.message,'err');}finally{b.disabled=false;}});return b;};
  const buttons=h('div',{class:'studio-actions'});section.append(buttons);
  buttons.append(action(w('Recuperar formulario','Recover form', "Recuperar formulário"),async()=>{
-  if(row.slug!==S.slug)throw Error(w('Abre el proyecto original.','Open the original project.', "Abra o projeto original."));
-  const fresh=(await list(row.slug)).find(item=>item.id===row.id);if(row.slug!==S.slug||fresh?.token!==row.token)throw Error(w('La copia cambió; vuelve a abrir la recuperación.','The copy changed; reopen recovery.', "A cópia mudou; reabra a recuperação."));
+  if(!inScope(row))throw Error(w('Abre el proyecto original.','Open the original project.', "Abra o projeto original."));
+  const fresh=(await list(row.slug)).find(item=>item.id===row.id);if(!inScope(row)||fresh?.token!==row.token)throw Error(w('La copia cambió; vuelve a abrir la recuperación.','The copy changed; reopen recovery.', "A cópia mudou; reabra a recuperação."));
   if(projectStore.etag!==presentedRevision)throw Error(w('La revisión cambió; vuelve a abrir la recuperación.','The revision changed; reopen recovery.', "A revisão mudou; reabra a recuperação."));
   if(stale&&!review.checked)throw Error(w('Revisa y confirma la versión actual.','Review and confirm the current version.', "Revise e confirme a versão atual."));
   if(missingReference(row))throw Error(w('Una referencia ya no existe. Conserva el texto mostrado y elige un destino válido; no se incorporó nada.','A reference no longer exists. Keep the displayed text and choose a valid target; nothing was incorporated.', "Uma referência deixou de existir. Mantenha o texto exibido e escolha um destino válido; nada foi incorporado."));
   if(active.get(row.slug+'|'+row.key)?.revision)throw Error(w('Este formulario ya tiene cambios en la pestaña. Consérvalos o descártalos antes de recuperar otra copia.','This form already has changes in this tab. Keep or discard them before recovering another copy.', "Este formulário já tem alterações nesta aba. Mantenha-as ou descarte-as antes de recuperar outra cópia."));
   if(row.format!=='report-gen-pending'||row.version!==1)throw Error(w('Versión de copia no compatible.','Unsupported copy version.', "Versão da cópia não compatível."));
-  if(row.key==='capture'){section.closest('dialog')?.close();WorkbenchUI.capture(row);}
+  const adapter=adapterFor(row.key);
+  if(adapter){await adapter.validate?.(row);const current=(await list(row.slug)).find(item=>item.id===row.id);if(!inScope(row)||row.workspace_id!==BrowserWorkspace.current()||projectStore.etag!==presentedRevision||current?.token!==row.token||active.get(row.slug+'|'+row.key)?.revision)throw Error(w('El contexto o la copia cambió; vuelve a abrir la recuperación.','The context or copy changed; reopen recovery.','O contexto ou a cópia mudou; reabra a recuperação.'));section.closest('dialog')?.close();await adapter.restore(row);}
+  else if(row.key==='capture'){section.closest('dialog')?.close();WorkbenchUI.capture(row);}
   else if(row.key.startsWith('insights:')){section.closest('dialog')?.close();InsightsUI.restorePending(row);}
- }),action(w('Eliminar copia pendiente','Delete pending copy', "Excluir cópia pendente"),async()=>{if(row.slug!==S.slug)throw Error(w('El proyecto cambió.','The project changed.', "O projeto mudou."));if(!confirm(w('¿Eliminar esta copia local pendiente?','Delete this pending local copy?', "Excluir esta cópia local pendente?")))return;if(!await journal.removeUnchanged(row))throw Error(w('La copia cambió; vuelve a abrir la recuperación.','The copy changed; reopen recovery.', "A cópia mudou; reabra a recuperação."));const handle=active.get(row.slug+'|'+row.key);if(handle?.record?.id===row.id&&handle.record.token===row.token){handle.record=null;handle.persisted=0;handle.error=Error(w('Copia local eliminada. El formulario sigue en esta pestaña.','Local copy deleted. The form remains in this tab.', "Cópia local excluída. O formulário permanece nesta aba."));paint(handle);}section.release?.();section.remove();onRemoved?.();}));return section;
+  else throw Error(w('Este formulario no tiene un recuperador compatible. Conserva el contenido mostrado.','No compatible recovery handler exists for this form. Keep the displayed content.','Este formulário não tem um recuperador compatível. Guarde o conteúdo exibido.'));
+ }),action(w('Eliminar copia pendiente','Delete pending copy', "Excluir cópia pendente"),async()=>{if(!inScope(row))throw Error(w('El proyecto cambió.','The project changed.', "O projeto mudou."));if(!confirm(w('¿Eliminar esta copia local pendiente?','Delete this pending local copy?', "Excluir esta cópia local pendente?")))return;if(!await journal.removeUnchanged(row))throw Error(w('La copia cambió; vuelve a abrir la recuperación.','The copy changed; reopen recovery.', "A cópia mudou; reabra a recuperação."));const handle=active.get(row.slug+'|'+row.key);if(handle?.record?.id===row.id&&handle.record.token===row.token){handle.record=null;handle.persisted=0;handle.error=Error(w('Copia local eliminada. El formulario sigue en esta pestaña.','Local copy deleted. The form remains in this tab.', "Cópia local excluída. O formulário permanece nesta aba."));paint(handle);}section.release?.();section.remove();onRemoved?.();}));return section;
 }
 window.addEventListener('beforeunload',event=>{if([...active.values()].some(handle=>handle.revision>handle.persisted||handle.error)){event.preventDefault();event.returnValue='';}});
 function reset(slug){for(const id of active.keys())if(id.startsWith(slug+'|'))active.delete(id);}
-return{journal,track,status,changed,clear,committed,list,recoverySection,pack,unpack,active,reset};
+return{journal,track,status,changed,clear,committed,list,recoverySection,pack,unpack,active,reset,register,retained,attach,workspaceSlug,recoveryGuard};
 })();

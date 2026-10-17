@@ -14,9 +14,6 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT),str(ROOT/'webapp')]
-import app as api
-import storage
-from flask import request,jsonify,abort
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--workspace',required=True)
@@ -25,6 +22,10 @@ args=parser.parse_args()
 root=Path(args.workspace).resolve()
 if not root.name.startswith('report-gen-acceptance-0211-') or (root/'.test-only').read_text()!='synthetic acceptance workspace':
     raise SystemExit('This runner requires a dedicated disposable acceptance workspace')
+os.environ['REPORT_GEN_WORKSPACE'] = str(root)
+import app as api
+import storage
+from flask import request,jsonify,abort
 api.PROJECTS=root/'projects';api.PROJECTS.mkdir(exist_ok=True)
 api.app.config['LIBRARY_PATH']=str(root/'findings.json')
 api.app.config['DESIGN_LIBRARY_PATH']=str(root/'designs.json')

@@ -692,16 +692,42 @@ register_publication(sys.modules[__name__])
 def create_local_server(port=8080):
     """One process preserves the shared project lock; never expose the editor."""
     from waitress import create_server
-    server = create_server(app, host='127.0.0.1', port=port, threads=4,
-                           max_request_body_size=project_history.MAX_ARCHIVE + 1024 * 1024,
-                           channel_timeout=180, clear_untrusted_proxy_headers=True)
-    routine = backup_routine()
+    from workspace_access import exclusive_paths
+    ownership = exclusive_paths(REPORT_ROOT, WORKSPACE.root)
+    ownership.__enter__()
+    server = None
+    try:
+        server = create_server(app, host='127.0.0.1', port=port, threads=4,
+                               max_request_body_size=project_history.MAX_ARCHIVE + 1024 * 1024,
+                               channel_timeout=180, clear_untrusted_proxy_headers=True)
+        routine = backup_routine()
+    except BaseException:
+        try:
+            if server is not None:
+                server.close()
+        finally:
+            ownership.__exit__(*sys.exc_info())
+        raise
     original_close = server.close
+    closed = False
     def close_with_backups():
-        routine.stop()
-        original_close()
+        nonlocal closed
+        if closed:
+            return
+        closed = True
+        try:
+            routine.stop()
+        finally:
+            try:
+                original_close()
+            finally:
+                ownership.__exit__(None, None, None)
     server.close = close_with_backups
-    routine.start()
+    try:
+        routine.start()
+    except BaseException:
+        server.close()
+        raise
     return server
 
 

@@ -1,4 +1,4 @@
-# report-gen 0.40.0 user guide
+# report-gen 0.41.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Português (Brasil)](guide.pt.md) · [Changelog](../CHANGELOG.md)
 
@@ -146,7 +146,7 @@ The annex scanner searches the first MiB of UTF-8 text, counts image metadata an
 
 Structured export checks compare paragraphs, literal code, metadata, native tables, links and evidence placement within their finding. Only code line endings are normalized. Missing internal destinations block publication. Static HTML visibility checks do not certify geometry, occlusion, conditional CSS or dynamic states. PDF checks text presence, including table cells and list items, image counts and index destinations. Text presence is global and does not prove the location or association of a cell or item. Wrapped parts of a logical code line stay on one page; a line taller than the printable page is rejected while preserving the previous output. In PDF, literal whitespace, block association and layout require manual review. Markdown includes the severity chart as a PNG, alternative text with its counts and its scope caption. Checks compare the generated image bytes, text and position relative to the summary, separately from evidence images.
 
-Tables inside a finding, including its detailed procedure, must fit on one page with their heading. Otherwise split or shorten the table, or place the extensive register in a narrative section or report appendix, where it can continue across pages. PDF export allows 300 seconds by default. Set `REPORT_GEN_PDF_TIMEOUT` before starting report-gen to an integer between 30 and 600 seconds; an invalid value is rejected before the renderer starts. Reaching the deadline preserves the previous output and removes intermediate files. The queue retains cancellation and its outer 1,800-second deadline. The budget is not automatically increased after a failure: split the content, explicitly adjust the configuration, or retry with less load.
+Long tables inside a finding, including its detailed procedure, can continue by rows across pages with repeated headers. Short tables stay together. Each cell and heading must fit the printable height; otherwise shorten or split that content as indicated by the diagnostic. PDF export allows 300 seconds by default. Set `REPORT_GEN_PDF_TIMEOUT` before starting report-gen to an integer between 30 and 600 seconds; an invalid value is rejected before the renderer starts. Reaching the deadline preserves the previous output and removes intermediate files. The queue retains cancellation and its outer 1,800-second deadline. The budget is not automatically increased after a failure: split the content, explicitly adjust the configuration, or retry with less load.
 
 Version 0.34.0 corrected the excessive layout cost of long literal URLs. The test with 72 rows and a URL of about 300 characters per row in a narrative section passed within the limit after that correction. This does not establish a universal row maximum or a guaranteed duration: content and available resources affect it. Preserve literal URLs that are part of the evidence; descriptive labels are an optional writing choice, not a requirement for exporting that case.
 
@@ -198,11 +198,11 @@ Extension installation failed with **Ubuntu's LibreOffice 24.2.7.2 packages**, e
 Build the OXT from the downloaded report-gen source without installing it:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.40.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.41.0.oxt
 ```
 
 1. In the chosen LibreOffice installation, open **Tools → Extensions → Add**. Some versions call it **Extension Manager**.
-2. Select `report-gen-libreoffice-0.40.0.oxt` and install it for your user.
+2. Select `report-gen-libreoffice-0.41.0.oxt` and install it for your user.
 3. Close every window of that LibreOffice installation, reopen it and open a copy of the DOCX freshly exported by report-gen.
 4. Inspect its URLs, lists and tables after opening, editing and saving it. To remove the extension, disable or remove it in the same manager and restart LibreOffice.
 
@@ -218,7 +218,7 @@ The export queue terminates each job's processes before cleaning up its files. W
 
 The external workspace contains `projects/` and `library/`; originals, history and annexes stay inside each project. The launcher resolves `--workspace` before `REPORT_GEN_WORKSPACE`. Without either selection it retains `webapp/projects/` and `webapp/library/`; it does not search for or move data automatically. **Workspace backup** includes all projects, originals and libraries. Treat it as private data.
 
-Pending drafts are stored in IndexedDB for 30 days, separated by workspace identity, browser profile and origin (host and port). The interface only says recoverable after the write completes. Drafts are not encrypted by the application. They recover project data. A separate journal protects pending captures and Evidence and decisions forms, with explicit form recovery: it does not attach evidence or approve publication automatically. Limits are 16 MiB per image, 1 MiB per form, 64 MiB in total and 30 days. Storage failures are shown as tab-only work. Publication consent must be given again after recovery. This protects Quick capture and Evidence and decisions forms, not every auxiliary dialog. Pending copies are excluded from workspace backups and emergency project JSON: incorporate and save them before moving installation or browser origin. Private browsing, clearing browser storage or switching profile/port can make drafts inaccessible. **More → Download private draft** creates an emergency copy. Recovery requires the matching project and explicit conflict resolution.
+Pending drafts are stored in IndexedDB for 30 days, separated by workspace identity, browser profile and origin (host and port). The interface only says recoverable after the write completes. Drafts are not encrypted by the application. They recover project data. A separate journal protects pending captures and Evidence and decisions forms, with explicit form recovery: it does not attach evidence or approve publication automatically. Limits are 16 MiB per image, 1 MiB per form, 64 MiB in total and 30 days. Storage failures are shown as tab-only work. Publication consent must be given again after recovery. This also covers bulk editing and auxiliary library, import, annotation and creation forms. Passwords, approvals and files requiring reselection are not restored automatically. Pending copies are excluded from workspace backups and emergency project JSON: incorporate and save them before moving installation or browser origin. Private browsing, clearing browser storage or switching profile/port can make drafts inaccessible. **More → Download private draft** creates an emergency copy. Recovery requires the matching project and explicit conflict resolution.
 
 The identity stays stable across restarts and application upgrades while the external data location remains unchanged. Moving that directory or restoring a backup into a new workspace creates a different scope: matching project identifiers do not authorize draft adoption. Workspace backups retain saved projects but exclude the local identity and browser journals. Download pending work before moving. If a tab detects that the server changed workspace, it blocks requests and lets you download the draft before reloading.
 
@@ -370,7 +370,7 @@ The [latest Release](https://github.com/IphobiusS/report-gen/releases/latest) pr
 
 ## External acceptance materials
 
-`python scripts/prepare-external-acceptance.py --output out/external-acceptance` prepares six synthetic DOCX files and a blank five-participant, three-task CSV. Its manifest records native Word and human sessions as `not_run`. The manual Word workflow requires Windows with desktop Word installed. See CONTRIBUTING.md for the observation protocol and native review command. Material preparation and automated checks are not human observations or native Word acceptance.
+`python scripts/prepare-external-acceptance.py --output out/external-acceptance` prepares seven synthetic DOCX files and a blank five-participant, three-task CSV. Its manifest records native Word and human sessions as `not_run`. The manual Word workflow requires Windows with desktop Word installed. See CONTRIBUTING.md for the observation protocol and native review command. Material preparation and automated checks are not human observations or native Word acceptance.
 
 The kit includes `word-review.csv` for visual inspection and `INSTRUCTIONS.txt`. After conducting the checks, run `python scripts/prepare-external-acceptance.py --summarize out/external-acceptance` to validate hashes and records without changing them. Native Word automation, visual review and human sessions retain separate states; prepared materials or completed rows do not establish general usability.
 
@@ -423,3 +423,17 @@ In **Annex inventory → Check for possible secrets**, review detected categorie
 Results never reproduce sensitive values and are bound to the inspected hash and revision. The scan is temporary and excluded from deliveries and their manifests. An “inspected” status means the bounded scope finished, not that the file is safe. Scope is always partial and requires manual review: there is no OCR or exhaustive inspection of embedded binaries or incremental revision history. Encrypted PDFs, even with an empty password, remain uninspected. Errors, limits and omitted parts are stated explicitly.
 
 Limits include 16 MiB per PDF, 200 pages, 8000 objects, 2,097,152 characters and 20 seconds, plus depth and text-stream limits. **Scanning does not redact, modify or authorize the annex.** Review the copy you will actually share and explicitly mark its review and inclusion. Alerts guide review; required-annex checks still block incomplete deliveries.
+
+## 0.41.0 integration
+
+**Deliver** combines review, audience, preview and export. Blockers link to their source; content or option changes invalidate the preview. Export retains the reviewed revision and requires renewed acknowledgement when appropriate.
+
+Long tables inside findings can continue by rows across pages with repeated headers. Short tables stay together. A cell or heading that exceeds the printable height still produces a diagnostic; content is never clipped to force an output.
+
+Recoverable drafts now cover bulk editing and auxiliary library, import, annotation and creation forms. Recovery opens a form for review; it never applies changes or restores approvals. Workspace forms are distinguished from report forms. Browser quotas and 30-day retention still apply.
+
+Visual review offers **Save progress in project**: current page, notes and pending issues bound to the PDF SHA-256 and original revision. Saving a private PDF copy is optional. Without it, reopen the exact original file. These records are excluded from published reports but included in backups and history. Deleting the current record does not erase earlier versions.
+
+Start the wizard with `python scripts/install.py --gui --lang en`. It requires Python 3.11 or newer, Tkinter and a graphical session. The wizard guides diagnosis, folders, installation and recovery. Updates use a new directory; application and workspace locks prevent updating a running editor. Python and system requirements still apply: the wizard is not a standalone bundle containing every dependency.
+
+Native Microsoft Word acceptance remains separate. The corpus covers Spanish, English and Portuguese; `--additional-projects PATH` includes three complex projects under `es/`, `en/` and `pt/`. It requires Windows with installed, licensed desktop Word. Preparing the kit, validating DOCX or rendering with LibreOffice does not execute Word.

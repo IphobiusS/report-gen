@@ -299,3 +299,41 @@ jobs:
             !${{ runner.temp }}/atlas/exports/**/snapshot/**
           if-no-files-found: error
           retention-days: 14
+
+  boreal:
+    name: Boreal complex reports with multipage finding tables
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      REPORT_GEN_REQUIRE_MULTISCRIPT_FONTS: '1'
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-audited.txt
+      - name: Install actual native document renderer and multilingual fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-writer fonts-dejavu fonts-liberation fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto-core fonts-noto-cjk libpango-1.0-0 libpangocairo-1.0-0
+          fc-cache -f
+      - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
+      - name: Compose fully localized synthetic inputs
+        run: python scripts/build-boreal-case.py --output "$RUNNER_TEMP/boreal/case"
+      - name: Generate twelve complete reports using report-gen only
+        run: python scripts/audit-boreal-0410.py --projects "$RUNNER_TEMP/boreal/case/projects" --output "$RUNNER_TEMP/boreal/exports" --mode principal
+      - name: Render the three actual DOCX exports with stable LibreOffice
+        run: python scripts/audit-boreal-0410.py --projects "$RUNNER_TEMP/boreal/case/projects" --output "$RUNNER_TEMP/boreal/exports" --mode native --native-executable /usr/bin/libreoffice --require-stable
+      - name: Prepare the same complex projects for external Word acceptance
+        run: python scripts/prepare-external-acceptance.py --output "$RUNNER_TEMP/boreal/word-kit" --additional-projects "$RUNNER_TEMP/boreal/case/projects"
+      - name: Preserve complete reports, native pages and pending Word inputs
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: boreal-0410-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/boreal/
+            !${{ runner.temp }}/boreal/exports/**/snapshot/**
+          if-no-files-found: error
+          retention-days: 14

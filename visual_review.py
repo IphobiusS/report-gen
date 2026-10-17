@@ -1,4 +1,4 @@
-"""Bounded, isolated rasterization of actual PDF bytes and temporary review records."""
+"""Bounded PDF previews and optional, explicitly saved private review progress."""
 from error_messages import message as backend_message
 from collections import OrderedDict
 from hashlib import sha256
@@ -13,11 +13,139 @@ import sys
 import threading
 import time
 import zipfile
+from copy import deepcopy
+from datetime import datetime, timedelta
+import re
+import uuid
+import attachments
+from input_guard import load_json
 
 MAX_PDF = 16 * 1024 * 1024
 MAX_PAGES = 500
 TTL = 1800
 _WORKERS = threading.BoundedSemaphore(2)
+SCHEMA = 'report-gen-visual-review/1'
+MAX_METADATA = 64 * 1024
+MAX_SAVED = 20
+_HASH = re.compile(r'^[a-f0-9]{64}$')
+_ISSUES = {'table_cut', 'orphan_title', 'unreadable_image', 'other'}
+
+
+def invalid_saved():
+    return backend_message('Revisión visual guardada no válida.', en='Invalid saved visual review.',
+                           pt='Revisão visual salva inválida.')
+
+
+def dumps(value):
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'),
+                      allow_nan=False).encode('utf-8')
+
+
+def _uid(value):
+    try:
+        parsed = uuid.UUID(value)
+        return str(parsed) == value and parsed.version == 4
+    except (TypeError, ValueError, AttributeError):
+        return False
+
+
+def validate_progress(value, count):
+    from pdf_comparison_reviews import _text
+    if (not isinstance(value, dict)
+            or set(value) != {'page', 'author', 'decision', 'note', 'pages', 'draft'}
+            or type(value['page']) is not int or not 1 <= value['page'] <= count
+            or not _text(value['author'], 120)
+            or not _text(value['note'], 4000, multiline=True)
+            or not isinstance(value['decision'], str)
+            or value['decision'] not in {'pending', 'accepted', 'issues'}
+            or not isinstance(value['pages'], list) or len(value['pages']) > MAX_PAGES):
+        raise ValueError(invalid_saved())
+    for row in [*value['pages'], value['draft']]:
+        draft = row is value['draft']
+        if (not isinstance(row, dict) or set(row) != ({'number', 'issue', 'note'} if draft else {'number', 'issue', 'note', 'resolved'})
+                or type(row['number']) is not int or not 1 <= row['number'] <= count
+                or not isinstance(row['issue'], str) or row['issue'] not in _ISSUES
+                or not _text(row['note'], 4000, required=not draft, multiline=True)
+                or (not draft and type(row['resolved']) is not bool)):
+            raise ValueError(invalid_saved())
+    if value['decision'] == 'accepted' and (not value['author'].strip()
+            or any(not row['resolved'] for row in value['pages']) or value['draft']['note'].strip()):
+        raise ValueError(backend_message('Resuelve los pendientes e indica autor antes de aceptar.',
+                                        en='Resolve pending issues and enter an author before accepting.',
+                                        pt='Resolva as pendências e informe um autor antes de aceitar.'))
+    if len(dumps(value)) > MAX_METADATA // 2:
+        raise ValueError(invalid_saved())
+    return value
+
+
+def validate_saved(record):
+    fields = {'schema', 'uid', 'created', 'updated', 'revision', 'pdf_sha256', 'page_count',
+              'origin', 'progress', 'pdf_attachment_uid', 'author_identity',
+              'original_word_verified', 'automated_layout_verification'}
+    if not isinstance(record, dict) or set(record) != fields or record['schema'] != SCHEMA:
+        raise ValueError(invalid_saved())
+    try:
+        created, updated = (datetime.fromisoformat(record[key]) for key in ('created', 'updated'))
+    except (ValueError, TypeError) as exc:
+        raise ValueError(invalid_saved()) from exc
+    if (not _uid(record['uid']) or created.utcoffset() != timedelta(0)
+            or updated.utcoffset() != timedelta(0) or updated < created
+            or any(not isinstance(record[key], str) or not _HASH.fullmatch(record[key]) for key in ('revision', 'pdf_sha256'))
+            or type(record['page_count']) is not int or not 1 <= record['page_count'] <= MAX_PAGES
+            or record['origin'] not in ('generated', 'uploaded')
+            or (record['pdf_attachment_uid'] is not None and not _uid(record['pdf_attachment_uid']))
+            or record['author_identity'] != 'local_self_declaration'
+            or record['original_word_verified'] is not False
+            or record['automated_layout_verification'] is not False):
+        raise ValueError(invalid_saved())
+    validate_progress(record['progress'], record['page_count'])
+    if len(dumps(record)) > MAX_METADATA:
+        raise ValueError(invalid_saved())
+    return record
+
+
+def private_row(uid, suffix, digest):
+    return dict(uid=uid, name=('visual-review-' if suffix == 'json' else 'visual-review-pdf-') + uid + '.' + suffix,
+                member='attachments/' + uuid.UUID(uid).hex + '.' + suffix,
+                sha256=digest, include=False, reviewed=False, required=False)
+
+
+def read_saved(directory, row):
+    attachments.validate_rows([row])
+    if (row['name'] != 'visual-review-' + row['uid'] + '.json'
+            or row.get('member') != 'attachments/' + row['uid'].replace('-', '') + '.json'):
+        raise ValueError(invalid_saved())
+    path = Path(directory) / row['member']
+    if path.is_symlink() or path.stat().st_size > MAX_METADATA:
+        raise ValueError(invalid_saved())
+    record = validate_saved(load_json(attachments.read(directory, row)))
+    if record['uid'] != row['uid']:
+        raise ValueError(invalid_saved())
+    return record
+
+
+def saved_records(data, directory):
+    rows = data.get('attachments', [])
+    attachments.validate_rows(rows)
+    result = []
+    for row in rows:
+        if row['name'].startswith('visual-review-') and row['name'].endswith('.json'):
+            try:
+                result.append(read_saved(directory, row))
+            except (ValueError, OSError):
+                continue  # An arbitrary or damaged attachment is never a trusted review.
+    return sorted(result, key=lambda record: (record['updated'], record['uid']), reverse=True)
+
+
+def saved_pdf(data, directory, record):
+    uid = record['pdf_attachment_uid']
+    row = next((row for row in data.get('attachments', []) if row['uid'] == uid), None)
+    expected = private_row(uid, 'pdf', record['pdf_sha256']) if _uid(uid) else None
+    if row is None or any(row.get(key) != expected[key] for key in ('name', 'member', 'sha256')):
+        raise ValueError(backend_message('Falta la copia privada; abre el PDF original para reanudar.',
+                                        en='The private copy is missing; open the original PDF to resume.',
+                                        pt='A cópia privada está ausente; abra o PDF original para retomar.'))
+    return attachments.read(directory, row)
 
 
 def available():
@@ -125,7 +253,7 @@ class Store:
         return {field: record[field] for field in ('id', 'revision', 'filename', 'origin', 'job_id', 'pdf_sha256', 'review')} | dict(
             pages=[dict(row, image_url=f'{prefix}/page/{row["number"]}') for row in record['pages']],
             retention_seconds=TTL, original_word_verified=False, manually_verified=False,
-            rasterized_pages=list(record['thumbnails']))
+            rasterized_pages=list(record['thumbnails']), saved=deepcopy(record.get('saved')))
 
     def page(self, owner, key, number):
         record = self.get(owner, key)

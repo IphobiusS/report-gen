@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.40.0
+# Guía de uso de report-gen 0.41.0
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Português (Brasil)](guide.pt.md) · [Cambios](../CHANGELOG.md)
 
@@ -144,7 +144,7 @@ Los enteros del proyecto deben estar entre −9.007.199.254.740.991 y 9.007.199.
 
 PDF comprueba presencia textual, incluidas celdas de tablas y elementos de listas, imágenes y destinos del índice. La comprobación textual es global: no prueba la posición ni asociación de una celda o elemento. Las envolturas de una línea de código se mantienen en una misma página; una línea que supera la altura imprimible se rechaza conservando la salida anterior. La extracción puede cambiar orden y espacios: no acredita indentación literal ni asociación de bloques. La ficha lo marca como revisión manual requerida. Ningún formato queda certificado visualmente por estos controles.
 
-Las tablas dentro de un hallazgo, incluido su procedimiento detallado, deben caber completas en una página junto a su encabezado. Si no caben, divide o reduce la tabla, o coloca el registro extenso en una sección narrativa o anexo del informe, donde puede continuar entre páginas. El proceso de exportación PDF dispone de 300 segundos por defecto. Puedes definir `REPORT_GEN_PDF_TIMEOUT` antes de iniciar report-gen con un número entero entre 30 y 600 segundos; un valor inválido se rechaza antes de lanzar el motor. Si vence el plazo, conserva la salida anterior y retira sus archivos intermedios. La cola mantiene su cancelación y su plazo exterior de 1.800 segundos. El presupuesto no se amplía automáticamente después de un fallo: divide el contenido, ajusta explícitamente la configuración o reintenta con menos carga.
+Las tablas extensas dentro de un hallazgo, incluido su procedimiento detallado, pueden continuar por filas entre páginas con cabeceras repetidas. Las tablas breves se mantienen juntas. Cada celda y el encabezado deben caber en la altura imprimible; si no, reduce o divide ese contenido según el diagnóstico. El proceso de exportación PDF dispone de 300 segundos por defecto. Puedes definir `REPORT_GEN_PDF_TIMEOUT` antes de iniciar report-gen con un número entero entre 30 y 600 segundos; un valor inválido se rechaza antes de lanzar el motor. Si vence el plazo, conserva la salida anterior y retira sus archivos intermedios. La cola mantiene su cancelación y su plazo exterior de 1.800 segundos. El presupuesto no se amplía automáticamente después de un fallo: divide el contenido, ajusta explícitamente la configuración o reintenta con menos carga.
 
 La versión 0.34.0 corrigió el coste excesivo de maquetación de las URLs literales largas. La prueba de 72 filas con una URL de unos 300 caracteres por fila, situada en una sección narrativa, pasó dentro del límite tras esa corrección. No establece un máximo universal de filas ni un tiempo garantizado: influyen el contenido y los recursos disponibles. Conserva las URLs literales que formen parte de la evidencia; las etiquetas descriptivas son una opción de redacción, no un requisito para exportar ese caso.
 
@@ -192,11 +192,11 @@ En **LibreOffice 24.2.7.2 de los paquetes de Ubuntu**, la instalación del compl
 Para construir el OXT desde el código fuente descargado de report-gen, sin instalarlo:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.40.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.41.0.oxt
 ```
 
 1. En la instalación de LibreOffice elegida abre **Herramientas → Extensiones → Añadir**. Algunas versiones llaman al menú **Gestor de extensiones**.
-2. Selecciona `report-gen-libreoffice-0.40.0.oxt` e instálalo para tu usuario.
+2. Selecciona `report-gen-libreoffice-0.41.0.oxt` e instálalo para tu usuario.
 3. Cierra todas las ventanas de esa instalación de LibreOffice, vuelve a abrirla y abre una copia del DOCX recién exportado por report-gen.
 4. Comprueba sus URL, listas y tablas después de abrirlo, editarlo y guardarlo. Para retirarlo, desactívalo o elimínalo en el mismo gestor y reinicia LibreOffice.
 
@@ -212,7 +212,7 @@ La cola de exportación termina los procesos de cada trabajo antes de limpiar su
 
 La carpeta externa contiene `projects/` y `library/`; originales, historial y anexos permanecen dentro de cada proyecto. El lanzador resuelve `--workspace` antes que `REPORT_GEN_WORKSPACE`. Sin ninguna selección, conserva `webapp/projects/` y `webapp/library/`; no busca ni traslada datos automáticamente. Usa **Respaldo integral** para trasladar proyectos, originales y bibliotecas juntos. Es información privada.
 
-Los borradores pendientes se conservan en IndexedDB durante 30 días, separados por identidad del espacio de trabajo, perfil del navegador y origen (host y puerto). Solo se anuncian como recuperables cuando la escritura termina. No están cifrados por la aplicación. Recuperan los datos del proyecto. Un registro separado protege las capturas y los formularios de Evidencia y decisiones aún sin incorporar: se recuperan explícitamente como formularios, no se adjuntan ni aprueban solos. El registro admite hasta 16 MiB por imagen, 1 MiB por formulario y 64 MiB en total. Si falla la escritura o se supera el límite, se indica que el trabajo permanece sólo en la pestaña. Los consentimientos de publicación se vuelven a pedir al recuperar. Esta protección cubre Captura rápida y los formularios de Evidencia y decisiones; no todos los diálogos auxiliares. Estas copias pendientes no se incluyen en el respaldo integral ni en el JSON de emergencia: incorpóralas y guarda antes de cambiar de instalación u origen del navegador. El modo privado, borrar los datos del navegador o cambiar de perfil/puerto puede hacerlos inaccesibles. **Más → Descargar borrador privado** permite guardar una copia de emergencia. Recuperarla exige abrir el mismo proyecto y resolver conflictos; nunca sustituye una revisión concurrente sin elegirlo.
+Los borradores pendientes se conservan en IndexedDB durante 30 días, separados por identidad del espacio de trabajo, perfil del navegador y origen (host y puerto). Solo se anuncian como recuperables cuando la escritura termina. No están cifrados por la aplicación. Recuperan los datos del proyecto. Un registro separado protege las capturas y los formularios de Evidencia y decisiones aún sin incorporar: se recuperan explícitamente como formularios, no se adjuntan ni aprueban solos. El registro admite hasta 16 MiB por imagen, 1 MiB por formulario y 64 MiB en total. Si falla la escritura o se supera el límite, se indica que el trabajo permanece sólo en la pestaña. Los consentimientos de publicación se vuelven a pedir al recuperar. Esta protección también cubre edición masiva y formularios auxiliares de bibliotecas, importación, anotaciones y creación. Las contraseñas, aprobaciones y archivos que requieren volver a seleccionarse no se recuperan automáticamente. Estas copias pendientes no se incluyen en el respaldo integral ni en el JSON de emergencia: incorpóralas y guarda antes de cambiar de instalación u origen del navegador. El modo privado, borrar los datos del navegador o cambiar de perfil/puerto puede hacerlos inaccesibles. **Más → Descargar borrador privado** permite guardar una copia de emergencia. Recuperarla exige abrir el mismo proyecto y resolver conflictos; nunca sustituye una revisión concurrente sin elegirlo.
 
 La identidad permanece estable al reiniciar o actualizar la aplicación si conservas la misma ubicación externa de datos. Mover la carpeta o restaurar un respaldo en un espacio nuevo crea un ámbito distinto: no adopta borradores porque coincida el identificador del proyecto. El respaldo integral conserva proyectos guardados, pero excluye la identidad local y los diarios del navegador. Descarga los pendientes antes de trasladarte. Si una pestaña detecta que el servidor cambió de espacio, bloquea las peticiones y permite descargar el borrador antes de recargar.
 
@@ -389,7 +389,7 @@ La [última Release](https://github.com/IphobiusS/report-gen/releases/latest) re
 
 ## Materiales para las comprobaciones externas
 
-`python scripts/prepare-external-acceptance.py --output out/external-acceptance` prepara seis DOCX ficticios y un CSV vacío de cinco participantes y tres tareas. El manifiesto declara Word y las sesiones humanas como `not_run`. El workflow manual de Word usa ese corpus y necesita un equipo Windows con Word de escritorio instalado. Consulta el protocolo y el comando de revisión en CONTRIBUTING.md. Generar estos materiales o ejecutar pruebas automáticas no equivale a haber observado personas ni a validar Word nativo.
+`python scripts/prepare-external-acceptance.py --output out/external-acceptance` prepara siete DOCX ficticios y un CSV vacío de cinco participantes y tres tareas. El manifiesto declara Word y las sesiones humanas como `not_run`. El workflow manual de Word usa ese corpus y necesita un equipo Windows con Word de escritorio instalado. Consulta el protocolo y el comando de revisión en CONTRIBUTING.md. Generar estos materiales o ejecutar pruebas automáticas no equivale a haber observado personas ni a validar Word nativo.
 
 El kit incluye `word-review.csv` para revisión visual y `INSTRUCTIONS.txt`. Tras realizar las comprobaciones, ejecuta `python scripts/prepare-external-acceptance.py --summarize out/external-acceptance`: valida hashes y registros sin alterarlos. Los estados de Word automático, inspección visual y sesiones humanas permanecen separados; preparar materiales o completar filas no acredita usabilidad general.
 
@@ -442,3 +442,17 @@ En **Inventario de anexos → Analizar posibles secretos**, revisa las categorí
 El resultado nunca reproduce el valor sensible y se vincula al hash y revisión inspeccionados. El análisis es temporal; no se añade a la entrega ni a su manifiesto. Un estado «inspeccionado» significa que terminó ese alcance acotado, no que el archivo sea seguro. El alcance siempre es parcial y exige revisión manual: no hay OCR ni inspección completa de binarios incrustados o historial de revisiones incrementales. Los PDF cifrados, incluso con contraseña vacía, quedan sin inspeccionar. Los errores, límites y partes omitidas se indican expresamente.
 
 Los límites incluyen 16 MiB por PDF, 200 páginas, 8000 objetos, 2 097 152 caracteres y 20 segundos, además de límites de profundidad y flujos de texto. **El análisis no censura, modifica ni autoriza el anexo.** Revisa la copia que realmente compartirás y marca expresamente su revisión e inclusión. Las alertas orientan la revisión; los requisitos de anexos obligatorios continúan bloqueando una entrega incompleta.
+
+## Integración 0.41.0
+
+**Entregar** reúne revisión, destinatario, vista previa y exportación. Los bloqueos tienen acceso a su origen; cambiar contenido u opciones invalida la vista previa. La exportación conserva la revisión comprobada y exige confirmar de nuevo los avisos cuando corresponde.
+
+Las tablas extensas dentro de hallazgos pueden continuar por filas entre páginas, repitiendo su cabecera. Las tablas breves se conservan juntas. Una celda o un encabezado que exceda la altura útil sigue rechazándose con un diagnóstico; no se recorta contenido para forzar la salida.
+
+Los borradores recuperables se amplían a edición masiva y formularios auxiliares de bibliotecas, importación, anotaciones y creación. Recuperar abre el formulario para revisarlo; nunca ejecuta cambios ni restaura aprobaciones. Los formularios del espacio de trabajo se distinguen de los de cada informe. Se mantienen los límites y los 30 días de retención del navegador.
+
+La revisión visual permite **Guardar progreso en el proyecto**: página actual, notas y pendientes, vinculados al SHA-256 del PDF y a la revisión de origen. Guardar una copia privada del PDF es opcional. Sin ella debes volver a abrir el mismo archivo. Estas revisiones no se publican en los informes; sí viajan en respaldos e historial. Eliminar la revisión actual no elimina versiones anteriores.
+
+Abre el asistente con `python scripts/install.py --gui --lang es`. Requiere Python 3.11 o posterior, Tkinter y una sesión gráfica. El asistente guía diagnóstico, carpetas, instalación y recuperación. Las actualizaciones se preparan en una carpeta nueva; el bloqueo de aplicación y datos impide ejecutarlas con el editor abierto. Se conservan Python y los requisitos del sistema: el asistente no es un instalador autónomo que incluya todas las dependencias.
+
+La comprobación nativa de Microsoft Word continúa separada. El corpus incluye español, inglés y portugués; `--additional-projects RUTA` incorpora los tres proyectos complejos situados en `es/`, `en/` y `pt/`. Requiere Windows con Word de escritorio instalado y licenciado. Preparar el kit, validar DOCX o renderizar con LibreOffice no equivale a ejecutar Word.

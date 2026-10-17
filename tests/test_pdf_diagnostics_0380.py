@@ -27,9 +27,8 @@ def oversized(tmp_path):
             'report': {'sections': [{'key': 'findings'}]},
             'findings': [{'id': 'F12', 'title': 'Synthetic protected control table',
                           'mode': 'vuln', 'severity': 'info',
-                          'description_md': '| Control | Result |\n| --- | --- |\n' + '\n'.join(
-                              f'| ROW-{i:03d} | This fictional protected row stays whole. |'
-                              for i in range(100))}]}
+                          'description_md': '| ' + 'IMPOSSIBLE_HEADER ' * 1000 +
+                          ' | Result |\n| --- | --- |\n| One | Original retained. |'}]}
     dump_yaml(data, directory / 'engagement.yaml')
     return directory
 

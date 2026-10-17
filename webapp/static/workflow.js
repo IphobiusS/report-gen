@@ -392,22 +392,26 @@ const WorkflowUI = (() => {
       });
     });m.closeModal=close;document.body.append(m);m.showModal();return m;
   }
-  function annotations(e){
-    const slug=S.slug;const operations=[];let start=null;const mode={type:'redact',text:''};
+  function annotations(e,recovered=null){
+    const slug=S.slug,key='workflow:annotation:'+e.uid,initial=recovered?.data||PendingUI.retained(key)?.data;
+    if(initial&&(initial.evidence_uid!==e.uid||initial.src!==e.src))throw Error(w('La evidencia cambió; conserva la copia pendiente y vuelve a revisar la imagen.','The evidence changed; keep the pending copy and review the image again.','A evidência mudou; mantenha a cópia pendente e revise a imagem novamente.'));
+    const operations=clone(initial?.operations||[]);let start=null,pending=null;const mode=clone(initial?.mode||{type:'redact',text:''});
     const area=h('div',{class:'wf-image-editor'});const image=h('img',{src:url('/'+e.src,slug),alt:e.title,draggable:'false'});area.append(image);const list=h('div',{});
     const redraw=()=>{
       area.querySelectorAll('.wf-overlay').forEach(n=>n.remove());list.replaceChildren();
       operations.forEach((op,i)=>{
         area.append(h('div',{class:'wf-overlay '+op.type,style:`left:${op.x*100}%;top:${op.y*100}%;width:${op.w*100}%;height:${op.h*100}%`},op.type==='text'?op.text:op.type==='arrow'?'↘':''));
         const r=row(h('strong',{},(i+1)+': '+op.type));['x','y','w','h'].forEach(k=>{const inp=h('input',{type:'number',value:(op[k]*100).toFixed(2),min:0,max:100,step:0.1,'aria-label':k+' %',onchange:ev=>{op[k]=Number(ev.target.value)/100;redraw();}});r.append(h('label',{},k+' %',inp));});r.append(button(w('Quitar','Remove', "Remover"),()=>{operations.splice(i,1);redraw();}));list.append(r);
-      });
+      });pending?.changed();
     };
     function point(event){const rect=area.getBoundingClientRect();return{x:Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(event.clientY-rect.top)/rect.height))};}
     area.addEventListener('pointerdown',ev=>{ev.preventDefault();start=point(ev);area.setPointerCapture?.(ev.pointerId);});
     area.addEventListener('pointerup',ev=>{if(!start)return;const end=point(ev);const op={type:mode.type,x:Math.min(start.x,end.x),y:Math.min(start.y,end.y),w:Math.abs(end.x-start.x),h:Math.abs(end.y-start.y),text:mode.text};start=null;if(op.w>.001&&op.h>.001){operations.push(op);redraw();}});
     const m=modal(w('Anotar y censurar evidencia','Annotate and redact evidence', "Anotar e ocultar dados nas evidências"),hint('Arrastra sobre la imagen para marcar una zona. La censura negra se aplica a los píxeles al guardar; no se puede quitar de esa copia. El original se conserva por separado.','Drag on the image to mark an area. Black redaction is applied to pixels on save and cannot be removed from that copy. The original is retained separately.', "Arraste sobre a imagem para marcar uma área. A ocultação preta é aplicada aos pixels ao salvar e não pode ser removida dessa cópia. O original é mantido separadamente."),row(selectField(w('Herramienta','Tool', "Ferramenta"),mode,'type',[['redact','Censura negra','Black redaction', "Ocultação preta"],['box','Recuadro','Box', "Retângulo"],['arrow','Flecha','Arrow', "Seta"],['text','Texto','Text', "Texto"]],false),localField(w('Texto de anotación','Annotation text', "Texto da anotação"),mode,'text')),area,button(w('Añadir zona con coordenadas','Add area by coordinates', "Adicionar área por coordenadas"),()=>{operations.push({type:mode.type,x:.1,y:.1,w:.3,h:.15,text:mode.text});redraw();}),list,button(w('Aplicar y guardar copia','Apply and save copy', "Aplicar e salvar cópia"),async()=>{
-      if(S.slug!==slug)throw Error(w('Vuelve a abrir la evidencia del proyecto activo.','Reopen evidence in the active project.', "Reabra a evidência no projeto ativo."));await mutate('/evidence/'+e.uid+'/edit',{operations});m.closeModal();
+      if(S.slug!==slug)throw Error(w('Vuelve a abrir la evidencia del proyecto activo.','Reopen evidence in the active project.', "Reabra a evidência no projeto ativo."));const revision=pending.handle.revision;pending.setBusy(true);try{await mutate('/evidence/'+e.uid+'/edit',{operations});if((await pending.committed(revision)).finished)m.closeModal();}finally{pending.setBusy(false);}
     },true));
+    m.dataset.annotationEditor=e.uid;
+    pending=PendingUI.attach(key,w('Anotación de evidencia pendiente','Pending evidence annotation','Anotação de evidência pendente'),()=>({data:{evidence_uid:e.uid,src:e.src,operations,mode}}),{container:m.querySelector('.modal-box'),events:m,origin:recovered,onDiscard:()=>m.closeModal()});redraw();
   }
   function backup(box){
     box.append(card(h('h3',{},w('Proyecto editable completo','Complete editable project', "Projeto editável completo")),hint('Incluye YAML, imágenes, originales, configuración del informe y versiones. Este respaldo contiene información interna y no es el archivo de entrega al cliente.','Includes YAML, images, originals, report settings and versions. This backup contains internal information and is separate from the client deliverable.', "Inclui YAML, imagens, originais, configurações do relatório e versões. Este backup contém informações internas e é separado da entrega ao cliente."),button(w('Descargar respaldo ZIP','Download ZIP backup', "Baixar backup ZIP"),async()=>{const slug=S.slug;if(await doSave())await download(url('/bundle',slug),slug+'-project.zip');},true),button(w('Importar como otro proyecto','Import as another project', "Importar como outro projeto"),importProject)),hint('Límites: ZIP de 256 MiB; contenido descomprimido de 512 MiB y 20.000 archivos. La biblioteca global se exporta desde Biblioteca.','Limits: 256 MiB ZIP; 512 MiB expanded and 20,000 files. Export the global library from Finding library.', "Limites: ZIP de 256 MiB; 512 MiB descompactados e 20.000 arquivos. Exporte a biblioteca global pela Biblioteca de achados."));
@@ -432,10 +436,13 @@ const WorkflowUI = (() => {
     const {body}=await requestJson('/api/library/sanitize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({finding:f,context})});
     await editTemplate({name:f.__name||f.title||'',tags:[],content:body.content});
   }
-  async function editTemplate(entry){
-    const {etag}=await requestJson('/api/library');const draft=clone(entry);draft.tagsText=(draft.tags||[]).join(', ');
-    let advancedDirty=false;const visual=h('div',{'data-template-editor':'visual'}),preview=h('div',{class:'template-preview',hidden:''});
+  async function editTemplate(entry,recovered=null){
+    const checkRecovery=recovered?PendingUI.recoveryGuard(recovered):()=>{};
+    const {etag}=await requestJson('/api/library');checkRecovery();const key='workflow:template:'+(entry.uid||'new'),initial=recovered?.data||PendingUI.retained(key,'workspace')?.data;
+    const draft=initial?clone(initial.draft):clone(entry);if(!initial)draft.tagsText=(draft.tags||[]).join(', ');
+    let advancedDirty=!!initial?.advancedDirty,pending=null;const visual=h('div',{'data-template-editor':'visual'}),preview=h('div',{class:'template-preview',hidden:''});
     const raw=h('textarea',{rows:15,'aria-label':w('Contenido avanzado JSON','Advanced JSON content', "Conteúdo JSON avançado"),oninput:()=>{advancedDirty=true;}});
+    if(initial)raw.value=initial.raw||'';
     function stepsEditor(steps){
       const box=h('div',{});
       const draw=()=>{
@@ -444,6 +451,7 @@ const WorkflowUI = (() => {
           localField(w('Comando o petición (texto)','Command or request (text)', "Comando ou requisição (texto)"),s,'command','textarea'),
           button(w('Quitar paso','Remove step', "Remover etapa"),()=>{steps.splice(i,1);draw();}))));
         box.append(button(w('Añadir paso','Add step', "Adicionar etapa"),()=>{steps.push({lead:'',text_md:'',command:''});draw();}));
+        pending?.changed();
       };draw();return box;
     }
     function draw(){
@@ -471,7 +479,7 @@ const WorkflowUI = (() => {
         c.walkthrough=c.walkthrough||[];visual.append(h('h4',{},w('Pasos de reproducción','Reproduction steps', "Etapas de reprodução")),stepsEditor(c.walkthrough));
       }
       const refs=h('textarea',{'data-field':'references',rows:3,oninput:e=>{c.references=e.target.value.split('\n').filter(x=>x.trim());}});refs.value=(c.references||[]).join('\n');
-      visual.append(h('label',{},w('Referencias, una por línea','References, one per line', "Referências, uma por linha"),refs));
+      visual.append(h('label',{},w('Referencias, una por línea','References, one per line', "Referências, uma por linha"),refs));pending?.changed();
     }
     draw();
     let insertionField=null;
@@ -505,18 +513,39 @@ const WorkflowUI = (() => {
       if(!checked.value)throw Error(w('Revisa el contenido antes de guardar la plantilla.','Review the content before saving.', "Revise o conteúdo antes de salvar."));
       if(advancedDirty)throw Error(w('Aplica primero los cambios del JSON al formulario.','Apply your JSON changes to the form first.', "Aplique primeiro suas alterações de JSON ao formulário."));
       const payload={name:draft.name,tags:draft.tagsText.split(',').map(x=>x.trim()).filter(Boolean),content:draft.content};
-      await requestJson('/api/library'+(entry.uid?'/'+entry.uid:''),{method:entry.uid?'PUT':'POST',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(payload)});m.closeModal();toast(w('Plantilla guardada','Template saved', "Modelo salvo"),'ok');if(S.sel.type==='workflow'&&S.sel.idx==='library')renderMain();
+      const revision=pending.handle.revision;pending.setBusy(true);try{await requestJson('/api/library'+(entry.uid?'/'+entry.uid:''),{method:entry.uid?'PUT':'POST',headers:{'Content-Type':'application/json','If-Match':etag},body:JSON.stringify(payload)});if((await pending.committed(revision)).finished)m.closeModal();}finally{pending.setBusy(false);}toast(w('Plantilla guardada','Template saved', "Modelo salvo"),'ok');if(S.sel.type==='workflow'&&S.sel.idx==='library')renderMain();
     },true));
+    m.dataset.templateEditor=entry.uid||'new';
+    pending=PendingUI.attach(key,w('Plantilla de hallazgo pendiente','Pending finding template','Modelo de achado pendente'),()=>({data:{entry_uid:entry.uid||null,draft:{name:draft.name,tagsText:draft.tagsText,content:draft.content},raw:raw.value,advancedDirty}}),{scope:'workspace',container:m.querySelector('.modal-box'),events:m,origin:recovered,onDiscard:()=>m.closeModal()});
     if(entry.versions?.length){const version={v:String(entry.versions.length)};const field=selectField(w('Cargar versión anterior para editar','Load previous version to edit', "Carregar versão anterior para editar"),version,'v',entry.versions.map(v=>[String(v.version),'v'+v.version+' · '+v.created]),false);field.querySelector('select').addEventListener('change',()=>{const chosen=entry.versions.find(v=>String(v.version)===version.v);draft.content=clone(chosen.content);advancedDirty=false;raw.value=JSON.stringify(draft.content,null,2);draw();});visual.before(field);}
   }
-  function insertTemplate(entry){
+  function insertTemplate(entry,recovered=null){
     if(!S.data)throw Error(w('Abre un proyecto.','Open a project.', "Abra um projeto."));const slug=S.slug;
-    const values={cliente:S.data.meta.client||'',objetivo:'',evaluador:S.data.meta.assessor||''};const keys=[...new Set(['objetivo',...(entry.variables||[])])];
+    const key='workflow:insert:'+entry.uid,initial=recovered?.data||PendingUI.retained(key)?.data,values=initial?clone(initial.values):{cliente:S.data.meta.client||'',objetivo:'',evaluador:S.data.meta.assessor||''};let pending,createdUid=initial?.created_uid||null;const keys=[...new Set(['objetivo',...(entry.variables||[])])];
     const m=modal(w('Insertar plantilla','Insert template', "Inserir modelo"),...keys.map(k=>localField(k,values,k)),button(w('Insertar en el proyecto','Insert into project', "Inserir no projeto"),async()=>{
       if(S.slug!==slug)throw Error(w('El proyecto activo cambió.','The active project changed.', "O projeto ativo mudou."));
-      const {body:f}=await requestJson('/api/library/'+entry.uid+'/instantiate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values})});
-      if(S.slug!==slug)return;f.id=nextFid();S.data.findings.push(f);ensureFindingIds();scheduleSave();select('finding',S.data.findings.length-1);m.closeModal();
+      pending.setBusy(true);try{
+        if(!createdUid){const {body:f}=await requestJson('/api/library/'+entry.uid+'/instantiate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values})});
+          if(S.slug!==slug)return;f.id=nextFid();S.data.findings.push(f);ensureFindingIds();createdUid=f.uid;scheduleSave();pending.changed();}
+        const revision=pending.handle.revision;if(!await doSave())throw Error(w('El hallazgo está en el borrador del informe. Reintenta guardar; no se insertará otro.','The finding is in the report draft. Retry saving; another will not be inserted.','O achado está no rascunho do relatório. Tente salvar novamente; outro não será inserido.'));
+        if((await pending.committed(revision)).finished)m.closeModal();select('finding',S.data.findings.findIndex(f=>f.uid===createdUid));
+      }finally{pending.setBusy(false);}
     },true));
+    pending=PendingUI.attach(key,w('Variables de plantilla pendientes','Pending template variables','Variáveis de modelo pendentes'),()=>({data:{entry_uid:entry.uid,values,created_uid:createdUid}}),{container:m.querySelector('.modal-box'),events:m,origin:recovered,onDiscard:()=>m.closeModal()});m.dataset.templateInsert=entry.uid;
   }
+  PendingUI.register('workflow:insert:',{
+    validate(row){const data=row.data;if(!data||typeof data.entry_uid!=='string'||row.key!=='workflow:insert:'+data.entry_uid||!data.values||typeof data.values!=='object'||Array.isArray(data.values)||Object.values(data.values).some(v=>typeof v!=='string')||data.created_uid!==null&&typeof data.created_uid!=='string')throw Error(w('Variables pendientes no compatibles.','Unsupported pending variables.','Variáveis pendentes não compatíveis.'));},
+    missingReference:row=>!!row.data.created_uid&&!(S.data.findings||[]).some(f=>f.uid===row.data.created_uid),
+    async restore(row){const check=PendingUI.recoveryGuard(row);const {body}=await requestJson('/api/library');check();const entry=body.templates.find(e=>e.uid===row.data.entry_uid);if(!entry)throw Error(w('La plantilla fue eliminada. Conserva los valores mostrados.','The template was deleted. Keep the displayed values.','O modelo foi excluído. Guarde os valores exibidos.'));return insertTemplate(entry,row);}
+  });
+  PendingUI.register('workflow:annotation:',{
+    validate(row){const data=row.data;if(!data||row.key!=='workflow:annotation:'+data.evidence_uid||!Array.isArray(data.operations)||!data.mode||!['redact','box','arrow','text'].includes(data.mode.type)||typeof data.mode.text!=='string'||data.operations.some(op=>!op||!['redact','box','arrow','text'].includes(op.type)||['x','y','w','h'].some(k=>typeof op[k]!=='number'||!Number.isFinite(op[k])||op[k]<0||op[k]>1)||typeof op.text!=='string'))throw Error(w('Anotación pendiente no compatible.','Unsupported pending annotation.','Anotação pendente não compatível.'));},
+    missingReference:row=>!(S.data.evidence||[]).some(e=>e.uid===row.data.evidence_uid&&e.src===row.data.src),
+    restore:row=>annotations(S.data.evidence.find(e=>e.uid===row.data.evidence_uid),row)
+  });
+  PendingUI.register('workflow:template:',{
+    validate(row){const data=row.data;if(!data||row.key!=='workflow:template:'+(data.entry_uid||'new')||!data.draft||typeof data.draft.name!=='string'||typeof data.draft.tagsText!=='string'||!data.draft.content||typeof data.draft.content!=='object'||Array.isArray(data.draft.content)||typeof data.raw!=='string'||typeof data.advancedDirty!=='boolean')throw Error(w('Plantilla pendiente no compatible.','Unsupported pending template.','Modelo pendente não compatível.'));},
+    async restore(row){const check=PendingUI.recoveryGuard(row);const {body}=await requestJson('/api/library');check();const entry=row.data.entry_uid?(body.templates||[]).find(e=>e.uid===row.data.entry_uid):{name:'',tags:[],content:{}};if(!entry)throw Error(w('La plantilla fue eliminada. Conserva el texto de la copia pendiente.','The template was deleted. Keep the pending copy text.','O modelo foi excluído. Guarde o texto da cópia pendente.'));return editTemplate(entry,row);}
+  });
   return {bind,updateNav,render,findingPanel,findingEvidence,saveTemplate,openLibrary:()=>go('library'),navigateIssue,reviewControls,resetReview,reviewSnapshot,uid};
 })();

@@ -5,14 +5,15 @@ jobs:
   word:
     # Opt-in dedicated runner with licensed desktop Word. Never execute on PRs.
     runs-on: [self-hosted, Windows, report-gen-word]
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Prepare synthetic long tables, images, fields and findings
         shell: pwsh
         run: |
           python -m pip install -e '.[dev]' -c requirements-audited.txt
-          python scripts/prepare-external-acceptance.py --output out/external-acceptance
+          python scripts/build-boreal-case.py --output out/boreal-case
+          python scripts/prepare-external-acceptance.py --output out/external-acceptance --additional-projects out/boreal-case/projects
       - name: Update fields, save a copy and verify internal links
         shell: pwsh
         run: ./scripts/verify-microsoft-word.ps1 -InputDirectory out/external-acceptance/word-input -OutputDirectory out/external-acceptance/word-verified

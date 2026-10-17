@@ -86,7 +86,7 @@ async function api(method,uri,body){return page.evaluate(async ({method,uri,body
   await page.getByRole('dialog',{name:'Comprobaciones de la exportación',exact:true}).getByRole('button',{name:'Cerrar',exact:true}).click();
  }
  check('Cuatro descargas reales',downloads.length===4);
- await closeMore();await page.locator('[data-studio-nav="deliver"]').click();await page.getByRole('button',{name:'Elegir formatos',exact:true}).click();
+ await closeMore();await page.locator('[data-studio-nav="deliver"]').click();await page.locator('#studioMore').evaluate(node=>node.open=true);await page.locator('#deliveryBtn').click();
  for(const fmt of ['pdf','docx','md','html'])await page.locator('[data-delivery-format="'+fmt+'"]').check();
  if(await page.locator('[data-delivery="ack"]').count())await page.locator('[data-delivery="ack"]').check();
  await page.getByRole('button',{name:'Generar paquete',exact:true}).click();

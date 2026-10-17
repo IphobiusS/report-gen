@@ -70,7 +70,7 @@ function legacyCopies(){
 async function recovery(){
   const generation=++recoveryGeneration,slug=S.slug,data=S.data,etag=projectStore.etag,lang=S.uiLang,rows=projectStore.recovery||[];
   if(recoveryDialog?.isConnected&&recoveryDialog.dataset.recoveryProject!==slug){recoveryDialog.close();recoveryDialog.remove();recoveryDialog=null;}
-  if(!slug||projectStore.loading||projectBusyCount>0)return;
+  if(projectStore.loading||projectBusyCount>0)return;
   let pending=[];try{if(typeof PendingUI!=='undefined')pending=await PendingUI.list(slug);}catch{/* Form status reports unavailable storage when edited. */}
   // Loading and the explicit recovery action can overlap. Only the latest
   // request for this exact project view may present its private records.
@@ -98,6 +98,7 @@ function saveHelp(banner){
 function update(){
   if(!bound)return;
   ExperienceUI.updateDeliveryChecklist();
+  if(typeof DeliveryFlowUI!=='undefined')DeliveryFlowUI.update();
   mode=['guide','insights'].includes(S.sel.type)?S.sel.type:S.sel.type==='studio'?S.sel.idx:S.sel.type==='workflow'&&['review','history','retest','retest_diff','retest_matrix','root_causes','remediation_tasks'].includes(S.sel.idx)?'review':'work';
   document.documentElement.dataset.studio=mode;
   const names={work:['Trabajar','Work', "Trabalhar"],review:['Revisar','Review', "Revisar"],deliver:['Entregar','Deliver', "Entregar"],library:['Biblioteca','Library', "Biblioteca"]};
@@ -108,21 +109,48 @@ function update(){
   const indicator=$('#draftStatus');if(projectStore.dirty){indicator.textContent=projectStore.recoverableRevision===projectStore.revision?w('Borrador recuperable en este navegador','Draft recoverable in this browser', "Rascunho recuperável neste navegador"):projectStore.draftError?w('Borrador solo en esta pestaña','Draft only in this tab', "Rascunho somente nesta aba"):w('Protegiendo borrador…','Protecting draft…', "Protegendo rascunho…");}else indicator.textContent='';
   saveHelp($('#saveError'));
 }
-async function inspector(){
-  if(!S.slug||!await doSave())return;
+async function inspector(origin=null){
+  if(origin?.format!=='report-gen-pending')origin=null;
+  if(origin&&(origin.workspace_id!==BrowserWorkspace.current()||origin.slug!==S.slug||projectStore.dirty||projectStore.loading))throw Error(w('Abre el proyecto original y guarda o resuelve sus cambios antes de recuperar.','Open the original project and save or resolve its changes before recovering.','Abra o projeto original e salve ou resolva suas alterações antes de recuperar.'));
+  const generation=(inspector.generation||0)+1;inspector.generation=generation;
+  if(!S.slug||(!origin&&!await doSave()))return;
   const slug=S.slug,current=S.data,localRevision=projectStore.revision,revision=projectStore.etag;const data=await api.get('/api/projects/'+encodeURIComponent(slug)+'/publication');
-  if(S.slug!==slug||S.data!==current||projectStore.revision!==localRevision||projectStore.etag!==revision||projectStore.dirty||projectStore.loading)return;
+  if(generation!==inspector.generation||S.slug!==slug||S.data!==current||projectStore.revision!==localRevision||projectStore.etag!==revision||projectStore.dirty||projectStore.loading)return;
+  if(origin?.data?.kind==='exception'&&!data.alerts.some(alert=>alert.id===origin.data.alert_id))throw Error(w('La alerta ya no existe. Conserva el texto de la copia pendiente; no se registró ninguna excepción.','The alert no longer exists. Keep the pending copy text; no exception was recorded.','O alerta não existe mais. Guarde o texto da cópia pendente; nenhuma exceção foi registrada.'));
+  inspector.activeDialog?.close();
+  const attachments=[];
   const {d,body}=dialog(w('Inspector de publicación','Publication inspector', "Inspetor de publicação"));
+  inspector.activeDialog=d;d.dataset.publicationInspector='';
+  d.addEventListener('close',()=>{attachments.forEach(pending=>pending.dispose());if(inspector.activeDialog===d)inspector.activeDialog=null;});
+  const initial=key=>origin?.key===key?PendingUI.unpack(origin.data):PendingUI.active.get(slug+'|'+key)?.revision?PendingUI.retained(key)?.data:null;
+  const attach=(key,label,read,container)=>{const pending=PendingUI.attach(key,label,()=>({data:read()}),{container,origin:origin?.key===key?origin:null,onDiscard:()=>{d.close();return inspector();}});attachments.push(pending);return pending;};
   body.append(h('p',{},w('Revisa el texto completo y las imágenes que saldrán. Las capturas privadas, los originales y el historial quedan en el proyecto.','Review the full outgoing text and images. Private captures, originals and history stay in the project.', "Revise todo o texto e as imagens de saída. Capturas privadas, originais e histórico permanecem no projeto.")),
     h('p',{class:'hash'},w('Revisión: ','Revision: ', "Revisão: ")+data.revision.slice(0,12)+' / '+data.images.length+' '+w('imágenes','images', "imagens")+' / '+data.private_captures+' '+w('capturas privadas excluidas','private captures excluded', "capturas privadas excluídas")),
     h('p',{},w('La detección por patrones puede omitir secretos. Una excepción registra tu decisión, no modifica el texto. La censura de texto solo cambia la copia publicada; revisa los comandos resultantes.','Pattern detection can miss secrets. An exception records your decision without editing text. Text redaction changes only the published copy; review resulting commands.', "A detecção por padrões pode não identificar segredos. Uma exceção registra sua decisão sem editar o texto. A ocultação de texto altera somente a cópia publicada; revise os comandos resultantes.")));
-  const mutate=async fn=>{if(S.slug!==slug||projectStore.etag!==revision||projectStore.dirty)throw Error(w('El proyecto cambió. Vuelve a abrir el inspector.','The project changed. Reopen the inspector.', "O projeto mudou. Reabra o inspetor."));S.data.publication||={redactions:[],exceptions:[]};fn(S.data.publication);scheduleSave();if(await doSave()){d.close();inspector();}};
+  const mutate=async(fn,pending=null)=>{
+    if(S.slug!==slug||S.data!==current||projectStore.etag!==revision||projectStore.dirty||projectStore.loading||!d.open)throw Error(w('El proyecto cambió. Vuelve a abrir el inspector.','The project changed. Reopen the inspector.', "O projeto mudou. Reabra o inspetor."));
+    const pendingRevision=pending?.handle.revision;
+    pending?.setBusy(true);
+    try{S.data.publication||={redactions:[],exceptions:[]};fn(S.data.publication);scheduleSave();if(await doSave()){if(pending)await pending.committed(pendingRevision);d.close();await inspector();}}
+    finally{pending?.setBusy(false);}
+  };
   const alerts=h('section',{},h('h3',{},w('Posibles secretos','Possible secrets', "Possíveis segredos")));
   if(!data.alerts.length)alerts.append(h('p',{},w('Sin coincidencias en los patrones comprobados. Haz también una revisión manual.','No matches in the checked patterns. Review manually as well.', "Nenhuma correspondência nos padrões verificados. Revise manualmente também.")));
-  for(const a of data.alerts){const reason=h('input',{value:a.reason,maxlength:4000,'aria-label':w('Motivo de la excepción','Exception reason', "Motivo da exceção")});alerts.append(h('div',{class:'card'},h('strong',{},a.kind+' / '+a.preview),h('label',{},w('Justificación si debe publicarse','Reason if it must be published', "Motivo pelo qual deve ser publicado"),reason),button(w('Registrar excepción','Record exception', "Registrar exceção"),()=>{if(!reason.value.trim())throw Error(w('Escribe un motivo.','Enter a reason.', "Informe um motivo."));return mutate(c=>{c.exceptions=(c.exceptions||[]).filter(x=>x.id!==a.id);c.exceptions.push({id:a.id,reason:reason.value});});})));}
+  for(const a of data.alerts){
+    const key='studio:publication:exception:'+a.id,draft=initial(key),card=h('div',{class:'card','data-publication-alert':a.id});
+    const reason=h('input',{value:draft?.reason??a.reason??'',maxlength:4000,'data-publication-reason':'','aria-label':w('Motivo de la excepción','Exception reason', "Motivo da exceção")});
+    card.append(h('strong',{},a.kind+' / '+a.preview),h('label',{},w('Justificación si debe publicarse','Reason if it must be published', "Motivo pelo qual deve ser publicado"),reason));
+    const pending=attach(key,w('Motivo de excepción pendiente','Pending exception reason','Motivo de exceção pendente'),()=>({kind:'exception',alert_id:a.id,reason:reason.value}),card);
+    card.append(button(w('Registrar excepción','Record exception', "Registrar exceção"),()=>{if(!reason.value.trim())throw Error(w('Escribe un motivo.','Enter a reason.', "Informe um motivo."));return mutate(c=>{c.exceptions=(c.exceptions||[]).filter(x=>x.id!==a.id);c.exceptions.push({id:a.id,reason:reason.value});},pending);}));
+    alerts.append(card);
+  }
   body.append(alerts);
-  const needle=h('input',{autocomplete:'off',maxlength:2000,'aria-label':w('Texto literal a censurar','Literal text to redact', "Texto literal a ocultar")}),replacement=h('input',{value:'[REDACTED]',maxlength:4000,'aria-label':w('Sustitución','Replacement', "Substituição")});
-  body.append(h('details',{},h('summary',{},w('Censura de texto para publicar','Text redaction for publication', "Ocultação de texto para publicação")),h('p',{},w('Sustituye todas las coincidencias literales en el contenido publicado. Mínimo cuatro caracteres. No edita los originales.','Replaces all literal matches in published content. At least four characters. Originals are not edited.', "Substitui todas as correspondências literais no conteúdo publicado. No mínimo quatro caracteres. Os originais não são editados.")),h('label',{},w('Texto literal','Literal text', "Texto literal"),needle),h('label',{},w('Sustitución','Replacement', "Substituição"),replacement),button(w('Aplicar y volver a inspeccionar','Apply and inspect again', "Aplicar e inspecionar novamente"),()=>{if(needle.value.length<4)throw Error(w('Usa al menos cuatro caracteres.','Use at least four characters.', "Use pelo menos quatro caracteres."));return mutate(c=>{c.redactions||=[];c.redactions.push({needle:needle.value,replacement:replacement.value});});})));
+  const redactionKey='studio:publication:redaction',redactionDraft=initial(redactionKey);
+  const needle=h('input',{value:redactionDraft?.needle??'',autocomplete:'off',maxlength:2000,'data-publication-needle':'','aria-label':w('Texto literal a censurar','Literal text to redact', "Texto literal a ocultar")}),replacement=h('input',{value:redactionDraft?.replacement??'[REDACTED]',maxlength:4000,'data-publication-replacement':'','aria-label':w('Sustitución','Replacement', "Substituição")});
+  const redaction=h('details',redactionDraft?{open:''}:{},h('summary',{},w('Censura de texto para publicar','Text redaction for publication', "Ocultação de texto para publicação")),h('p',{},w('Sustituye todas las coincidencias literales en el contenido publicado. Mínimo cuatro caracteres. No edita los originales.','Replaces all literal matches in published content. At least four characters. Originals are not edited.', "Substitui todas as correspondências literais no conteúdo publicado. No mínimo quatro caracteres. Os originais não são editados.")),h('label',{},w('Texto literal','Literal text', "Texto literal"),needle),h('label',{},w('Sustitución','Replacement', "Substituição"),replacement));
+  const redactionPending=attach(redactionKey,w('Censura de texto pendiente','Pending text redaction','Ocultação de texto pendente'),()=>({kind:'redaction',needle:needle.value,replacement:replacement.value}),redaction);
+  redaction.append(button(w('Aplicar y volver a inspeccionar','Apply and inspect again', "Aplicar e inspecionar novamente"),()=>{if(needle.value.length<4)throw Error(w('Usa al menos cuatro caracteres.','Use at least four characters.', "Use pelo menos quatro caracteres."));return mutate(c=>{c.redactions||=[];c.redactions.push({needle:needle.value,replacement:replacement.value});},redactionPending);}));
+  body.append(redaction);
   const rules=S.data.publication?.redactions||[];
   if(rules.length)body.append(h('details',{},h('summary',{},rules.length+' '+w('censuras registradas','recorded redactions', "ocultações registradas")),...rules.map((rule,index)=>h('div',{class:'card'},h('code',{},rule.needle+' → '+rule.replacement),button(w('Retirar esta censura','Remove this redaction', "Remover esta ocultação"),()=>mutate(c=>c.redactions.splice(index,1)))))));
   body.append(h('details',{open:''},h('summary',{},w('Texto que se publicará','Outgoing text', "Texto de saída")),h('pre',{class:'publication-text',tabindex:0},data.text)));
@@ -130,12 +158,23 @@ async function inspector(){
   for(const img of data.images){inventory.append(h('details',{},h('summary',{},img.name+' / '+Math.round(img.bytes/1024)+' KB'),h('img',{src:'/api/projects/'+encodeURIComponent(slug)+'/publication/image?name='+encodeURIComponent(img.name)+'&revision='+encodeURIComponent(data.revision),alt:img.name,loading:'lazy'}),h('p',{},w('Metadatos retirados de la derivada','Metadata removed from derivative', "Metadados removidos da cópia derivada")+(img.metadata.length?': '+img.metadata.join(', '):'')),h('p',{class:'hash'},w('Original privado: ','Private original: ', "Original privado: ")+img.original_sha256),h('p',{class:'hash'},w('Publicado: ','Published: ', "Publicado: ")+img.sha256),PrivacyUI.ocr(img,slug,revision)));}
   body.append(inventory,button(w('Abrir evidencias para censurar una imagen','Open evidence to redact an image', "Abrir evidências para ocultar dados de uma imagem"),()=>{d.close();select('workflow','evidence');}),h('p',{},w('Archivos disponibles: informe.pdf, informe.docx, markdown.zip, informe.html y el registro de verificación. Solo se incluyen los formatos que selecciones.','Available files: informe.pdf, informe.docx, markdown.zip, informe.html and the verification record. Only selected formats are included.', "Arquivos disponíveis: informe.pdf, informe.docx, markdown.zip, informe.html e o registro de verificação. Somente os formatos selecionados são incluídos.")));
 }
+PendingUI.register('studio:publication:',{
+  async validate(row){
+    const form=PendingUI.unpack(row.data),exception=form?.kind==='exception'&&row.key==='studio:publication:exception:'+form.alert_id&&typeof form.alert_id==='string'&&typeof form.reason==='string'&&form.reason.length<=4000;
+    const redaction=form?.kind==='redaction'&&row.key==='studio:publication:redaction'&&typeof form.needle==='string'&&form.needle.length<=2000&&typeof form.replacement==='string'&&form.replacement.length<=4000;
+    if(!exception&&!redaction)throw Error(w('Formulario de publicación incompatible. Conserva el contenido mostrado.','Incompatible publication form. Keep the displayed content.','Formulário de publicação incompatível. Guarde o conteúdo exibido.'));
+    if(row.slug!==S.slug||projectStore.dirty||projectStore.loading)throw Error(w('El proyecto cambió. Vuelve a abrir la recuperación.','The project changed. Reopen recovery.','O projeto mudou. Reabra a recuperação.'));
+    const slug=S.slug,current=S.data,revision=projectStore.etag;
+    if(exception){const inspection=await api.get('/api/projects/'+encodeURIComponent(slug)+'/publication');
+      if(S.slug!==slug||S.data!==current||projectStore.etag!==revision||projectStore.dirty||projectStore.loading)throw Error(w('El proyecto cambió. Vuelve a abrir la recuperación.','The project changed. Reopen recovery.','O projeto mudou. Reabra a recuperação.'));
+      if(!inspection.alerts.some(alert=>alert.id===form.alert_id))throw Error(w('La alerta ya no existe. Conserva el texto de la copia pendiente; no se registró ninguna excepción.','The alert no longer exists. Keep the pending copy text; no exception was recorded.','O alerta não existe mais. Guarde o texto da cópia pendente; nenhuma exceção foi registrada.'));
+    }
+  },
+  restore:row=>inspector(row)
+});
 function render(el,kind){
   if(kind==='deliver'){
-    el.append(h('div',{class:'studio-stage'},h('p',{class:'workspace-path'},'~/'+S.slug+'/delivery'),h('h1',{},w('Una revisión. Cuatro entregables.','One revision. Four deliverables.', "Uma revisão. Quatro entregas.")),h('p',{},w('Comprueba qué compartes y genera los formatos desde la misma copia guardada.','Check what you share and generate formats from the same saved snapshot.', "Verifique o que compartilha e gere os formatos a partir da mesma cópia salva.")),
-      h('section',{class:'card'},h('h2',{},w('1. Inspeccionar','1. Inspect', "1. Inspecionar")),h('p',{},w('Texto completo, imágenes sin metadatos, posibles secretos y excepciones.','Full text, metadata-free images, possible secrets and exceptions.', "Texto completo, imagens sem metadados, possíveis segredos e exceções.")),button(w('Abrir inspector','Open inspector', "Abrir inspetor"),inspector,true)),
-      h('section',{class:'card'},h('h2',{},w('3. Preparar entrega','3. Prepare delivery', "3. Preparar entrega")),h('p',{},w('PDF, Word, Markdown o un HTML autónomo con filtros, evidencias y retest. El HTML contiene todo el informe, incluso al filtrar.','PDF, Word, Markdown or standalone HTML with filters, evidence and retest. HTML contains the whole report, even when filtered.', "PDF, Word, Markdown ou HTML independente com filtros, evidências e retestes. O HTML contém o relatório completo, mesmo quando filtrado.")),button(w('Elegir formatos','Choose formats', "Escolher formatos"),()=>ExperienceUI.prepareDelivery(),true),button(w('Exportaciones y descargas','Exports and downloads', "Exportações e downloads"),()=>ProgressUI.jobs()))));
-    const stage=el.querySelector('.studio-stage');stage.insertBefore(ExperienceUI.deliveryChecklist(),stage.querySelector('section'));stage.insertBefore(AnnexUI.card(),stage.lastElementChild);
+    DeliveryFlowUI.render(el);
   }else{
     el.append(h('div',{class:'studio-stage'},h('h1',{},w('Tu biblioteca de trabajo','Your working library', "Sua biblioteca de trabalho")),h('p',{},w('La apariencia se aplica sin sustituir los hallazgos que ya escribiste.','Apply an appearance without replacing findings you have written.', "Aplique uma aparência sem substituir os achados que escreveu.")),
       h('section',{class:'card'},h('h2',{},w('Diseño del informe','Report design', "Modelo de relatório")),h('p',{},w('Empieza con Serio y compara páginas equivalentes de los seis diseños generales. El catálogo completo conserva los perfiles especializados y tus plantillas personales.','Start with Serious and compare equivalent pages from the six general designs. The full catalog keeps specialized profiles and your personal designs available.', "Comece com Serious e compare páginas equivalentes dos seis modelos gerais. O catálogo completo mantém disponíveis os perfis especializados e seus modelos pessoais.")),button(w('Explorar galería','Explore gallery', "Explorar galeria"),opener=>DesignLibraryUI.gallery(opener),true)),

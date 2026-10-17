@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.40.0
+# report-gen 0.41.0
 
 <a id="qué-es"></a>
 
@@ -60,6 +60,20 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Word | Documento editable `.docx`, con campos propios para el índice. |
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
+
+## Integración 0.41.0
+
+**Entregar** reúne revisión, destinatario, vista previa y exportación. Los bloqueos tienen acceso a su origen; cambiar contenido u opciones invalida la vista previa. La exportación conserva la revisión comprobada y exige confirmar de nuevo los avisos cuando corresponde.
+
+Las tablas extensas dentro de hallazgos pueden continuar por filas entre páginas, repitiendo su cabecera. Las tablas breves se conservan juntas. Una celda o un encabezado que exceda la altura útil sigue rechazándose con un diagnóstico; no se recorta contenido para forzar la salida.
+
+Los borradores recuperables se amplían a edición masiva y formularios auxiliares de bibliotecas, importación, anotaciones y creación. Recuperar abre el formulario para revisarlo; nunca ejecuta cambios ni restaura aprobaciones. Los formularios del espacio de trabajo se distinguen de los de cada informe. Se mantienen los límites y los 30 días de retención del navegador.
+
+La revisión visual permite **Guardar progreso en el proyecto**: página actual, notas y pendientes, vinculados al SHA-256 del PDF y a la revisión de origen. Guardar una copia privada del PDF es opcional. Sin ella debes volver a abrir el mismo archivo. Estas revisiones no se publican en los informes; sí viajan en respaldos e historial. Eliminar la revisión actual no elimina versiones anteriores.
+
+Abre el asistente con `python scripts/install.py --gui --lang es`. Requiere Python 3.11 o posterior, Tkinter y una sesión gráfica. El asistente guía diagnóstico, carpetas, instalación y recuperación. Las actualizaciones se preparan en una carpeta nueva; el bloqueo de aplicación y datos impide ejecutarlas con el editor abierto. Se conservan Python y los requisitos del sistema: el asistente no es un instalador autónomo que incluya todas las dependencias.
+
+La comprobación nativa de Microsoft Word continúa separada. El corpus incluye español, inglés y portugués; `--additional-projects RUTA` incorpora los tres proyectos complejos situados en `es/`, `en/` y `pt/`. Requiere Windows con Word de escritorio instalado y licenciado. Preparar el kit, validar DOCX o renderizar con LibreOffice no equivale a ejecutar Word.
 
 ## Novedades de 0.40.0
 
@@ -158,7 +172,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.40.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.41.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

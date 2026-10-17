@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen com Prometeo e Evaristo" width="300">
 </p>
 
-# report-gen 0.40.0
+# report-gen 0.41.0
 
 **Um editor local para transformar avaliações de segurança em relatórios claros.** Organize achados, vincule evidências, acompanhe a remediação e os retestes e produza **PDF, Word, Markdown com imagens e HTML portátil** a partir de uma revisão salva.
 
@@ -36,6 +36,20 @@ O português é a variante **Brasil**. A chave interna é `pt`; os argumentos de
 5. Abra os arquivos gerados antes de compartilhar e mantenha um backup privado do projeto editável.
 
 O **tutorial visual** permanece no menu. Seus seis passos têm instruções e capturas reais em espanhol, inglês e português, com ampliação e progresso local. A apresentação inicial pode ser ignorada. Consultar o tutorial não modifica o relatório; ele também funciona quando o navegador não consegue salvar seu progresso.
+
+## Integração 0.41.0
+
+**Entregar** reúne revisão, destinatário, visualização e exportação. Os impedimentos levam à origem; mudanças de conteúdo ou opções invalidam a visualização. A exportação mantém a revisão examinada e exige nova confirmação quando necessário.
+
+Tabelas extensas dentro dos achados podem continuar por linhas entre páginas, repetindo o cabeçalho. Tabelas curtas permanecem juntas. Uma célula ou título maior que a altura útil continua sendo rejeitado com diagnóstico; o conteúdo não é recortado para forçar a saída.
+
+Os rascunhos recuperáveis abrangem edição em lote e formulários auxiliares de bibliotecas, importação, anotações e criação. A recuperação abre o formulário para revisão; não aplica mudanças nem restaura aprovações. Formulários do espaço de trabalho são separados dos formulários de cada relatório. Permanecem as cotas e a retenção de 30 dias do navegador.
+
+A revisão visual oferece **Salvar progresso no projeto**: página atual, notas e pendências vinculadas ao SHA-256 do PDF e à revisão de origem. Salvar uma cópia privada do PDF é opcional. Sem ela, reabra o arquivo original exato. Os registros ficam fora dos relatórios publicados, mas são incluídos em backups e histórico. Excluir o registro atual não apaga versões anteriores.
+
+Abra o assistente com `python scripts/install.py --gui --lang pt`. Exige Python 3.11 ou posterior, Tkinter e uma sessão gráfica. O assistente orienta diagnóstico, pastas, instalação e recuperação. Atualizações usam uma pasta nova; bloqueios do aplicativo e dos dados impedem atualizar com o editor aberto. Python e requisitos do sistema continuam necessários: o assistente não inclui todas as dependências em um pacote autônomo.
+
+A aceitação nativa do Microsoft Word permanece separada. O corpus inclui espanhol, inglês e português; `--additional-projects CAMINHO` inclui três projetos complexos em `es/`, `en/` e `pt/`. Exige Windows com Word de desktop instalado e licenciado. Preparar o kit, validar DOCX ou renderizar com LibreOffice não executa o Word.
 
 ## Novidades da 0.40.0
 

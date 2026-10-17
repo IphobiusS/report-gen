@@ -3,16 +3,36 @@ const BulkUI=(()=>{
   'use strict';
   const w=(es,en,pt)=>uiText(es,en,pt);
   const labels={owner:['Responsable','Owner', "Responsável"],due_date:['Fecha de corrección','Remediation date', "Data da correção"],root_cause_uid:['Grupo de causa raíz','Root cause group', "Grupo de causa raiz"]};
-  function open(){
+  // Only editable assignments are journaled. Comparisons and acknowledgements
+  // are deliberately rebuilt against the current server revision on recovery.
+  function cleanDraft(input){
+    if(!input||input.schema!==1||!Array.isArray(input.finding_uids)||input.finding_uids.length>500||input.finding_uids.some(uid=>typeof uid!=='string'||!uid)||new Set(input.finding_uids).size!==input.finding_uids.length||!input.values||typeof input.values!=='object'||Array.isArray(input.values)||!input.enabled||typeof input.enabled!=='object')throw Error(w('Borrador por lotes no compatible.','Unsupported bulk draft.','Rascunho em lote não compatível.'));
+    const output={schema:1,finding_uids:[...input.finding_uids],values:{},enabled:{}};
+    for(const field of Object.keys(labels)){
+      if(typeof input.values[field]!=='string'||input.values[field].length>(field==='owner'?200:field==='due_date'?10:100)||typeof input.enabled[field]!=='boolean')throw Error(w('Borrador por lotes no compatible.','Unsupported bulk draft.','Rascunho em lote não compatível.'));
+      output.values[field]=input.values[field];output.enabled[field]=input.enabled[field];
+    }
+    return output;
+  }
+  function missingReference(row){
+    const data=cleanDraft(row.data),uids=new Set((S.data.findings||[]).map(f=>f.uid)),groups=new Set((S.data.root_cause_groups||[]).map(g=>g.uid));
+    return data.finding_uids.some(uid=>!uids.has(uid))||!!(data.values.root_cause_uid&&!groups.has(data.values.root_cause_uid));
+  }
+  function open(recovered=null){
+    if(recovered?.format!=='report-gen-pending')recovered=null;
     if(!S.slug||projectBusyCount||projectStore.loading)return;
-    const slug=S.slug,workspace=S.workspace_id,trigger=document.activeElement,selected=new Set();
-    let preview=null,requestBusy=false,edited=false,page=0;
+    if(document.querySelector('[data-bulk-dialog]')){document.querySelector('[data-bulk-dialog] input')?.focus();return;}
+    const slug=S.slug,workspace=S.workspace_id,trigger=document.activeElement,retained=PendingUI.active.get(S.slug+'|bulk:assignments');
+    const initial=recovered?cleanDraft(recovered.data):retained?cleanDraft(retained.read().data):null;
+    if((recovered&&(recovered.slug!==slug||recovered.workspace_id!==BrowserWorkspace.current()))||(initial&&missingReference({data:initial})))throw Error(w('El borrador ya no corresponde al proyecto actual.','The draft no longer matches the current project.','O rascunho não corresponde mais ao projeto atual.'));
+    const selected=new Set(initial?.finding_uids||[]);
+    let preview=null,requestBusy=false,edited=!!initial,page=0,pending=null;
     const dialog=h('dialog',{class:'experience-dialog workbench-dialog','aria-label':w('Editar hallazgos por lotes','Bulk edit findings', "Editar achados em lote"),'data-bulk-dialog':''});
     const body=h('div',{class:'experience-body'}),form=h('fieldset',{}),list=h('div',{'data-bulk-findings':''}),review=h('div',{'data-bulk-review':''}),error=h('p',{role:'alert'}),count=h('p',{role:'status'});
     const close=h('button',{type:'button',class:'btn',onclick:()=>requestClose()},w('Cerrar','Close', "Fechar"));
-    const protectUnload=event=>{if(edited||requestBusy){event.preventDefault();event.returnValue='';}};
+    const protectUnload=event=>{if(requestBusy||edited&&(!pending||pending.error||pending.persisted!==pending.revision)){event.preventDefault();event.returnValue='';}};
     window.addEventListener('beforeunload',protectUnload);
-    function requestClose(){if(requestBusy)return;if(edited&&!confirm(w('¿Cerrar y descartar esta selección y propuesta sin guardar?','Close and discard this unsaved selection and proposal?', "Fechar e descartar esta seleção e proposta não salvas?")))return;dialog.close();}
+    function requestClose(){if(requestBusy)return;dialog.close();}
     dialog.addEventListener('cancel',event=>{event.preventDefault();requestClose();});
     dialog.addEventListener('close',()=>{window.removeEventListener('beforeunload',protectUnload);dialog.remove();(trigger?.isConnected&&!trigger.disabled?trigger:document.querySelector('[data-bulk-open]')||$('#editor'))?.focus({preventScroll:true});});
     const search=h('input',{type:'search','aria-label':w('Buscar hallazgos para seleccionar','Find findings to select', "Pesquisar achados para selecionar"),oninput:()=>{page=0;draw();}});
@@ -21,7 +41,7 @@ const BulkUI=(()=>{
     const pagination=h('div',{class:'studio-actions'},previous,next);
     const values={},enabled={};
     const ack=h('input',{type:'checkbox','data-bulk-ack':'',onchange:()=>{apply.disabled=!preview||!preview.changes.length||!ack.checked;}});
-    function invalidate(){edited=true;preview=null;review.replaceChildren();ack.checked=false;apply.disabled=true;error.textContent='';}
+    function invalidate(){edited=true;preview=null;review.replaceChildren();ack.checked=false;apply.disabled=true;error.textContent='';if(pending)PendingUI.changed(pending);}
     function draw(){
       const query=search.value.trim().toLocaleLowerCase(),rows=(S.data.findings||[]).filter(f=>!query||(f.id+' '+f.title).toLocaleLowerCase().includes(query)),pages=Math.max(1,Math.ceil(rows.length/50));
       page=Math.min(page,pages-1);previous.disabled=page===0;next.disabled=page===pages-1;list.replaceChildren();
@@ -41,11 +61,19 @@ const BulkUI=(()=>{
       const input=field==='root_cause_uid'?h('select',{'data-bulk-value':field},h('option',{value:''},w('Sin grupo','No group', "Sem grupo")),...(S.data.root_cause_groups||[]).map(g=>h('option',{value:g.uid},g.name||g.uid))):h('input',{type:field==='due_date'?'date':'text',maxlength:field==='owner'?200:10,'data-bulk-value':field});
       input.disabled=true;input.setAttribute('aria-label',w(...labels[field]));input.addEventListener('input',invalidate);input.addEventListener('change',invalidate);values[field]=input;
       const checkbox=h('input',{type:'checkbox','data-bulk-field':field,onchange:()=>{input.disabled=!checkbox.checked;invalidate();}});enabled[field]=checkbox;
+      if(initial){input.value=initial.values[field];checkbox.checked=initial.enabled[field];input.disabled=!checkbox.checked;}
       form.append(h('div',{},h('label',{class:'wf-check'},checkbox,w('Cambiar ','Change ', "Alterar ")+w(...labels[field])),input));
     }
+    const read=()=>({data:{schema:1,finding_uids:[...selected],values:Object.fromEntries(Object.entries(values).map(([field,input])=>[field,input.value])),enabled:Object.fromEntries(Object.entries(enabled).map(([field,input])=>[field,input.checked]))}});
+    pending=PendingUI.track('bulk:assignments',w('Asignaciones por lotes pendientes','Pending bulk assignments','Atribuições em lote pendentes'),read,{origin:recovered});
+    const discard=h('button',{type:'button',class:'btn','data-bulk-discard':'',onclick:async()=>{
+      if(requestBusy||!confirm(w('¿Descartar esta selección, propuesta y su copia local? Los hallazgos guardados se conservan.','Discard this selection, proposal and local copy? Saved findings are retained.','Descartar esta seleção, proposta e cópia local? Os achados salvos serão mantidos.')))return;
+      discard.disabled=true;try{if(await PendingUI.clear(pending)){edited=false;dialog.close();}}catch(e){error.textContent=e.message;}finally{discard.disabled=false;}
+    }},w('Descartar formulario pendiente','Discard pending form','Descartar formulário pendente'));
+    if(recovered)PendingUI.changed(pending);
     async function run(action){
-      if(requestBusy)return;requestBusy=true;form.disabled=true;close.disabled=true;compare.disabled=true;apply.disabled=true;error.textContent='';busyProject(true);
-      try{await action();}catch(e){error.textContent=e.message;}finally{requestBusy=false;form.disabled=false;close.disabled=false;compare.disabled=false;apply.disabled=!preview||!preview.changes.length||!ack.checked;busyProject(false);}
+      if(requestBusy)return;requestBusy=true;form.disabled=true;close.disabled=true;discard.disabled=true;compare.disabled=true;apply.disabled=true;error.textContent='';busyProject(true);
+      try{await action();}catch(e){error.textContent=e.message;}finally{requestBusy=false;form.disabled=false;close.disabled=false;discard.disabled=false;compare.disabled=false;apply.disabled=!preview||!preview.changes.length||!ack.checked;busyProject(false);}
     }
     function current(){if(slug!==S.slug||workspace!==S.workspace_id||!dialog.isConnected)throw Error(w('El espacio o proyecto cambió. Cierra y vuelve a abrir esta edición.','The workspace or project changed. Close and reopen this editor.', "O espaço de trabalho ou o projeto mudou. Feche e reabra este editor."));}
     const compare=h('button',{type:'button',class:'btn','data-bulk-compare':'',onclick:()=>run(async()=>{
@@ -64,16 +92,20 @@ const BulkUI=(()=>{
     const apply=h('button',{type:'button',class:'btn primary','data-bulk-apply':'',disabled:'',onclick:()=>run(async()=>{
       current();if(!preview||!ack.checked)throw Error(w('Compara y confirma los cambios.','Compare and confirm the changes.', "Compare e confirme as alterações."));
       if(projectStore.dirty||preview.revision!==projectStore.revision||preview.etag!==projectStore.etag)throw Error(w('El informe cambió. Vuelve a comparar.','The report changed. Compare again.', "O relatório mudou. Compare novamente."));
-      const beforeRevision=projectStore.revision,beforeData=S.data,beforeJson=JSON.stringify(S.data);
+      const pendingRevision=pending.revision,beforeRevision=projectStore.revision,beforeData=S.data,beforeJson=JSON.stringify(S.data);
       const response=await requireOk(await appFetch('/api/projects/'+encodeURIComponent(slug)+'/bulk-edit/apply',{method:'POST',headers:{'Content-Type':'application/json','If-Match':preview.etag},body:JSON.stringify({...preview.payload,preview_token:preview.preview_token,ack_reviewed:true})}));
       const result=await response.json();current();
       if(beforeRevision!==projectStore.revision||beforeData!==S.data||beforeJson!==JSON.stringify(S.data)||projectStore.dirty)throw Error(w('El servidor guardó la asignación, pero el borrador local cambió. Se conserva tu borrador; revisa el conflicto antes de recargar.','The server saved the assignment, but the local draft changed. Your draft is preserved; review the conflict before reloading.', "O servidor salvou a atribuição, mas o rascunho local mudou. Seu rascunho foi preservado; revise o conflito antes de recarregar."));
       await adoptSavedProject(result.data,response.headers.get('ETag'));renderSidebar();renderMain();if(S.previewMode==='live')refreshLivePreview();
-      edited=false;dialog.close();toast(w('Asignaciones guardadas. Puedes recuperar la versión anterior en Versiones.','Assignments saved. Recover the previous version in Versions.', "Atribuições salvas. Recupere a versão anterior em Versões."),'ok');
+      const cleanup=await PendingUI.committed(pending,pendingRevision);
+      if(cleanup.finished){edited=false;dialog.close();}
+      if(cleanup.warning)toast(w('Asignaciones guardadas, pero su copia local no se pudo eliminar. Revísala en Datos privados guardados.','Assignments saved, but their local copy could not be deleted. Review Stored private data.','Atribuições salvas, mas a cópia local não pôde ser excluída. Revise Dados privados armazenados.'),'err');
+      else toast(w('Asignaciones guardadas. Puedes recuperar la versión anterior en Versiones.','Assignments saved. Recover the previous version in Versions.', "Atribuições salvas. Recupere a versão anterior em Versões."),'ok');
     })},w('Guardar cambios revisados','Save reviewed changes', "Salvar alterações revisadas"));
     form.addEventListener('change',()=>{if(!requestBusy&&preview){preview=null;review.replaceChildren();ack.checked=false;apply.disabled=true;}});
-    body.append(form,compare,review,h('label',{class:'wf-check'},ack,w('Revisé todos los cambios. Esta asignación no verifica una corrección.','I reviewed every change. This assignment does not verify a fix.', "Revisei cada alteração. Esta atribuição não verifica uma correção.")),error,apply);
+    body.append(h('p',{},w('Cerrar conserva el formulario pendiente. Recuperarlo no guarda asignaciones: deberás comparar y confirmar de nuevo.','Closing retains the pending form. Recovery does not save assignments: compare and confirm again.','Fechar mantém o formulário pendente. Recuperar não salva atribuições: compare e confirme novamente.')),PendingUI.status(pending),form,compare,review,h('label',{class:'wf-check'},ack,w('Revisé todos los cambios. Esta asignación no verifica una corrección.','I reviewed every change. This assignment does not verify a fix.', "Revisei cada alteração. Esta atribuição não verifica uma correção.")),error,h('div',{class:'studio-actions'},apply,discard));
     dialog.append(h('div',{class:'experience-heading'},h('h2',{},w('Edición por lotes','Bulk edit', "Editar em lote")),close),body);document.body.append(dialog);draw();dialog.showModal();search.focus();
   }
+  PendingUI.register('bulk:',{validate:row=>{if(row.key!=='bulk:assignments')throw Error(w('Formulario por lotes no compatible.','Unsupported bulk form.','Formulário em lote não compatível.'));cleanDraft(row.data);},missingReference,restore:open});
   return {open};
 })();

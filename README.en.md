@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.40.0
+# report-gen 0.41.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -50,6 +50,20 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Word | An editable `.docx` with its own table-of-contents fields. |
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
+
+## 0.41.0 integration
+
+**Deliver** combines review, audience, preview and export. Blockers link to their source; content or option changes invalidate the preview. Export retains the reviewed revision and requires renewed acknowledgement when appropriate.
+
+Long tables inside findings can continue by rows across pages with repeated headers. Short tables stay together. A cell or heading that exceeds the printable height still produces a diagnostic; content is never clipped to force an output.
+
+Recoverable drafts now cover bulk editing and auxiliary library, import, annotation and creation forms. Recovery opens a form for review; it never applies changes or restores approvals. Workspace forms are distinguished from report forms. Browser quotas and 30-day retention still apply.
+
+Visual review offers **Save progress in project**: current page, notes and pending issues bound to the PDF SHA-256 and original revision. Saving a private PDF copy is optional. Without it, reopen the exact original file. These records are excluded from published reports but included in backups and history. Deleting the current record does not erase earlier versions.
+
+Start the wizard with `python scripts/install.py --gui --lang en`. It requires Python 3.11 or newer, Tkinter and a graphical session. The wizard guides diagnosis, folders, installation and recovery. Updates use a new directory; application and workspace locks prevent updating a running editor. Python and system requirements still apply: the wizard is not a standalone bundle containing every dependency.
+
+Native Microsoft Word acceptance remains separate. The corpus covers Spanish, English and Portuguese; `--additional-projects PATH` includes three complex projects under `es/`, `en/` and `pt/`. It requires Windows with installed, licensed desktop Word. Preparing the kit, validating DOCX or rendering with LibreOffice does not execute Word.
 
 ## New in 0.40.0
 
@@ -143,7 +157,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.40.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.41.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

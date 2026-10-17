@@ -15,10 +15,11 @@ const AnnexUI=(()=>{
   return box;
  }
  function button(label,action,onerror=e=>toast(e.message,'err')){const b=h('button',{class:'btn',type:'button'},label);b.addEventListener('click',async()=>{b.disabled=true;try{await action();}catch(e){onerror(e);}finally{if(b.isConnected)b.disabled=false;}});return b;}
- function card(){return h('section',{class:'card annex-stage'},h('h2',{},w('2. Comprobar anexos','2. Check annexes', "2. Verificar anexos")),h('p',{},w('Selecciona las copias revisadas. Los anexos obligatorios pendientes bloquean la entrega.','Select reviewed copies. Missing required annexes block delivery.', "Selecione as cópias revisadas. Anexos obrigatórios ausentes bloqueiam a entrega.")),button(w('Inventario de anexos','Annex inventory', "Inventário de anexos"),open));}
- async function open(){
-  if(!S.slug||!await doSave())return;const slug=S.slug,revision=projectStore.etag;
-  const result=await api.get('/api/projects/'+encodeURIComponent(slug)+'/attachments');if(S.slug!==slug||projectStore.etag!==revision)return;
+ async function open(recovered=null){
+  if(recovered?.format!=='report-gen-pending')recovered=null;
+  const checkRecovery=recovered?PendingUI.recoveryGuard(recovered):()=>{};
+  if(!S.slug||!await doSave())return;checkRecovery();const slug=S.slug,revision=projectStore.etag;
+  const result=await api.get('/api/projects/'+encodeURIComponent(slug)+'/attachments');checkRecovery();if(S.slug!==slug||projectStore.etag!==revision)return;
   const previous=document.activeElement,d=h('dialog',{class:'experience-dialog annex-dialog','aria-label':w('Inventario de anexos','Annex inventory', "Inventário de anexos")}),body=h('div',{class:'experience-body'});
   d.append(h('div',{class:'experience-heading'},h('h2',{},w('Inventario de anexos','Annex inventory', "Inventário de anexos")),button(w('Cerrar','Close', "Fechar"),()=>d.close())),body);
   d.addEventListener('close',()=>{d.remove();(previous?.isConnected?previous:$('#editor')).focus();});
@@ -35,12 +36,14 @@ const AnnexUI=(()=>{
     await loadProject(slug);await reopen();
    }catch(e){fail(e);upload.disabled=false;upload.value='';}finally{busyProject(false);}});
   body.append(h('label',{},w('Cargar copia revisada (16 MiB por archivo; 64 MiB total)','Upload reviewed copy (16 MiB per file; 64 MiB total)', "Enviar cópia revisada (16 MiB por arquivo; 64 MiB no total)"),upload),notice);
-  const name=h('input',{maxlength:120,placeholder:w('evidencia-redactada.json','redacted-evidence.json','evidencia-com-dados-ocultados.json'),'aria-label':w('Nombre del anexo previsto','Expected annex filename', "Nome de arquivo esperado do anexo")});
-  const required=h('input',{type:'checkbox','data-annex-declare-required':''});
+  const initial=recovered?.data||PendingUI.retained('annex:declare')?.data||{name:'',required:false};let pending;
+  const name=h('input',{value:initial.name,maxlength:120,placeholder:w('evidencia-redactada.json','redacted-evidence.json','evidencia-com-dados-ocultados.json'),'aria-label':w('Nombre del anexo previsto','Expected annex filename', "Nome de arquivo esperado do anexo")});
+  const required=h('input',{type:'checkbox',checked:initial.required?'':null,'data-annex-declare-required':''});
   name.addEventListener('input',()=>{notice.textContent='';name.removeAttribute('aria-invalid');});
   body.append(h('details',{},h('summary',{},w('Declarar un anexo todavía pendiente','Declare an annex not ready yet', "Declarar um anexo ainda não pronto")),h('label',{},w('Nombre con extensión','Filename with extension', "Nome de arquivo com extensão"),name),
    h('label',{class:'wf-check'},required,w('Obligatorio para entregar','Required for delivery', "Obrigatório para a entrega")),
-   action(w('Agregar al inventario','Add to inventory', "Adicionar ao inventário"),async()=>{stale();if(!name.value.trim()){name.setAttribute('aria-invalid','true');throw Error(w('Escribe un nombre.','Enter a filename.', "Informe um nome de arquivo."));}busyProject(true);try{await requireOk(await appFetch('/api/projects/'+encodeURIComponent(slug)+'/attachments/declare',{method:'POST',headers:{'Content-Type':'application/json','If-Match':revision},body:JSON.stringify({name:name.value.trim(),required:required.checked})}));await loadProject(slug);await reopen();}catch(e){name.setAttribute('aria-invalid','true');throw e;}finally{busyProject(false);}})));
+   action(w('Agregar al inventario','Add to inventory', "Adicionar ao inventário"),async()=>{stale();if(!name.value.trim()){name.setAttribute('aria-invalid','true');throw Error(w('Escribe un nombre.','Enter a filename.', "Informe um nome de arquivo."));}const pendingRevision=pending.handle.revision;pending.setBusy(true);busyProject(true);try{await requireOk(await appFetch('/api/projects/'+encodeURIComponent(slug)+'/attachments/declare',{method:'POST',headers:{'Content-Type':'application/json','If-Match':revision},body:JSON.stringify({name:name.value.trim(),required:required.checked})}));await pending.committed(pendingRevision);await loadProject(slug);await reopen();}catch(e){name.setAttribute('aria-invalid','true');throw e;}finally{pending.setBusy(false);busyProject(false);}})));
+  pending=PendingUI.attach('annex:declare',w('Declaración de anexo pendiente','Pending annex declaration','Declaração de anexo pendente'),()=>({data:{name:name.value,required:required.checked}}),{container:body,origin:recovered,onDiscard:()=>d.close()});
   const statuses={declared:['Pendiente de cargar','Awaiting upload', "Aguardando envio"],missing:['Archivo ausente o alterado','File missing or changed', "Arquivo ausente ou alterado"],excluded:['Solo en el proyecto','Project only', "Somente no projeto"],included:['Se incluirá en el paquete','Included in package', "Incluído no pacote"]};
   if(!result.files.length)body.append(h('p',{class:'annex-empty'},w('No has declarado anexos. Si el informe menciona archivos adicionales, agrégalos aquí.','No annexes declared. Add any additional files mentioned in the report here.', "Nenhum anexo declarado. Adicione aqui os arquivos adicionais mencionados no relatório.")));
   result.files.forEach(item=>{const row=S.data.attachments.find(x=>x.uid===item.uid),section=h('section',{class:'card annex-item','data-annex':item.uid},h('h3',{},item.name),h('p',{class:'annex-status'},w(...statuses[item.status])));
@@ -70,5 +73,6 @@ const AnnexUI=(()=>{
   body.append(h('p',{class:'wf-hint'},w('Retirar del inventario no borra la copia privada ni las versiones. El respaldo editable conserva los archivos del proyecto.','Removing an inventory entry does not delete the private copy or history. Editable backups retain project files.', "Remover uma entrada do inventário não exclui a cópia privada nem o histórico. Backups editáveis preservam os arquivos do projeto.")));
   document.body.append(d);d.showModal();
  }
- return {open,card,size};
+ PendingUI.register('annex:declare',{validate(row){if(row.key!=='annex:declare'||!row.data||typeof row.data.name!=='string'||row.data.name.length>120||typeof row.data.required!=='boolean')throw Error(w('Declaración pendiente no compatible.','Unsupported pending declaration.','Declaração pendente não compatível.'));},restore:open});
+ return {open,size};
 })();

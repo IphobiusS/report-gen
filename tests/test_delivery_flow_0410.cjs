@@ -1,0 +1,92 @@
+/* Production delivery UI + real Flask APIs; layout/native keys have a browser gate. */
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {JSDOM}=require('jsdom'),makeTransport=require('./flask_transport.cjs');
+const root=path.resolve(__dirname,'..'),checks=[],requests=[],errors=[];
+const check=(name,value)=>{assert.ok(value,name);checks.push(name);};
+const until=async predicate=>{for(let i=0;i<1000;i++){if(predicate())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Timed out: '+predicate);};
+let dom,bridge,q,pending=0,holdPreview=null;
+(async()=>{
+  bridge=makeTransport();const html=fs.readFileSync(path.join(root,'webapp/static/index.html'),'utf8');
+  dom=new JSDOM(html,{url:'http://127.0.0.1/',runScripts:'outside-only',pretendToBeVisual:true});const w=dom.window,doc=w.document;
+  w.addEventListener('error',event=>errors.push(event.message));
+  w.fetch=async(url,options={})=>{pending++;const record={url:String(url),method:options.method||'GET',body:options.body,headers:options.headers};requests.push(record);
+    try{const response=await bridge.fetch(url,options);record.status=response.status;
+      if(record.method==='POST'&&String(url).endsWith('/jobs')&&response.ok)record.payload=await response.clone().json();
+      if(String(url).endsWith('/audiences/export'))record.bytes=Buffer.from(await response.clone().arrayBuffer());
+      if(holdPreview&&String(url).endsWith('/audiences/preview')){const hold=holdPreview;holdPreview=null;hold.response=response;await hold.wait;}
+      return response;
+    }finally{pending--;}};
+  w.confirm=()=>true;w.alert=()=>{};w.structuredClone=structuredClone;w.AbortController=AbortController;w.AbortSignal=AbortSignal;
+  w.CSS={escape:value=>Array.from(String(value),c=>'\\'+c.codePointAt(0).toString(16)+' ').join('')};
+  w.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});w.ResizeObserver=class{observe(){}disconnect(){}};
+  w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};
+  w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
+  w.HTMLAnchorElement.prototype.click=function(){};w.URL.createObjectURL=()=> 'blob:delivery-flow-test';w.URL.revokeObjectURL=()=>{};
+  w.localStorage.setItem('rg.previewVisible','0');
+  const sources=[...html.matchAll(/<script src="\/static\/([^"/]+)"/g)].map(match=>fs.readFileSync(path.join(root,'webapp/static',match[1]),'utf8'));
+  w.eval(sources.join('\n')+'\nwindow.qa={S,projectStore,api,requireOk,select,setUiLang,renderMain,loadProject,refreshProjects,scheduleSave,doSave,DeliveryFlowUI,InsightsUI};');q=w.qa;
+  await until(()=>doc.querySelector('.workspace-dashboard')&&!q.projectStore.loading);
+  const response=await q.requireOk(await q.api.post('/api/demo',{lang:'es'})),created=await response.json();
+  await q.refreshProjects();await q.loadProject(created.slug);
+  const settle=async()=>{await until(()=>pending===0);await new Promise(resolve=>w.requestAnimationFrame(resolve));await until(()=>pending===0);};
+  const click=selector=>{const el=doc.querySelector(selector);assert.ok(el,selector);assert.ok(!el.disabled,'Enabled: '+selector);el.click();return el;};
+  const change=(selector,value,event='change')=>{const el=doc.querySelector(selector);assert.ok(el,selector);if(el.type==='checkbox'||el.type==='radio')el.checked=value;else el.value=value;el.dispatchEvent(new w.Event(event,{bubbles:true}));return el;};
+  const shell=()=>doc.querySelector('[data-delivery-flow]');
+  const isCurrent=()=>shell()?.dataset.deliveryCurrent==='true';
+  const hasPreview=()=>shell()?.dataset.deliveryPreviewCurrent==='true';
+  const backend=async()=>{const r=await bridge.fetch('/api/projects/'+q.S.slug);return{etag:r.headers.get('ETag'),data:await r.json()};};
+  const before=await backend(),readStart=requests.length;
+  q.select('studio','deliver');await until(isCurrent);await settle();
+  check('Opening guided delivery reads the saved snapshot without writing project data',requests.slice(readStart).every(r=>r.method==='GET')&&JSON.stringify(await backend())===JSON.stringify(before));
+  check('Four sequential native buttons identify the active step',doc.querySelectorAll('.delivery-flow-nav button').length===4&&doc.querySelector('[data-delivery-action="step-0"]').getAttribute('aria-current')==='step');
+  check('Review separates blockers and recommendations without claiming approval',doc.querySelector('[data-delivery-issues="error"]')&&doc.querySelector('[data-delivery-issues="warning"]')&&doc.querySelector('[data-delivery-action="step-3"]').disabled);
+  click('[data-delivery-action="review-attachments"]');await until(()=>doc.querySelector('dialog.annex-dialog[open]'));
+  check('Attachment inventory is accessible in the initial review step before advancing',!doc.querySelector('[data-delivery-step="0"]').hidden&&doc.querySelector('dialog.annex-dialog[open]'));
+  doc.querySelector('dialog.annex-dialog[open]').close();
+  check('Known review locations provide field navigation',doc.querySelector('[data-delivery-action="issue"]'));
+  click('[data-delivery-action="review-next"]');click('[data-delivery-action="audience-next"]');click('[data-delivery-action="preview"]');await until(hasPreview);
+  check('Publication preview displays the exact revision and outgoing text',doc.querySelector('[data-delivery-publication]').textContent.includes(before.etag.replaceAll('"',''))&&doc.querySelector('.delivery-flow-text').textContent.length>500);
+  check('A successful content preview does not silently confirm human review',!doc.querySelector('[data-delivery-preview-confirm]').checked&&doc.querySelector('[data-delivery-action="step-3"]').disabled);
+  change('[data-delivery-preview-confirm]',true);click('[data-delivery-action="preview-next"]');
+  check('Confirmed current preview enables the export step',!doc.querySelector('[data-delivery-step="3"]').hidden);
+  change('[data-flow-delivery="label"]','Saved delivery label','input');change('[data-flow-delivery-format="docx"]',false);change('[data-flow-delivery-format="pdf"]',false);
+  change('[data-flow-delivery="ack"]',true);const etag=q.projectStore.etag,queuedStart=requests.length;click('[data-delivery-action="generate"]');await settle();
+  const queued=requests.slice(queuedStart).find(r=>r.url.endsWith('/jobs')&&r.method==='POST');
+  check('Complete delivery uses the existing immutable queue and exact reviewed If-Match',queued&&queued.status===202&&queued.headers['If-Match']===etag&&JSON.parse(queued.body).formats.join()==='md');
+  let completed=false;for(let attempt=0;attempt<400;attempt++){const job=await q.api.get('/api/jobs/'+queued.payload.id);assert.notEqual(job.stage,'error',job.error);if(job.stage==='done'){completed=true;break;}await new Promise(resolve=>setTimeout(resolve,25));}
+  const verified=await q.api.get('/api/jobs/'+queued.payload.id+'/verification');
+  check('Queued Markdown delivery completes the production output verification',completed&&Object.values(verified.files||{}).length===1&&Object.values(verified.files).every(file=>file.bytes>0&&/^[a-f0-9]{64}$/.test(file.sha256)));
+  q.S.data.meta.title+=' updated';q.scheduleSave();q.DeliveryFlowUI.update();
+  check('Editing content immediately invalidates preview and acknowledgement',!hasPreview()&&!doc.querySelector('[data-delivery-preview-confirm]').checked&&!doc.querySelector('[data-flow-delivery="ack"]').checked&&doc.querySelector('[data-delivery-action="generate"]').disabled);
+  check('Invalidation preserves label and formats',doc.querySelector('[data-flow-delivery="label"]').value==='Saved delivery label'&&!doc.querySelector('[data-flow-delivery-format="pdf"]').checked&&doc.querySelector('[data-flow-delivery-format="md"]').checked);
+  click('[data-delivery-action="step-0"]');click('[data-delivery-action="check"]');await until(isCurrent);await settle();
+  click('[data-delivery-action="step-1"]');change('input[name="delivery-destination"][value="audience"]',true);await until(()=>doc.querySelector('[data-insights-field="profile"]'));await settle();
+  check('Audience configuration reuses the existing technical, executive and public profiles',Array.from(doc.querySelectorAll('[data-insights-field="profile"] option'),o=>o.value).join()==='technical,executive,public');
+  change('[data-insights-field="profile"]','executive');
+  click('[data-delivery-action="audience-next"]');click('[data-insights-action="preview-audience"]');await until(hasPreview);await settle();
+  check('Audience preview includes its real outgoing content and revision',doc.querySelector('.insights-context')?.textContent.length>100&&hasPreview());
+  change('[data-delivery-preview-confirm]',true);click('[data-delivery-action="preview-next"]');
+  change('[data-insights-check="format-pdf"]',false);change('[data-insights-check="format-docx"]',false);change('[data-insights-check="format-html"]',false);change('[data-insights-check="audience-ack"]',true);
+  const exportStart=requests.length,exportEtag=q.projectStore.etag;click('[data-insights-action="export-audience"]');await settle();
+  const exported=requests.slice(exportStart).find(r=>r.url.endsWith('/audiences/export'));
+  check('Audience export generates a real ZIP from the reviewed revision',exported&&exported.status===200&&exported.headers['If-Match']===exportEtag&&exported.bytes.subarray(0,2).toString()==='PK');
+  check('Audience export performs no save or project mutation between preview and download',requests.slice(exportStart).filter(r=>r.method!=='GET').length===1&&(await backend()).etag===exportEtag);
+  click('[data-delivery-action="step-1"]');change('[data-insights-field="title"]','New audience title','input');
+  check('Changing an audience invalidates preview and warning consent but retains formats',!hasPreview()&&!doc.querySelector('[data-insights-check="audience-ack"]').checked&&!doc.querySelector('[data-insights-check="format-pdf"]').checked);
+  let release;const delayed={wait:new Promise(resolve=>release=resolve)};holdPreview=delayed;
+  click('[data-delivery-action="audience-next"]');click('[data-insights-action="preview-audience"]');await until(()=>delayed.response);
+  click('[data-delivery-action="step-1"]');change('[data-insights-field="title"]','Changed while preview was loading','input');release();await settle();
+  check('A late preview response cannot validate options edited while it was loading',!hasPreview()&&doc.querySelector('[data-insights-action="export-audience"]').disabled);
+  for(const [lang,expected]of [['en','Audience'],['pt','Público'],['es','Destinatario']]){
+    q.setUiLang(lang);await until(isCurrent);await settle();
+    check(lang+': workflow labels are localized',doc.querySelector('[data-delivery-action="step-1"]').textContent.includes(expected));
+    click('[data-delivery-action="step-1"]');await until(()=>doc.querySelector('[data-insights-field="title"]'));
+    check(lang+': changing interface language preserves audience selections without restoring preview consent',doc.querySelector('[data-insights-field="profile"]').value==='executive'&&doc.querySelector('[data-insights-field="title"]').value==='Changed while preview was loading'&&!hasPreview());
+  }
+  await settle();check('The complete sequence has no application DOM exceptions',errors.length===0);
+  console.log(JSON.stringify({status:'passed',passed:checks.length,checks,scope:'Production JavaScript and real Flask APIs. Actual Markdown ZIP output, immutable queue request, stale/in-flight preview and ES/EN/PT behavior; browser geometry and Microsoft Word are not covered here.'},null,2));
+})().catch(error=>{console.error(JSON.stringify({status:'failed',passed:checks.length,checks,error:error.stack,domErrors:errors},null,2));process.exitCode=1;}).finally(async()=>{
+  if(q?.projectStore){q.projectStore.timers.clearTimeout(q.projectStore.timer);q.projectStore.timer=null;await q.projectStore.pending.catch(()=>{});}
+  dom?.window.close();bridge?.close();
+});

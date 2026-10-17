@@ -46,3 +46,7 @@
 @media(max-width:760px){.layout.workspace-insights{display:block}.insights-shell h1{font-size:1.75rem}.insights-card{padding:16px}.insights-nav{gap:8px}.insights-nav button{flex-basis:130px;font-size:.875rem}.insights-actions>.btn{flex:1 1 130px}.insights-definition{grid-template-columns:minmax(0,1fr)}.insights-entry{align-items:flex-start;flex-direction:column;padding:20px}.insights-entry>.btn{width:100%}}
 @media(prefers-reduced-motion:reduce){.insights-shell>[data-insights-content]{animation:none}.insights-shell *{scroll-behavior:auto}}
 .workspace-pagebar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:12px 0}.workspace-pagebar-count{flex-basis:100%;font-size:.8125rem;color:var(--muted)}.workspace-pagebar .btn{min-width:44px;min-height:44px;padding:8px}.workspace-pagebar select{min-width:0;min-height:44px;width:auto;flex:1}.sidebar .workspace-pagebar{font-size:.75rem}.sidebar .workspace-pagebar .btn{font-size:.75rem}
+/* Persisted visual review inherits the review workspace's theme and mobile sizing. */
+.visual-review-entry{border-top:1px solid var(--line);padding:18px 0;min-width:0;overflow-wrap:anywhere}.visual-review-entry:last-child{padding-bottom:0}
+.visual-review-observation{border-left:2px solid var(--accent);padding:8px 14px;margin:12px 0;overflow-wrap:anywhere}.visual-review-observation p{margin:0 0 8px}
+.visual-review-save [role=status]{margin:16px 0 0;color:var(--muted)}

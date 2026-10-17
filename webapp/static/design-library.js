@@ -8,7 +8,7 @@ const DesignLibraryUI=(()=>{
   const profileName=p=>p['name_'+normalizeUiLanguage(S.uiLang)]||p.name;
   const profileCourse=p=>p['course_'+normalizeUiLanguage(S.uiLang)]||p.course;
   const generalItem=id=>({id,name:generalNames[id]?w(...generalNames[id]):id,provider:'General'});
-  let catalog=null,etag=null,trigger=null,creationDraft=null,openingProject=false;
+  let catalog=null,etag=null,trigger=null,creationDraft=null,openingProject=false,creationPending=null,creationSubmitRevision=null;
   const categories={all:['Todas','All', "Todas"],general:['Generales','General', "Gerais"],corporate:['Empresariales','Corporate', "Corporativo"],'red-team':['Red Team','Red Team', "Red Team"],'blue-team':['Blue Team','Blue Team', "Blue Team"],certification:['Certificaciones','Certifications', "Certificações"],personal:['Mis plantillas','My designs', "Meus modelos"]};
   function btn(label,fn,primary=false){const b=h('button',{type:'button',class:'btn'+(primary?' primary':'')},label);b.addEventListener('click',async()=>{trigger=b;b.disabled=true;try{await fn(b);}catch(e){toast(e.message,'err');}finally{b.disabled=false;}});return b;}
   function modal(title,wide=false,opener=null){const focus=opener||(document.activeElement===document.body?trigger:document.activeElement);
@@ -27,7 +27,7 @@ const DesignLibraryUI=(()=>{
     return box;
   }
   async function refresh(){const r=await requireOk(await appFetch('/api/design-library'));etag=r.headers.get('ETag');catalog=await r.json();}
-  async function write(url,body,method='POST'){const r=await requireOk(await appFetch(url,{method,headers:{'Content-Type':'application/json','If-Match':etag},...(body?{body:JSON.stringify(body)}:{})}));etag=r.headers.get('ETag');return r.json();}
+  async function write(url,body,method='POST',expected=etag){const r=await requireOk(await appFetch(url,{method,headers:{'Content-Type':'application/json','If-Match':expected},...(body?{body:JSON.stringify(body)}:{})}));etag=r.headers.get('ETag');return r.json();}
   function guideBox(g){return h('div',{class:'design-guidance'},h('p',{},g.note),h('a',{href:g.source,target:'_blank',rel:'noopener noreferrer'},w('Consultar guía','Open guide', "Abrir guia")),h('p',{class:'wf-hint'},w('Referencia consultada: ','Reference checked: ', "Referência consultada: ")+g.checked));}
   async function gallery(opener=null,options={}){opener=opener||(document.activeElement!==document.body?document.activeElement:trigger);await refresh();const {d,body}=modal(options.create?w('Nuevo proyecto · Elige una plantilla','New project · Choose a design', "Novo projeto · Escolha um modelo"):w('Biblioteca de informes','Report design library', "Biblioteca de modelos de relatório"),true,opener);
     const currentDesign=S.data?.meta?.design,currentId=currentDesign?.id||S.data?.meta?.theme;
@@ -103,7 +103,8 @@ const DesignLibraryUI=(()=>{
     }
     comparison.value=sample;renderList();renderDetail();
   }
-  function configureProject(p,variant,parent,sampleLang,opener){
+  function configureProject(p,variant,parent,sampleLang,opener,recovered=null){
+    const previousPending=PendingUI.retained('design:create-project','workspace')?.data;
     const fresh=!$('#newModal').dataset.designId;
     const previousPreset=$('#mPreset').value,previousCert=$('#mCert').value;
     populatePresetSelector();
@@ -113,6 +114,11 @@ const DesignLibraryUI=(()=>{
     $('#mLang').value='corporativo-'+sampleLang;
     $('#mPresetOptions').hidden=p.provider!=='General';$('#mPresetSelected').hidden=p.provider!=='General';
     $('#mDesignSelected').replaceChildren(h('strong',{},profileName(p)),h('span',{},(p.provider==='General'?w('Diseño general','General design', "Modelo geral"):variant==='quiet'?w('Variante sobria','Quiet variant', "Variante sóbria"):w('Variante de marca','Brand variant', "Variante de marca"))+' · '+(p.sections?p.sections.length+' '+w('secciones iniciales','starter sections', "seções iniciais"):w('Estructura editable','Editable structure', "Estrutura editável"))));
+    if(recovered){const data=recovered.data;$('#mTitle').value=data.title;$('#mClient').value=data.client;$('#mSlug').value=data.slug;$('#mLang').value=data.lang;
+      if([...$('#mPreset').options].some(option=>option.value===data.preset)){$('#mPreset').value=data.preset;if(data.preset.startsWith('family:')){fillCertOptions(data.preset.slice(7));if([...$('#mCert').options].some(option=>option.value===data.cert))$('#mCert').value=data.cert;}refreshPresetDesc();}}
+    creationPending?.dispose();
+    creationPending=PendingUI.attach('design:create-project',w('Creación de proyecto pendiente','Pending project creation','Criação de projeto pendente'),()=>({data:{design_id:p.id,provider:p.provider,variant,title:$('#mTitle').value,client:$('#mClient').value,slug:$('#mSlug').value,lang:$('#mLang').value,preset:$('#mPreset').value,cert:$('#mCert').value}}),{scope:'workspace',container:$('#newModal').querySelector('.modal-box'),events:$('#newModal'),origin:recovered,onDiscard:()=>{creationPending.dispose();creationPending=null;creationDraft=null;delete $('#newModal').dataset.designId;$('#mTitle').value=$('#mClient').value=$('#mSlug').value='';closeModal($('#newModal'));}});
+    if(!recovered&&previousPending&&JSON.stringify(previousPending)!==JSON.stringify(creationPending.handle.read().data))PendingUI.changed(creationPending.handle);
     parent?.close();openModal($('#newModal'));$('#newModal')._opener=opener||$('#newProjectBtn');$('#mTitle').focus();
   }
   async function newProject(opener=$('#newProjectBtn')){
@@ -120,14 +126,17 @@ const DesignLibraryUI=(()=>{
     try{await gallery(opener,{create:true});}catch(e){toast(e.message,'err');}finally{openingProject=false;}
   }
   function projectRequest(){
+    creationSubmitRevision=creationPending?.handle.revision;
     const p=creationDraft?.selected,lang=$('#mLang').value.split('-').at(-1);
     const fields={title:$('#mTitle').value,client:$('#mClient').value,slug:$('#mSlug').value};
     if(p&&p.provider!=='General')return {url:'/api/design-library/projects',body:{...fields,id:p.id,variant:creationDraft.variant,lang}};
     return {url:'/api/projects',body:{...fields,model:(p?.id||'corporativo')+'-'+lang,preset:selectedPresetId(),...(p?{appearance:p.id}:{})}};
   }
-  function resetCreation(){creationDraft=null;delete $('#newModal').dataset.designId;}
-  async function editPersonal(p,editing,done){const {d,body}=modal(w('Personalizar plantilla','Customize design', "Personalizar modelo"));let sections=structuredClone(p.sections);
-    const design=structuredClone(p.design),name=h('input',{value:editing?p.name:p.name+' '+w('personal','personal','pessoal'),maxlength:160,'data-design-field':'name'});
+  async function resetCreation(){if(creationPending){const result=await creationPending.committed(creationSubmitRevision);if(!result.finished)return false;creationPending.dispose();creationPending=null;}creationSubmitRevision=null;creationDraft=null;delete $('#newModal').dataset.designId;return true;}
+  async function editPersonal(p,editing,done,recovered=null){
+    const key='design:personal:'+(editing?p.id:'new-'+p.id),initial=recovered?.data||PendingUI.retained(key,'workspace')?.data,baseEtag=etag;
+    const {d,body}=modal(w('Personalizar plantilla','Customize design', 'Personalizar modelo'));let sections=structuredClone(initial?.sections||p.sections),pending=null;
+    const design=structuredClone(initial?.design||p.design),name=h('input',{value:initial?.name??(editing?p.name:p.name+' '+w('personal','personal','pessoal')),maxlength:160,'data-design-field':'name'});
     const accent=h('input',{type:'color',value:design.accent,'data-design-field':'accent'}),bg=h('input',{type:'color',value:design.background,'data-design-field':'background'});
     const layout=h('select',{'data-design-field':'layout'},catalog.layouts.map(id=>h('option',{value:id},w(...layouts[id]))));layout.value=design.layout;
     const preview=h('div',{class:'design-custom-preview'}),rows=h('div',{class:'design-section-editor'});
@@ -144,18 +153,29 @@ const DesignLibraryUI=(()=>{
         fields.append(column);
       }
       row.append(fields,btn(w('Quitar','Remove', "Remover"),()=>{sections.splice(i,1);renderRows();}));rows.append(row);
-    });}
+    });pending?.changed();}
     function read(){return {...design,name:name.value,accent:accent.value,background:bg.value,layout:layout.value};}
     body.append(h('p',{},w('Guarda el diseño y la estructura en los idiomas que hayas redactado. Las traducciones son opcionales; el texto personal se conserva y no se traduce automáticamente.','Save the appearance and structure in the languages you have written. Translations are optional; personal text is preserved and is not translated automatically.', "Salve a aparência e a estrutura nos idiomas que você redigiu. As traduções são opcionais; o texto pessoal é preservado e não é traduzido automaticamente.")),h('label',{},w('Nombre','Name', "Nome"),name),h('div',{class:'grid2'},h('label',{},w('Acento','Accent', "Destaque"),accent),h('label',{},w('Fondo de portada','Cover background', "Fundo da capa"),bg)),h('label',{},w('Composición','Composition', "Composição"),layout),
       btn(w('Actualizar vista previa','Update preview', "Atualizar prévia"),async()=>{const r=await requireOk(await api.post('/api/design-library/preview',{design:read(),lang:S.uiLang}));preview.replaceChildren(livePage(await r.text()));}),preview,h('h3',{},w('Secciones iniciales','Starter sections', "Seções iniciais")),rows,
       btn(w('Añadir sección','Add section', "Adicionar seção"),()=>{sections.push({key:'custom-'+crypto.randomUUID().replaceAll('-',''),title:{es:'Nueva sección',en:'New section',pt:'Nova seção'},body:{es:'TODO: Completa esta sección.',en:'TODO: Complete this section.',pt:'TODO: Complete esta seção.'}});renderRows();}));
     if(S.data)body.append(btn(w('Usar títulos del proyecto abierto','Use open project headings', "Usar títulos do projeto aberto"),()=>{sections=(S.data.report?.sections||[]).map(s=>({key:s.key,title:s.title?{[normalizeUiLanguage(S.data.meta.lang,'en')]:s.title}:{es:S.catBy[s.key]?.title_es||s.key,en:S.catBy[s.key]?.title_en||'',pt:S.catBy[s.key]?.title_pt||''},body:{es:'TODO: Completa esta sección.',en:'TODO: Complete this section.',pt:'TODO: Complete esta seção.'}}));renderRows();}));
-    body.append(btn(w('Guardar plantilla','Save design', "Salvar modelo"),async()=>{const authored=sections.map(s=>({...s,...Object.fromEntries(['title','body'].filter(key=>s[key]).map(key=>[key,Object.fromEntries(Object.entries(s[key]).filter(([,value])=>value.trim()))]))}));if(authored.some(s=>!Object.keys(s.title||{}).length||(s.body&&!Object.keys(s.body).length)))throw Error(w('Escribe cada título y texto inicial en al menos un idioma.','Write each heading and starter text in at least one language.','Escreva cada título e texto inicial em pelo menos um idioma.'));const saved=await write('/api/design-library/personal'+(editing?'/'+p.id:''),{name:name.value,design:read(),sections:authored},editing?'PUT':'POST');d.close();await done(saved);},true));renderRows();}
+    body.append(btn(w('Guardar plantilla','Save design', "Salvar modelo"),async()=>{const authored=sections.map(s=>({...s,...Object.fromEntries(['title','body'].filter(key=>s[key]).map(key=>[key,Object.fromEntries(Object.entries(s[key]).filter(([,value])=>value.trim()))]))}));if(authored.some(s=>!Object.keys(s.title||{}).length||(s.body&&!Object.keys(s.body).length)))throw Error(w('Escribe cada título y texto inicial en al menos un idioma.','Write each heading and starter text in at least one language.','Escreva cada título e texto inicial em pelo menos um idioma.'));const revision=pending.handle.revision;pending.setBusy(true);try{const saved=await write('/api/design-library/personal'+(editing?'/'+p.id:''),{name:name.value,design:read(),sections:authored},editing?'PUT':'POST',baseEtag);if((await pending.committed(revision)).finished)d.close();await done(saved);}finally{pending.setBusy(false);}},true));renderRows();
+    d.dataset.personalDesignEditor=p.id;
+    pending=PendingUI.attach(key,w('Diseño personal pendiente','Pending personal design','Modelo pessoal pendente'),()=>({data:{source_id:p.id,editing,name:name.value,design:read(),sections}}),{scope:'workspace',container:body,origin:recovered,onDiscard:()=>d.close()});
+  }
   function panel(){const design=S.data.meta.design;
     return h('div',{class:'card'},h('h4',{},w('Diseño del informe','Report design', "Modelo do relatório")),h('p',{},design?design.name+' / '+(design.variant==='quiet'?w('Sobria','Quiet', "Sóbria"):w('Marca','Brand', "Marca")):generalItem(S.data.meta.theme).name),btn(w('Abrir biblioteca de informes','Open report design library', "Abrir biblioteca de modelos de relatório"),gallery));}
   function bind(){const b=btn(w('Biblioteca de informes','Report design library', "Biblioteca de modelos de relatório"),gallery);b.id='designLibraryBtn';$('.sidebar').prepend(b);
     $('#mLang').addEventListener('change',()=>{if(creationDraft)creationDraft.sampleLang=$('#mLang').value.split('-').at(-1);});
     const newBox=$('#newProjectLibrary');if(newBox){const library=btn(w('Volver a la galería','Back to gallery', "Voltar à galeria"),()=>{const opener=$('#newModal')._opener;if(creationDraft)creationDraft.sampleLang=$('#mLang').value.split('-').at(-1);closeModal($('#newModal'));return newProject(opener);});library.dataset.i18n='new_project_library';newBox.append(library);}}
 
+  PendingUI.register('design:personal:',{
+    validate(row){const data=row.data;if(!data||typeof data.source_id!=='string'||typeof data.editing!=='boolean'||typeof data.name!=='string'||!data.design||!Array.isArray(data.sections)||data.sections.some(section=>!section||typeof section.key!=='string'||!section.title))throw Error(w('Diseño pendiente no compatible.','Unsupported pending design.','Modelo pendente não compatível.'));},
+    async restore(row){const check=PendingUI.recoveryGuard(row);await refresh();check();const p=[...(catalog.personal||[]),...(catalog.profiles||[])].find(item=>item.id===row.data.source_id);if(!p)throw Error(w('El diseño original fue eliminado. Conserva el contenido de la copia pendiente.','The original design was deleted. Keep the pending copy content.','O modelo original foi excluído. Guarde o conteúdo da cópia pendente.'));return editPersonal(p,row.data.editing,async()=>{},row);}
+  });
+  PendingUI.register('design:create-project',{
+    validate(row){const data=row.data;if(row.key!=='design:create-project'||!data||['design_id','provider','variant','title','client','slug','lang','preset','cert'].some(key=>typeof data[key]!=='string'))throw Error(w('Creación pendiente no compatible.','Unsupported pending project creation.','Criação de projeto pendente não compatível.'));},
+    async restore(row){const check=PendingUI.recoveryGuard(row);await refresh();check();const data=row.data,p=data.provider==='General'&&catalog.general.includes(data.design_id)?generalItem(data.design_id):[...(catalog.personal||[]),...(catalog.profiles||[])].find(item=>item.id===data.design_id);if(!p)throw Error(w('La plantilla de creación ya no está disponible. Conserva los datos mostrados.','The creation design is no longer available. Keep the displayed details.','O modelo para criação não está mais disponível. Guarde os dados exibidos.'));creationDraft={selected:p,variant:data.variant,sampleLang:data.lang.split('-').at(-1)};configureProject(p,data.variant,null,creationDraft.sampleLang,$('#newProjectBtn'),row);}
+  });
   return {bind,gallery,panel,guideBox,newProject,projectRequest,resetCreation};
 })();

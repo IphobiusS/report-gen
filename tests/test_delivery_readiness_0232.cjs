@@ -30,9 +30,9 @@ const server=spawn(process.env.RG_PYTHON||'python',[root+'/scripts/browser-serve
  // editor's older ETag, even when its JSON content looks structurally valid.
  const reviewPattern=base+'/api/projects/readiness-fixture/review?lang=es';
  await context.route(reviewPattern,async route=>{const response=await route.fetch();const report=await response.json();report.revision='f'.repeat(64);await route.fulfill({response,json:report});});
- await page.getByRole('button',{name:'Elegir formatos',exact:true}).click();await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes('cambió durante'));
+ await page.locator('#studioMore').evaluate(node=>node.open=true);await page.locator('#deliveryBtn').click();await page.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes('cambió durante'));
  check('Review ETag mismatch refuses the preparation dialog and export queue',await page.locator('dialog[open]').count()===0&&jobs===0);await context.unroute(reviewPattern);
- await page.getByRole('button',{name:'Elegir formatos',exact:true}).click();const dialog=page.locator('dialog[open]');await dialog.waitFor();
+ await page.locator('#studioMore').evaluate(node=>node.open=true);await page.locator('#deliveryBtn').click();const dialog=page.locator('dialog[open]');await dialog.waitFor();
  check('Preparation dialog carries the same five scoped facts',await dialog.locator('[data-readiness-check]').count()===5&&await dialog.locator('[data-readiness-check="human_review"]').getAttribute('data-readiness-status')==='manual');
  await page.evaluate(()=>{S.data.findings[0].description_md='Changed synthetic draft during preparation.';scheduleSave();projectStore.timers.clearTimeout(projectStore.timer);projectStore.timer=null;});
  await dialog.getByRole('button',{name:'Generar paquete',exact:true}).click();
@@ -46,7 +46,7 @@ const server=spawn(process.env.RG_PYTHON||'python',[root+'/scripts/browser-serve
  // Late response after switching projects cannot paint preparation for A on B.
  await page.evaluate(()=>setUiLang('es'));await page.waitForFunction(()=>document.querySelector('[data-delivery-readiness]')?.dataset.readinessCurrent==='true');
  let release,received=false;const pending=new Promise(resolve=>release=resolve);await context.route(reviewPattern,async route=>{received=true;await pending;await route.continue();});
- const click=page.getByRole('button',{name:'Elegir formatos',exact:true}).click();await page.waitForFunction(()=>true);for(let n=0;!received&&n<100;n++)await page.waitForTimeout(20);assert.ok(received,'Delayed review request received');
+ await page.locator('#studioMore').evaluate(node=>node.open=true);const click=page.locator('#deliveryBtn').click();await page.waitForFunction(()=>true);for(let n=0;!received&&n<100;n++)await page.waitForTimeout(20);assert.ok(received,'Delayed review request received');
  await page.evaluate(async()=>{await requireOk(await api.post('/api/projects',{slug:'readiness-other',title:'Other synthetic report'}));await refreshProjects();await loadProject('readiness-other');select('home');});release();await click;await context.unroute(reviewPattern);await page.waitForTimeout(100);
  check('A delayed review from the previous project cannot open a delivery dialog',await page.locator('dialog[open]').count()===0&&await page.evaluate(()=>S.slug==='readiness-other'));
  check('No browser errors or external requests',results.pageErrors.length===0&&results.externalRequests.length===0,{pageErrors:results.pageErrors,external:results.externalRequests});save();

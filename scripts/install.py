@@ -122,7 +122,19 @@ def main(argv=None):
     parser.add_argument('--launcher', type=Path, default=Path.home() / '.local/bin/report-gen')
     parser.add_argument('--desktop', action='store_true', help=w('Crear o actualizar el acceso en el menú de aplicaciones', 'Add/update the application-menu shortcut for this user', 'Cria ou atualiza o atalho no menu de aplicativos para este usuário'))
     parser.add_argument('--lang', type=language_argument, choices=['es', 'en', 'pt'], default='es')
+    parser.add_argument('--gui', action='store_true', help=w('Abrir el asistente gráfico opcional (Python con Tkinter)',
+        'Open the optional graphical wizard (Python with Tkinter)', 'Abre o assistente gráfico opcional (Python com Tkinter)'))
     args = parser.parse_args(argv)
+    if args.gui:
+        if args.desktop:
+            parser.error(w('--desktop pertenece al instalador de consola.', '--desktop belongs to the console installer.', '--desktop pertence ao instalador de console.'))
+        from scripts.install_wizard import main as graphical_main
+        command = ['--lang', args.lang]
+        if args.workspace:
+            command.extend(['--workspace', str(args.workspace)])
+        if args.launcher != Path.home() / '.local/bin/report-gen':
+            command.extend(['--launcher', str(args.launcher)])
+        return graphical_main(command)
     if not sys.platform.startswith('linux'):
         parser.error(w('Este instalador es para Linux/Kali. En Windows/macOS, usa python start.py --ready --workspace RUTA.', 'This installer targets Linux/Kali. On Windows/macOS, use python start.py --ready --workspace PATH.', 'Este instalador é para Linux/Kali. No Windows/macOS, use python start.py --ready --workspace CAMINHO.'))
     if sys.version_info < (3, 11):

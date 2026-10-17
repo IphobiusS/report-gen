@@ -1,0 +1,251 @@
+{
+  "schema": "report-gen-boreal-content/1",
+  "language": "pt",
+  "strings": {
+    "name": "Boreal Redes e Energia",
+    "title": "Avaliação integrada de segurança e continuidade",
+    "subtitle": "Caso fictício extenso — redes, energia e operação distribuída",
+    "fictional": "CASO FICTÍCIO: a organização, pessoas, ativos, resultados e decisões são inventados. Nenhum sistema real foi testado.",
+    "simulated": "[SIMULADO]",
+    "role": "função fictícia",
+    "team": "Equipe fictícia de revisão Boreal",
+    "confidential": "EXEMPLO FICTÍCIO · SEM DADOS REAIS",
+    "byline": "Redes, energia e continuidade operacional",
+    "summary": "O cenário conecta 36 ativos, 72 achados, 6 cadernos documentais, 84 imagens sintéticas e 216 contratos de aceitação. Examina quem pode ordenar uma transição, qual revisão a autoriza e como seu significado sobrevive a novas tentativas, perda de conectividade e recuperação. Os cadernos não são contados como vulnerabilidades. As pontuações representam hipóteses inventadas e não estimam perdas reais.",
+    "boundary": "Uma decisão deve preservar identidade, finalidade, revisão, validade e responsável entre produtores e consumidores. A disponibilidade de um serviço não demonstra a integridade do resultado nem a validade de suas permissões.",
+    "limitation": "Toda observação é documental. Os comandos são registros inertes de intenção; as imagens foram desenhadas para este teste e não são capturas de sistemas. A aceitação do gerador é registrada separadamente. Não se certifica conformidade normativa nem ausência universal de vulnerabilidades.",
+    "description_template": "Em {domain}, {process}. O cenário propõe a seguinte condição: {condition} A comparação envolve o ativo {host} e a revisão BOREAL-R3, sem executar operações sobre uma rede elétrica.",
+    "impact_template": "Para {domain}, {impact} O efeito é uma hipótese de coordenação e rastreabilidade; não são calculados danos físicos, perdas financeiras ou probabilidades.",
+    "remediation_template": "A equipe responsável por {domain} deve {remediation} A aceitação compara casos permitidos, rejeitados e de recuperação, preservando a identidade do registro e a evidência da revisão.",
+    "scenario_template": "Representar de forma inerte o processo de {domain}: {process}. Comparar sujeito, revisão, validade e resultado. Registrar uma decisão autorizada e outra que não deve produzir efeito. Não abrir conexões nem enviar comandos a dispositivos.",
+    "closure": "O responsável apresenta um critério explícito, a revisão avaliada e os resultados de casos positivos, negativos e de recuperação. Um anúncio de correção não substitui uma verificação independente.",
+    "reported": "O responsável fictício comunica uma correção proposta; a mensagem não comprova o encerramento.",
+    "retest": "Acompanhamento documental inventado: comparar as revisões original e proposta, preservar resultados parciais e explicar o que não foi verificado.",
+    "evidence": "Representação sintética de um contrato",
+    "evidence_caption": "Imagem inventada para verificar composição, relações e exportação; não comprova um teste real.",
+    "image_labels": [
+      "ATIVO",
+      "REVISÃO",
+      "DECISÃO",
+      "EXECUÇÃO"
+    ],
+    "image_decision": "Comparação documental; resultado condicionado",
+    "image_execution": "NENHUMA · MODELO INERTE",
+    "image_footer": "Dados sintéticos · organização inventada · sem sistemas reais",
+    "machine_title": "Caderno documental de recuperação",
+    "machine_summary": "Modelo de dependências, autoridade de escrita e reconciliação do ativo. Não representa acesso inicial, exploração ou comprometimento de uma máquina real.",
+    "phases": [
+      "Identidade e dependências",
+      "Estado autorizado",
+      "Reabertura e restrições"
+    ],
+    "phase_text": [
+      "Relacionar inventário, responsável e revisão sem inferir disponibilidade de um endereço.",
+      "Comparar a autoridade do produtor com a política vigente e preservar uma decisão negada.",
+      "Restaurar conceitualmente o conteúdo e reconciliar revogações antes de habilitar novas transições."
+    ],
+    "proof": "Registro inventado; não é uma flag capturada.",
+    "headers": [
+      "Registro",
+      "Ativo e revisão",
+      "Critério de aceitação",
+      "Resultado documental"
+    ],
+    "row_template": "Preservar a intenção {n}, revisar a permissão vigente e comparar a sequência autorizada com a rejeitada; a nova tentativa mantém uma única transição.",
+    "row_result": "Simulado: execução real permanece pendente",
+    "table_intro": "A tabela a seguir pertence a este achado e deve continuar entre páginas sem perder cabeçalho, linhas ou associação. Suas linhas são critérios documentais, não testes executados.",
+    "table_outro": "Fim do inventário de critérios deste achado. Uma linha legível não comprova a execução do controle.",
+    "contract_headers": [
+      "Caminho",
+      "Condição",
+      "Resultado esperado"
+    ],
+    "paths": [
+      "Permitido",
+      "Rejeitado",
+      "Recuperação"
+    ],
+    "contract_values": [
+      "Sujeito e revisão válidos",
+      "Sujeito removido ou revisão substituída",
+      "Cópia anterior e restrições posteriores"
+    ],
+    "contract_results": [
+      "Um efeito autorizado",
+      "Nenhum efeito novo",
+      "Reabertura consistente e sem duplicação"
+    ],
+    "asset_roles": [
+      "Serviço de decisões",
+      "Consumidor operacional",
+      "Registro de rastreabilidade"
+    ],
+    "asset_note": "Ativo inventado em domínios e redes reservados para documentação.",
+    "coverage_note": "Contrato fictício, não um resultado de scanner. Estados pendentes e bloqueados são deliberados.",
+    "root_note": "Causa proposta dentro do cenário, não inferência sobre uma empresa real.",
+    "annex_names": [
+      "inventario-ativos.csv",
+      "contratos-aceitacao.csv",
+      "manifesto-caso.json",
+      "criterios-entrega.txt",
+      "nota-privada.txt",
+      "dependencias.csv"
+    ],
+    "annex_acceptance": "Aceitar apenas arquivos com identidade, tamanho e hash coerentes. As decisões ficam vinculadas a uma revisão; preservar limites e conteúdos excluídos.",
+    "private": "Nota privada sintética que não deve constar na publicação.",
+    "redacted": "[MARCADOR SINTÉTICO REMOVIDO]",
+    "annex_headers": [
+      "Identificador",
+      "Nome",
+      "Destino",
+      "Responsável"
+    ],
+    "control_headers": [
+      "Contrato",
+      "Achado",
+      "Caminho",
+      "Natureza"
+    ],
+    "dependency_headers": [
+      "Origem",
+      "Destino",
+      "Condição"
+    ],
+    "dependency": "A reabertura exige revisão e política vigentes.",
+    "sections": {
+      "overview": "Resumo executivo",
+      "governance": "Governança de decisões e responsabilidades",
+      "continuity": "Continuidade da operação distribuída",
+      "evidence": "Evidências, revisões e limites",
+      "contracts": "Anexo A — Contratos de aceitação",
+      "literals": "Anexo B — Caracteres e referências extensas",
+      "annexes": "Anexo C — Entrega e exclusões"
+    },
+    "continuity": "A recuperação conceitual parte de uma cópia anterior, uma fila com intenções concluídas e uma revogação posterior. O manifesto é validado antes de restaurar relações, e o consumidor não pode reabrir enquanto faltarem restrições. A reconciliação deve preservar um único escritor e distinguir mensagens repetidas de novas ordens. Um alerta de disponibilidade não substitui esses critérios.",
+    "evidence_text": "Cada evidência tem identidade estável, título, conteúdo sintético e relação com um achado. Os resultados de reteste distinguem aberto, parcial, corrigido e não verificado. Uma aprovação com o mesmo nome de arquivo não é herdada se seu hash mudar; notas privadas e originais não pertencem à entrega pública.",
+    "annex_text": "Os anexos incluídos são entregues como arquivos independentes. A nota privada é explicitamente excluída. A revisão do PDF é parcial e estrutural: não equivale a OCR, inspeção de cada imagem ou validação direta no Microsoft Word.",
+    "literal_text": "Os literais a seguir permanecem iguais entre idiomas para verificar fidelidade. O destino não foi consultado.",
+    "version_notes": "Corpus novo, prosa traduzida e tabelas extensas dentro de achados.",
+    "short_term": "Acordar autoridade, revisão e critérios de rejeição antes de alterar consumidores.",
+    "medium_term": "Alinhar produtores, filas e registros; verificar novas tentativas e perda temporária de conectividade.",
+    "long_term": "Ensaiar reabertura integrada, revogações posteriores ao backup e entrega com evidências versionadas."
+  },
+  "domains": [
+    {
+      "name": "Despacho regional",
+      "process": "janelas operacionais e ordens são coordenadas sob uma revisão autorizada",
+      "owner": "Despacho"
+    },
+    {
+      "name": "Medição de rede",
+      "process": "leituras, unidades e períodos de recebimento são reconciliados",
+      "owner": "Medição"
+    },
+    {
+      "name": "Geração renovável",
+      "process": "previsões e decisões de disponibilidade são versionadas",
+      "owner": "Geração"
+    },
+    {
+      "name": "Armazenamento de energia",
+      "process": "reservas de capacidade são relacionadas a estados autorizados",
+      "owner": "Armazenamento"
+    },
+    {
+      "name": "Manutenção de campo",
+      "process": "permissões temporárias e registros de intervenção são distribuídos",
+      "owner": "Manutenção"
+    },
+    {
+      "name": "Integração de fornecedores",
+      "process": "pacotes documentais são trocados com validade limitada",
+      "owner": "Fornecedores"
+    },
+    {
+      "name": "Identidade corporativa",
+      "process": "delegações, sessões e remoção de permissões são administradas",
+      "owner": "Identidade"
+    },
+    {
+      "name": "Coordenação de incidentes",
+      "process": "prioridades, comunicações e decisões de recuperação são registradas",
+      "owner": "Resposta"
+    },
+    {
+      "name": "Telemetria distribuída",
+      "process": "observações são agregadas com origem, relógio e unidade explícitos",
+      "owner": "Telemetria"
+    },
+    {
+      "name": "Backup e continuidade",
+      "process": "conjuntos coerentes de conteúdo, política e relações são restaurados",
+      "owner": "Continuidade"
+    },
+    {
+      "name": "Análise operacional",
+      "process": "indicadores são explicados com denominador, revisão e dados ausentes",
+      "owner": "Análise"
+    },
+    {
+      "name": "Publicação técnica",
+      "process": "entregas e derivados são preparados com decisões de exclusão",
+      "owner": "Documentação"
+    }
+  ],
+  "controls": [
+    {
+      "title": "Autorização sem revisão do objeto",
+      "severity": "critical",
+      "cwe": "CWE-863",
+      "condition": "Uma autorização anterior continua aceita após a substituição do objeto ou de sua revisão.",
+      "impact": "uma transição pode ser atribuída a uma aprovação que já não corresponde ao conteúdo.",
+      "remediation": "vincular sujeito, objeto e revisão de modo imutável e autorizar novamente as mudanças.",
+      "root": "Decisão sem identidade do conteúdo"
+    },
+    {
+      "title": "Revogação tardia no consumidor",
+      "severity": "high",
+      "cwe": "CWE-613",
+      "condition": "O produtor registra uma revogação, mas um consumidor adiado preserva a concessão anterior.",
+      "impact": "a remoção central pode coexistir com uma decisão antiga ainda utilizável.",
+      "remediation": "definir validade, propagação e rejeição de concessões revogadas em cada consumidor.",
+      "root": "Validade distribuída incompleta"
+    },
+    {
+      "title": "Nova tentativa sem identidade da intenção",
+      "severity": "high",
+      "cwe": "CWE-841",
+      "condition": "Um novo identificador de mensagem é interpretado como uma nova intenção mesmo quando o resultado anterior existe.",
+      "impact": "uma confirmação perdida pode produzir duplicação ou estados contraditórios.",
+      "remediation": "preservar uma identidade durável da intenção e devolver o mesmo resultado em novas tentativas.",
+      "root": "Transições sem contrato durável"
+    },
+    {
+      "title": "Restauração sem restrições posteriores",
+      "severity": "medium",
+      "cwe": "CWE-693",
+      "condition": "A cópia restaura conteúdo, mas não reconcilia decisões de restrição posteriores à sua data.",
+      "impact": "uma reabertura disponível pode reintroduzir permissões removidas.",
+      "remediation": "validar manifesto, dependências e restrições posteriores antes de reabrir a operação.",
+      "root": "Recuperação sem reconciliação"
+    },
+    {
+      "title": "Indicador sem procedência suficiente",
+      "severity": "low",
+      "cwe": "CWE-20",
+      "condition": "O indicador omite revisão, unidade ou estado desconhecido e permite confundir ausência com zero.",
+      "impact": "uma leitura sintaticamente válida pode sustentar uma conclusão não demonstrada.",
+      "remediation": "preservar origem, unidade, revisão e denominador, mantendo valores desconhecidos.",
+      "root": "Semântica incompleta dos dados"
+    },
+    {
+      "title": "Decisão de entrega sem vínculo ao hash",
+      "severity": "info",
+      "cwe": "CWE-200",
+      "condition": "A aprovação documental usa o nome sem identificar o hash do arquivo revisado.",
+      "impact": "o destinatário pode receber uma revisão diferente da que foi avaliada.",
+      "remediation": "vincular revisão e destinatário ao hash final e revisar novamente quando os bytes mudarem.",
+      "root": "Evidência de revisão insuficiente"
+    }
+  ]
+}

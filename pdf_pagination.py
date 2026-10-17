@@ -1,4 +1,4 @@
-"""Preserve protected tables and paginate genuinely oversized narrative rows."""
+"""Paginate finding tables while preserving headers and rejecting clipped cells."""
 from error_messages import message as backend_message
 from diagnostic_locations import DiagnosticError
 import re
@@ -130,7 +130,7 @@ def keep_short_labelled_lists(source):
 
 def table_error(finding):
     return DiagnosticError(
-        backend_message('Hallazgo {p0}: una tabla no cabe completa en una página junto a su encabezado. Reduce o divide la tabla, o muévela a una sección narrativa o anexo del informe. Las tablas del procedimiento del mismo hallazgo tienen el mismo límite. El PDF no se ha generado para evitar cortar la tabla.', p0=finding),
+        backend_message('Hallazgo {p0}: una celda, fila o encabezado de tabla no cabe en el área imprimible o perdió su encabezado al paginar. Reduce el contenido indivisible o el tamaño de la imagen, o divide esa celda. Las tablas con varias filas pueden continuar entre páginas. El PDF no se ha generado y la salida anterior se conserva.', p0=finding),
         code='export.pdf.table_oversized',
         location={'operation': 'export', 'format': 'pdf',
                   'finding_id': finding if finding != 'sin ID' else None},
@@ -138,34 +138,37 @@ def table_error(finding):
 
 
 def relax_oversized_rows(document):
-    """Let an already fragmented narrative row retain its repeated header.
+    """Relax only finding tables and body rows proven to need pagination.
 
-    Keeping ordinary rows together is useful, but WeasyPrint cannot honor
-    ``break-inside: avoid`` on a row taller than a page. Its fallback can drop
-    the table header on early fragments and strand the preceding title. Use
-    the actual first layout to relax only those rows, without guessing from
-    character counts or changing protected finding tables. The elements are
-    owned by the HTML renderer; the caller performs one fresh layout after a
-    change. Repeated header/footer rows are not oversized body rows.
+    Short tables and ordinary rows retain their keep-together policy. The
+    first layout identifies actual fragments, including nested tables; one
+    fresh layout applies all changes together. The compact finding identity
+    and repeated header/footer rows remain protected.
     """
-    rows = {}
+    candidates = {}
     for number, page in enumerate(document.pages):
-        def walk(box, protected=False, repeated_group=False):
+        def walk(box, finding=False, intro=False, repeated_group=False):
             element = getattr(box, 'element', None)
             if element is not None:
-                protected = protected or 'finding' in (element.get('class') or '').split()
+                classes = (element.get('class') or '').split()
+                finding = finding or 'finding' in classes
+                intro = intro or 'finding-intro' in classes
                 repeated_group = repeated_group or element.tag in {'thead', 'tfoot'}
-            if (type(box).__name__ == 'TableRowBox' and element is not None
-                    and not protected and not repeated_group
+            kind = type(box).__name__
+            eligible = (kind == 'TableRowBox' and not repeated_group
+                        or kind in {'TableBox', 'InlineTableBox'} and finding)
+            if (eligible and element is not None and not intro
                     and box.style['break_inside'] in {'avoid', 'avoid-page'}):
-                rows.setdefault(element, set()).add(number)
+                record = candidates.setdefault(element, {'pages': set(), 'oversized': False})
+                record['pages'].add(number)
+                record['oversized'] |= box.height > page._page_box.height + 2
             for child in box.all_children():
-                walk(child, protected, repeated_group)
+                walk(child, finding, intro, repeated_group)
 
         walk(page._page_box)
     changed = False
-    for element, pages in rows.items():
-        if len(pages) > 1:
+    for element, record in candidates.items():
+        if len(record['pages']) > 1 or record['oversized']:
             element.set('style', (element.get('style') or '') +
                         ';break-inside:auto!important;page-break-inside:auto!important')
             changed = True
@@ -173,34 +176,64 @@ def relax_oversized_rows(document):
 
 
 def verify_finding_tables(document):
-    """Inspect actual WeasyPrint page fragments before writing PDF bytes.
+    """Verify final page geometry, repeated headers and compact identities.
 
-    WeasyPrint exposes its layout tree through _page_box. Keep the integration
-    isolated here and exercise it with rendered PDF regression tests.
+    A table may occupy several pages. Every fragment must remain printable,
+    including its cells, text and replaced content; headers must survive each
+    body fragment. Only the finding identity remains indivisible. WeasyPrint's
+    private layout integration is isolated here and covered by real PDF tests.
     """
-    seen = {}
+    identities = {}
     for number, page in enumerate(document.pages):
         page_box = page._page_box
-        bottom = page_box.content_box_y() + page_box.height
+        top, bottom = page_box.content_box_y(), page_box.content_box_y() + page_box.height
+        left, right = page_box.content_box_x(), page_box.content_box_x() + page_box.width
 
-        def walk(box, finding=None):
+        def walk(box, finding=None, in_table=False):
             element = getattr(box, "element", None)
-            if element is not None and "finding" in (element.get("class") or "").split():
+            classes = (element.get('class') or '').split() if element is not None else []
+            if "finding" in classes:
                 finding = element.get("id") or "sin ID"
-            intro = element is not None and "finding-intro" in (element.get("class") or "").split() and type(box).__name__ == "BlockBox"
-            if finding and (intro or type(box).__name__ in {"TableBox", "InlineTableBox"}):
-                pages = seen.setdefault(id(element), set())
+            kind = type(box).__name__
+            intro = 'finding-intro' in classes and kind == 'BlockBox'
+            table = kind in {'TableBox', 'InlineTableBox'}
+            in_table = in_table or table
+            if finding and intro:
+                pages = identities.setdefault(element, set())
                 pages.add(number)
                 if len(pages) > 1 or box.position_y + box.height > bottom + 2:
                     raise table_error(finding)
+            if finding and in_table:
+                # A row/cell may split, but an actual fragment, line or image
+                # must never extend into the footer or outside the page.
+                if kind in {'TableBox', 'InlineTableBox', 'TableRowBox',
+                            'TableCellBox', 'TextBox', 'BlockReplacedBox',
+                            'InlineReplacedBox'}:
+                    if (box.position_y < top - 2 or box.position_y + box.height > bottom + 2
+                            or box.position_x < left - 2 or box.position_x + box.width > right + 2):
+                        raise table_error(finding)
+                if table and element is not None:
+                    headers = {node for node in element if node.tag == 'thead'}
+                    if headers and any(getattr(child, 'element', None) is not None
+                                       and child.element.tag in {'tbody', 'tr'}
+                                       for child in box.children):
+                        actual = {getattr(child, 'element', None) for child in box.children}
+                        if not headers <= actual:
+                            raise table_error(finding)
             for child in box.all_children():
-                walk(child, finding)
+                walk(child, finding, in_table)
 
         walk(page_box)
 
 
 def mark_finding_tables(source):
-    """Add zero-size boundary markers for a Chromium PDF layout preflight."""
+    """Mark every cell boundary for the optional Chromium PDF preflight.
+
+    Markers live only in a temporary document and are removed before the
+    published PDF. Per-cell checks also catch an oversized middle row, which
+    a first/last-table-only check would miss. Repeated header tokens are
+    expected on every body page, rather than treated as duplicate content.
+    """
     from lxml import html
     import secrets
     tree = html.document_fromstring(source)
@@ -211,36 +244,85 @@ def mark_finding_tables(source):
             cells = table.xpath('./tr/th|./tr/td|./thead/tr/th|./thead/tr/td|./tbody/tr/th|./tbody/tr/td|./tfoot/tr/th|./tfoot/tr/td')
             if not cells:
                 continue
-            start, end = f"{prefix}S{len(checks)}END", f"{prefix}E{len(checks)}END"
-            for cell, token, edge in [(cells[0], start, "top:0;left:0"), (cells[-1], end, "bottom:0;right:0")]:
+            key = f"{prefix}T{len(checks)}"
+            table.set('data-rg-pdf-table', key)
+            protected = any('finding-intro' in (node.get('class') or '').split()
+                            for node in table.iterancestors())
+            check = {'finding': finding.get('id') or 'sin ID', 'key': key,
+                     'protected': protected, 'cells': []}
+            for index, cell in enumerate(cells):
+                start, end = f"{key}S{index}END", f"{key}E{index}END"
                 cell.set("style", (cell.get("style") or "") + ";position:relative")
-                marker = html.Element("span", {"class": "rg-table-boundary", "style": f"position:absolute;{edge};font-size:1px;line-height:1px;color:white;opacity:0.01"})
-                marker.text = token
-                cell.append(marker)
-            checks.append((finding.get("id") or "sin ID", start, end))
+                for token, edge in [(start, "top:0;left:0"), (end, "bottom:0;right:0")]:
+                    marker = html.Element("span", {"class": "rg-table-boundary", "style": f"position:absolute;{edge};font-size:1px;line-height:1px;color:white;opacity:0.01"})
+                    marker.text = token
+                    cell.append(marker)
+                header = cell.getparent().getparent().tag == 'thead'
+                check['cells'].append({'start': start, 'end': end, 'header': header})
+            checks.append(check)
     return html.tostring(tree, encoding="unicode", method="html"), checks
 
 
-def verify_table_markers(pdf_bytes, checks):
-    """A protected table must have both boundaries on exactly one PDF page."""
+def verify_table_markers(pdf_bytes, checks, *, check_headers=True, margins=(0, 0), side_margins=(0, 0)):
+    """Check every printable cell boundary and return multipage table keys.
+
+    Ordinary finding tables can continue across pages; the compact identity
+    cannot. Every marker must survive, and every repeated header must cover
+    all pages occupied by body cells. Vertical and lateral margins are PDF
+    points, supplied by the fixed A4 report layout in the Chromium renderer.
+    """
     from io import BytesIO
     import pdfplumber
     with pdfplumber.open(BytesIO(pdf_bytes)) as document:
-        character_pages = [[(letter, c["top"], c["bottom"]) for c in page.chars if c["size"] <= 1.0 for letter in c["text"]] for page in document.pages]
+        character_pages = [[(letter, c["top"], c["bottom"], c["x0"], c["x1"]) for c in page.chars if c["size"] <= 1.0 for letter in c["text"]] for page in document.pages]
         heights = [page.height for page in document.pages]
+        widths = [page.width for page in document.pages]
         pages = ["".join(c[0] for c in chars) for chars in character_pages]
-    for finding, start, end in checks:
-        first = [i for i, page in enumerate(pages) if start in page]
-        last = [i for i, page in enumerate(pages) if end in page]
-        if not first or not last:
-            raise ValueError(backend_message('No se pudo verificar la paginación de la tabla del hallazgo {p0}. Prueba el motor WeasyPrint.', p0=finding))
-        if len(first) != 1 or first != last:
-            raise table_error(finding)
-        page = first[0]
-        for token in (start, end):
-            offset = pages[page].index(token)
-            if any(top < 0 or bottom > heights[page] for _, top, bottom in character_pages[page][offset:offset+len(token)]):
+    fragmented = []
+    for check in checks:
+        finding = check['finding']
+        body_pages, header_pages, all_pages = set(), [], set()
+        for cell in check['cells']:
+            locations = []
+            for edge, token in enumerate((cell['start'], cell['end'])):
+                found = set()
+                for page, text in enumerate(pages):
+                    for match in re.finditer(re.escape(token), text):
+                        found.add(page)
+                        letters = character_pages[page][match.start():match.end()]
+                        if any(top < margins[0] - 2 or bottom > heights[page] - margins[1] + 2
+                               for _, top, bottom, _, _ in letters):
+                            raise table_error(finding)
+                        # The invisible token itself can be wider than a
+                        # narrow numeric cell. Only its anchored edge proves
+                        # the actual cell boundary; checking the entire token
+                        # would reject otherwise printable narrow columns.
+                        if (edge == 0 and letters[0][3] < side_margins[0] - 2
+                                or edge == 1 and letters[-1][4] > widths[page] - side_margins[1] + 2):
+                            raise table_error(finding)
+                if not found:
+                    raise DiagnosticError(backend_message(
+                        'No se pudo verificar la paginación de la tabla del hallazgo {p0}. Prueba el motor WeasyPrint.', p0=finding),
+                        code='export.pdf.table_pagination_unverified',
+                        location={'operation': 'export', 'format': 'pdf',
+                                  'finding_id': finding if finding != 'sin ID' else None})
+                locations.append(found)
+            first, last = locations
+            if min(first) > max(last):
                 raise table_error(finding)
+            occupied = set(range(min(first), max(last) + 1))
+            all_pages.update(occupied)
+            if cell['header']:
+                header_pages.append(first & last)
+            else:
+                body_pages.update(occupied)
+        if check['protected'] and len(all_pages) > 1:
+            raise table_error(finding)
+        if check_headers and any(not body_pages <= seen for seen in header_pages):
+            raise table_error(finding)
+        if len(all_pages) > 1:
+            fragmented.append(check['key'])
+    return fragmented
 
 
 def prune_pdf_uri_break_links(document):

@@ -1,4 +1,4 @@
-"""Rendered pagination regressions: flowing findings and indivisible tables."""
+"""Rendered pagination: flowing findings, complete tables and impossible cells."""
 import copy
 from pathlib import Path
 
@@ -88,14 +88,14 @@ def test_markdown_table_moves_whole_to_next_page(tmp_path):
     assert page == page_of(pages, "MDROW19")
 
 
-def test_oversized_table_stops_pdf_without_replacing_previous_output(tmp_path):
+def test_impossible_header_stops_pdf_without_replacing_previous_output(tmp_path):
     data = example()
     data["findings"] = data["findings"][:1]
-    data["findings"][0]["description_md"] = "| Evidence | Result |\n| --- | --- |\n" + "\n".join(
-        f"| Oversized row {i} | This authored table cannot fit on one page |" for i in range(120))
+    data["findings"][0]["description_md"] = (
+        "| " + "IMPOSSIBLE_HEADER " * 1000 + " | Result |\n| --- | --- |\n| One | Preserved |")
     out = tmp_path / "pagination.pdf"
     out.write_bytes(b"previous report")
-    with pytest.raises(ValueError, match="Hallazgo F1: una tabla no cabe"):
+    with pytest.raises(ValueError, match="Hallazgo F1: una celda"):
         render(data, tmp_path)
     assert out.read_bytes() == b"previous report"
 
@@ -126,7 +126,7 @@ def test_word_flows_findings_and_keeps_all_table_rows_together(tmp_path, section
                 assert cell.paragraphs[-1].paragraph_format.keep_with_next is (i < len(table.rows)-1 or table.cell(0,0).text == "CWE")
 
 
-def test_pdf_boundary_preflight_accepts_whole_tables_and_rejects_split_tables(tmp_path):
+def test_pdf_boundary_preflight_accepts_flow_and_rejects_clipped_middle_cell(tmp_path):
     from weasyprint import HTML
     from pdf_pagination import mark_finding_tables, verify_table_markers
     # Exercise the backend-neutral PDF verifier independently of the WeasyPrint
@@ -135,11 +135,18 @@ def test_pdf_boundary_preflight_accepts_whole_tables_and_rejects_split_tables(tm
         f'<tr><td>Row {i}</td><td>Evidence</td></tr>' for i in range(4)
     ) + '</table></div></body></html>'
     marked, checks = mark_finding_tables(source)
-    assert len(checks) == 1
+    assert len(checks) == 1 and len(checks[0]['cells']) == 8
     verify_table_markers(HTML(string=marked).write_pdf(), checks)
-    split = marked.replace('</tr>', '</tr>' + '<tr><td style="height:300mm">Too tall</td><td>Too tall</td></tr>', 1)
+    long = source.replace('</table>', ''.join(
+        f'<tr><td>FLOW-{i:03d}</td><td>Evidence</td></tr>' for i in range(100)) + '</table>')
+    marked_long, long_checks = mark_finding_tables(long)
+    assert verify_table_markers(HTML(string=marked_long).write_pdf(), long_checks)
+    # The first and last rows still fit. The real failure is a middle cell
+    # with an indivisible 300 mm box, not the table spanning several pages.
+    impossible = source.replace('Row 1', '<div style="height:300mm">Too tall</div>')
+    marked_impossible, impossible_checks = mark_finding_tables(impossible)
     with pytest.raises(ValueError, match='Hallazgo F9'):
-        verify_table_markers(HTML(string=split).write_pdf(), checks)
+        verify_table_markers(HTML(string=marked_impossible).write_pdf(), impossible_checks)
 
 
 def test_api_returns_actionable_error_for_oversized_table_without_saving(tmp_path, monkeypatch):
@@ -150,11 +157,11 @@ def test_api_returns_actionable_error_for_oversized_table_without_saving(tmp_pat
     assert client.post('/api/projects', json={'slug': 'pagination', 'title': 'Original'}).status_code == 200
     original = client.get('/api/projects/pagination').get_json()
     data = example()
-    data['findings'][0]['description_md'] = '| Evidence | Result |\n| --- | --- |\n' + '\n'.join(
-        f'| Oversized row {i} | This authored table cannot fit on one page |' for i in range(120))
+    data['findings'][0]['description_md'] = (
+        '| ' + 'IMPOSSIBLE_HEADER ' * 1000 + ' | Result |\n| --- | --- |\n| One | Preserved |')
     response = client.post('/api/projects/pagination/export/pdf', json=data)
     assert response.status_code == 422
     assert 'Hallazgo F1' in response.get_json()['error']
-    assert 'sección narrativa' in response.get_json()['error']
-    assert 'mismo límite' in response.get_json()['error']
+    assert 'celda' in response.get_json()['error']
+    assert 'continuar entre páginas' in response.get_json()['error']
     assert client.get('/api/projects/pagination').get_json() == original

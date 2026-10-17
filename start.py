@@ -13,6 +13,7 @@ import subprocess
 import sys
 import venv
 from workspace_paths import select_workspace, workspace_environment, ENVIRONMENT_KEY
+from workspace_access import exclusive_paths
 ROOT=Path(__file__).resolve().parent
 
 
@@ -176,7 +177,8 @@ def main(argv=None):
             selection = select_workspace(ROOT, args.workspace)
             with workspace_environment(selection), launcher_language(lang):
                 if args.setup:
-                    _install(local, lang)
+                    with exclusive_paths(ROOT, selection.root):
+                        _install(local, lang)
                     print(_words(lang, 'Instalado. Ejecuta: ', 'Installed. Run: ', 'Instalado. Execute: ') + _launch_hint(selection, lang) + ' --ready')
                     return 0
                 python = local if local.exists() else Path(sys.executable)
@@ -184,7 +186,8 @@ def main(argv=None):
                     # --ready is explicit consent to install; ordinary launch and diagnosis
                     # never create a virtual environment or contact package servers.
                     if not local.exists() or not _dependencies(local):
-                        _install(local, lang)
+                        with exclusive_paths(ROOT, selection.root):
+                            _install(local, lang)
                     python = local
                 if not _dependencies(python):
                     print(_words(lang, 'Faltan dependencias del editor. Ejecuta: python start.py --ready',
@@ -194,7 +197,9 @@ def main(argv=None):
                     return subprocess.run([str(python), str(ROOT / 'diagnostics.py'), '--lang', lang],
                                           cwd=ROOT, timeout=60).returncode
                 if args.upgrade_from:
-                    _upgrade(python, args.upgrade_from, lang)
+                    with exclusive_paths(ROOT, selection.root, args.upgrade_from,
+                                         Path(args.upgrade_from) / 'webapp'):
+                        _upgrade(python, args.upgrade_from, lang)
                     if not args.ready:
                         ready = _readiness(python, lang)
                         print(_words(lang, 'Para abrir: ', 'To start: ', 'Para abrir: ') + _launch_hint(selection, lang), flush=True)

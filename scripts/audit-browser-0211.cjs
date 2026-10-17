@@ -93,6 +93,8 @@ async function fault(mode){check('Inyección controlada '+(mode||'desactivada'),
  check('Borrador del cierre abrupto recuperado y guardado',(await api(page,'GET','/api/projects/audit-0211')).data.findings[0].impact_md==='RECUPERADO_TRAS_CIERRE_ABRUPTO');
  // Real backup download, restored through the UI into a separate empty workspace.
  await clickNavigationControl(page,'#workspaceBackupBtn');const downloaded=page.waitForEvent('download');await page.getByRole('button',{name:'Descargar ZIP sin cifrado',exact:true}).click();const backup=await downloaded;const backupPath=path.join(out,'respaldo-sintetico.zip');await backup.saveAs(backupPath);
+ await context.close();
+ if(server.exitCode===null){const stopped=new Promise(resolve=>server.once('exit',resolve));server.kill('SIGTERM');await stopped;}
  const destination=await start(workspace());const restoredContext=await browser.newContext({viewport:{width:1440,height:1050},acceptDownloads:true});const restored=await newPage(restoredContext);restored.on('pageerror',e=>errors.push(String(e)));await restored.goto(destination.url);
  await clickNavigationControl(restored,'#workspaceBackupBtn');await restored.locator('[data-workspace-file="backup"]').setInputFiles(backupPath);await restored.getByRole('button',{name:'Restaurar espacio de trabajo',exact:true}).click();await ready(restored);
  const restoredData=(await api(restored,'GET','/api/projects/audit-0211')).data;

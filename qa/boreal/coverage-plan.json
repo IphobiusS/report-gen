@@ -1,0 +1,56 @@
+{
+  "schema": "report-gen-boreal-plan/1",
+  "case": "BOREAL-REDES-ENERGIA-2026",
+  "document_version": "BOREAL 1.0",
+  "application_version": "0.41.0",
+  "status": "planned_not_an_acceptance_receipt",
+  "fictional": true,
+  "network_to_scenario_targets": false,
+  "generation": "Only report-gen delivery.capture/build and registered exporters produce report documents. The builder authors native inputs only. External renderers may inspect existing outputs.",
+  "source": {
+    "languages": ["es", "en", "pt"],
+    "prose_languages": ["es", "en", "pt"],
+    "domains": 12,
+    "vulnerabilities": 72,
+    "machine_notebooks": 6,
+    "assets": 36,
+    "evidence_images": 84,
+    "coverage_contracts": 216,
+    "source_sections": 16,
+    "root_cause_groups": 6,
+    "retest_records": 36,
+    "annexes_included": 5,
+    "annexes_excluded": 1,
+    "long_tables_inside_findings": 6,
+    "long_table_rows": 578,
+    "expected_preflight_errors": 0,
+    "expected_deliberate_preflight_warnings_per_language": 73
+  },
+  "matrix": {
+    "complete": {"languages": ["es", "en", "pt"], "formats": ["pdf", "docx", "html", "md"], "outputs": 12},
+    "samples": {"outputs": 0},
+    "native_docx": {"renderer": "stable LibreOffice when available", "documents": 3},
+    "scope_limit": "Twelve complete reports, not twelve cases and not every possible input or style combination. Style/renderer regressions are separate tests."
+  },
+  "families": [
+    {"id": "BRL-01", "scope": "Native validation, translations, stable relationships, deliberate warnings and input hashes", "runner": "tests/test_boreal_fixture_0410.py"},
+    {"id": "BRL-02", "scope": "Publication removes private notes, original images, metadata and redaction controls without mutating sources", "runner": "tests/test_boreal_fixture_0410.py"},
+    {"id": "BRL-03", "scope": "Full native delivery PDF/DOCX/HTML/Markdown in three languages, output fidelity and producer invariance", "runner": "scripts/audit-boreal-0410.py --mode principal"},
+    {"id": "BRL-04", "scope": "All 578 authored table rows appear exactly once in every format, in PDF page order, with repeated PDF and DOCX headers", "runner": "scripts/audit-boreal-0410.py --mode principal"},
+    {"id": "BRL-05", "scope": "Stable LibreOffice renders actual DOCX; content, TOC, links, geometry and hashes are inspected", "runner": "scripts/audit-boreal-0410.py --mode native --native-executable soffice --require-stable"},
+    {"id": "BRL-06", "scope": "Guided delivery takes actual issues to fields and separates errors from recommendations", "runner": "new feature browser acceptance; must be recorded separately, not inferred from exports"},
+    {"id": "BRL-07", "scope": "Recoverable form drafts survive reload and are isolated by project and target", "runner": "new draft feature acceptance; must include real failure/reload"},
+    {"id": "BRL-08", "scope": "Optional visual review resumes annotations/page by exact PDF hash and invalidates stale content", "runner": "new persistent review acceptance; must include changed PDF bytes"},
+    {"id": "BRL-09", "scope": "Installer checks dependencies, project directory and rollback with documented environment limits", "runner": "installer feature acceptance; no real install is claimed by this case"},
+    {"id": "BRL-10", "scope": "Actual Microsoft Word compatibility only if Word is available", "runner": "existing Word acceptance kit with real environment receipt; otherwise remains not run"}
+  ],
+  "limits": [
+    "All findings, evidence, severity values, coverage states and retests are invented.",
+    "Table-row counts and simulated acceptance contracts are not executed software tests.",
+    "Importer inputs are inert English parser fixtures and are not inserted into the localized report narrative.",
+    "Successful LibreOffice inspection does not establish Microsoft Word pagination.",
+    "Structural output checks do not establish manual review of every page.",
+    "The case does not claim all combinations, universal absence of bugs or complete elimination of dead code.",
+    "This file is a plan. Only retained runner receipts establish an executed result."
+  ]
+}

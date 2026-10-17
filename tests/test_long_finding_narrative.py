@@ -1,4 +1,4 @@
-"""Long finding prose flows; actual authored tables retain the PDF guard."""
+"""Long finding prose and authored tables flow without losing content."""
 from copy import deepcopy
 from docx import Document
 from lxml import html
@@ -62,19 +62,25 @@ def test_long_narrative_survives_all_formats_and_remains_in_finding(tmp_path, la
 
 @pytest.mark.parametrize('language', ['en', 'es'])
 @pytest.mark.parametrize('field', ['description_md', 'impact_md', 'remediation_md'])
-def test_real_oversized_markdown_table_is_rejected_without_mutation(tmp_path, language, field):
+def test_real_multipage_markdown_table_preserves_every_row_without_mutation(tmp_path, language, field):
     data = document(language)
     data['findings'][0][field] = '| Evidence | Result |\n| --- | --- |\n' + '\n'.join(
-        f'| TABLE_ROW_{i:03d} | Kept as an indivisible authored table |' for i in range(120))
+        f'| TABLE_ROW_{i:03d} | Preserved in its original finding |' for i in range(120))
     source = tmp_path / 'engagement.yaml'
     dump_yaml(data, source)
     before = source.read_bytes()
     output = tmp_path / 'report.pdf'
     output.write_bytes(b'previous verified output')
-    with pytest.raises(ValueError, match='F01'):
-        export.export(source, 'pdf', output)
+    export.export(source, 'pdf', output)
     assert source.read_bytes() == before
-    assert output.read_bytes() == b'previous verified output'
+    with pdfplumber.open(output) as pdf:
+        pages = [page.extract_text() or '' for page in pdf.pages]
+    text = '\n'.join(pages)
+    for i in range(120):
+        assert text.count(f'TABLE_ROW_{i:03d}') == 1
+    occupied = [page for page in pages if 'TABLE_ROW_' in page]
+    assert len(occupied) >= 3
+    assert all('Evidence' in page and 'Result' in page for page in occupied)
 
 
 @pytest.mark.parametrize('language', ['en', 'es'])

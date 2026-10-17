@@ -37,6 +37,9 @@ jobs:
         run: |
           npm test
           npm run test:editor-modules
+          RG_PYTHON=python node tests/test_delivery_flow_0410.cjs
+          node --test tests/test_publication_pending_0410.cjs
+          RG_PYTHON=python node tests/test_auxiliary_drafts_0410.cjs
           npm run test:pdf-compare-ui
           npm run test:diagnostics-ui
           npm run test:docx-preview-ui
@@ -163,7 +166,7 @@ jobs:
           node -e "process.stdout.write('REPORT_GEN_CHROMIUM=' + require('playwright').chromium.executablePath() + '\n')" >> "$GITHUB_ENV"
       - name: Measure two image-heavy projects and verify all four formats
         run: npm run test:scale
-      - name: Prepare and structurally inspect six DOCX inputs
+      - name: Prepare and structurally inspect seven DOCX inputs
         run: python scripts/prepare-external-acceptance.py --output out/external-acceptance-0310
       - name: Preserve measured results and pending external-review kit
         if: always()
