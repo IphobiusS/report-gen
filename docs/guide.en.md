@@ -1,4 +1,4 @@
-# report-gen 0.42.0 user guide
+# report-gen 0.43.0 user guide
 
 [Welcome](../README.en.md) · [Español](guide.es.md) · [Português (Brasil)](guide.pt.md) · [Changelog](../CHANGELOG.md)
 
@@ -58,6 +58,38 @@ Chromium is an optional alternative PDF engine:
 ```
 
 Read each engine status in the diagnostic output; its exit code alone does not establish that every engine is available.
+
+## Guided start and contextual help
+
+First entry offers **Guided** and **Complete** ways to work. Choosing is optional, and you can change later under **View** at the top of the sidebar. It does not assess expertise: an experienced user can enable guidance and a beginner can open every tool.
+
+| View | Presentation |
+| --- | --- |
+| **Guided** | Initially collapses **Capture and coverage**, **Analysis and follow-up** and **Tools**, and highlights a next action. Keeps the current group open and lets you expand the others. |
+| **Complete** | Offers navigation with every tool available, without requiring the walkthrough. |
+
+Both views retain the same names, routes and five navigation groups. Switching views does not create another report, translate content or change data. The route has six learning stages; it does not replace those five groups or impose a working order.
+
+| Stage | What it helps locate and understand |
+| --- | --- |
+| **Project** | Create or open a report and enter its title, client and language. |
+| **Scope** | Explain objectives, included assets, exclusions and limitations. |
+| **Findings** | Document supported observations, reproduction steps, impact and recommendations. |
+| **Evidence** | Connect evidence to the observation and review the copy that will be published. |
+| **Review** | Read warnings and inspect publication from a saved revision. |
+| **Delivery** | Select audience and formats, open outputs and keep a private backup. |
+
+The contextual route highlights actual editor controls and explains their purpose with examples. Move to another stage, go back, pause, resume or restart. **Walkthrough**, **Pause guide** and **Resume guide** sit beside the view selector; **Restart** is in the walkthrough and on Overview. **Explain this section** opens help for the current view; starting the route is not required. Reading help or an example does not fill fields or perform the described action.
+
+This browser saves the view preference per workspace. Route progress is also separated by project, so practice does not complete another report's learning route. If browser storage is blocked, these features remain available during the session; closing or reloading may lose that progress. It is not added to report files or synchronized with other browsers.
+
+On Overview, **Create fictional practice** opens a fictional **Nimbus** copy. Each start creates a separate project in the interface language; it does not reset or reuse another project's content. Edits in the open project are saved first: if saving fails, practice stops so you can resolve it. The **Practice project · Nimbus** label remains visible even when the Nimbus walkthrough is hidden. **Return to my project** opens the previous project when one exists; you can also use **View my projects** or **Create real project**. Practice is editable, and its changes belong to that copy. Returning also requires saving: if it fails, you remain in practice to resolve it.
+
+The label identifies the origin of practice copies created from 0.43.0 onward; it is not inferred from their name and does not certify their content after editing. It survives saving, renaming and built-in history restoration, including when browser storage is blocked. Portable backups do not carry it: an earlier demo or reimported copy may contain fictional data without showing this label.
+
+Completing, skipping or restarting guidance changes learning state only. It does not verify vulnerabilities, execute methodology tests, validate evidence, close retests or approve delivery. A report with no findings can be legitimate: guidance does not require inventing findings. Technical states must reflect work actually performed.
+
+The screenshot-based **Visual tutorial** remains under **More**, with six steps and enlargable ES/EN/PT images. Its progress remains separate from the contextual route. Reading either form of help preserves project data.
 
 ## First report
 
@@ -202,11 +234,11 @@ Extension installation failed with **Ubuntu's LibreOffice 24.2.7.2 packages**, e
 Build the OXT from the downloaded report-gen source without installing it:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.42.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.43.0.oxt
 ```
 
 1. In the chosen LibreOffice installation, open **Tools → Extensions → Add**. Some versions call it **Extension Manager**.
-2. Select `report-gen-libreoffice-0.42.0.oxt` and install it for your user.
+2. Select `report-gen-libreoffice-0.43.0.oxt` and install it for your user.
 3. Close every window of that LibreOffice installation, reopen it and open a copy of the DOCX freshly exported by report-gen.
 4. Inspect its URLs, lists and tables after opening, editing and saving it. To remove the extension, disable or remove it in the same manager and restart LibreOffice.
 

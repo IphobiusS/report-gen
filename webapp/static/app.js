@@ -557,6 +557,7 @@ async function init() {
   StudioUI.bind();
   if(typeof ContextIndexUI!=="undefined")ContextIndexUI.bind();
   if(typeof GuideUI!=="undefined")GuideUI.bind();
+  if(typeof OnboardingUI!=="undefined")OnboardingUI.bind();
   if(typeof InsightsUI!=="undefined")InsightsUI.bind();
   if(typeof PreviewZoomUI!=="undefined")PreviewZoomUI.bind();
   { let th = "dark"; try { th = localStorage.getItem("rg.uiTheme") || "dark"; } catch (_) {} applyUiTheme(th); }
@@ -781,27 +782,37 @@ function requestedFindingId() {
 
 // ---- editor principal ------------------------------------------------------
 function renderMain() {
-  const el = $("#editor"); el.innerHTML = "";
-  if(typeof WorkspaceUI!=='undefined') {
-    WorkspaceUI.update();
-    ExperienceUI.update();
-    if(S.sel.type==='insights'&&typeof InsightsUI!=='undefined'){InsightsUI.render(el);if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();return;}
-    if(S.sel.type==='guide'&&typeof GuideUI!=='undefined'){GuideUI.render(el);if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();return;}
-    if(!S.data||S.sel.type==='home'){WorkspaceUI.render(el);if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();return;}
+  // Guidance decorates the real editor after every route, including early
+  // returns; it never changes the report or triggers persistence.
+  try {
+    const el = $("#editor"); el.innerHTML = "";
+    if(typeof WorkspaceUI!=='undefined') {
+      WorkspaceUI.update();
+      ExperienceUI.update();
+      if(S.sel.type==='insights'&&typeof InsightsUI!=='undefined'){InsightsUI.render(el);if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();return;}
+      if(S.sel.type==='guide'&&typeof GuideUI!=='undefined'){GuideUI.render(el);if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();return;}
+      if(!S.data||S.sel.type==='home'){WorkspaceUI.render(el);if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();return;}
+    }
+    if(typeof ExperienceUI!=='undefined') {
+      ExperienceUI.update();
+      if(!S.data){ExperienceUI.welcome(el);return;}
+    }
+    if (!S.data) { el.append(h("div", { class: "empty" }, t("empty"))); return; }
+    if(S.sel.type === "studio")StudioUI.render(el,S.sel.idx);
+    else if (S.sel.type === "findings") el.append(h("h2",{},uiText("Hallazgos", "Findings", "Achados")),findingsDashboard());
+    else if (S.sel.type === "capture") WorkbenchUI.inbox(el);
+    else if (S.sel.type === "report") el.append(reportEditor());
+    else if (S.sel.type === "section") el.append(sectionEditor(S.sel.key));
+    else if (S.sel.type === "workflow") WorkflowUI.render(S.sel.idx, el);
+    else if(S.data.findings[S.sel.idx])el.append(findingEditor(S.data.findings[S.sel.idx]));
+    if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();
+  } finally {
+    if(typeof ExperienceUI!=='undefined'&&ExperienceUI.practiceNotice){
+      const notice=ExperienceUI.practiceNotice();
+      if(notice)$('#editor').prepend(notice);
+    }
+    if(typeof OnboardingUI!=="undefined")OnboardingUI.afterRender();
   }
-  if(typeof ExperienceUI!=='undefined') {
-    ExperienceUI.update();
-    if(!S.data){ExperienceUI.welcome(el);return;}
-  }
-  if (!S.data) { el.append(h("div", { class: "empty" }, t("empty"))); return; }
-  if(S.sel.type === "studio")StudioUI.render(el,S.sel.idx);
-  else if (S.sel.type === "findings") el.append(h("h2",{},uiText("Hallazgos", "Findings", "Achados")),findingsDashboard());
-  else if (S.sel.type === "capture") WorkbenchUI.inbox(el);
-  else if (S.sel.type === "report") el.append(reportEditor());
-  else if (S.sel.type === "section") el.append(sectionEditor(S.sel.key));
-  else if (S.sel.type === "workflow") WorkflowUI.render(S.sel.idx, el);
-  else if(S.data.findings[S.sel.idx])el.append(findingEditor(S.data.findings[S.sel.idx]));
-  if(typeof WorkbenchUI!=="undefined")WorkbenchUI.afterRender();
 }
 
 // Successful server mutations must advance the local revision too: otherwise

@@ -51,6 +51,7 @@ const WorkspaceUI = (() => {
     if(typeof GuideUI!=='undefined')GuideUI.update();
     if(typeof InsightsUI!=='undefined')InsightsUI.update();
     if(typeof ContextIndexUI!=='undefined')ContextIndexUI.update();
+    if(typeof OnboardingUI!=='undefined')OnboardingUI.update();
   }
   function stat(value, label, kind) {
     const b=button('',()=>go('workflow',kind)); b.className='workspace-stat';
@@ -133,6 +134,7 @@ const WorkspaceUI = (() => {
           [button(w('Probar demo Nimbus','Try Nimbus demo', "Experimentar demonstração Nimbus"),()=>$('#demoBtn').click(),true),button(w('Crear mi proyecto','Create my project', "Criar meu projeto"),b=>DesignLibraryUI.newProject(b))]))),
       h('figure',{class:'workspace-mascots'},h('img',{src:'/static/brand-mark.webp',width:300,height:200,alt:w('Prometeo y Evaristo, los dos perros de report-gen, sobre una consola.','Prometeo and Evaristo, the two report-gen dogs, above a console.', "Prometeo e Evaristo, os dois cães do report-gen, acima de um console.")}),h('figcaption',{},'Prometeo & Evaristo')));
     shell.append(hero);
+    if(typeof OnboardingUI!=='undefined')shell.append(OnboardingUI.entry());
     if(typeof GuideUI!=='undefined')shell.append(GuideUI.entry());
     if(!S.data) {
       shell.append(h('div',{class:'workspace-empty-actions'},

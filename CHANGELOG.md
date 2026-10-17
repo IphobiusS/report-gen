@@ -1,3 +1,11 @@
+# Cambios 0.43.0 (2026-10-17)
+
+- Inicio opcional con vistas **Guiado** y **Completo**. Conservan rutas, herramientas y datos; Guiado pliega herramientas avanzadas y destaca una siguiente acción. El selector permite cambiar de vista durante el trabajo.
+- Recorrido contextual de seis etapas: proyecto, alcance, hallazgos, evidencias, revisión y entrega. Explica y destaca controles reales, con opciones para saltar, volver, pausar, reanudar y reiniciar. **Explícame esta sección** ofrece ayuda sobre la vista actual. El tutorial visual con capturas permanece disponible.
+- Preferencia de vista por espacio de trabajo y progreso de aprendizaje por proyecto en el navegador, con funcionamiento de sesión si el almacenamiento está bloqueado. Consultar o completar la guía no altera estados de verificación, evidencia, metodología, retest ni publicación.
+- Práctica con copias Nimbus ficticias independientes en el idioma de la interfaz. Identifica su origen mediante el registro del servidor, sin deducirlo del nombre del proyecto, y conserva el acceso de vuelta al proyecto anterior. Guarda las ediciones abiertas antes de iniciar otra copia y detiene la transición si el guardado falla.
+- Instrucciones ES/EN/PT y [protocolo de aceptación del inicio guiado](docs/QA-ONBOARDING-0430.md). Las pruebas y capturas se acreditan mediante sus registros de ejecución; el recorrido no certifica una evaluación ni sustituye sesiones de usabilidad con participantes.
+
 # Cambios 0.42.0 (2026-10-17)
 
 - Sesiones de revisión sobre hallazgos filtrados, posición y continuación de la cola, evidencia fijada junto al editor, selección de tabla para asignaciones y búsqueda de activos, evidencias y comentarios.

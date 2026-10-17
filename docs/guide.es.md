@@ -1,4 +1,4 @@
-# Guía de uso de report-gen 0.42.0
+# Guía de uso de report-gen 0.43.0
 
 [Bienvenida](../README.md) · [English](guide.en.md) · [Português (Brasil)](guide.pt.md) · [Cambios](../CHANGELOG.md)
 
@@ -54,6 +54,38 @@ Chromium es un motor PDF alternativo, opcional:
 .venv/bin/python -m pip install playwright -c requirements-audited.txt
 .venv/bin/python -m playwright install chromium
 ```
+
+## Inicio guiado y ayuda contextual
+
+El primer acceso ofrece **Guiado** y **Completo** como formas de trabajar. La elección es opcional y se puede cambiar después en **Vista**, en la parte superior de la barra lateral. No se pide acreditar experiencia: un usuario experimentado puede activar la guía y un principiante puede abrir todas las herramientas.
+
+| Vista | Presentación |
+| --- | --- |
+| **Guiado** | Pliega inicialmente **Registro y cobertura**, **Análisis y seguimiento** y **Herramientas**, y destaca una siguiente acción. Conserva abierto el grupo actual y permite desplegar los demás. |
+| **Completo** | Ofrece la navegación con todas sus herramientas disponibles, sin exigir seguir el recorrido. |
+
+Ambas vistas conservan los nombres, las rutas y los cinco grupos de navegación. Cambiar de vista no crea otro informe, traduce contenido ni modifica los datos. El recorrido tiene seis etapas de aprendizaje; no sustituye esos cinco grupos ni impone un orden de trabajo.
+
+| Etapa | Qué ayuda a localizar y entender |
+| --- | --- |
+| **Proyecto** | Crear o abrir un informe y registrar su título, cliente e idioma. |
+| **Alcance** | Explicar objetivos, activos incluidos, exclusiones y limitaciones. |
+| **Hallazgos** | Documentar observación, reproducción, impacto y recomendación fundamentados. |
+| **Evidencias** | Vincular evidencia a la observación y revisar qué copia se publicará. |
+| **Revisión** | Leer avisos y comprobar la publicación sobre una revisión guardada. |
+| **Entrega** | Elegir destinatario y formatos, abrir las salidas y conservar un respaldo privado. |
+
+El recorrido contextual destaca controles reales del editor y explica su propósito con ejemplos. Puedes ir a otra etapa, volver, pausar, reanudar o reiniciar. **Recorrido**, **Pausar guía** y **Reanudar guía** están junto al selector de vista; **Reiniciar** está en el recorrido y en Inicio. **Explícame esta sección** abre ayuda sobre la vista actual; no hace falta iniciar el recorrido para consultarla. Una ayuda o un ejemplo no rellena campos ni ejecuta la acción explicada.
+
+La preferencia de vista se guarda en este navegador para el espacio de trabajo. El avance del recorrido se separa además por proyecto, por lo que una práctica no completa el aprendizaje de otro informe. Si el navegador bloquea el almacenamiento, la sesión mantiene estas funciones; cerrar o recargar puede perder ese avance. No se incorpora a los archivos del informe ni se sincroniza con otros navegadores.
+
+En Inicio, **Crear práctica ficticia** abre una copia ficticia de **Nimbus**. Cada inicio crea un proyecto independiente en el idioma de la interfaz; no reinicia ni reutiliza el contenido de otro proyecto. Antes se guardan las ediciones del proyecto abierto: si el guardado falla, la práctica se detiene para permitir resolverlo. La etiqueta **Proyecto de práctica · Nimbus** permanece visible aunque ocultes el recorrido de Nimbus. **Volver a mi proyecto** recupera el proyecto previo cuando existe; también puedes abrir **Ver mis proyectos** o **Crear proyecto real**. La práctica es editable y sus cambios pertenecen a esa copia. Volver al proyecto anterior también exige guardar: si falla, permaneces en la práctica para resolverlo.
+
+La etiqueta identifica el origen de las prácticas creadas desde 0.43.0; no se deduce del nombre ni certifica su contenido después de editarlo. Permanece al guardar, renombrar o restaurar el historial integrado, incluso sin almacenamiento del navegador. No viaja en los respaldos portátiles: una demo anterior o una copia reimportada puede contener datos ficticios sin mostrar esta etiqueta.
+
+Completar, omitir o reiniciar la guía solo cambia el estado de aprendizaje. No verifica vulnerabilidades, ejecuta pruebas de metodología, valida evidencia, cierra retests ni aprueba la entrega. Un informe sin hallazgos puede ser legítimo: la guía no obliga a inventarlos. Los estados técnicos deben registrar el trabajo realmente realizado.
+
+El **Tutorial visual** del menú **Más** sigue disponible con sus seis pasos y capturas ampliables ES/EN/PT. Su progreso se conserva por separado del recorrido contextual. Consultar cualquiera de las dos ayudas mantiene los datos del proyecto.
 
 ## Primer informe
 
@@ -196,11 +228,11 @@ En **LibreOffice 24.2.7.2 de los paquetes de Ubuntu**, la instalación del compl
 Para construir el OXT desde el código fuente descargado de report-gen, sin instalarlo:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.42.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.43.0.oxt
 ```
 
 1. En la instalación de LibreOffice elegida abre **Herramientas → Extensiones → Añadir**. Algunas versiones llaman al menú **Gestor de extensiones**.
-2. Selecciona `report-gen-libreoffice-0.42.0.oxt` e instálalo para tu usuario.
+2. Selecciona `report-gen-libreoffice-0.43.0.oxt` e instálalo para tu usuario.
 3. Cierra todas las ventanas de esa instalación de LibreOffice, vuelve a abrirla y abre una copia del DOCX recién exportado por report-gen.
 4. Comprueba sus URL, listas y tablas después de abrirlo, editarlo y guardarlo. Para retirarlo, desactívalo o elimínalo en el mismo gestor y reinicia LibreOffice.
 

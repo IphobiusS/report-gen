@@ -1,9 +1,31 @@
 /* First-use and delivery UI. It operates through the normal saved-project API. */
 const ExperienceUI = (() => {
   const w=(es,en,pt)=>uiText(es,en,pt);
-  let demoSlugs = new Set();
+  let creatingPractice = false;
+  const practicePreferences = new Map();
   let dialogTrigger = null;
-  try { demoSlugs = new Set(JSON.parse(localStorage.getItem('rg.demoProjects') || '[]')); } catch (_) {}
+  // Only server-recorded creation provenance identifies a practice copy.
+  // Names and browser preferences cannot label a customer project as fictional.
+  const isPractice = (slug=S.slug) => typeof slug==='string' && !!S.projects?.some(project=>project.slug===slug&&project.practice===true);
+  const validProjectSlug = slug => typeof slug==='string'&&slug.length>0&&slug.length<=256;
+  function practiceState() {
+    const key='rg.practiceProjects.v1.'+String(S.workspace_id||'session');
+    if(practicePreferences.has(key))return practicePreferences.get(key);
+    const state={key,hidden:new Set(),returns:new Map()};
+    try {
+      const saved=JSON.parse(localStorage.getItem(key)||'null');
+      if(saved?.version===1) {
+        if(Array.isArray(saved.hidden))state.hidden=new Set(saved.hidden.filter(validProjectSlug).slice(-200));
+        if(Array.isArray(saved.returns))for(const pair of saved.returns.slice(-200)){
+          if(Array.isArray(pair)&&pair.length===2&&validProjectSlug(pair[0])&&validProjectSlug(pair[1]))state.returns.set(pair[0],pair[1]);
+        }
+      }
+    } catch (_) {}
+    practicePreferences.set(key,state);return state;
+  }
+  function rememberPractice(state) {
+    try { localStorage.setItem(state.key,JSON.stringify({version:1,hidden:[...state.hidden].slice(-200),returns:[...state.returns].slice(-200)})); } catch (_) {}
+  }
   function button(text, action, primary=false) {
     const b = h('button',{class:'btn'+(primary?' primary':''),type:'button'},text);
     b.addEventListener('click',async()=>{dialogTrigger=b;b.disabled=true;try{await action(b);}catch(e){toast(e.message,'err');}finally{b.disabled=false;}});
@@ -16,15 +38,47 @@ const ExperienceUI = (() => {
     d.append(h('div',{class:'experience-heading'},h('h2',{},title),button(w('Cerrar','Close', "Fechar"),()=>d.close())),body);
     d.addEventListener('close',()=>{d.remove();previous?.focus();});document.body.append(d);d.showModal();return {d,body};
   }
-  async function createDemo() {
-    if(S.slug && !await doSave())return;
+  async function createPractice() {
+    if(creatingPractice||projectStore.loading||projectBusyCount>0)return false;
+    creatingPractice=true;
     busyProject(true);
     try {
+      // Lock before the first await: two entry points must never create two
+      // copies, and edits must not arrive after the saved snapshot is taken.
+      const sourceSlug=S.slug,state=practiceState();
+      if(sourceSlug && !await doSave())return false;
+      if(S.slug!==sourceSlug)return false;
       const r=await requireOk(await api.post('/api/demo',{lang:S.uiLang}));const {slug}=await r.json();
-      demoSlugs.add(slug);try{localStorage.setItem('rg.demoProjects',JSON.stringify([...demoSlugs]));}catch(_){}
+      const previous=isPractice(sourceSlug)?state.returns.get(sourceSlug):sourceSlug;
+      if(previous)state.returns.set(slug,previous);
+      rememberPractice(state);
       await refreshProjects();await loadProject(slug);
-      toast(w('Copia de Nimbus creada. Puedes editarla.','Nimbus copy created. You can edit it.', "Cópia do Nimbus criada. Você pode editá-la."),'ok');
+      if(S.slug!==slug)throw Error(w('La copia de práctica se creó, pero no se pudo abrir. Está disponible en Tus proyectos.','The practice copy was created but could not be opened. It is available under Your projects.', 'A cópia de prática foi criada, mas não pôde ser aberta. Ela está disponível em Seus projetos.'));
+      toast(w('Copia ficticia de Nimbus creada. Puedes editarla.','Fictional Nimbus copy created. You can edit it.', 'Cópia fictícia do Nimbus criada. Você pode editá-la.'),'ok');
+      return true;
+    } finally { creatingPractice=false;busyProject(false); }
+  }
+  async function returnToProject(slug) {
+    if(creatingPractice||projectStore.loading||projectBusyCount>0)return false;
+    busyProject(true);
+    try {
+      if(S.slug&&!await doSave())return false;
+      await loadProject(slug);
+      if(S.slug!==slug)return false;
+      $('#editor')?.focus({preventScroll:true});return true;
     } finally { busyProject(false); }
+  }
+  function practiceNotice() {
+    if(!isPractice())return null;
+    const notice=h('aside',{class:'card demo-guide','data-practice-notice':'','aria-labelledby':'practiceNoticeTitle'},
+      h('strong',{id:'practiceNoticeTitle'},w('Proyecto de práctica · Nimbus','Practice project · Nimbus','Projeto de prática · Nimbus')),
+      h('p',{},w('Esta copia de Nimbus se creó con datos ficticios y se guarda como un proyecto independiente. Puedes volver a tus informes desde aquí.','This Nimbus copy was created with fictional data and saves as an independent project. You can return to your reports here.','Esta cópia do Nimbus foi criada com dados fictícios e é salva como um projeto independente. Você pode voltar aos seus relatórios por aqui.')));
+    const actions=h('div',{class:'experience-actions'}),previous=practiceState().returns.get(S.slug);
+    function action(key,label,run){const control=button(label,run);control.dataset.practiceAction=key;actions.append(control);}
+    if(previous&&!isPractice(previous)&&S.projects.some(project=>project.slug===previous))action('return',w('Volver a mi proyecto','Return to my project','Voltar ao meu projeto'),()=>returnToProject(previous));
+    action('projects',w('Ver mis proyectos','View my projects','Ver meus projetos'),()=>{select('home');$('[data-catalog-search]')?.focus();});
+    action('new',w('Crear proyecto real','Create real project','Criar projeto real'),opener=>DesignLibraryUI.newProject(opener));
+    notice.append(actions);return notice;
   }
   async function diagnostics() {
     const {d,body}=dialog(w('Comprobar instalación','Check installation', "Verificar instalação"));
@@ -52,14 +106,14 @@ const ExperienceUI = (() => {
     el.append(h('div',{class:'experience-welcome'},h('p',{class:'experience-version'},'report-gen '+(S.version||'')),
       h('h1',{},w('Tu evidencia. Tu informe.','Your evidence. Your report.', "Sua evidência. Seu relatório.")),
       h('p',{},w('Prueba el flujo completo con Nimbus, un proyecto ficticio editable.','Try the complete workflow with Nimbus, an editable fictional project.', "Experimente o fluxo completo com o Nimbus, um projeto fictício editável.")),
-      button(w('Probar Nimbus','Try Nimbus', "Experimentar Nimbus"),createDemo,true),
+      button(w('Probar Nimbus','Try Nimbus', "Experimentar Nimbus"),createPractice,true),
       h('p',{},w('O comienza con tus propios datos desde «Nuevo proyecto».','Or start with your own data using “New project”.', "Ou comece com seus próprios dados usando “Novo projeto”.")),
       button(w('Abrir biblioteca de informes','Open report design library', "Abrir biblioteca de modelos de relatório"),opener=>DesignLibraryUI.gallery(opener)),
       button(w('Comprobar instalación','Check installation', "Verificar instalação"),diagnostics),
       button(w('Actualizar report-gen','Update report-gen', "Atualizar report-gen"),opener=>UpdateUI.open(opener))));
   }
   function guide(el) {
-    if(!demoSlugs.has(S.slug))return;
+    if(!isPractice()||practiceState().hidden.has(S.slug))return;
     const box=h('details',{class:'demo-guide',open:''},h('summary',{},w('Nimbus: recorrido de prueba','Nimbus: trial walkthrough', "Nimbus: percurso de demonstração")));
     box.append(h('p',{},w('Datos ficticios. Esta copia es tuya y se guarda como cualquier proyecto.','Fictional data. This is your copy and it saves like any project.', "Dados fictícios. Esta é sua cópia e ela é salva como qualquer projeto.")),
       h('div',{class:'experience-actions'},
@@ -67,7 +121,7 @@ const ExperienceUI = (() => {
         button(w('2. Revisar el informe','2. Review report', "2. Revisar relatório"),()=>select('workflow','review')),
         button(w('3. Inspeccionar publicación','3. Inspect publication', "3. Inspecionar publicação"),()=>StudioUI.inspector()),
         button(w('4. Preparar entrega','4. Prepare delivery', "4. Preparar entrega"),prepareDelivery)),
-      button(w('Ocultar guía','Hide guide', "Ocultar guia"),()=>{demoSlugs.delete(S.slug);try{localStorage.setItem('rg.demoProjects',JSON.stringify([...demoSlugs]));}catch(_){}box.remove();}));
+      button(w('Ocultar guía','Hide guide', "Ocultar guia"),()=>{const state=practiceState();state.hidden.add(S.slug);rememberPractice(state);box.remove();}));
     el.append(box);
   }
   function readinessSummary(report) {
@@ -199,10 +253,10 @@ const ExperienceUI = (() => {
     if(delivery){delivery.textContent=w('Preparar entrega','Prepare delivery', "Preparar entrega");delivery.disabled=!S.slug||projectBusyCount>0;}
   }
   function bind() {
-    const demo=button(w('Probar demo','Try demo', "Experimentar demonstração"),createDemo);demo.id='demoBtn';demo.classList.add('sm');$('#newProjectBtn').after(demo);
+    const demo=button(w('Probar demo','Try demo', "Experimentar demonstração"),createPractice);demo.id='demoBtn';demo.classList.add('sm');$('#newProjectBtn').after(demo);
     const deliver=button(w('Preparar entrega','Prepare delivery', "Preparar entrega"),prepareDelivery,true);deliver.id='deliveryBtn';deliver.classList.add('sm');$('#downloadBtn').after(deliver);
     const diagnose=button(w('Comprobar instalación','Check installation', "Verificar instalação"),diagnostics);diagnose.id='diagnosticsBtn';$('.sidebar').append(diagnose);
     const updater=button(w('Actualizar report-gen','Update report-gen', "Atualizar report-gen"),opener=>UpdateUI.open(opener));updater.id='updateAppBtn';$('.sidebar').append(updater);update();
   }
-  return {bind,update,welcome,guide,prepareDelivery,deliveryChecklist,updateDeliveryChecklist};
+  return {bind,update,welcome,guide,createPractice,isPractice,practiceNotice,prepareDelivery,deliveryChecklist,updateDeliveryChecklist};
 })();

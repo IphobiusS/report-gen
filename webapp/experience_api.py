@@ -13,6 +13,7 @@ from flask import jsonify, abort, send_file, Response
 import delivery
 import support_report
 import project_history
+from project_catalog import mark_practice
 from storage import revision
 
 
@@ -32,7 +33,8 @@ def register(api):
         suffix = '' if lang == 'es' else '-' + lang
         source = api.REPORT_ROOT / f'examples/nimbus-demo-project{suffix}.zip'
         project_history.import_bundle(source.read_bytes(), api.PROJECTS/slug)
-        return jsonify({'slug': slug})
+        mark_practice(api.PROJECTS / slug)
+        return jsonify({'slug': slug, 'practice': True})
 
     @app.post('/api/diagnostics')
     def diagnostics():

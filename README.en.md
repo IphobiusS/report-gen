@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen with Prometeo and Evaristo" width="300">
 </p>
 
-# report-gen 0.42.0
+# report-gen 0.43.0
 
 **A local editor for turning security assessments into clear reports.** Organize findings, connect evidence, track remediation and retests, and prepare **PDF, Word, Markdown with images and portable HTML** from a saved revision.
 
@@ -50,6 +50,14 @@ Open **http://127.0.0.1:8080**; `Ctrl+C` stops the server. The shortcut accepts 
 | Word | An editable `.docx` with its own table-of-contents fields. |
 | Markdown | A ZIP containing `report.md` and its images. |
 | Portable HTML | A self-contained `.html` with reading filters. |
+
+## Guided start in 0.43.0
+
+On first entry, choose **Guided** or **Complete**, and change later with the view selector. Both retain the same routes, tools and data. Guided reduces initial density by collapsing advanced tools and offering a next action; expand those tools whenever needed.
+
+The optional **Project → Scope → Findings → Evidence → Review → Delivery** route explains and highlights editor controls. Skip, go back, pause, resume or restart at any time. **Explain this section** provides contextual help. This browser remembers the view per workspace and learning progress per project; if storage is unavailable, they work for the session.
+
+Practice opens a separate fictional Nimbus copy, clearly labelled, and lets you return to your project. Completing guidance never verifies findings, approves evidence, executes tests or certifies delivery. The screenshot-based **Visual tutorial** remains available. [Using guided start](docs/guide.en.md#guided-start-and-contextual-help).
 
 ## Assessment workflow 0.42.0
 
@@ -169,7 +177,7 @@ Portable HTML contains the complete report: filters are not access permissions. 
 
 **Update report-gen** checks for a new version and lets you review its package and prepare an unencrypted private backup. Preparation does not replace the running installation: download the private instructions, stop the editor and follow the supplied commands. [Guided workflow and limits](docs/guide.en.md#guided-updates).
 
-If you already use an external workspace, stop the editor, download **0.42.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
+If you already use an external workspace, stop the editor, download **0.43.0 into a new directory** and run `python3 scripts/install.py --desktop --workspace /path/to/existing-data --lang en` there. This retains the data and updates the shortcut; run only one installation at a time. Do not copy the old `.venv`.
 
 To transfer projects from an installation still using `webapp/`, run from the new directory:
 

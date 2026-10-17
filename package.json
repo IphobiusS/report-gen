@@ -1,6 +1,6 @@
 {
   "name": "report-gen-ui-tests",
-  "version": "0.42.0",
+  "version": "0.43.0",
   "private": true,
   "scripts": {
     "test": "node --test tests/test_save_manager.cjs tests/test_drafts_0200.cjs",
@@ -39,7 +39,9 @@
     "test:pdf-compare-ui": "node --test tests/test_pdf_compare_ui_0360.cjs tests/test_pdf_compare_ui_0370.cjs",
     "test:comparison-workflow": "node tests/test_features_0370_browser.cjs --output out/features-0370",
     "test:sidebar": "node tests/test_sidebar_navigation_0390.cjs",
-    "test:context-index": "node tests/test_context_index_0400.cjs"
+    "test:context-index": "node tests/test_context_index_0400.cjs",
+    "test:onboarding": "node --test tests/test_onboarding_ui_0430.cjs",
+    "test:onboarding-browser": "node tests/test_onboarding_browser_0430.cjs --output out/onboarding-0430"
   },
   "devDependencies": {
     "jsdom": "26.1.0",

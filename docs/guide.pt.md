@@ -1,4 +1,4 @@
-# Guia do usuário do report-gen 0.42.0
+# Guia do usuário do report-gen 0.43.0
 
 [Boas-vindas](../README.pt.md) · [Español](guide.es.md) · [English](guide.en.md) · [Histórico de alterações](../CHANGELOG.md)
 
@@ -56,6 +56,38 @@ O Chromium é um mecanismo alternativo opcional para PDF:
 ```
 
 Leia o estado de cada mecanismo no diagnóstico; o código de saída isolado não comprova que todos estejam disponíveis. Os seletores nativos acompanham o tema claro ou escuro; a aparência do menu aberto depende do navegador e do sistema operacional.
+
+## Início guiado e ajuda contextual
+
+O primeiro acesso oferece **Guiado** e **Completo** como formas de trabalhar. A escolha é opcional e pode ser alterada depois em **Visualização**, na parte superior da barra lateral. Não há avaliação de experiência: um usuário experiente pode ativar a orientação e um iniciante pode abrir todas as ferramentas.
+
+| Visualização | Apresentação |
+| --- | --- |
+| **Guiado** | Recolhe inicialmente **Captura e cobertura**, **Análise e acompanhamento** e **Ferramentas**, e destaca uma próxima ação. Mantém o grupo atual aberto e permite expandir os demais. |
+| **Completo** | Oferece a navegação com todas as ferramentas disponíveis, sem exigir seguir o percurso. |
+
+As duas visualizações mantêm os mesmos nomes, rotas e cinco grupos de navegação. Alterar a visualização não cria outro relatório, traduz conteúdo nem modifica dados. O percurso tem seis etapas de aprendizado; não substitui esses cinco grupos nem impõe uma ordem de trabalho.
+
+| Etapa | O que ajuda a localizar e entender |
+| --- | --- |
+| **Projeto** | Criar ou abrir um relatório e registrar título, cliente e idioma. |
+| **Escopo** | Explicar objetivos, ativos incluídos, exclusões e limitações. |
+| **Achados** | Documentar observações, reprodução, impacto e recomendações fundamentados. |
+| **Evidências** | Vincular evidências à observação e revisar a cópia que será publicada. |
+| **Revisão** | Ler avisos e conferir a publicação a partir de uma revisão salva. |
+| **Entrega** | Escolher destinatário e formatos, abrir as saídas e manter um backup privado. |
+
+O percurso contextual destaca controles reais do editor e explica sua finalidade com exemplos. Você pode ir a outra etapa, voltar, pausar, retomar ou reiniciar. **Percurso**, **Pausar guia** e **Retomar guia** ficam junto ao seletor de visualização; **Reiniciar** fica no percurso e na Visão geral. **Explique esta seção** abre ajuda para a visualização atual; não é preciso iniciar o percurso. Ler uma ajuda ou um exemplo não preenche campos nem executa a ação descrita.
+
+A preferência de visualização é salva neste navegador por espaço de trabalho. O progresso do percurso também é separado por projeto, de modo que a prática não conclui o aprendizado de outro relatório. Se o armazenamento do navegador estiver bloqueado, essas funções continuam disponíveis durante a sessão; fechar ou recarregar pode perder esse progresso. Ele não é incorporado aos arquivos do relatório nem sincronizado com outros navegadores.
+
+Na Visão geral, **Criar prática fictícia** abre uma cópia fictícia do **Nimbus**. Cada início cria um projeto independente no idioma da interface; não reinicia nem reutiliza o conteúdo de outro projeto. As edições do projeto aberto são salvas antes: se o salvamento falhar, a prática é interrompida para permitir resolver o problema. O aviso **Projeto de prática · Nimbus** continua visível mesmo ao ocultar o percurso Nimbus. **Voltar ao meu projeto** abre o projeto anterior quando existe; também é possível usar **Ver meus projetos** ou **Criar projeto real**. A prática é editável e suas alterações pertencem àquela cópia. Voltar ao projeto anterior também exige salvar: se falhar, você permanece na prática para resolver o problema.
+
+O aviso identifica a origem das práticas criadas a partir da 0.43.0; não é deduzido do nome nem certifica seu conteúdo após a edição. Ele permanece ao salvar, renomear ou restaurar o histórico integrado, inclusive sem armazenamento do navegador. Não acompanha backups portáteis: uma demonstração anterior ou cópia reimportada pode conter dados fictícios sem exibir esse aviso.
+
+Concluir, pular ou reiniciar a orientação altera apenas o estado de aprendizado. Não verifica vulnerabilidades, executa testes de metodologia, valida evidências, encerra retestes nem aprova a entrega. Um relatório sem achados pode ser legítimo: a orientação não exige inventá-los. Os estados técnicos devem registrar o trabalho efetivamente realizado.
+
+O **Tutorial visual** continua no menu **Mais**, com seis passos e capturas ampliáveis ES/EN/PT. Seu progresso permanece separado do percurso contextual. Consultar qualquer uma dessas ajudas preserva os dados do projeto.
 
 ## Primeiro relatório
 
@@ -181,7 +213,7 @@ O provedor UNO deve pertencer à mesma instalação do LibreOffice. A `.venv` do
 Crie a OXT sem instalá-la:
 
 ```bash
-python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.42.0.oxt
+python integrations/libreoffice/build_oxt.py --output report-gen-libreoffice-0.43.0.oxt
 ```
 
 1. No LibreOffice escolhido, abra **Ferramentas → Extensões → Adicionar**; algumas versões usam **Gerenciador de extensões**.

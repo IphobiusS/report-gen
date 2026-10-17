@@ -2,7 +2,7 @@
   <img src="docs/img/report-gen-logo.png" alt="report-gen com Prometeo e Evaristo" width="300">
 </p>
 
-# report-gen 0.42.0
+# report-gen 0.43.0
 
 **Um editor local para transformar avaliações de segurança em relatórios claros.** Organize achados, vincule evidências, acompanhe a remediação e os retestes e produza **PDF, Word, Markdown com imagens e HTML portátil** a partir de uma revisão salva.
 
@@ -36,6 +36,14 @@ O português é a variante **Brasil**. A chave interna é `pt`; os argumentos de
 5. Abra os arquivos gerados antes de compartilhar e mantenha um backup privado do projeto editável.
 
 O **tutorial visual** permanece no menu. Seus seis passos têm instruções e capturas reais em espanhol, inglês e português, com ampliação e progresso local. A apresentação inicial pode ser ignorada. Consultar o tutorial não modifica o relatório; ele também funciona quando o navegador não consegue salvar seu progresso.
+
+## Início guiado na 0.43.0
+
+No primeiro acesso, escolha **Guiado** ou **Completo** e altere depois pelo seletor de visualização. As duas opções mantêm as mesmas rotas, ferramentas e dados. Guiado reduz a densidade inicial recolhendo ferramentas avançadas e sugerindo uma próxima ação; expanda essas ferramentas quando precisar.
+
+O percurso opcional **Projeto → Escopo → Achados → Evidências → Revisão → Entrega** explica e destaca controles do editor. É possível pular, voltar, pausar, retomar ou reiniciar. **Explique esta seção** oferece ajuda contextual. O navegador lembra a visualização por espaço de trabalho e o progresso de aprendizado por projeto; sem armazenamento disponível, eles funcionam durante a sessão.
+
+A prática abre uma cópia fictícia independente do Nimbus, identificada como tal, e permite voltar ao seu projeto. Concluir o percurso nunca verifica achados, aprova evidências, executa testes nem certifica a entrega. O **Tutorial visual** com capturas continua disponível. [Usar o início guiado](docs/guide.pt.md#início-guiado-e-ajuda-contextual).
 
 ## Fluxo de avaliação 0.42.0
 

@@ -1,0 +1,42 @@
+.onboarding-controls { padding:10px 12px; margin:0 0 8px; border-bottom:1px solid var(--line); }
+.onboarding-mode-row { display:flex; align-items:center; gap:8px; min-width:0; }
+.onboarding-mode-row label { color:var(--muted); font-size:.75rem; margin:0; flex:0 0 auto; }
+.onboarding-mode-row select { flex:1; min-width:0; width:auto; padding:6px 8px; font-size:.8125rem; }
+.onboarding-control-actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+.onboarding-control-actions .btn { flex:1 1 auto; min-width:0; white-space:normal; text-align:left; line-height:1.4; font-size:.6875rem; padding:5px 6px; }
+.onboarding-entry { margin:18px 0; border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:20px; min-width:0; }
+.onboarding-entry h2 { font-size:1.0625rem; margin:0 0 8px; }
+.onboarding-entry p { font-size:.875rem; line-height:1.6; margin:8px 0 14px; }
+.onboarding-eyebrow { font-family:var(--mono); font-size:.6875rem!important; color:var(--accent); letter-spacing:.04em; margin:0!important; }
+.onboarding-choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
+.onboarding-choice { display:flex; flex-direction:column; gap:8px; min-width:0; border:1px solid var(--line); border-radius:7px; padding:16px; color:var(--fg); background:var(--bg); font:inherit; text-align:left; cursor:pointer; }
+.onboarding-choice:hover { border-color:var(--accent); background:var(--panel2); }
+.onboarding-choice strong { font-size:.9375rem; }
+.onboarding-choice span { color:var(--muted); font-size:.8125rem; line-height:1.6; }
+.onboarding-entry-row,.onboarding-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.onboarding-entry-row > div { min-width:0; }
+.onboarding-practice { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; border-top:1px solid var(--line); padding-top:12px; margin-top:16px; color:var(--muted); font-size:.8125rem; line-height:1.5; }
+.onboarding-panel { min-width:0; max-width:100%; border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:8px; background:var(--panel); padding:16px; margin:0 0 20px; overflow-wrap:anywhere; }
+.onboarding-panel h2 { margin:14px 0 8px; font-size:1rem; line-height:1.4; }
+.onboarding-panel p { font-size:.8125rem; line-height:1.65; margin:9px 0; }
+.onboarding-panel .onboarding-heading h2 { margin-top:0; }
+.onboarding-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; margin:12px 0 8px; }
+.onboarding-steps .btn { min-width:0; white-space:normal; line-height:1.5; font-size:.6875rem; padding:6px; text-align:left; }
+.onboarding-steps [aria-current=step] { border-color:var(--accent); color:var(--fg); background:var(--panel2); box-shadow:inset 2px 0 var(--accent); }
+.onboarding-actions { display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin:10px 0; }
+.onboarding-actions .btn,.onboarding-heading .btn,.onboarding-practice .btn { white-space:normal; min-width:0; line-height:1.5; }
+.onboarding-example { background:var(--bg); border-radius:5px; padding:10px 12px; }
+.onboarding-note { color:var(--muted); font-size:.75rem!important; }
+.onboarding-next { border-top:1px solid var(--line); padding-top:10px; }
+.onboarding-help { scroll-margin-top:18px; }
+.onboarding-route + .onboarding-help { border-top:1px solid var(--line); padding-top:16px; margin-top:16px; }
+.onboarding-target { outline:2px solid var(--accent)!important; outline-offset:3px; }
+.onboarding-target:focus-visible { outline-width:3px!important; }
+.onboarding-controls :focus-visible,.onboarding-entry :focus-visible,.onboarding-panel :focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+@media (max-width:760px) {
+  .onboarding-entry { padding:14px; }
+  .onboarding-choices { grid-template-columns:minmax(0,1fr); }
+  .onboarding-panel { padding:12px; }
+  .onboarding-steps { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (prefers-reduced-motion:reduce) { .onboarding-panel,.onboarding-target { scroll-behavior:auto; } }

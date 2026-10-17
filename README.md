@@ -4,7 +4,7 @@
 
 <a id="report-gen"></a>
 
-# report-gen 0.42.0
+# report-gen 0.43.0
 
 <a id="qué-es"></a>
 
@@ -60,6 +60,14 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 | Word | Documento editable `.docx`, con campos propios para el índice. |
 | Markdown | ZIP con `report.md` y sus imágenes. |
 | HTML portátil | Un `.html` autónomo con filtros de lectura. |
+
+## Inicio guiado en 0.43.0
+
+En el primer acceso puedes elegir **Guiado** o **Completo** y cambiar después desde el selector de vista. Ambas opciones conservan las mismas rutas, herramientas y datos. Guiado reduce la densidad inicial plegando herramientas avanzadas y ofrece una siguiente acción; puedes desplegarlas cuando las necesites.
+
+El recorrido opcional **Proyecto → Alcance → Hallazgos → Evidencias → Revisión → Entrega** explica y destaca controles del editor. Permite saltar, volver, pausar, reanudar y reiniciar. **Explícame esta sección** ofrece ayuda contextual. La preferencia de vista se recuerda por espacio de trabajo y el progreso de aprendizaje por proyecto, en este navegador; si el almacenamiento no está disponible, funcionan durante la sesión.
+
+La práctica abre una copia ficticia independiente de Nimbus, identificada como tal, y permite volver a tu proyecto. Completar una guía nunca verifica hallazgos, aprueba evidencias, ejecuta pruebas ni certifica una entrega. El **Tutorial visual** con capturas sigue disponible. [Uso del inicio guiado](docs/guide.es.md#inicio-guiado-y-ayuda-contextual).
 
 ## Flujo de evaluación 0.42.0
 
@@ -184,7 +192,7 @@ El HTML portátil contiene el informe completo: sus filtros no son permisos de a
 
 **Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
 
-Si ya usas una carpeta externa, detén el editor, descarga **0.42.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+Si ya usas una carpeta externa, detén el editor, descarga **0.43.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
 
 Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
 

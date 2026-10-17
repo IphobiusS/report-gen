@@ -1,9 +1,35 @@
 """Read-only project summaries and portable, non-destructive archive metadata."""
 from datetime import date, datetime, timezone
+from pathlib import Path
 
 from error_messages import message
 from input_guard import load_yaml_file
-from storage import revision
+from storage import atomic_write, revision
+
+
+PRACTICE_MARKER = '.practice-origin.json'
+PRACTICE_ORIGIN = b'{"version":1,"origin":"nimbus-demo"}\n'
+
+
+def is_practice_project(directory):
+    """Read local creation provenance, never infer it from project content/name.
+
+    This small server-written sidecar is excluded from portable archives and
+    cannot be supplied through the project's API or archive import whitelist.
+    """
+    path = Path(directory) / PRACTICE_MARKER
+    try:
+        if path.is_symlink() or not path.is_file():
+            return False
+        with path.open('rb') as stream:
+            return stream.read(len(PRACTICE_ORIGIN) + 1) == PRACTICE_ORIGIN
+    except OSError:
+        return False
+
+
+def mark_practice(directory):
+    """Called only for a locally created Nimbus copy or its local restoration."""
+    atomic_write(Path(directory) / PRACTICE_MARKER, PRACTICE_ORIGIN)
 
 
 def validate_metadata(value):
@@ -29,7 +55,8 @@ def list_projects(root):
             continue
         row = dict(slug=directory.name, title=directory.name, client='', theme='', lang='',
                    available=False, archived=False, delivery_date='', next_due_date='',
-                   pending_retests=0, finding_count=0, modified_at='', revision='')
+                   pending_retests=0, finding_count=0, modified_at='', revision='',
+                   practice=is_practice_project(directory))
         try:
             document = load_yaml_file(path)
             if not isinstance(document, dict):

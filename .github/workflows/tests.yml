@@ -48,6 +48,9 @@ jobs:
           RG_PYTHON=python node tests/test_language_0350_dom.cjs
           RG_PYTHON=python npm run test:sidebar
           RG_PYTHON=python npm run test:context-index
+          RG_PYTHON=python npm run test:onboarding
+          node --test tests/test_practice_0430.cjs
+          RG_PYTHON=python node tests/test_onboarding_integration_0430.cjs
           node tests/test_atlas_browser_harness_0390.cjs
           RG_PYTHON=python node --test tests/test_portuguese_modules_0350.cjs
       - name: Senior workflow DOM and real Flask contracts

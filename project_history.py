@@ -353,6 +353,11 @@ def restore(directory, sid):
         _prepare_commit(staging, directory)
         shutil.copytree(directory / 'history', staging / 'history')
         for name, blob in blobs.items(): atomic_write(staging / name, blob)
+        # Local creation provenance belongs to this project, not to a portable
+        # historical payload. Imports cannot supply the server-only marker.
+        from project_catalog import is_practice_project, mark_practice
+        if is_practice_project(directory):
+            mark_practice(staging)
         atomic_write(staging / 'engagement.yaml.bak', (directory / 'engagement.yaml').read_bytes())
         # Old snapshots without permanent identities migrate as a new state.
         data = load_yaml_file(staging / 'engagement.yaml')
