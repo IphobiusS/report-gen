@@ -1,11 +1,12 @@
 # Cambios 0.41.0 (2026-10-17)
 
 - Tablas dentro de hallazgos con continuidad por filas, cabeceras repetidas y comprobación de geometría; conserva el rechazo de celdas y encabezados físicamente imposibles.
+- Chromium comprueba el tamaño y la posición reales de imágenes y otros objetos indivisibles dentro de las tablas, incluidos el espacio de cabeceras y celdas. Los bloques de texto extensos pueden continuar entre páginas; los objetos que no caben conservan la salida anterior y señalan el hallazgo afectado.
 - Corregido el falso rechazo del PDF portugués cuando un guion partido comparte página con una viñeta cuyo orden de dibujo difiere del orden visual. El verificador exige mapas Unicode, caracteres, bytes de fuente y posición del glifo corroborados; conserva el rechazo de contenido alterado, fuentes ambiguas y pruebas incompletas.
 - Entrega guiada en cuatro pasos sobre la misma revisión guardada. Corrige respuestas tardías de vista previa y evita guardar otra revisión antes de exportar.
-- Borradores recuperables para edición masiva y formularios auxiliares, con restauración explícita y sin conservar consentimientos.
+- Borradores recuperables para edición masiva y formularios auxiliares, con restauración explícita y sin conservar consentimientos. La declaración de anexo recuperada se muestra desplegada.
 - Revisión visual persistente con página, notas, pendientes y copia PDF privada opcional, ligada al hash y revisión de origen; respaldos e historial incluidos, publicación excluida.
-- Instalación gráfica con diagnóstico, carpetas y recuperación; exclusión entre procesos para impedir actualizar la aplicación o sus datos mientras están abiertos.
+- Instalación gráfica con diagnóstico, carpetas y recuperación; exclusión entre procesos para impedir actualizar la aplicación o sus datos mientras están abiertos. El intercambio con subprocesos conserva rutas Unicode también en Windows.
 - Caso ficticio Boreal localizado ES/EN/PT y controles de aceptación. Corpus Word ampliado a portugués y proyectos complejos opcionales. La aceptación nativa de Word requiere ejecución y revisión en un equipo con Word; preparar el corpus no acredita ese resultado.
 
 # Cambios 0.40.0 (2026-10-16)

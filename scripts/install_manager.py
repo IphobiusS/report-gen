@@ -183,8 +183,11 @@ def _stopped(port):
 
 
 def run(command, timeout=120):
+    # Pipes use the Windows ANSI encoding unless explicitly configured. Keep
+    # Unicode workspace/backup paths lossless across the JSON child boundary.
+    environment = dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1')
     result = subprocess.run([str(word) for word in command], capture_output=True, text=True,
-                            encoding='utf-8', errors='replace', timeout=timeout, cwd=ROOT)
+                            encoding='utf-8', errors='replace', timeout=timeout, cwd=ROOT, env=environment)
     if result.returncode:
         # Preserve actionable pip/venv details without unbounded GUI text.
         raise ValueError((result.stderr or result.stdout or 'Operation failed.')[-12000:])

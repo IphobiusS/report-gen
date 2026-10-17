@@ -327,6 +327,20 @@ jobs:
         run: python scripts/audit-boreal-0410.py --projects "$RUNNER_TEMP/boreal/case/projects" --output "$RUNNER_TEMP/boreal/exports" --mode native --native-executable /usr/bin/libreoffice --require-stable
       - name: Prepare the same complex projects for external Word acceptance
         run: python scripts/prepare-external-acceptance.py --output "$RUNNER_TEMP/boreal/word-kit" --additional-projects "$RUNNER_TEMP/boreal/case/projects"
+      - name: Preserve a separately downloadable report and review package
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: boreal-review-0410-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/boreal/exports/matrix-*.json
+            ${{ runner.temp }}/boreal/exports/source-sha256-*.json
+            ${{ runner.temp }}/boreal/exports/**/results.json
+            ${{ runner.temp }}/boreal/exports/principal/*/outputs/
+            ${{ runner.temp }}/boreal/exports/native/*/libreoffice/*.pdf
+            ${{ runner.temp }}/boreal/word-kit/
+          if-no-files-found: error
+          retention-days: 14
       - name: Preserve complete reports, native pages and pending Word inputs
         if: always()
         uses: actions/upload-artifact@v7.0.2

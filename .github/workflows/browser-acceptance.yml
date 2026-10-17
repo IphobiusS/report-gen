@@ -159,6 +159,7 @@ jobs:
         if: ${{ !cancelled() && matrix.browser == 'chromium' }}
         env:
           REPORT_GEN_TEST_CHROMIUM_PDF: '1'
+          REPORT_GEN_TABLE_EVIDENCE: out/integration-0410/chromium-table-evidence
         run: python -m pytest tests/test_finding_table_flow_0410.py -k real_chromium --junitxml=out/integration-0410/chromium-tables.xml
       - name: Preserve exact checks, downloads and genuine screenshots
         if: always()

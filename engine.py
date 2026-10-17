@@ -522,7 +522,7 @@ def render_pdf_chromium(html, out_pdf, meta):
     # cabecera/pie y el contador salen del mismo CSS que usa WeasyPrint. No se
     # inyecta header/footer template (duplicaria) ni margin (lo fija @page).
     from playwright.sync_api import sync_playwright
-    from pdf_pagination import keep_short_labelled_lists, mark_finding_tables, verify_table_markers
+    from pdf_pagination import keep_short_labelled_lists, mark_finding_tables, verify_table_markers, verify_chromium_table_geometry
     html, table_checks = mark_finding_tables(keep_short_labelled_lists(html))
     with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False,
                                      dir=str(out_pdf.parent), encoding="utf-8") as tf:
@@ -545,6 +545,7 @@ def render_pdf_chromium(html, out_pdf, meta):
             pg.goto(tmp.as_uri())
             pg.emulate_media(media="print")
             if table_checks:
+                verify_chromium_table_geometry(pg)
                 proof = pg.pdf(prefer_css_page_size=True, print_background=True)
                 # Preserve short tables; let only tables proven to span pages
                 # use the preceding page space, then verify the final layout.

@@ -226,6 +226,63 @@ def verify_finding_tables(document):
         walk(page_box)
 
 
+def verify_chromium_table_geometry(page):
+    """Reject indivisible table objects that exceed the real print area.
+
+    Cell markers prove the cell fragments, not whether Chromium sliced a tall
+    image inside them. Measure replaced/inline-block objects at the report's
+    actual content width, including repeated outer/nested headers and cell
+    padding/borders. Check offsets as well as dimensions. Restore the exact
+    body style before the PDF proof; no text row is made indivisible.
+    """
+    finding = page.evaluate("""async () => {
+      await document.fonts.ready;
+      const body = document.body, original = body.getAttribute('style');
+      const pxPerMm = 96 / 25.4, pageWidth = 178 * pxPerMm, pageHeight = 259 * pxPerMm;
+      try {
+        body.style.setProperty('width', '178mm', 'important');
+        const size = value => Number.parseFloat(value) || 0;
+        const bodyStyle = getComputedStyle(body), bodyRect = body.getBoundingClientRect();
+        const bodyLeft = bodyRect.left + size(bodyStyle.paddingLeft) + size(bodyStyle.borderLeftWidth);
+        const bodyRight = bodyRect.right - size(bodyStyle.paddingRight) - size(bodyStyle.borderRightWidth);
+        for (const table of document.querySelectorAll('.finding table')) {
+          const finding = table.closest('.finding')?.id || 'sin ID';
+          const head = table.tHead;
+          if (head && head.getBoundingClientRect().height > pageHeight + 2) return finding;
+          for (const node of table.querySelectorAll('*')) {
+            if (node.classList.contains('rg-table-boundary')) continue;
+            const style = getComputedStyle(node), cell = node.closest('td,th');
+            const atomic = ['IMG', 'SVG', 'CANVAS', 'VIDEO', 'OBJECT', 'EMBED', 'IFRAME'].includes(node.tagName.toUpperCase())
+              || ['inline-block', 'inline-table', 'inline-flex', 'inline-grid'].includes(style.display);
+            if (!atomic || !cell || style.display === 'none') continue;
+            const rect = node.getBoundingClientRect();
+            if (!rect.width || !rect.height) continue;
+            let availableHeight = pageHeight;
+            for (let owner = cell.closest('table'); owner; owner = owner.parentElement?.closest('table')) {
+              if (owner.tHead && !owner.tHead.contains(node)) availableHeight -= owner.tHead.getBoundingClientRect().height;
+            }
+            for (let container = cell; container; container = container.parentElement?.closest('td,th')) {
+              const cellStyle = getComputedStyle(container);
+              availableHeight -= size(cellStyle.paddingTop) + size(cellStyle.paddingBottom)
+                + size(cellStyle.borderTopWidth) + size(cellStyle.borderBottomWidth);
+            }
+            const cellStyle = getComputedStyle(cell), cellRect = cell.getBoundingClientRect();
+            const left = Math.max(bodyLeft, cellRect.left + size(cellStyle.paddingLeft) + size(cellStyle.borderLeftWidth));
+            const right = Math.min(bodyRight, cellRect.right - size(cellStyle.paddingRight) - size(cellStyle.borderRightWidth));
+            if (rect.height > availableHeight + 2 || rect.width > pageWidth + 2
+                || rect.left < left - 2 || rect.right > right + 2) return finding;
+          }
+        }
+        return null;
+      } finally {
+        if (original === null) body.removeAttribute('style');
+        else body.setAttribute('style', original);
+      }
+    }""")
+    if finding is not None:
+        raise table_error(finding)
+
+
 def mark_finding_tables(source):
     """Mark every cell boundary for the optional Chromium PDF preflight.
 

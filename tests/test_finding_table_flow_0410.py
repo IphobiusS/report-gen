@@ -123,17 +123,19 @@ def test_chromium_preflight_accepts_repeated_headers_and_finds_missing_or_clippe
                     reason='Requires the real optional Chromium PDF runtime')
 @pytest.mark.parametrize('language', ['es', 'en', 'pt'])
 def test_real_chromium_multipage_table_and_impossible_middle_cell(tmp_path, language):
+    Image.new('RGB', (96, 48), '#224477').save(tmp_path / 'evidence.png')
     data = {'meta': {'report_title': 'Chromium finding flow', 'lang': language, 'theme': 'serio'},
             'report': {'sections': [{'key': 'findings'}]},
             'findings': [{'id': 'F-CHROMIUM', 'mode': 'vuln', 'severity': 'info',
                           'title': 'CHROMIUM_FINDING_TITLE',
-                          'description_md': table('CHROMIUM', rows=100)}]}
+                          'description_md': table('CHROMIUM', rows=100, image=True)}]}
     source = engine.render_html(engine.build_env(), data, tmp_path, {}, False, engine.load_lang(language))
     output = tmp_path / 'chromium.pdf'
     engine.render_pdf_chromium(source, output, {'_resource_root': str(tmp_path)})
     with pdfplumber.open(output) as pdf:
         pages = [page.extract_text() or '' for page in pdf.pages]
         links = {link['uri'] for page in pdf.pages for link in page.hyperlinks if link.get('uri')}
+        assert sum(len(page.images) for page in pdf.pages) >= 1
     text = '\n'.join(pages)
     assert re.findall(r'CHROMIUM-ROW-\d{3}', text) == [f'CHROMIUM-ROW-{i:03d}' for i in range(100)]
     occupied = [page for page in pages if 'CHROMIUM-ROW-' in page]
@@ -141,11 +143,50 @@ def test_real_chromium_multipage_table_and_impossible_middle_cell(tmp_path, lang
     assert all('CHROMIUMCONTROL' in page and 'CHROMIUMEVIDENCE' in page for page in occupied)
     assert 'RGTABLE' not in text
     assert all(f'https://bank.example/CHROMIUM/{i}?audit=a%2Fb&lang=pt' in links for i in (0, 99))
+    # A block with an explicit height is still fragmentable. Preserve this
+    # real Chromium case: text and all neighbouring rows must remain visible.
+    fragmentable = source.replace('CHROMIUM-ROW-050', '<div style="height:350mm">FLOWING_BLOCK_CANARY</div>')
+    flowing = tmp_path / 'fragmentable-block.pdf'
+    engine.render_pdf_chromium(fragmentable, flowing, {'_resource_root': str(tmp_path)})
+    with pdfplumber.open(flowing) as pdf:
+        flowing_pages = [page.extract_text() or '' for page in pdf.pages]
+        assert all(-2 <= char['top'] <= char['bottom'] <= page.height + 2 for page in pdf.pages for char in page.chars)
+    flowing_text = '\n'.join(flowing_pages)
+    assert flowing_text.count('FLOWING_BLOCK_CANARY') == 1
+    assert re.findall(r'CHROMIUM-ROW-\d{3}', flowing_text) == [f'CHROMIUM-ROW-{i:03d}' for i in range(100) if i != 50]
     previous = output.read_bytes()
-    impossible = source.replace('CHROMIUM-ROW-050', '<div style="height:350mm">Impossible</div>')
-    with language_scope(language), pytest.raises(ValueError, match='F-CHROMIUM'):
-        engine.render_pdf_chromium(impossible, output, {'_resource_root': str(tmp_path)})
-    assert output.read_bytes() == previous
+    image = (tmp_path / 'evidence.png').as_uri()
+    impossible_objects = {
+        'image': f'<img src="{image}" style="width:20mm!important;height:350mm!important;max-height:none!important;max-width:none!important" alt="Indivisible evidence">',
+        'inline-block': '<span style="display:inline-block;width:20mm;height:350mm">Indivisible evidence</span>',
+        'wide-image': f'<img src="{image}" style="width:350mm!important;height:20mm!important;max-height:none!important;max-width:none!important" alt="Wide evidence">',
+        'offset-image': f'<img src="{image}" style="width:20mm!important;height:10mm!important;position:relative;left:180mm" alt="Displaced evidence">',
+        'svg': '<svg xmlns="http://www.w3.org/2000/svg" width="75" height="1400"><rect width="75" height="1400" fill="blue"/></svg>',
+    }
+    # This image fits the page by itself; the containing cell's vertical
+    # padding makes the complete indivisible content physically impossible.
+    from lxml import html
+    padded = html.document_fromstring(source)
+    cell = padded.xpath('//td[contains(text(), "CHROMIUM-ROW-050")]')[0]
+    cell.text = ''
+    cell.set('style', 'padding-top:20mm;padding-bottom:20mm')
+    cell.append(html.fragment_fromstring(f'<img src="{image}" style="width:20mm!important;height:240mm!important;max-height:none!important;max-width:none!important" alt="Padded evidence">'))
+    impossible_sources = {kind: source.replace('CHROMIUM-ROW-050', atom) for kind, atom in impossible_objects.items()}
+    impossible_sources['padded-image'] = html.tostring(padded, encoding='unicode', method='html')
+    for kind, impossible in impossible_sources.items():
+        with language_scope(language), pytest.raises(ValueError, match='F-CHROMIUM') as caught:
+            engine.render_pdf_chromium(impossible, output, {'_resource_root': str(tmp_path)})
+        assert {'es': 'celda', 'en': 'cell', 'pt': 'célula'}[language] in str(caught.value), kind
+        assert caught.value.diagnostics[0]['location']['finding_id'] == 'F-CHROMIUM', kind
+        assert output.read_bytes() == previous, kind
+    # Keep actual render evidence in CI, including the positive block that
+    # demonstrated why a CSS height alone cannot mean "indivisible".
+    if os.environ.get('REPORT_GEN_TABLE_EVIDENCE'):
+        import shutil
+        evidence = Path(os.environ['REPORT_GEN_TABLE_EVIDENCE']) / language
+        evidence.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(output, evidence / 'table.pdf')
+        shutil.copy2(flowing, evidence / 'fragmentable-block.pdf')
 
 
 @pytest.mark.parametrize('width', ['350mm', '180mm'])

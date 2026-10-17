@@ -27,8 +27,12 @@ async function visual(page,slug){
   await ready(page);
   if(await page.evaluate(()=>S.slug)!==slug)await(await exposeNavigationControl(page,'#projectSelect')).selectOption(slug);
   await page.waitForFunction(slug=>S.slug===slug&&!projectStore.loading&&!projectBusyCount,slug);
-  await clickNavigationControl(page,'#insightsBtn');await page.locator('[data-insights-tab="visual"]').click();
-  await page.locator('[data-visual-library]').waitFor();await page.locator('[data-visual-saved-list]').waitFor();
+  await clickNavigationControl(page,'#insightsBtn');
+  const listing=page.waitForResponse(response=>response.request().method()==='GET'&&new URL(response.url()).pathname==='/api/projects/'+slug+'/visual-reviews');
+  await page.locator('[data-insights-tab="visual"]').click();
+  const response=await listing;assert.equal(response.status(),200,await response.text());const body=await response.json();
+  await page.locator('[data-visual-library]').waitFor();await page.locator('[data-visual-saved-list]').waitFor({state:'attached'});
+  await page.waitForFunction(count=>{const library=document.querySelector('[data-visual-library]');return library?.querySelector('[role=status]')?.textContent.startsWith(count+' / ')&&library.querySelectorAll('[data-visual-saved-id]').length===count;},body.records.length);
 }
 async function upload(page,file){
   const input=page.locator('[data-insights-field="visual-file"]');const details=input.locator('xpath=ancestor::details');

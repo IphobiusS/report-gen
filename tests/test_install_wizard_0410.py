@@ -76,6 +76,13 @@ def test_no_network_authorization_never_runs_setup_or_changes_launcher(plan, mon
     assert not plan.launcher.exists() and not plan.backups.exists()
 
 
+def test_child_json_preserves_unicode_paths_with_legacy_parent_encoding(monkeypatch):
+    monkeypatch.setenv('PYTHONIOENCODING', 'latin-1')
+    monkeypatch.setenv('PYTHONUTF8', '0')
+    output = manager.run([sys.executable, '-c', 'import json; print(json.dumps({"path": "Instalación/niño/日本語"}, ensure_ascii=False))'])
+    assert json.loads(output)['path'] == 'Instalación/niño/日本語'
+
+
 @pytest.mark.parametrize('field,target', [('backups', 'workspace'), ('backups', 'application'),
                                         ('launcher', 'workspace'), ('previous', 'application')])
 def test_reject_overlapping_paths_before_any_write(plan, field, target):
