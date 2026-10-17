@@ -101,9 +101,13 @@ jobs:
           retention-days: 14
 
   aster:
-    name: Aster trilingual complex reports and native DOCX rendering
+    name: Aster complex reports and native DOCX (${{ matrix.language }})
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [es, en, pt]
     env:
       REPORT_GEN_REQUIRE_MULTISCRIPT_FONTS: '1'
     steps:
@@ -121,17 +125,29 @@ jobs:
       - run: python -m pip install -e '.[dev]' -c requirements-audited.txt
       - name: Author the complete Spanish, English and Portuguese input projects
         run: python scripts/build-aster-case.py --output "$RUNNER_TEMP/aster/case"
-      - name: Generate and inspect twelve reports with report-gen only
-        run: python scripts/audit-aster-0420.py --projects "$RUNNER_TEMP/aster/case/projects" --output "$RUNNER_TEMP/aster/exports" --mode principal
-      - name: Inspect the three generated DOCX files using stable LibreOffice
-        run: python scripts/audit-aster-0420.py --projects "$RUNNER_TEMP/aster/case/projects" --output "$RUNNER_TEMP/aster/exports" --mode native --native-executable /usr/bin/libreoffice --require-stable
-      - name: Preserve full reports, privacy checks and renderer evidence
+      - name: Generate and inspect all four complete formats for this language
+        run: python scripts/audit-aster-0420.py --projects "$RUNNER_TEMP/aster/case/projects" --output "$RUNNER_TEMP/aster/exports" --mode principal --languages "${{ matrix.language }}"
+      - name: Inspect the generated DOCX using stable LibreOffice
+        run: python scripts/audit-aster-0420.py --projects "$RUNNER_TEMP/aster/case/projects" --output "$RUNNER_TEMP/aster/exports" --mode native --languages "${{ matrix.language }}" --native-executable /usr/bin/libreoffice --require-stable
+      - name: Preserve authored inputs and acceptance receipts
         if: always()
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: aster-0420-${{ github.sha }}
+          name: aster-0420-${{ matrix.language }}-receipts-${{ github.sha }}
           path: |
             ${{ runner.temp }}/aster/
+            !${{ runner.temp }}/aster/exports/principal/**
+            !${{ runner.temp }}/aster/exports/native/**
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve complete reports and native renderer evidence
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: aster-0420-${{ matrix.language }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/aster/exports/principal/${{ matrix.language }}/
+            ${{ runner.temp }}/aster/exports/native/${{ matrix.language }}/
             !${{ runner.temp }}/aster/exports/**/snapshot/**
           if-no-files-found: error
           retention-days: 14
