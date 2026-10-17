@@ -1,7 +1,7 @@
 .onboarding-controls { padding:10px 12px; margin:0 0 8px; border-bottom:1px solid var(--line); }
 .onboarding-mode-row { display:flex; align-items:center; gap:8px; min-width:0; }
 .onboarding-mode-row label { color:var(--muted); font-size:.75rem; margin:0; flex:0 0 auto; }
-.onboarding-mode-row select { flex:1; min-width:0; width:auto; padding:6px 8px; font-size:.8125rem; }
+.onboarding-mode-row select { flex:1; min-width:0; min-height:40px; width:auto; padding:6px 8px; font-size:.8125rem; }
 .onboarding-control-actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
 .onboarding-control-actions .btn { flex:1 1 auto; min-width:0; white-space:normal; text-align:left; line-height:1.4; font-size:.6875rem; padding:5px 6px; }
 .onboarding-entry { margin:18px 0; border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:20px; min-width:0; }
@@ -34,6 +34,7 @@
 .onboarding-target:focus-visible { outline-width:3px!important; }
 .onboarding-controls :focus-visible,.onboarding-entry :focus-visible,.onboarding-panel :focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
 @media (max-width:760px) {
+  .onboarding-mode-row select { min-height:44px; }
   .onboarding-entry { padding:14px; }
   .onboarding-choices { grid-template-columns:minmax(0,1fr); }
   .onboarding-panel { padding:12px; }

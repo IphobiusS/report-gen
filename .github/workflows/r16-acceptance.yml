@@ -273,6 +273,16 @@ jobs:
             --compare-pdf "$ATLAS_OUTPUT/exports/samples/general/es/serio/outputs/informe.pdf" \
             --compare-other-pdf "$ATLAS_OUTPUT/exports/samples/general/en/serio/outputs/informe.pdf" \
             --output "$ATLAS_OUTPUT/browser"
+      - name: Preserve compact Atlas browser diagnostics without report downloads
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: atlas-browser-diagnostics-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/atlas/browser/results.json
+            ${{ runner.temp }}/atlas/browser/failure.png
+          if-no-files-found: warn
+          retention-days: 14
       - name: Preserve a separately downloadable lifecycle and navigation evidence package
         if: always()
         uses: actions/upload-artifact@v7.0.2

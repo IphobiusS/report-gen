@@ -1,6 +1,7 @@
 # Cambios 0.43.0 (2026-10-17)
 
 - Inicio opcional con vistas **Guiado** y **Completo**. Conservan rutas, herramientas y datos; Guiado pliega herramientas avanzadas y destaca una siguiente acción. El selector permite cambiar de vista durante el trabajo.
+- El selector de vista mantiene una altura mínima de 40 px en escritorio y 44 px en móvil, comprobada junto a los demás controles de navegación en ambos modos e idiomas.
 - Recorrido contextual de seis etapas: proyecto, alcance, hallazgos, evidencias, revisión y entrega. Explica y destaca controles reales, con opciones para saltar, volver, pausar, reanudar y reiniciar. **Explícame esta sección** ofrece ayuda sobre la vista actual. El tutorial visual con capturas permanece disponible.
 - Preferencia de vista por espacio de trabajo y progreso de aprendizaje por proyecto en el navegador, con funcionamiento de sesión si el almacenamiento está bloqueado. Consultar o completar la guía no altera estados de verificación, evidencia, metodología, retest ni publicación.
 - Práctica con copias Nimbus ficticias independientes en el idioma de la interfaz. Identifica su origen mediante el registro del servidor, sin deducirlo del nombre del proyecto, y conserva el acceso de vuelta al proyecto anterior. Guarda las ediciones abiertas antes de iniciar otra copia y detiene la transición si el guardado falla.

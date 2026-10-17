@@ -11,7 +11,7 @@ const axeSource=fs.readFileSync(require.resolve('axe-core/axe.min.js',{paths:[ro
 const workspace=fs.mkdtempSync(path.join(os.tmpdir(),'report-gen-acceptance-0211-onboarding-'));
 fs.writeFileSync(path.join(workspace,'.test-only'),'synthetic acceptance workspace');
 fs.mkdirSync(out,{recursive:true});
-const results={started:new Date().toISOString(),checks:[],errors:[],external:[],screenshots:[],accessibility:[],limitations:['Automated Chromium acceptance does not replace human usability sessions or a human screen reader.','Every project used in this harness is fictional and disposable.']};
+const results={started:new Date().toISOString(),checks:[],errors:[],external:[],screenshots:[],accessibility:[],sidebarTargets:[],limitations:['Automated Chromium acceptance does not replace human usability sessions or a human screen reader.','Every project used in this harness is fictional and disposable.']};
 const save=()=>fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(results,null,2));
 function check(name,condition,detail){results.checks.push({name,passed:!!condition,...(detail===undefined?{}:{detail})});save();assert.ok(condition,name+(detail===undefined?'':': '+JSON.stringify(detail)));console.log('PASS '+name);}
 const server=spawn(process.env.RG_PYTHON||'python',[path.join(root,'scripts/browser-server-0211.py'),'--workspace',workspace],{cwd:root,env:{...process.env,PYTHONPATH:root+path.delimiter+path.join(root,'webapp')}});
@@ -56,6 +56,19 @@ async function accessibility(target,label,selectors){
 async function geometry(target,label,selector){
   const bounds=await target.locator(selector).evaluate(node=>{const r=node.getBoundingClientRect();return {left:r.left,right:r.right,client:node.clientWidth,scroll:node.scrollWidth,root:document.documentElement.scrollWidth,viewport:innerWidth};});
   check(label+' fits the viewport and enlarged text',bounds.scroll<=bounds.client+1&&bounds.root<=bounds.viewport+1&&bounds.left>=-1&&bounds.right<=bounds.viewport+1,bounds);
+}
+async function sidebarTargets(target,label){
+  if(await target.locator('#sidebarToggle').isVisible()&&await target.locator('#sidebarToggle').getAttribute('aria-expanded')!=='true')await target.locator('#sidebarToggle').click();
+  const geometry=await target.locator('#workspaceSidebar').evaluate(sidebar=>({
+    viewport:innerWidth,
+    controls:[...sidebar.querySelectorAll('button,select,summary')]
+      .filter(node=>node.getClientRects().length&&getComputedStyle(node).visibility!=='hidden')
+      .map(node=>{const box=node.getBoundingClientRect();return {id:node.id||node.dataset.workflow||node.tagName,tag:node.tagName,name:node.getAttribute('aria-label')||node.textContent.trim(),height:box.height,width:box.width};})
+  }));
+  const minimum=geometry.viewport<=760?44:40;
+  results.sidebarTargets.push({label,minimum,...geometry});
+  check(label+' measures all three onboarding sidebar controls',['onboardingMode','onboardingRouteBtn','onboardingHelpBtn'].every(id=>geometry.controls.some(control=>control.id===id)),geometry.controls);
+  check(label+' every rendered sidebar button, select and summary is at least '+minimum+'px high',geometry.controls.every(control=>control.height>=minimum),geometry.controls);
 }
 (async()=>{try{
   base=await new Promise((resolve,reject)=>{let buffer='';timer=setTimeout(()=>reject(Error('Server timeout')),30000);server.stdout.on('data',data=>{buffer+=data;for(const line of buffer.split('\n'))try{const value=JSON.parse(line);if(value.url){clearTimeout(timer);resolve(value.url);}}catch{}});server.on('exit',code=>reject(Error('Server exited '+code)));});
@@ -147,12 +160,15 @@ async function geometry(target,label,selector){
     await reloadProject(page);
     check(language+' practice notice remains visible after reload',await page.locator('[data-practice-notice]').isVisible());
     // The global mode and help controls must stay usable at mobile sizes and larger text.
-    for(const sample of [{width:1366,zoom:100,theme:'dark'},{width:390,zoom:100,theme:'light'},{width:320,zoom:200,theme:'dark'}]){
+    for(const sample of [{width:1440,zoom:100,theme:'dark'},{width:1366,zoom:100,theme:'dark'},{width:390,zoom:100,theme:'light'},{width:320,zoom:200,theme:'dark'}]){
       await page.setViewportSize({width:sample.width,height:1000});
       await page.evaluate(sample=>{document.documentElement.style.fontSize=sample.zoom+'%';applyUiTheme(sample.theme);},sample);
-      await setMode(page,'guided');await ensureRoute(page);
-      await routeStep(page,0);await clickControl(page,'[data-onboarding-action="open"]');
       const label=language+'-'+sample.width+'-'+sample.zoom+'-'+sample.theme;
+      for(const mode of ['complete','guided']){
+        await setMode(page,mode);await sidebarTargets(page,label+'-'+mode);
+      }
+      await ensureRoute(page);
+      await routeStep(page,0);await clickControl(page,'[data-onboarding-action="open"]');
       await geometry(page,label+' route','#onboardingPanel');
       await clickControl(page,'#onboardingHelpBtn');
       await geometry(page,label+' help','[data-onboarding-help]');
