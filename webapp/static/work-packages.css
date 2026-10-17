@@ -12,9 +12,10 @@
 .work-package-body form>label{display:flex;flex-direction:column;gap:6px;margin:16px 0}
 .work-package-body input[type=text]{width:100%;max-width:100%;color:var(--fg);background:var(--bg);border:1px solid var(--line);padding:8px}
 .work-package-body fieldset{min-width:0;border:1px solid var(--line);padding:12px}
-.work-package-choice{display:flex;align-items:flex-start;gap:12px;padding:12px 4px;min-height:44px;border-bottom:1px solid var(--line)}
+.work-package-choice{display:flex;align-items:flex-start;gap:12px;padding:12px 4px;margin:0;min-width:0;min-height:44px;border-bottom:1px solid var(--line)}
 .work-package-choice:last-child{border-bottom:0}
-.work-package-choice input{flex-shrink:0;margin-top:5px;accent-color:var(--accent)}
+.work-package-choice input[type=checkbox]{width:18px;height:18px;min-width:18px;min-height:18px;max-width:18px;flex:0 0 18px;padding:0;margin:5px 0 0;box-sizing:border-box;accent-color:var(--accent)}
+.work-package-choice>span{min-width:0;flex:1 1 auto}
 .work-package-choice small{display:block;line-height:1.6;margin-top:6px}
 .work-package-body details{margin-top:12px;border:1px solid var(--line);border-radius:6px;padding:12px}
 .work-package-body summary{cursor:pointer;display:list-item;padding:8px}
