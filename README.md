@@ -6,11 +6,40 @@
 
 # report-gen 0.45.0
 
+[![Última versión publicada](https://img.shields.io/github/v/release/IphobiusS/report-gen?label=release&color=2563eb)](https://github.com/IphobiusS/report-gen/releases/latest)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-3776AB)](pyproject.toml)
+[![Licencia MIT](https://img.shields.io/badge/license-MIT-16a34a)](LICENSE)
+[![Idiomas: español, inglés y portugués de Brasil](https://img.shields.io/badge/languages-ES%20%C2%B7%20EN%20%C2%B7%20PT--BR-475569)](docs/guide.es.md)
+
 <a id="qué-es"></a>
 
-**Un editor local para convertir tus evaluaciones de seguridad en informes claros.** Organiza hallazgos, conecta evidencias, registra remediación y retest, y prepara **PDF, Word, Markdown con imágenes y HTML portátil** desde una revisión guardada.
+**Un editor local de informes de pentesting, desde la evidencia hasta la entrega.** Organiza hallazgos, conecta evidencias, registra remediación y retest, y prepara **PDF, Word, Markdown con imágenes y HTML portátil** desde una revisión guardada.
 
-[English](README.en.md) · [Português (Brasil)](README.pt.md) · [Guía completa](docs/guide.es.md) · [Cambios](CHANGELOG.md) · [Seguridad](SECURITY.md)
+Empieza con una demo y una ruta guiada, o utiliza la vista completa para evaluaciones extensas. La interfaz, las ayudas y los informes están disponibles en **español, inglés y portugués de Brasil**; el contenido de tu evaluación permanece bajo tu control.
+
+**Español** · [English](README.en.md) · [Português (Brasil)](README.pt.md)
+
+[Descargar](https://github.com/IphobiusS/report-gen/releases/latest) · [Instalar](#instalar-y-abrir) · [Probar demo](#primer-informe) · [Guía completa](docs/guide.es.md) · [Contribuir](CONTRIBUTING.md) · [Seguridad](SECURITY.md) · [Cambios](CHANGELOG.md)
+
+<a id="características"></a>
+
+## Qué puedes hacer
+
+- **Documentar una evaluación:** alcance, metodología, activos, cobertura, hallazgos y pasos reproducibles; CVSS 3.1 y 4.0 cuando corresponda.
+- **Trabajar con evidencia:** galería, pies de imagen, vínculos a hallazgos, copias censuradas e inspección de lo que se publicará.
+- **Conservar el seguimiento:** identidades estables, revisiones recuperables, comparación con una entrega marcada, correcciones y matriz de retest.
+- **Elegir la presentación:** crear un proyecto desde una galería con seis diseños generales y 30 perfiles especializados, agrupados por propósito. El idioma del informe es independiente del de la interfaz.
+- **Separar destinatarios:** entregas técnica, ejecutiva y pública con planes de inclusión explícitos; la pública requiere texto aprobado y consentimiento registrado.
+- **Relacionar evidencia y decisiones:** afirmaciones, límites, contexto de negocio, observaciones y revisión visual del PDF. [Flujo y requisitos opcionales](docs/evidence-decisions-0230.md).
+- **Preparar el trabajo:** 90 fichas de hallazgos en tres idiomas, incluidas 30 de IA/LLM/agentes, y paquetes para siete especialidades. Las fichas son puntos de partida sin verificar. [Biblioteca y paquetes](docs/knowledge.es.md).
+- **Ampliar el flujo:** evidencia HTTP/HAR, extensión opcional de Burp, planes de prueba, instancias afectadas y revisión editorial. [Uso, integraciones y límites](docs/senior-workflow.es.md).
+
+| Formato | Archivo que recibes |
+| --- | --- |
+| PDF | Informe paginado `.pdf`. |
+| Word | Documento editable `.docx`, con campos propios para el índice. |
+| Markdown | ZIP con `report.md` y sus imágenes. |
+| HTML portátil | Un `.html` autónomo con filtros de lectura. |
 
 <a id="inicio-rápido"></a>
 
@@ -43,29 +72,86 @@ Abre **http://127.0.0.1:8080** en tu navegador; `Ctrl+C` detiene el servidor. El
 
 [Recorrido completo y recomendaciones](docs/guide.es.md#primer-informe).
 
-<a id="características"></a>
-
-## Qué puedes hacer
-
-- **Documentar una evaluación:** alcance, metodología, activos, cobertura, hallazgos y pasos reproducibles; CVSS 3.1 y 4.0 cuando corresponda.
-- **Trabajar con evidencia:** galería, pies de imagen, vínculos a hallazgos, copias censuradas e inspección de lo que se publicará.
-- **Conservar el seguimiento:** identidades estables, revisiones recuperables, comparación con una entrega marcada, correcciones y matriz de retest.
-- **Elegir la presentación:** crear un proyecto desde una galería con seis diseños generales y 30 perfiles especializados, agrupados por propósito. El idioma del informe es independiente del de la interfaz.
-- **Separar destinatarios:** entregas técnica, ejecutiva y pública con planes de inclusión explícitos; la pública requiere texto aprobado y consentimiento registrado.
-- **Relacionar evidencia y decisiones:** afirmaciones, límites, contexto de negocio, observaciones y revisión visual del PDF. [Flujo y requisitos opcionales](docs/evidence-decisions-0230.md).
-
-| Formato | Archivo que recibes |
-| --- | --- |
-| PDF | Informe paginado `.pdf`. |
-| Word | Documento editable `.docx`, con campos propios para el índice. |
-| Markdown | ZIP con `report.md` y sus imágenes. |
-| HTML portátil | Un `.html` autónomo con filtros de lectura. |
-
 ## Auditoría y estabilidad en 0.45.0
 
 Correcciones en importación Unicode, validación CVSS, selección HAR, comparación HTTP, retests históricos, privacidad de comparaciones, cancelación y limpieza de exportaciones, portadas y asistente de terminal. Se conservan los datos originales y se añaden regresiones para los defectos reproducidos. Se retiran únicamente construcciones redundantes o inalcanzables demostradas.
 
-[Alcance y protocolo de auditoría](docs/QA-AUDIT-0450.md). La publicación exige los siete gates del mismo commit; sus recibos acreditan el resultado de las pruebas, sin prometer ausencia universal de errores.
+[Notas de versión ES/EN y controles aprobados](docs/releases/0.45.0.md) · [Alcance y protocolo de auditoría](docs/QA-AUDIT-0450.md). La publicación exige los siete gates del mismo commit; sus recibos acreditan el resultado de las pruebas, sin prometer ausencia universal de errores.
+
+## Qué comprueba cada entrega
+
+**Ver comprobaciones** muestra revisión, SHA-256, tamaño y controles por archivo. Las exportaciones comparan contenido y referencias con alcances distintos según el formato. **Estas comprobaciones no certifican la validez del pentest ni la presentación visual:** revisa PDF, Word, Markdown y HTML antes de entregar.
+
+[Contratos de exportación, anexos y límites](docs/guide.es.md#qué-comprueba-cada-entrega). La [firma Ed25519 opcional](docs/delivery-signing.md) acredita integridad respecto de una clave pública fijada; no cifra la entrega ni certifica sus conclusiones.
+
+<a id="por-qué-está-construido-así"></a>
+<a id="modelo-de-uso-y-límites"></a>
+
+## Datos y recuperación
+
+El editor trabaja en **`127.0.0.1` y un solo proceso**, sin cuentas ni servicios externos para la edición normal. Después de instalar sus dependencias, el trabajo habitual es local. La asistencia con Ollama es **opcional y explícita**; consulta qué campos envía y sus límites antes de activarla.
+
+La carpeta externa contiene `projects/` y `library/`. El arranque tradicional sin `--workspace` ni `REPORT_GEN_WORKSPACE` conserva `webapp/projects/` y `webapp/library/`. **Respaldo integral** conserva proyectos, originales e historial; es material privado. Los proyectos en disco y borradores del navegador no están cifrados por la aplicación. El respaldo descargado puede cifrarse con contraseña instalando la opción `privacy`; no cifra la instalación ni sustituye conservar la contraseña. [Recuperación, copias y privacidad](docs/guide.es.md#datos-y-recuperación).
+
+Los borradores del navegador se separan por espacio de trabajo, perfil, host y puerto. Actualizar la aplicación manteniendo la misma carpeta externa conserva esa separación; moverlo o restaurar en otro espacio crea un ámbito distinto. Descarga los borradores pendientes antes de trasladarlo: no viajan en el respaldo integral. Las copias antiguas sin identidad se conservan en **Más → Copias anteriores sin asignación** para revisarlas y descargarlas expresamente.
+
+El HTML portátil contiene el informe completo: sus filtros no son permisos de acceso. Los detectores de posibles secretos no sustituyen la revisión humana. Las pruebas de compatibilidad de Windows no sustituyen la revisión en Microsoft Word de escritorio; Word y LibreOffice pueden paginar de forma distinta. Los perfiles de certificación no implican afiliación ni garantizan cumplir las reglas de un examen.
+
+<a id="actualizar-sin-perder-proyectos"></a>
+
+## Actualizar desde una versión anterior
+
+**Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
+
+Si ya usas una carpeta externa, detén el editor, descarga **0.45.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
+
+Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
+
+```bash
+python3 start.py --ready --workspace /ruta/datos-nuevos --upgrade-from /ruta/report-gen-anterior
+```
+
+El destino debe estar vacío. Se conserva el origen y se genera un respaldo privado. Para separar los datos de la propia carpeta actual, usa `--upgrade-from .` con un destino externo vacío. Comprueba proyectos, imágenes e historial antes de retirar cualquier instalación. También puedes usar **Respaldo integral**. [Detalles y compatibilidad](docs/guide.es.md#actualizar-desde-una-versión-anterior).
+
+<a id="cli--uso-avanzado"></a>
+
+## Exportar por terminal
+
+Prueba un ejemplo ficticio incluido, desde la raíz del proyecto:
+
+```bash
+.venv/bin/python export.py examples/pending-severity/engagement.yaml -f html -o out/ejemplo.html
+```
+
+Los valores de `-f` son `pdf`, `docx`, `md` y `html`; `md` produce un ZIP. [Más sobre CLI, Word e imágenes](docs/guide.es.md#exportar-por-terminal).
+
+<a id="pruebas-de-desarrollo"></a>
+
+## Desarrollo y límites
+
+Para desarrollo y pruebas de interfaz se necesita **Node.js 22+**. Desde un entorno ya instalado:
+
+```bash
+.venv/bin/python -m pip install -e '.[dev]' -c requirements-audited.txt
+npm ci
+.venv/bin/python -m pytest
+npm test
+```
+
+[Pruebas de navegador y escenarios opcionales](docs/guide.es.md#desarrollo-y-límites) · [Contribuir](CONTRIBUTING.md) · [Seguridad](SECURITY.md) · [Licencia MIT](LICENSE).
+
+## Documentación
+
+- [Guía de uso: instalación, publicación, respaldo, CLI y desarrollo](docs/guide.es.md).
+- [Evidencia y decisiones; vistas previas y Ollama opcionales](docs/evidence-decisions-0230.md).
+- [CVSS 4.0](docs/CVSS40.md) y [firma de entregas](docs/delivery-signing.md).
+- [Biblioteca de diseños y plantillas](docs/design-library.md).
+- [Registro de cambios](CHANGELOG.md).
+
+<details>
+<summary>Funciones en detalle e historial de 0.34.5 a 0.44.0</summary>
+
+Los apartados siguientes conservan los detalles de las funciones incorporadas, sus límites y los enlaces de versiones anteriores. Consulta el [registro de cambios](CHANGELOG.md) para el historial completo.
 
 ## Biblioteca y preparación del trabajo en 0.44.0
 
@@ -183,72 +269,4 @@ El kit opcional de aceptación en Microsoft Word admite los campos de numeració
 
 **Límites:** sin el complemento, algunas URL de Word pueden saltar antes de llenar la línea en LibreOffice; no se altera su texto para ocultarlo. La integración comprobada se limita al entorno y los literales descritos en la guía. La revisión en Microsoft Word nativo permanece pendiente. El verificador PDF no acredita ordinales ni maquetación; ambas requieren revisión visual. [Cambios completos](CHANGELOG.md) · [Guía de entrega](docs/guide.es.md#qué-comprueba-cada-entrega).
 
-## Qué comprueba cada entrega
-
-**Ver comprobaciones** muestra revisión, SHA-256, tamaño y controles por archivo. Las exportaciones comparan contenido y referencias con alcances distintos según el formato. **Estas comprobaciones no certifican la validez del pentest ni la presentación visual:** revisa PDF, Word, Markdown y HTML antes de entregar.
-
-[Contratos de exportación, anexos y límites](docs/guide.es.md#qué-comprueba-cada-entrega). La [firma Ed25519 opcional](docs/delivery-signing.md) acredita integridad respecto de una clave pública fijada; no cifra la entrega ni certifica sus conclusiones.
-
-<a id="por-qué-está-construido-así"></a>
-<a id="modelo-de-uso-y-límites"></a>
-
-## Datos y recuperación
-
-El editor trabaja en **`127.0.0.1` y un solo proceso**, sin cuentas ni servicios externos para la edición normal. Después de instalar sus dependencias, el trabajo habitual es local. La asistencia con Ollama es **opcional y explícita**; consulta qué campos envía y sus límites antes de activarla.
-
-La carpeta externa contiene `projects/` y `library/`. El arranque tradicional sin `--workspace` ni `REPORT_GEN_WORKSPACE` conserva `webapp/projects/` y `webapp/library/`. **Respaldo integral** conserva proyectos, originales e historial; es material privado. Los proyectos en disco y borradores del navegador no están cifrados por la aplicación. El respaldo descargado puede cifrarse con contraseña instalando la opción `privacy`; no cifra la instalación ni sustituye conservar la contraseña. [Recuperación, copias y privacidad](docs/guide.es.md#datos-y-recuperación).
-
-Los borradores del navegador se separan por espacio de trabajo, perfil, host y puerto. Actualizar la aplicación manteniendo la misma carpeta externa conserva esa separación; moverlo o restaurar en otro espacio crea un ámbito distinto. Descarga los borradores pendientes antes de trasladarlo: no viajan en el respaldo integral. Las copias antiguas sin identidad se conservan en **Más → Copias anteriores sin asignación** para revisarlas y descargarlas expresamente.
-
-El HTML portátil contiene el informe completo: sus filtros no son permisos de acceso. Los detectores de posibles secretos no sustituyen la revisión humana. Las pruebas de compatibilidad de Windows no sustituyen la revisión en Microsoft Word de escritorio; Word y LibreOffice pueden paginar de forma distinta. Los perfiles de certificación no implican afiliación ni garantizan cumplir las reglas de un examen.
-
-<a id="actualizar-sin-perder-proyectos"></a>
-
-## Actualizar desde una versión anterior
-
-**Actualizar report-gen** permite consultar una nueva versión, revisar su paquete y preparar un respaldo privado sin cifrar. La preparación no sustituye la instalación en ejecución: descarga las instrucciones privadas, detén el editor y sigue los comandos indicados. [Flujo asistido y límites](docs/guide.es.md#actualización-asistida).
-
-Si ya usas una carpeta externa, detén el editor, descarga **0.44.0 en una carpeta nueva** y ejecuta allí `python3 scripts/install.py --desktop --workspace /ruta/datos-existentes`. Conserva los datos y actualiza el acceso; abre una sola instalación a la vez. No copies la `.venv` antigua.
-
-Para trasladar proyectos de una instalación que todavía usa `webapp/`, ejecuta desde la nueva:
-
-```bash
-python3 start.py --ready --workspace /ruta/datos-nuevos --upgrade-from /ruta/report-gen-anterior
-```
-
-El destino debe estar vacío. Se conserva el origen y se genera un respaldo privado. Para separar los datos de la propia carpeta actual, usa `--upgrade-from .` con un destino externo vacío. Comprueba proyectos, imágenes e historial antes de retirar cualquier instalación. También puedes usar **Respaldo integral**. [Detalles y compatibilidad](docs/guide.es.md#actualizar-desde-una-versión-anterior).
-
-<a id="cli--uso-avanzado"></a>
-
-## Exportar por terminal
-
-Prueba un ejemplo ficticio incluido, desde la raíz del proyecto:
-
-```bash
-.venv/bin/python export.py examples/pending-severity/engagement.yaml -f html -o out/ejemplo.html
-```
-
-Los valores de `-f` son `pdf`, `docx`, `md` y `html`; `md` produce un ZIP. [Más sobre CLI, Word e imágenes](docs/guide.es.md#exportar-por-terminal).
-
-<a id="pruebas-de-desarrollo"></a>
-
-## Desarrollo y límites
-
-Para desarrollo y pruebas de interfaz se necesita **Node.js 22+**. Desde un entorno ya instalado:
-
-```bash
-.venv/bin/python -m pip install -e '.[dev]' -c requirements-audited.txt
-npm ci
-.venv/bin/python -m pytest
-npm test
-```
-
-[Pruebas de navegador y escenarios opcionales](docs/guide.es.md#desarrollo-y-límites) · [Contribuir](CONTRIBUTING.md) · [Seguridad](SECURITY.md) · [Licencia MIT](LICENSE).
-
-## Documentación
-
-- [Guía de uso: instalación, publicación, respaldo, CLI y desarrollo](docs/guide.es.md).
-- [Evidencia y decisiones; vistas previas y Ollama opcionales](docs/evidence-decisions-0230.md).
-- [CVSS 4.0](docs/CVSS40.md) y [firma de entregas](docs/delivery-signing.md).
-- [Biblioteca de diseños y plantillas](docs/design-library.md).
-- [Registro de cambios](CHANGELOG.md).
+</details>
